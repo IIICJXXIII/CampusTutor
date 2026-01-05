@@ -1,0 +1,25 @@
+<view class="container">
+  <view class="header">
+    <image class="logo" src="/static/images/logo.png" mode="aspectFit"></image>
+    <text class="title">家教智能匹配平台</text>
+  </view>
+
+  <view class="form-box">
+    <view class="input-group">
+      <input class="input" type="number" placeholder="请输入手机号" 
+             model:value="{{phone}}" maxlength="11" />
+    </view>
+    <view class="input-group">
+      <input class="input" type="password" placeholder="请输入密码" 
+             model:value="{{password}}" />
+    </view>
+    
+    <button class="btn-primary" bindtap="handleLogin">登录</button>
+    
+    <view class="action-links">
+      <text bindtap="goToRegister">注册新账号</text>
+      <text class="divider">|</text>
+      <text>忘记密码</text>
+    </view>
+  </view>
+</view>
