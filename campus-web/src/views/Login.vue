@@ -16,27 +16,26 @@ const isAgreed = ref(true);
 const handleLogin = () => {
   if (!isAgreed.value) return alert('请先同意用户协议');
 
-  // === 模拟后端验证逻辑 ===
-  
-  // 场景 1: 家长账号
+  // 家长账号
   if (phone.value === '13800000001') {
     store.setRole('parent');
-    router.push('/parent/demand'); // 去发需求/找老师
+    router.push('/parent/demand');
   } 
-  // 场景 2: 成熟教师账号
+  // 成熟教师 (已认证)
   else if (phone.value === '13800000002') {
     store.setRole('teacher');
-    router.push('/teacher/students'); // 去找学生
+    store.setCertification(true); // ★ 标记为已认证
+    router.push('/teacher/students');
   }
-  // 场景 3: 新注册教师 (未认证) -> 演示认证流程
+  // 新注册教师 (未认证) -> 演示核心流程
   else if (phone.value === '13800000003') {
     store.setRole('teacher');
-    alert('检测到您是新注册教师，请先完成资质认证。');
-    router.push('/teacher/resume'); // 跳转到认证页
+    store.setCertification(false); // ★ 标记为未认证
+    alert('欢迎新老师！请先完成资质认证。');
+    router.push('/teacher/auth'); // ★ 直接跳去全新的认证页
   }
-  // 其他
   else {
-    alert('演示账号说明：\n138...01 (家长)\n138...02 (成熟教师)\n138...03 (新教师-去认证)');
+    alert('演示账号说明：\n138...01 (家长)\n138...02 (老教师)\n138...03 (新教师)');
   }
 };
 </script>
