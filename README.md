@@ -5,9 +5,9 @@
 **一个基于 Spring Boot 3 + Vue 3 + Uni-app 的大学生家教智能服务平台**
 
 [![Java](https://img.shields.io/badge/Java-17+-orange.svg)](https://www.oracle.com/java/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen. svg)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Vue](https://img.shields.io/badge/Vue-3.x-42b883.svg)](https://vuejs.org/)
-[![Uni-app](https://img.shields.io/badge/Uni--app-latest-2b9939.svg)](https://uniapp. dcloud.io/)
+[![Uni-app](https://img.shields.io/badge/Uni--app-latest-2b9939.svg)](https://uniapp.dcloud.io/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 </div>
@@ -383,26 +383,6 @@ npm run build
 
 ---
 
-## 👨‍💻 开发团队
-
-- **项目负责人**: [@IIICJXXIII](https://github.com/IIICJXXIII)
-
----
-
-## 📞 联系我们
-
-如有问题或建议，请通过以下方式联系: 
-
-- 提交 [Issue](https://github.com/IIICJXXIII/CampusTuor/issues)
-- 发送邮件至:  your-email@example.com
-
----
-
-## 🌟 Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=IIICJXXIII/CampusTutor&type=Date)](https://star-history.com/#IIICJXXIII/CampusTutor&Date)
-
----
 
 <div align="center">
 
