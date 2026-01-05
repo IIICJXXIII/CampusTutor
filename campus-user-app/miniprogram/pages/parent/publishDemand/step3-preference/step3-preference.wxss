@@ -1,0 +1,147 @@
+/* 基础样式复用 */
+.container {
+  padding-bottom: 120rpx;
+  background-color: #f8f8f8;
+  min-height: 100vh;
+}
+
+/* 步骤条 (省略，复用 Step1/2) */
+.step-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40rpx 0;
+  background: #fff;
+  margin-bottom: 20rpx;
+}
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 24rpx;
+  color: #999;
+}
+.step-item.active, .step-item.finished { color: #409EFF; }
+.step-num {
+  width: 40rpx; height: 40rpx; border-radius: 50%;
+  background: #eee; color: #666;
+  text-align: center; line-height: 40rpx; margin-bottom: 8rpx;
+}
+.step-item.active .step-num, .step-item.finished .step-num {
+  background: #409EFF; color: #fff;
+}
+.step-line { width: 60rpx; height: 2rpx; background: #eee; margin: -30rpx 20rpx 0; }
+.step-line.active { background: #409EFF; }
+
+.form-box {
+  padding: 0 30rpx;
+}
+.header-tip { padding: 30rpx 0; }
+.h1 { font-size: 40rpx; font-weight: bold; display: block; margin-bottom: 10rpx; }
+.p { font-size: 26rpx; color: #999; }
+
+/* 位置选择卡片 */
+.location-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 40rpx 30rpx;
+  margin-bottom: 40rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.05);
+}
+.location-card .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.location-card .label {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+.location-card .value {
+  flex: 1;
+  text-align: right;
+  font-size: 30rpx;
+  color: #333;
+  margin: 0 20rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.location-card .value.placeholder {
+  color: #409EFF;
+}
+.location-card .arrow {
+  color: #ccc;
+}
+.location-card .sub-text {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #999;
+  text-align: right;
+}
+
+/* 预览卡片 */
+.section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+  margin-left: 10rpx;
+  color: #666;
+}
+.preview-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  margin-bottom: 40rpx;
+}
+.preview-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx dashed #eee;
+  font-size: 28rpx;
+}
+.preview-row:last-child {
+  border-bottom: none;
+}
+.preview-row .key {
+  color: #999;
+  width: 160rpx;
+}
+.preview-row .val {
+  color: #333;
+  flex: 1;
+  text-align: right;
+}
+.preview-row .val.highlight {
+  color: #409EFF;
+  font-weight: bold;
+  font-size: 32rpx;
+}
+.preview-row .val.price {
+  color: #ff5000;
+  font-weight: bold;
+  font-size: 32rpx;
+}
+.preview-row .val.desc {
+  text-align: left;
+  margin-top: 10rpx;
+  display: block;
+}
+
+/* 按钮组 */
+.btn-group {
+  display: flex; justify-content: space-between; margin-top: 40rpx; padding: 0 30rpx;
+}
+.action-btn {
+  width: 45%; height: 88rpx; line-height: 88rpx;
+  border-radius: 44rpx; font-size: 32rpx;
+}
+.action-btn.outline {
+  background: #fff; color: #666; border: 1rpx solid #ddd;
+}
+.action-btn.primary {
+  background: #409EFF; color: #fff;
+  box-shadow: 0 8rpx 20rpx rgba(64, 158, 255, 0.3);
+}

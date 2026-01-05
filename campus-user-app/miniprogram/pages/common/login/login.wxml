@@ -1,25 +1,32 @@
 <view class="container">
   <view class="header">
-    <image class="logo" src="/static/images/logo.png" mode="aspectFit"></image>
-    <text class="title">家教智能匹配平台</text>
+    <text class="title">欢迎来到 CampusTutor</text>
+    <text class="subtitle">连接高校家教与中小学需求的桥梁</text>
   </view>
 
   <view class="form-box">
     <view class="input-group">
-      <input class="input" type="number" placeholder="请输入手机号" 
-             model:value="{{phone}}" maxlength="11" />
+      <input class="input" type="number" placeholder="请输入手机号" maxlength="11" 
+             bindinput="handleInput" data-field="phone" value="{{phone}}"/>
     </view>
-    <view class="input-group">
+
+    <view class="input-group" wx:if="{{loginType === 'password'}}">
       <input class="input" type="password" placeholder="请输入密码" 
-             model:value="{{password}}" />
+             bindinput="handleInput" data-field="password" value="{{password}}"/>
     </view>
-    
-    <button class="btn-primary" bindtap="handleLogin">登录</button>
-    
-    <view class="action-links">
-      <text bindtap="goToRegister">注册新账号</text>
+
+    <view class="input-group row" wx:else>
+      <input class="input" type="number" placeholder="请输入验证码" maxlength="6" 
+             bindinput="handleInput" data-field="code" value="{{code}}"/>
+      <view class="code-btn" bindtap="sendSmsCode">获取验证码</view>
+    </view>
+
+    <button class="submit-btn" bindtap="handleLogin" loading="{{isSubmitting}}">登 录</button>
+
+    <view class="footer-actions">
+      <text class="link" bindtap="switchLoginType">{{loginType === 'password' ? '验证码登录' : '密码登录'}}</text>
       <text class="divider">|</text>
-      <text>忘记密码</text>
+      <text class="link" bindtap="goToRegister">注册新账号</text>
     </view>
   </view>
 </view>
