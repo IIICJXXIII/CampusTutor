@@ -1,25 +1,27 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+// 1. 引入全局状态仓库，用于生成和保存订单
+import { store } from '../../store.js'; 
 import { ChevronLeft, Calendar, Clock, CheckCircle, ShieldCheck } from 'lucide-vue-next';
 
 const router = useRouter();
 const step = ref(1); // 1: 选时间, 2: 签合同
 
-// 模拟教师数据
+// 模拟教师数据 (这里实际项目中应从上个页面传参获取，目前先用静态数据演示)
 const teacher = {
   name: '张老师',
   subject: '初中数学',
   price: 200
 };
 
-// --- Step 1: 日历与时间数据 [cite: 90] ---
+[cite_start]// --- Step 1: 日历与时间数据 [cite: 90] ---
 const selectedDate = ref(null);
 const selectedTime = ref(null);
 
 // 模拟日历 (简化演示：仅展示未来几天)
 const days = [
-  { day: '周六', date: '03-01', available: true }, // [cite: 90] 可授课日期
+  [cite_start]{ day: '周六', date: '03-01', available: true }, // [cite: 90] 可授课日期
   { day: '周日', date: '03-02', available: true },
   { day: '周一', date: '03-03', available: false },
   { day: '周二', date: '03-04', available: false },
@@ -29,7 +31,7 @@ const timeSlots = [
   '09:00 - 10:00', '10:30 - 11:30', '14:00 - 15:00', '19:00 - 20:00'
 ];
 
-// --- Step 2: 签约数据 [cite: 93] ---
+[cite_start]// --- Step 2: 签约数据 [cite: 93] ---
 const isAgreed = ref(false); // 复选框状态
 
 const handleNext = () => {
@@ -38,11 +40,33 @@ const handleNext = () => {
   }
 };
 
+// 核心修改：生成订单逻辑
 const handleSign = () => {
   if (!isAgreed.value) return;
-  // 签约成功 -> 去支付 (文档流程)
-  alert('签约成功！订单已生成，请前往支付。');
-  router.push('/payment'); 
+
+  [cite_start]// 1. 生成一个新订单对象 (模拟后端生成逻辑) [cite: 121]
+  const newOrder = {
+    id: 'ORD-' + Date.now().toString().slice(-6), // 随机生成单号
+    teacher: teacher.name,
+    subject: `${teacher.subject} · 10课时包`, // 假设签约购买了10课时
+    amount: teacher.price * 10, // 总金额
+    status: 'pending', // 初始状态：待支付
+    date: new Date().toLocaleString(), // 当前时间
+    tags: ['待支付'],
+    location: '线上教学' // 默认地点
+  };
+
+  // 2. 存入全局仓库 (这样订单列表页也能看到了)
+  store.addOrder(newOrder);
+
+  // 3. 提示并跳转
+  alert('签约成功！订单已生成，请前往支付。'); [cite_start]// [cite: 95]
+  
+  // 跳转到支付页，并把 orderId 带过去，让支付页知道付哪一单
+  router.push({
+    path: '/payment',
+    query: { orderId: newOrder.id } 
+  });
 };
 </script>
 
@@ -77,8 +101,8 @@ const handleSign = () => {
                @click="d.available ? selectedDate = d.date : null"
                class="flex flex-col items-center py-3 rounded-lg border-2 transition-all cursor-pointer"
                :class="[
-                 d.available ? 'bg-orange-50/50 border-orange-100 text-gray-800' : 'bg-gray-50 border-transparent text-gray-300 cursor-not-allowed', // [cite: 91] 淡色背景
-                 selectedDate === d.date ? '!border-brand-orange bg-orange-100' : '' // [cite: 91] 选中加橙色边框
+                 d.available ? [cite_start]'bg-orange-50/50 border-orange-100 text-gray-800' : 'bg-gray-50 border-transparent text-gray-300 cursor-not-allowed', // [cite: 91]
+                 selectedDate === d.date ? [cite_start]'!border-brand-orange bg-orange-100' : '' // [cite: 91]
                ]">
             <span class="text-xs">{{ d.day }}</span>
             <span class="font-bold text-sm">{{ d.date }}</span>
@@ -94,7 +118,8 @@ const handleSign = () => {
           <div v-for="time in timeSlots" :key="time"
                @click="selectedTime = time"
                class="py-3 px-4 rounded-lg border text-center text-sm font-medium transition-all cursor-pointer"
-               :class="selectedTime === time ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'"> {{ time }}
+               :class="selectedTime === time ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'"> 
+            {{ time }}
           </div>
         </div>
       </div>
@@ -138,7 +163,8 @@ const handleSign = () => {
         </p>
 
         <p>4. 双方应严格遵守预约时间，违约方需承担相应责任...</p>
-        <div class="h-20"></div> </div>
+        <div class="h-20"></div> 
+      </div>
 
       <div class="fixed bottom-0 left-0 w-full p-4 bg-white border-t shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
         <label class="flex items-center gap-2 mb-4 cursor-pointer">
@@ -149,7 +175,8 @@ const handleSign = () => {
         <button @click="handleSign" 
                 :disabled="!isAgreed"
                 class="w-full py-3 rounded-xl font-bold text-white shadow-lg transition-all"
-                :class="isAgreed ? 'bg-brand-blue hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'"> 确认签约 (生成订单)
+                :class="isAgreed ? 'bg-brand-blue hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'"> 
+          确认签约 (生成订单)
         </button>
       </div>
 

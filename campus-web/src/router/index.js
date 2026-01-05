@@ -1,82 +1,108 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
-  { path: '/', redirect: '/login' }, // 默认去登录页
-  { path: '/login', component: () => import('../views/Login.vue') },
-  
-  // 家长端
-  { path: '/parent/demand', component: () => import('../views/Parent/DemandForm.vue') },
-  { path: '/teacher/list', component: () => import('../views/Teacher/TeacherList.vue') }, // 家长找老师
+  // 1. 默认跳转
   {
-    path: '/teacher/:id',
+    path: '/',
+    redirect: '/login'
+  },
+  // 2. 登录页
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('../views/Login.vue')
+  },
+
+  // === 家长端核心流程 ===
+  {
+    path: '/parent/demand', // 发布需求
+    name: 'ParentDemand',
+    component: () => import('../views/Parent/DemandForm.vue')
+  },
+  {
+    path: '/teacher/list', // 找老师列表 (AI匹配)
+    name: 'TeacherList',
+    component: () => import('../views/Teacher/TeacherList.vue')
+  },
+  {
+    path: '/teacher/:id', // 教师详情页
     name: 'TeacherProfile',
     component: () => import('../views/Teacher/TeacherProfile.vue')
   },
-  // 新增：预约签约页 [cite: 89]
   {
-    path: '/booking/:teacherId',
+    path: '/booking/:teacherId', // 预约签约页
     name: 'Booking',
     component: () => import('../views/Parent/Booking.vue')
   },
-
-  // 教师端 (新)
-  { path: '/teacher/students', component: () => import('../views/Teacher/StudentList.vue') }, // 老师找学生
-  { 
-    path: '/teacher/resume', 
-    component: () => import('../views/Teacher/MyResume.vue') 
-  },
-  
-  // 2. 学生需求详情 (点击列表进入)
-  { 
-    path: '/teacher/resume', 
-    name: 'MyResume', // 确保名字对应
-    component: () => import('../views/Teacher/MyResume.vue') 
-  },
-  { 
-    path: '/teacher/resume', 
-    name: 'TeacherAuth', 
-    component: () => import('../views/Teacher/TeacherAuth.vue') 
-  },
   {
-    path: '/payment',
+    path: '/payment', // 支付收银台
     name: 'Payment',
     component: () => import('../views/Parent/Payment.vue')
   },
-  // 课时记录 (确保路径对)
   {
-    path: '/process/record',
+    path: '/parent/wrong-book', // 智能错题本
+    name: 'WrongBook',
+    component: () => import('../views/Parent/WrongBook.vue')
+  },
+
+  // === 教师端核心流程 ===
+  {
+    path: '/teacher/auth', // 资质认证 (新教师必经)
+    name: 'TeacherAuth',
+    component: () => import('../views/Teacher/TeacherAuth.vue')
+  },
+  {
+    path: '/teacher/resume', // 简历编辑 (已认证教师日常使用)
+    name: 'MyResume',
+    component: () => import('../views/Teacher/MyResume.vue')
+  },
+  {
+    path: '/teacher/students', // 找学生 (地图/列表)
+    name: 'FindStudents',
+    component: () => import('../views/Teacher/FindStudents.vue')
+  },
+  {
+    path: '/student/:id', // 学生需求详情
+    name: 'StudentDetail',
+    component: () => import('../views/Teacher/StudentDetail.vue')
+  },
+
+  // === 公共/管理模块 ===
+  {
+    path: '/process/record', // 课时记录 (双端通用)
     name: 'ClassRecord',
     component: () => import('../views/Process/ClassRecord.vue')
   },
   {
-    path: '/mine/orders',
+    path: '/mine', // 个人中心
+    name: 'Mine',
+    component: () => import('../views/Mine/Mine.vue')
+  },
+  {
+    path: '/mine/orders', // 我的订单
     name: 'OrderList',
     component: () => import('../views/Mine/OrderList.vue')
   },
-  // 错题本 (家长端功能)
-  {
-    path: '/parent/wrong-book',
-    name: 'WrongBook',
-    component: () => import('../views/Parent/WrongBook.vue')
+  
+  // === 消息模块 (已注释，防止报错) ===
+  // 只有当你创建了对应的 .vue 文件后，才能解开下面的注释
+  /*
+  { 
+    path: '/messages', 
+    name: 'MessageList', 
+    component: () => import('../views/Common/MessageList.vue') 
   },
-  {
-    path: '/teacher/students',
-    name: 'FindStudents',
-    component: () => import('../views/Teacher/FindStudents.vue')
-  },
-  // 教师端：学生需求详情
-  {
-    path: '/student/:id',
-    name: 'StudentDetail',
-    component: () => import('../views/Teacher/StudentDetail.vue')
-  },
-  // 公共
-  { path: '/mine', component: () => import('../views/Mine/Mine.vue') },
-  { path: '/process/record', component: () => import('../views/Process/ClassRecord.vue') }
+  { 
+    path: '/message/:id', 
+    name: 'ChatDetail', 
+    component: () => import('../views/Common/ChatDetail.vue') 
+  }
+  */
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes
 })
+
 export default router

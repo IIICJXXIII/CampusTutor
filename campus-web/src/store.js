@@ -4,7 +4,7 @@ import { reactive } from 'vue';
 export const store = reactive({
   // 1. 当前用户身份 (同步 localStorage)
   userRole: localStorage.getItem('userRole') || 'parent',
-  
+  isCertified: false,
   // 2. 模拟订单列表 (初始有一些历史数据，为了让列表不为空)
   orders: [
     {
@@ -35,6 +35,9 @@ export const store = reactive({
   setRole(role) {
     this.userRole = role;
     localStorage.setItem('userRole', role);
+  },
+  setCertification(status) {
+    this.isCertified = status;
   },
 
   // 创建新订单 (签约后调用)
