@@ -1,138 +1,148 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { ChevronLeft, Clock, MapPin, CheckCircle, AlertCircle } from 'lucide-vue-next';
+import { ChevronLeft, Calendar as CalIcon, MapPin, Camera, CheckCircle, Clock } from 'lucide-vue-next';
 
 const router = useRouter();
-const activeTab = ref('upcoming'); // upcoming (待上课) | history (历史)
+// 模拟当前用户身份 (实际从 localStorage 拿)
+const userRole = localStorage.getItem('userRole') || 'parent';
 
-// 模拟数据：待上课列表
-const upcomingClasses = ref([
-  {
-    id: 101,
-    teacher: '张老师',
-    subject: '初中英语',
-    time: '今天 19:00 - 21:00',
-    location: '线上教学',
-    status: 'ready' // ready: 可打卡
-  },
-  {
-    id: 102,
-    teacher: '李同学',
-    subject: '小学奥数',
-    time: '周六 09:00 - 11:00',
-    location: '幸福小区3号楼',
-    status: 'wait' // wait: 未开始
-  }
-]);
+// --- 1. 日历数据 (文档 cite: 99) ---
+const currentMonth = '2025年3月';
+const calendarDays = [
+  { day: 1, status: 'done' }, { day: 2, status: 'done' }, { day: 3, status: 'none' },
+  { day: 4, status: 'cancel' }, { day: 5, status: 'today' }, { day: 6, status: 'pending' },
+  { day: 7, status: 'pending' }
+];
 
-// 模拟数据：历史记录
-const historyClasses = ref([
-  {
-    id: 201,
-    teacher: '张老师',
-    subject: '初中英语',
-    date: '2023-10-01 19:00',
-    duration: '2小时',
-    status: 'confirmed', // 已确认
-    price: 400
-  },
-  {
-    id: 202,
-    teacher: '张老师',
-    subject: '初中英语',
-    date: '2023-09-28 19:00',
-    duration: '2小时',
-    status: 'pending', // 待家长确认
-    price: 400
-  }
-]);
+// 状态样式映射
+const statusStyles = {
+  done: 'bg-green-100 text-green-600 border-green-200', // 已完成
+  pending: 'bg-blue-50 text-blue-600 border-blue-100', // 待上
+  cancel: 'bg-gray-100 text-gray-400 border-gray-200', // 取消
+  today: 'bg-brand-orange text-white shadow-md', // 今日
+  none: 'text-gray-300'
+};
 
-const handleCheckIn = (id) => {
-  if (confirm('确认开始上课打卡吗？系统将记录当前GPS位置。')) {
-    alert('打卡成功！开始记录课时。');
-  }
+// --- 2. 今日课程数据 ---
+const todayClass = ref({
+  id: 101,
+  subject: '初中数学 (一对一)',
+  time: '19:00 - 21:00',
+  location: '幸福小区3号楼',
+  teacher: '张老师',
+  status: 'ready', // ready(未开始) | checkin(已打卡) | confirmed(已确认)
+  checkinImg: null
+});
+
+// --- 交互逻辑 (文档 cite: 102, 103) ---
+
+// 教师打卡
+const handleCheckIn = () => {
+  if (!confirm('是否确认打卡？\n系统将记录当前位置：幸福小区 (误差10m)')) return;
+  
+  // 模拟拍照上传
+  todayClass.value.status = 'checkin';
+  todayClass.value.checkinImg = 'https://api.dicebear.com/7.x/shapes/svg?seed=checkin'; 
+  alert('打卡成功！等待家长确认。');
+};
+
+// 家长确认
+const handleConfirm = () => {
+  todayClass.value.status = 'confirmed';
+  alert('确认成功！资金已释放给老师。');
 };
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 pb-24"> <div class="bg-white p-4 sticky top-0 z-10 border-b flex items-center">
-      <button @click="router.back()" class="p-1 hover:bg-gray-100 rounded-full mr-2">
+  <div class="min-h-screen bg-brand-gray pb-safe font-sans">
+    
+    <div class="bg-white p-4 sticky top-0 z-10 border-b flex items-center justify-between">
+      <button @click="router.back()" class="p-1 hover:bg-gray-100 rounded-full">
         <ChevronLeft />
       </button>
-      <h1 class="font-bold text-lg flex-1 text-center pr-6">课时记录</h1>
-    </div>
+      <h1 class="font-bold text-lg">我的课表</h1>
+      <div class="w-8"></div> </div>
 
-    <div class="p-4">
-      <div class="flex bg-white p-1 rounded-xl shadow-sm border">
-        <button 
-          @click="activeTab = 'upcoming'"
-          class="flex-1 py-2 text-sm font-bold rounded-lg transition-all"
-          :class="activeTab === 'upcoming' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'">
-          待上课 / 打卡
-        </button>
-        <button 
-          @click="activeTab = 'history'"
-          class="flex-1 py-2 text-sm font-bold rounded-lg transition-all"
-          :class="activeTab === 'history' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'">
-          历史记录
-        </button>
+    <div class="bg-white p-4 mb-4 shadow-sm">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-bold text-lg flex items-center gap-2">
+          {{ currentMonth }} <CalIcon :size="16" class="text-gray-400"/>
+        </h2>
+        <div class="flex gap-2 text-xs text-gray-500">
+          <span class="flex items-center gap-1"><div class="w-2 h-2 bg-green-500 rounded-full"></div>完成</span>
+          <span class="flex items-center gap-1"><div class="w-2 h-2 bg-brand-blue rounded-full"></div>待上</span>
+        </div>
       </div>
-    </div>
-
-    <div class="px-4 space-y-4">
       
-      <div v-if="activeTab === 'upcoming'">
-        <div v-for="item in upcomingClasses" :key="item.id" 
-             class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-          
-          <div class="flex justify-between items-start mb-3">
-            <div>
-              <h3 class="font-bold text-lg text-gray-800">{{ item.subject }}</h3>
-              <p class="text-sm text-gray-500 mt-1">授课教师：{{ item.teacher }}</p>
-            </div>
-            <span class="px-2 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded">
-              {{ item.status === 'ready' ? '即将开始' : '未开始' }}
-            </span>
-          </div>
-
-          <div class="space-y-2 mb-4">
-            <div class="flex items-center gap-2 text-sm text-gray-600">
-              <Clock :size="16" class="text-blue-500" /> {{ item.time }}
-            </div>
-            <div class="flex items-center gap-2 text-sm text-gray-600">
-              <MapPin :size="16" class="text-green-500" /> {{ item.location }}
-            </div>
-          </div>
-
-          <button v-if="item.status === 'ready'" 
-                  @click="handleCheckIn(item.id)"
-                  class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 active:scale-95 transition-transform flex justify-center items-center gap-2">
-            <MapPin :size="18" /> 上课打卡
-          </button>
-          <button v-else disabled class="w-full bg-gray-100 text-gray-400 py-3 rounded-xl font-bold cursor-not-allowed">
-            不在打卡时间
-          </button>
+      <div class="flex justify-between">
+        <div v-for="d in calendarDays" :key="d.day" 
+             class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border transition-all"
+             :class="statusStyles[d.status] || 'text-gray-800 border-transparent'">
+          {{ d.day }}
         </div>
       </div>
-
-      <div v-if="activeTab === 'history'">
-        <div v-for="item in historyClasses" :key="item.id" class="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center">
-          <div>
-            <h4 class="font-bold text-gray-800">{{ item.subject }} - {{ item.teacher }}</h4>
-            <p class="text-xs text-gray-400 mt-1">{{ item.date }} | {{ item.duration }}</p>
-          </div>
-          <div class="text-right">
-            <div class="font-bold text-gray-800">-{{ item.price }}元</div>
-            <div class="text-xs mt-1 flex items-center justify-end gap-1"
-                 :class="item.status === 'confirmed' ? 'text-green-500' : 'text-orange-500'">
-              <span v-if="item.status === 'confirmed'"><CheckCircle :size="12"/> 已确认</span>
-              <span v-else><AlertCircle :size="12"/> 待确认</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div>
+
+    <div class="px-4">
+      <h3 class="font-bold text-gray-500 mb-2 text-sm">今日课程 (3月5日)</h3>
+      
+      <div class="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
+        <div class="bg-brand-blue p-4 text-white flex justify-between items-start">
+          <div>
+            <h2 class="text-xl font-bold">{{ todayClass.subject }}</h2>
+            <p class="text-blue-100 text-sm mt-1 flex items-center gap-1">
+              <Clock :size="14" /> {{ todayClass.time }}
+            </p>
+          </div>
+          <span class="bg-white/20 px-2 py-1 rounded text-xs">
+            {{ todayClass.status === 'confirmed' ? '已结算' : '进行中' }}
+          </span>
+        </div>
+
+        <div class="p-5 space-y-4">
+          <div class="flex items-center gap-3 text-gray-600">
+            <MapPin :size="20" class="text-brand-orange" />
+            <span>{{ todayClass.location }}</span>
+          </div>
+          
+          <div v-if="todayClass.status !== 'ready'" class="bg-gray-50 p-3 rounded-lg border border-dashed border-gray-300 flex items-center gap-3">
+             <div class="w-12 h-12 bg-gray-200 rounded overflow-hidden">
+               <img v-if="todayClass.checkinImg" :src="todayClass.checkinImg" class="w-full h-full object-cover" />
+               <Camera v-else class="m-auto mt-3 text-gray-400" :size="20" />
+             </div>
+             <div class="text-xs text-gray-500">
+               <p class="font-bold text-gray-800">教师已打卡</p>
+               <p>18:55 打卡于 幸福小区 (GPS核验通过)</p>
+             </div>
+          </div>
+
+          <div v-if="userRole === 'teacher'">
+             <button v-if="todayClass.status === 'ready'" @click="handleCheckIn"
+                     class="w-full bg-brand-blue text-white py-3 rounded-xl font-bold active:scale-95 transition-transform flex justify-center items-center gap-2">
+               <MapPin :size="18" /> 上课打卡
+             </button>
+             <button v-else disabled class="w-full bg-gray-100 text-gray-400 py-3 rounded-xl font-bold cursor-not-allowed">
+               已完成打卡
+             </button>
+          </div>
+
+          <div v-else>
+            <button v-if="todayClass.status === 'checkin'" @click="handleConfirm"
+                    class="w-full bg-brand-orange text-white py-3 rounded-xl font-bold shadow-lg active:scale-95 transition-transform flex justify-center items-center gap-2">
+              <CheckCircle :size="18" /> 确认课时 (支付结算)
+            </button>
+            <div v-else-if="todayClass.status === 'confirmed'" class="text-center text-green-600 font-bold py-2 border border-green-100 bg-green-50 rounded-xl">
+              <CheckCircle :size="16" class="inline mb-0.5"/> 已确认，资金已释放
+            </div>
+            <div v-else class="text-center text-gray-400 text-sm py-2">
+              等待老师打卡...
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>

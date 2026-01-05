@@ -1,98 +1,157 @@
 <script setup>
-import { useRouter } from 'vue-router'; // 1. 引入路由工具
-import { ShieldCheck, GraduationCap, Star, MapPin } from 'lucide-vue-next';
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { Search, MapPin, Filter, Star } from 'lucide-vue-next';
 
-// 2. 初始化路由实例
 const router = useRouter();
 
-// 模拟后端返回的教师数据
-// 对应文档 FR1.1 (资质) 和 FR2.2 (匹配结果)
-const teachers = [
+// 筛选条件
+const activeFilter = ref('综合');
+
+// 模拟 AI 匹配结果数据
+// 匹配分数逻辑参考: 认证(30%) + 距离(30%) + 价格(20%) + 信用(20%)
+const teachers = ref([
   {
     id: 1,
     name: '张老师',
-    university: '北京师范大学',
-    tags: ['实名认证', '英语专八', '3年教龄'],
-    subjects: ['初中英语', '高中英语'],
-    rating: 4.9,
+    school: '北京师范大学',
+    subject: '数学',
     price: 200,
-    distance: '2.5km'
+    matchScore: 95, // 高匹配度
+    distance: '1.2km',
+    style: '鼓励型', //
+    tags: ['实名认证', '3年教龄'],
+    avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=1'
   },
   {
     id: 2,
     name: '李同学',
-    university: '同济大学 (在读)',
-    tags: ['学生证认证', '奥数金牌'],
-    subjects: ['小学奥数', '初中数学'],
-    rating: 4.8,
+    school: '同济大学',
+    subject: '奥数',
     price: 120,
-    distance: '1.2km'
+    matchScore: 88,
+    distance: '2.5km',
+    style: '趣味型',
+    tags: ['奥数金牌', '学生证认证'],
+    avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=2'
   },
   {
     id: 3,
     name: '王老师',
-    university: '华东师范大学',
-    tags: ['在职教师', '物理竞赛'],
-    subjects: ['高中物理'],
-    rating: 5.0,
+    school: '华东师范',
+    subject: '物理',
     price: 250,
-    distance: '3.0km'
+    matchScore: 75, // 中匹配度
+    distance: '5.8km',
+    style: '严厉型',
+    tags: ['在职教师', '提分快'],
+    avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=3'
+  },
+  {
+    id: 4,
+    name: '赵同学',
+    school: '复旦大学',
+    subject: '英语',
+    price: 180,
+    matchScore: 65,
+    distance: '3.2km',
+    style: '鼓励型',
+    tags: ['口语好', '有耐心'],
+    avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=4'
   }
-];
+]);
 
-// 跳转到详情页的方法
+// 风格标签颜色映射
+const styleColors = {
+  '鼓励型': 'bg-green-100 text-green-700',
+  '严厉型': 'bg-red-100 text-red-700',
+  '趣味型': 'bg-blue-100 text-blue-700'
+};
+
+// 匹配分颜色映射
+const getScoreColor = (score) => {
+  if (score >= 80) return 'text-green-600';
+  if (score >= 60) return 'text-yellow-600';
+  return 'text-gray-400';
+};
+
+const getScoreBarColor = (score) => {
+  if (score >= 80) return 'bg-green-500';
+  if (score >= 60) return 'bg-yellow-500';
+  return 'bg-gray-300';
+};
+
 const goToDetail = (id) => {
   router.push(`/teacher/${id}`);
 };
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 pb-24"> <div class="bg-white p-4 shadow-sm sticky top-0 z-10">
-      <h1 class="text-xl font-bold text-center">推荐教师</h1>
+  <div class="min-h-screen bg-brand-gray pb-24 font-sans">
+    
+    <div class="bg-white p-2 sticky top-0 z-10 shadow-sm flex justify-between items-center text-sm">
+      <div class="flex gap-4 px-2">
+        <span v-for="f in ['综合', '距离', '价格', '好评']" :key="f"
+              @click="activeFilter = f"
+              class="font-bold cursor-pointer transition-colors relative py-2"
+              :class="activeFilter === f ? 'text-brand-blue' : 'text-gray-500'">
+          {{ f }}
+          <div v-if="activeFilter === f" class="absolute bottom-0 left-0 w-full h-1 bg-brand-blue rounded-full"></div>
+        </span>
+      </div>
+      <div class="p-2 text-gray-400">
+        <Filter :size="16" />
+      </div>
     </div>
 
-    <div class="p-4 space-y-4">
+    <div class="p-3 grid grid-cols-2 gap-3">
       <div v-for="teacher in teachers" :key="teacher.id" 
            @click="goToDetail(teacher.id)"
-           class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 cursor-pointer active:scale-[0.98] transition-all hover:shadow-md">
+           class="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 active:scale-[0.98] transition-transform flex flex-col">
         
-        <div class="flex justify-between items-start">
-          <div>
-            <h3 class="text-lg font-bold flex items-center gap-2">
-              {{ teacher.name }}
-              <ShieldCheck :size="16" class="text-green-500 fill-green-50" />
-            </h3>
-            <p class="text-sm text-gray-500 flex items-center gap-1 mt-1">
-              <GraduationCap :size="14" /> {{ teacher.university }}
-            </p>
-          </div>
-          <div class="text-right">
-            <div class="text-red-500 font-bold text-lg">¥{{ teacher.price }}<span class="text-xs text-gray-400">/h</span></div>
-            <div class="flex items-center justify-end gap-1 text-xs text-gray-400 mt-1">
-              <MapPin :size="12" /> {{ teacher.distance }}
-            </div>
+        <div class="p-3 flex items-start gap-2">
+          <img :src="teacher.avatar" class="w-10 h-10 rounded-full bg-gray-100" />
+          <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-gray-800 text-sm truncate">{{ teacher.name }}</h3>
+            <p class="text-xs text-gray-500 truncate">{{ teacher.school }}</p>
           </div>
         </div>
 
-        <div class="flex flex-wrap gap-2 mt-3">
-          <span v-for="tag in teacher.tags" :key="tag" 
-                class="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded border border-blue-100">
-            {{ tag }}
-          </span>
+        <div class="px-3 pb-2">
+          <div class="flex justify-between items-end mb-1">
+            <span class="text-xs font-bold text-gray-400">AI匹配度</span>
+            <span class="text-lg font-bold leading-none" :class="getScoreColor(teacher.matchScore)">
+              {{ teacher.matchScore }}<span class="text-xs">%</span>
+            </span>
+          </div>
+          <div class="w-full h-1.5 bg-gray-100 rounded-full mb-3">
+            <div class="h-full rounded-full transition-all duration-1000" 
+                 :class="getScoreBarColor(teacher.matchScore)"
+                 :style="{ width: teacher.matchScore + '%' }"></div>
+          </div>
+
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-brand-orange font-bold text-sm">¥{{ teacher.price }}<span class="text-xs text-gray-400">/h</span></span>
+            <span class="text-xs px-2 py-0.5 rounded font-medium" :class="styleColors[teacher.style]">
+              {{ teacher.style }}
+            </span>
+          </div>
+          
+          <div class="flex items-center gap-1 text-xs text-gray-400">
+             <MapPin :size="10" /> {{ teacher.distance }}
+          </div>
         </div>
 
-        <div class="pt-3 border-t flex justify-between items-center mt-3">
-          <div class="flex items-center gap-1 font-bold text-gray-700">
-            <Star :size="16" class="fill-yellow-400 text-yellow-400" /> 
-            {{ teacher.rating }}
-            <span class="text-xs text-gray-400 font-normal ml-1"> (120次授课)</span>
-          </div>
-          <button class="bg-black text-white px-4 py-1.5 rounded-lg text-sm font-medium">
-            查看详情
+        <div class="mt-auto border-t p-2">
+          <button @click.stop="router.push(`/booking/${teacher.id}`)" class="...">
+            预约试课
           </button>
         </div>
-
       </div>
+    </div>
+    
+    <div class="text-center text-xs text-gray-400 mt-4">
+      已显示全部高匹配教师
     </div>
   </div>
 </template>
