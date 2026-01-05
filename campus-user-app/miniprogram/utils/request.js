@@ -1,64 +1,97 @@
-// utils/request.js
-const { baseUrl } = require('../config/apiConfig.js');
+import apiConfig from '../config/apiConfig';
 
-/**
- * 统一网络请求封装
- * @param {string} url 接口路径
- * @param {string} method 请求方法 GET/POST/PUT/DELETE
- * @param {object} data 请求参数
- * @param {boolean} showLoading 是否显示加载loading
- */
-const request = (url, method = 'GET', data = {}, showLoading = true) => {
-  if (showLoading) {
-    wx.showLoading({ title: '加载中...', mask: true });
-  }
-
+const request = (url, method = 'GET', data = {}, header = {}) => {
   return new Promise((resolve, reject) => {
-    // 获取本地存储的Token [cite: 443]
+    // 1. 获取本地存储的 Token
     const token = wx.getStorageSync('token');
     
+    // 2. 组装 Header
+    const defaultHeader = {
+      'content-type': 'application/json',
+      ...header
+    };
+    
+    if (token) {
+      defaultHeader['Authorization'] = `Bearer ${token}`;
+    }
+
+    // 3. 发起请求
     wx.request({
-      url: baseUrl + url,
+      url: url,
       method: method,
       data: data,
-      header: {
-        'content-type': 'application/json',
-        // 注入JWT Token用于后端鉴权
-        'Authorization': token ? `Bearer ${token}` : '' 
-      },
+      header: defaultHeader,
+      timeout: 10000,
       success: (res) => {
-        if (showLoading) wx.hideLoading();
+        const { statusCode, data: resData } = res;
         
-        // 依据HTTP状态码或业务Code判断
-        const { code, msg, data: responseData } = res.data;
-        
-        if (code === 200) {
-          resolve(responseData);
-        } else if (code === 401) {
-          // Token过期或未登录，跳转至登录页 
-          wx.showToast({ title: '登录已过期', icon: 'none' });
-          setTimeout(() => {
-            wx.reLaunch({ url: '/pages/common/login/login' });
-          }, 1500);
-          reject(res.data);
+        // HTTP 状态码判断
+        if (statusCode >= 200 && statusCode < 300) {
+          // 【核心修改】：兼容 code=200 和 code=0 两种成功状态
+          if (resData.code === 200 || resData.code === 0) {
+            resolve(resData.data);
+          } else {
+            // 业务错误 (如 401 未授权)
+            if (resData.code === 401) {
+              wx.showToast({ title: '登录已过期', icon: 'none' });
+              wx.removeStorageSync('token');
+              wx.removeStorageSync('userInfo');
+              setTimeout(() => {
+                wx.reLaunch({ url: '/pages/common/login/login' });
+              }, 1500);
+            } else {
+              wx.showToast({ title: resData.msg || '请求失败', icon: 'none' });
+            }
+            reject(resData);
+          }
         } else {
-          // 业务错误提示
-          wx.showToast({ title: msg || '服务器繁忙', icon: 'none' });
-          reject(res.data);
+          // HTTP 错误
+          wx.showToast({ title: `网络错误 ${statusCode}`, icon: 'none' });
+          reject(res);
         }
       },
       fail: (err) => {
-        if (showLoading) wx.hideLoading();
-        wx.showToast({ title: '网络连接异常', icon: 'none' });
+        wx.showToast({ title: '网络连接失败', icon: 'none' });
         reject(err);
       }
     });
   });
 };
 
-module.exports = {
-  get: (url, data, loading) => request(url, 'GET', data, loading),
-  post: (url, data, loading) => request(url, 'POST', data, loading),
-  put: (url, data, loading) => request(url, 'PUT', data, loading),
-  del: (url, data, loading) => request(url, 'DELETE', data, loading)
+// 导出快捷方法
+export default {
+  get: (url, data) => request(url, 'GET', data),
+  post: (url, data) => request(url, 'POST', data),
+  put: (url, data) => request(url, 'PUT', data),
+  delete: (url, data) => request(url, 'DELETE', data),
+  
+  // 文件上传封装
+  upload: (url, filePath, formData = {}) => {
+    return new Promise((resolve, reject) => {
+      const token = wx.getStorageSync('token');
+      wx.uploadFile({
+        url: url,
+        filePath: filePath,
+        name: 'file',
+        header: {
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        formData: formData,
+        success: (res) => {
+          // uploadFile 返回的 data 是字符串，需要 parse
+          const data = JSON.parse(res.data);
+          // 同样兼容 200 和 0
+          if (data.code === 200 || data.code === 0) {
+            resolve(data.data);
+          } else {
+            wx.showToast({ title: data.msg || '上传失败', icon: 'none' });
+            reject(data);
+          }
+        },
+        fail: (err) => {
+          reject(err);
+        }
+      });
+    });
+  }
 };
