@@ -11,11 +11,9 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
  * Redis 配置类
- * 仅在 Redis 可用时生效
  */
 @Configuration
 @ConditionalOnClass(RedisConnectionFactory.class)
-@ConditionalOnProperty(name = "spring.data.redis.host", matchIfMissing = false)
 public class RedisConfig {
 
     @Bean

@@ -1,108 +1,119 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
-  // 1. 默认跳转
+  // 默认跳转
   {
     path: '/',
     redirect: '/login'
   },
-  // 2. 登录页
+  
+  // === 公共页面 (无需登录) ===
   {
     path: '/login',
     name: 'Login',
-    component: () => import('../views/Login.vue')
+    component: () => import('@/views/Login.vue'),
+    meta: { title: '登录' }
   },
   {
     path: '/register',
     name: 'Register',
-    component: () => import('../views/Register.vue')
+    component: () => import('@/views/Register.vue'),
+    meta: { title: '注册' }
   },
 
-  // === 家长端核心流程 ===
+  // === 家长端 ===
   {
-    path: '/parent/demand', // 发布需求
+    path: '/parent/demand',
     name: 'ParentDemand',
-    component: () => import('../views/Parent/DemandForm.vue')
+    component: () => import('@/views/Parent/DemandForm.vue'),
+    meta: { title: '发布需求', role: 'parent' }
   },
   {
-    path: '/teacher/list', // 找老师列表 (AI匹配)
+    path: '/teacher/list',
     name: 'TeacherList',
-    component: () => import('../views/Teacher/TeacherList.vue')
+    component: () => import('@/views/Teacher/TeacherList.vue'),
+    meta: { title: '找老师' }
   },
   {
-    path: '/teacher/:id', // 教师详情页
+    path: '/teacher/:id',
     name: 'TeacherProfile',
-    component: () => import('../views/Teacher/TeacherProfile.vue')
+    component: () => import('@/views/Teacher/TeacherProfile.vue'),
+    meta: { title: '教师详情' }
   },
   {
-    path: '/booking/:teacherId', // 预约签约页
+    path: '/booking/:teacherId',
     name: 'Booking',
-    component: () => import('../views/Parent/Booking.vue')
+    component: () => import('@/views/Parent/Booking.vue'),
+    meta: { title: '预约签约', role: 'parent' }
   },
   {
-    path: '/payment', // 支付收银台
+    path: '/payment',
     name: 'Payment',
-    component: () => import('../views/Parent/Payment.vue')
+    component: () => import('@/views/Parent/Payment.vue'),
+    meta: { title: '支付', role: 'parent' }
   },
   {
-    path: '/parent/wrong-book', // 智能错题本
+    path: '/parent/wrong-book',
     name: 'WrongBook',
-    component: () => import('../views/Parent/WrongBook.vue')
+    component: () => import('@/views/Parent/WrongBook.vue'),
+    meta: { title: '错题本', role: 'parent' }
   },
 
-  // === 教师端核心流程 ===
+  // === 教师端 ===
   {
-    path: '/teacher/auth', // 资质认证 (新教师必经)
+    path: '/teacher/auth',
     name: 'TeacherAuth',
-    component: () => import('../views/Teacher/TeacherAuth.vue')
+    component: () => import('@/views/Teacher/TeacherAuth.vue'),
+    meta: { title: '资质认证', role: 'tutor' }
   },
   {
-    path: '/teacher/resume', // 简历编辑 (已认证教师日常使用)
+    path: '/teacher/resume',
     name: 'MyResume',
-    component: () => import('../views/Teacher/MyResume.vue')
+    component: () => import('@/views/Teacher/MyResume.vue'),
+    meta: { title: '我的简历', role: 'tutor' }
   },
   {
-    path: '/teacher/students', // 找学生 (地图/列表)
+    path: '/teacher/students',
     name: 'FindStudents',
-    component: () => import('../views/Teacher/FindStudents.vue')
+    component: () => import('@/views/Teacher/FindStudents.vue'),
+    meta: { title: '找学生', role: 'tutor' }
   },
   {
-    path: '/student/:id', // 学生需求详情
+    path: '/find-students',
+    redirect: '/teacher/students'
+  },
+  {
+    path: '/student/:id',
     name: 'StudentDetail',
-    component: () => import('../views/Teacher/StudentDetail.vue')
+    component: () => import('@/views/Teacher/StudentDetail.vue'),
+    meta: { title: '学生详情', role: 'tutor' }
   },
 
-  // === 公共/管理模块 ===
+  // === 公共模块 ===
   {
-    path: '/process/record', // 课时记录 (双端通用)
+    path: '/process/record',
     name: 'ClassRecord',
-    component: () => import('../views/Process/ClassRecord.vue')
+    component: () => import('@/views/Process/ClassRecord.vue'),
+    meta: { title: '课时记录' }
   },
   {
-    path: '/mine', // 个人中心
+    path: '/mine',
     name: 'Mine',
-    component: () => import('../views/Mine/Mine.vue')
+    component: () => import('@/views/Mine/Mine.vue'),
+    meta: { title: '个人中心' }
   },
   {
-    path: '/mine/orders', // 我的订单
+    path: '/mine/orders',
     name: 'OrderList',
-    component: () => import('../views/Mine/OrderList.vue')
+    component: () => import('@/views/Mine/OrderList.vue'),
+    meta: { title: '我的订单' }
   },
-  
-  // === 消息模块 (已注释，防止报错) ===
-  // 只有当你创建了对应的 .vue 文件后，才能解开下面的注释
-  /*
-  { 
-    path: '/messages', 
-    name: 'MessageList', 
-    component: () => import('../views/Common/MessageList.vue') 
-  },
-  { 
-    path: '/message/:id', 
-    name: 'ChatDetail', 
-    component: () => import('../views/Common/ChatDetail.vue') 
+
+  // 404
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/login'
   }
-  */
 ]
 
 const router = createRouter({
@@ -110,32 +121,27 @@ const router = createRouter({
   routes
 })
 
-// 白名单路由（无需登录即可访问）
+// 白名单路由
 const whiteList = ['/login', '/register']
 
-// 路由守卫 - 检查登录状态
+// 路由守卫
 router.beforeEach((to, from, next) => {
+  // 设置页面标题
+  document.title = to.meta.title ? `${to.meta.title} - 校园智教` : '校园智教'
+  
   const token = localStorage.getItem('token')
   
   if (whiteList.includes(to.path)) {
-    // 白名单页面直接放行
-    // 如果已登录且访问登录页，重定向到首页
     if (token && to.path === '/login') {
       const userRole = localStorage.getItem('userRole')
-      if (userRole === 'teacher') {
-        next('/teacher/students')
-      } else {
-        next('/parent/demand')
-      }
+      next(userRole === 'tutor' ? '/teacher/students' : '/teacher/list')
     } else {
       next()
     }
   } else {
-    // 非白名单页面需要检查登录状态
     if (token) {
       next()
     } else {
-      // 未登录，重定向到登录页
       next('/login')
     }
   }
