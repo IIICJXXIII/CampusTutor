@@ -55,8 +55,10 @@ public class LocalFileServiceImpl implements FileService {
         // 创建目录并保存文件
         try {
             File destFile = new File(fullPath);
+            // 确保目录存在
             FileUtil.mkdir(destFile.getParentFile());
-            file.transferTo(destFile);
+            // 使用 getInputStream() + copy 方式替代 transferTo，避免相对路径问题
+            FileUtil.writeFromStream(file.getInputStream(), destFile);
             log.info("文件上传成功: {}", fullPath);
         } catch (IOException e) {
             log.error("文件上传失败", e);
