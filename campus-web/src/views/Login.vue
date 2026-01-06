@@ -1,43 +1,77 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { store } from '../store.js'; // 引入全局状态
-import { GraduationCap, ArrowRight, Eye, EyeOff } from 'lucide-vue-next';
+import { store } from '../store.js';
+import { login } from '../api/auth.js';
+import { getTutorProfile } from '../api/tutor.js';
+import { GraduationCap, ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-vue-next';
 
 const router = useRouter();
 
 // 表单数据
-const phone = ref('13800000001'); // 默认填个家长号方便测试
-const password = ref('123456');
+const account = ref('');
+const password = ref('');
 const showPassword = ref(false);
 const isAgreed = ref(true);
+const loading = ref(false);
+const errorMsg = ref('');
 
 // 登录逻辑
-const handleLogin = () => {
-  if (!isAgreed.value) return alert('请先同意用户协议');
-
-  // 家长账号
-  if (phone.value === '13800000001') {
-    store.setRole('parent');
-    router.push('/parent/demand');
-  } 
-  // 成熟教师 (已认证)
-  else if (phone.value === '13800000002') {
-    store.setRole('teacher');
-    store.setCertification(true); // ★ 标记为已认证
-    router.push('/teacher/students');
+const handleLogin = async () => {
+  if (!isAgreed.value) {
+    errorMsg.value = '请先同意用户协议';
+    return;
   }
-  // 新注册教师 (未认证) -> 演示核心流程
-  else if (phone.value === '13800000003') {
-    store.setRole('teacher');
-    store.setCertification(false); // ★ 标记为未认证
-    alert('欢迎新老师！请先完成资质认证。');
-    router.push('/teacher/auth'); // ★ 直接跳去全新的认证页
+  if (!account.value || !password.value) {
+    errorMsg.value = '请输入账号或手机号和密码';
+    return;
   }
-  else {
-    alert('演示账号说明：\n138...01 (家长)\n138...02 (老教师)\n138...03 (新教师)');
+  loading.value = true;
+  errorMsg.value = '';
+  try {
+    // 调用后端登录接口，兼容手机号/账号
+    const res = await login({
+      account: account.value,
+      password: password.value,
+      loginType: 'password'
+    });
+    store.setLoginInfo(res.data);
+    // 根据角色跳转
+    const role = res.data.role;
+    if (role === 2) {
+      // 家长端：跳转到发布需求页
+      router.push('/parent/demand');
+    } else if (role === 1) {
+      // 教师端：检查认证状态决定跳转目标
+      try {
+        const profileRes = await getTutorProfile();
+        // certStatus: 0-未认证, 1-待审核, 2-已认证
+        const certStatus = profileRes.data?.certStatus;
+        if (certStatus === 2) {
+          store.setCertification(true);
+          router.push('/teacher/students');
+        } else {
+          store.setCertification(false);
+          router.push('/teacher/auth');
+        }
+      } catch (profileError) {
+        // 获取档案失败（可能是新教师），跳转到认证页
+        console.warn('获取教师档案失败，跳转到认证页:', profileError);
+        store.setCertification(false);
+        router.push('/teacher/auth');
+      }
+    } else {
+      router.push('/mine');
+    }
+  } catch (error) {
+    console.error('登录失败:', error);
+    errorMsg.value = error.message || '登录失败，请检查账号或密码';
+  } finally {
+    loading.value = false;
   }
 };
+
+// ...如需保留 demoLogin，可仅在开发环境显示
 </script>
 
 <template>
@@ -61,10 +95,9 @@ const handleLogin = () => {
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-400">手机号 / 账号</label>
           <div class="border-b border-gray-200 py-2">
-            <input v-model="phone" type="tel" class="w-full outline-none text-lg font-bold text-gray-800 placeholder-gray-300" placeholder="请输入手机号" />
+            <input v-model="account" type="text" class="w-full outline-none text-lg font-bold text-gray-800 placeholder-gray-300" placeholder="请输入手机号或账号" />
           </div>
         </div>
-
         <div class="space-y-1">
           <label class="text-xs font-bold text-gray-400">密码</label>
           <div class="border-b border-gray-200 py-2 flex items-center">
@@ -76,9 +109,16 @@ const handleLogin = () => {
         </div>
       </div>
 
-      <button @click="handleLogin" 
-              class="w-full bg-brand-blue text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-200 mt-10 active:scale-95 transition-transform flex items-center justify-center gap-2">
-        立即登录 <ArrowRight :size="18" />
+      <!-- 错误提示 -->
+      <div v-if="errorMsg" class="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg">
+        {{ errorMsg }}
+      </div>
+
+            <button @click="handleLogin" 
+              :disabled="loading"
+              class="w-full bg-brand-blue text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-200 mt-6 active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+        <Loader2 v-if="loading" :size="18" class="animate-spin" />
+        <template v-else>立即登录 <ArrowRight :size="18" /></template>
       </button>
 
       <div class="mt-4 flex items-center justify-center gap-2">
@@ -88,11 +128,9 @@ const handleLogin = () => {
         </span>
       </div>
 
-      <div class="mt-10 p-4 bg-gray-50 rounded-xl text-xs text-gray-500 space-y-1">
-        <p class="font-bold mb-2 text-gray-800">🛠 演示账号速查：</p>
-        <p><span class="text-brand-blue font-bold">13800000001</span> : 家长端 (默认)</p>
-        <p><span class="text-brand-orange font-bold">13800000002</span> : 教师端 (成熟)</p>
-        <p><span class="text-gray-600 font-bold">13800000003</span> : 教师端 (去认证)</p>
+      <div class="text-center text-sm text-gray-500 mt-6">
+        还没有账号？
+        <span class="text-brand-blue font-bold cursor-pointer" @click="router.push('/register')">去注册</span>
       </div>
     </div>
 

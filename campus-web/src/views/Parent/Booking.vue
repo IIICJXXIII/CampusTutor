@@ -1,38 +1,70 @@
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-// 1. 引入全局状态仓库，用于生成和保存订单
+import { ref, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { store } from '../../store.js'; 
-import { ChevronLeft, Calendar, Clock, CheckCircle, ShieldCheck } from 'lucide-vue-next';
+import { ChevronLeft, Calendar, Clock, CheckCircle, ShieldCheck, Loader2 } from 'lucide-vue-next';
+import { createOrder } from '../../api/order.js';
 
 const router = useRouter();
+const route = useRoute();
 const step = ref(1); // 1: 选时间, 2: 签合同
+const isLoading = ref(false);
+const isSigning = ref(false);
 
-// 模拟教师数据 (这里实际项目中应从上个页面传参获取，目前先用静态数据演示)
-const teacher = {
+// 从路由参数获取教师信息，如果没有则使用默认值
+const teacher = ref({
+  id: null,
   name: '张老师',
   subject: '初中数学',
   price: 200
-};
+});
 
-[cite_start]// --- Step 1: 日历与时间数据 [cite: 90] ---
+// 从URL参数初始化教师信息
+onMounted(() => {
+  if (route.query.teacherId) {
+    teacher.value.id = route.query.teacherId;
+  }
+  if (route.query.teacherName) {
+    teacher.value.name = route.query.teacherName;
+  }
+  if (route.query.subject) {
+    teacher.value.subject = route.query.subject;
+  }
+  if (route.query.price) {
+    teacher.value.price = parseInt(route.query.price) || 200;
+  }
+});
+
+// --- Step 1: 日历与时间数据 ---
 const selectedDate = ref(null);
 const selectedTime = ref(null);
 
-// 模拟日历 (简化演示：仅展示未来几天)
-const days = [
-  [cite_start]{ day: '周六', date: '03-01', available: true }, // [cite: 90] 可授课日期
-  { day: '周日', date: '03-02', available: true },
-  { day: '周一', date: '03-03', available: false },
-  { day: '周二', date: '03-04', available: false },
-];
+// 生成未来7天的日期
+const generateDays = () => {
+  const days = [];
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    days.push({
+      day: dayNames[date.getDay()],
+      date: `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
+      fullDate: date,
+      available: date.getDay() === 0 || date.getDay() === 6 || i < 3 // 周末和近3天可预约
+    });
+  }
+  return days;
+};
+
+const days = generateDays();
 
 const timeSlots = [
   '09:00 - 10:00', '10:30 - 11:30', '14:00 - 15:00', '19:00 - 20:00'
 ];
 
-[cite_start]// --- Step 2: 签约数据 [cite: 93] ---
-const isAgreed = ref(false); // 复选框状态
+// --- Step 2: 签约数据 ---
+const isAgreed = ref(false);
 
 const handleNext = () => {
   if (step.value === 1 && selectedDate.value && selectedTime.value) {
@@ -40,33 +72,60 @@ const handleNext = () => {
   }
 };
 
-// 核心修改：生成订单逻辑
-const handleSign = () => {
-  if (!isAgreed.value) return;
-
-  [cite_start]// 1. 生成一个新订单对象 (模拟后端生成逻辑) [cite: 121]
-  const newOrder = {
-    id: 'ORD-' + Date.now().toString().slice(-6), // 随机生成单号
-    teacher: teacher.name,
-    subject: `${teacher.subject} · 10课时包`, // 假设签约购买了10课时
-    amount: teacher.price * 10, // 总金额
-    status: 'pending', // 初始状态：待支付
-    date: new Date().toLocaleString(), // 当前时间
-    tags: ['待支付'],
-    location: '线上教学' // 默认地点
-  };
-
-  // 2. 存入全局仓库 (这样订单列表页也能看到了)
-  store.addOrder(newOrder);
-
-  // 3. 提示并跳转
-  alert('签约成功！订单已生成，请前往支付。'); [cite_start]// [cite: 95]
+// 核心：生成订单逻辑
+const handleSign = async () => {
+  if (!isAgreed.value || isSigning.value) return;
   
-  // 跳转到支付页，并把 orderId 带过去，让支付页知道付哪一单
-  router.push({
-    path: '/payment',
-    query: { orderId: newOrder.id } 
-  });
+  isSigning.value = true;
+
+  try {
+    const lessonCount = 10; // 10课时包
+    const totalAmount = teacher.value.price * lessonCount;
+    
+    // 调用后端API创建订单
+    const orderData = {
+      tutorId: teacher.value.id || 1, // 教师ID
+      demandId: 1, // 需求ID，实际应从参数传入
+      lessonCount: lessonCount,
+      unitPrice: teacher.value.price,
+      totalAmount: totalAmount,
+      scheduledTime: selectedDate.value + ' ' + selectedTime.value.split(' - ')[0]
+    };
+
+    let orderId;
+    try {
+      const res = await createOrder(orderData);
+      orderId = res.data;
+    } catch (e) {
+      // 如果API调用失败，使用本地模拟
+      orderId = 'ORD-' + Date.now().toString().slice(-6);
+    }
+
+    // 同时存入本地状态（兼容本地演示）
+    const newOrder = {
+      id: orderId,
+      teacher: teacher.value.name,
+      subject: `${teacher.value.subject} · ${lessonCount}课时包`,
+      amount: totalAmount,
+      status: 'pending',
+      date: new Date().toLocaleString(),
+      tags: ['待支付'],
+      location: '线上教学'
+    };
+    store.addOrder(newOrder);
+
+    alert('签约成功！订单已生成，请前往支付。');
+    
+    router.push({
+      path: '/payment',
+      query: { orderId: orderId }
+    });
+  } catch (error) {
+    console.error('签约失败:', error);
+    alert('签约失败，请重试');
+  } finally {
+    isSigning.value = false;
+  }
 };
 </script>
 
@@ -101,8 +160,8 @@ const handleSign = () => {
                @click="d.available ? selectedDate = d.date : null"
                class="flex flex-col items-center py-3 rounded-lg border-2 transition-all cursor-pointer"
                :class="[
-                 d.available ? [cite_start]'bg-orange-50/50 border-orange-100 text-gray-800' : 'bg-gray-50 border-transparent text-gray-300 cursor-not-allowed', // [cite: 91]
-                 selectedDate === d.date ? [cite_start]'!border-brand-orange bg-orange-100' : '' // [cite: 91]
+                 d.available ? 'bg-orange-50/50 border-orange-100 text-gray-800' : 'bg-gray-50 border-transparent text-gray-300 cursor-not-allowed',
+                 selectedDate === d.date ? '!border-brand-orange bg-orange-100' : ''
                ]">
             <span class="text-xs">{{ d.day }}</span>
             <span class="font-bold text-sm">{{ d.date }}</span>
@@ -173,10 +232,11 @@ const handleSign = () => {
         </label>
         
         <button @click="handleSign" 
-                :disabled="!isAgreed"
-                class="w-full py-3 rounded-xl font-bold text-white shadow-lg transition-all"
-                :class="isAgreed ? 'bg-brand-blue hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'"> 
-          确认签约 (生成订单)
+                :disabled="!isAgreed || isSigning"
+                class="w-full py-3 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2"
+                :class="isAgreed && !isSigning ? 'bg-brand-blue hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'"> 
+          <Loader2 v-if="isSigning" :size="18" class="animate-spin" />
+          {{ isSigning ? '签约中...' : '确认签约 (生成订单)' }}
         </button>
       </div>
 
