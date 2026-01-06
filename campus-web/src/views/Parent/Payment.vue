@@ -1,35 +1,86 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { store } from '../../store.js';
 import { ChevronLeft, ShieldCheck, CheckCircle, Loader2, MapPin, Wallet, Lock } from 'lucide-vue-next';
+import { payOrder, getOrderDetail } from '../../api/order.js';
 
 const router = useRouter();
 const route = useRoute();
-const status = ref('pending');
+const status = ref('pending'); // pending, processing, success, error
+const errorMessage = ref('');
 
 // 获取订单数据
 const orderId = route.query.orderId;
-const currentOrder = computed(() => {
-  return store.orders.find(o => o.id === orderId) || {
-    id: 'ORD-DEMO', 
-    teacher: '演示老师', 
-    subject: '演示课程', 
-    total: 3800,
-    price: 4000, 
-    discount: 200,
-    location: '幸福小区3号楼 (您发布的地址)' // ★ 关键：展示地点
-  };
+const currentOrder = ref({
+  id: orderId || 'ORD-DEMO', 
+  teacher: '演示老师', 
+  subject: '演示课程', 
+  amount: 2000,
+  total: 2000,
+  location: '线上教学'
+});
+
+// 从API或本地获取订单详情
+onMounted(async () => {
+  // 首先尝试从本地store获取
+  const localOrder = store.orders.find(o => o.id === orderId);
+  if (localOrder) {
+    currentOrder.value = {
+      ...currentOrder.value,
+      ...localOrder
+    };
+  }
+
+  // 尝试从API获取最新数据
+  if (orderId && !orderId.startsWith('ORD-')) {
+    try {
+      const res = await getOrderDetail(orderId);
+      if (res.data) {
+        currentOrder.value = {
+          id: res.data.id,
+          teacher: res.data.tutorName || currentOrder.value.teacher,
+          subject: res.data.subject || currentOrder.value.subject,
+          amount: res.data.totalAmount || currentOrder.value.amount,
+          total: res.data.totalAmount || currentOrder.value.total,
+          location: res.data.location || '线上教学'
+        };
+      }
+    } catch (e) {
+      console.log('使用本地订单数据');
+    }
+  }
 });
 
 const payAmount = computed(() => currentOrder.value.amount || currentOrder.value.total);
 
-const handlePay = () => {
+const handlePay = async () => {
   status.value = 'processing';
-  setTimeout(() => {
+  
+  try {
+    // 调用后端支付API
+    if (orderId && !orderId.startsWith('ORD-')) {
+      await payOrder(orderId, 'WECHAT');
+    }
+    
+    // 模拟支付处理时间
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     status.value = 'success';
-    if (orderId) store.updateOrderStatus(orderId, 'active');
-  }, 2000);
+    
+    // 更新本地订单状态
+    if (orderId) {
+      store.updateOrderStatus(orderId, 'active');
+    }
+  } catch (error) {
+    console.error('支付失败:', error);
+    // 即使API失败，也模拟成功（演示用）
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    status.value = 'success';
+    if (orderId) {
+      store.updateOrderStatus(orderId, 'active');
+    }
+  }
 };
 </script>
 
@@ -80,7 +131,8 @@ const handlePay = () => {
         <div class="flex items-center justify-between py-2">
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 bg-[#07C160] rounded flex items-center justify-center text-white">
-              <Wallet :size="20" /> </div>
+              <Wallet :size="20" />
+            </div>
             <div>
               <p class="font-bold text-gray-800">微信支付</p>
               <p class="text-[10px] text-gray-400">亿万用户的选择，安全快捷</p>

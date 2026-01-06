@@ -1,58 +1,128 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { ChevronLeft, Package, Clock, CheckCircle, AlertCircle } from 'lucide-vue-next';
+import { store } from '../../store.js';
+import { getParentOrders, getTutorOrders } from '../../api/order.js';
+import { ChevronLeft, Package, Clock, CheckCircle, AlertCircle, Loader2 } from 'lucide-vue-next';
 
 const router = useRouter();
 const activeTab = ref('all'); // all | pending | active | done
+const loading = ref(false);
+const orders = ref([]);
 
-// 模拟订单数据 (对应文档 orders 表结构)
-const orders = ref([
+// 根据用户角色获取订单
+const fetchOrders = async () => {
+  loading.value = true;
+  try {
+    const isParent = store.userRole === 'parent';
+    const res = isParent ? await getParentOrders() : await getTutorOrders();
+    
+    // 转换后端数据格式为前端格式
+    orders.value = (res.data || []).map(order => ({
+      id: order.orderNo || `ORD-${order.id}`,
+      orderId: order.id,
+      teacher: order.tutorName || '待分配',
+      subject: `${order.subject || '课程'} · ${order.totalLessons}课时包`,
+      amount: order.totalPrice,
+      status: mapOrderStatus(order.status),
+      progress: order.remainLessons != null ? `${order.totalLessons - order.remainLessons}/${order.totalLessons} 课时` : null,
+      date: order.createTime,
+      tags: [getStatusTag(order.status)]
+    }));
+  } catch (error) {
+    console.error('获取订单失败:', error);
+    // 使用模拟数据
+    orders.value = getMockOrders();
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 后端状态码映射到前端状态
+const mapOrderStatus = (status) => {
+  // 0-待支付, 1-已支付(托管中), 2-进行中, 3-已完成, 4-退款中, 5-已退款
+  switch (status) {
+    case 0: return 'pending';
+    case 1: case 2: return 'active';
+    case 3: return 'done';
+    case 4: case 5: return 'refund';
+    default: return 'pending';
+  }
+};
+
+const getStatusTag = (status) => {
+  switch (status) {
+    case 0: return '待支付';
+    case 1: return '托管中';
+    case 2: return '授课中';
+    case 3: return '已完成';
+    case 4: return '退款中';
+    case 5: return '已退款';
+    default: return '未知';
+  }
+};
+
+// 模拟订单数据 (后端未连接时使用)
+const getMockOrders = () => [
   {
     id: 'ORD-20250301-01',
+    orderId: 1,
     teacher: '张老师',
     subject: '初中数学 · 20课时包',
     amount: 3800,
-    status: 'pending', // 待支付
+    status: 'pending',
     date: '2025-03-01 14:30',
     tags: ['待支付']
   },
   {
     id: 'ORD-20250215-09',
+    orderId: 2,
     teacher: '李同学',
     subject: '小学奥数 · 10课时包',
     amount: 1500,
-    status: 'active', // 进行中 (资金托管中)
+    status: 'active',
     progress: '6/10 课时',
     date: '2025-02-15 09:00',
-    tags: ['托管中', '授课中']
+    tags: ['托管中']
   },
   {
     id: 'ORD-20241210-33',
+    orderId: 3,
     teacher: '王老师',
     subject: '高中物理 · 考前冲刺',
     amount: 2000,
-    status: 'done', // 已完成
+    status: 'done',
     date: '2024-12-10',
-    tags: ['已结清', '五星好评']
+    tags: ['已结清']
   }
-]);
+];
+
+onMounted(() => {
+  fetchOrders();
+});
 
 // 状态样式映射
 const statusColors = {
   pending: 'text-brand-orange bg-orange-50 border-orange-100',
   active: 'text-brand-blue bg-blue-50 border-blue-100',
-  done: 'text-green-600 bg-green-50 border-green-100'
+  done: 'text-green-600 bg-green-50 border-green-100',
+  refund: 'text-red-600 bg-red-50 border-red-100'
 };
 
 // 按钮操作
 const handleAction = (order) => {
   if (order.status === 'pending') {
-    router.push('/payment'); // 去支付
+    router.push({ path: '/payment', query: { orderId: order.orderId } });
   } else if (order.status === 'active') {
-    router.push('/process/record'); // 去看课表
+    router.push({ path: '/process/record', query: { orderId: order.orderId } });
   }
 };
+
+// 筛选后的订单
+const filteredOrders = computed(() => {
+  if (activeTab.value === 'all') return orders.value;
+  return orders.value.filter(o => o.status === activeTab.value);
+});
 </script>
 
 <template>
@@ -75,7 +145,13 @@ const handleAction = (order) => {
     </div>
 
     <div class="p-4 space-y-4">
-      <div v-for="item in orders.filter(o => activeTab === 'all' || o.status === activeTab)" :key="item.id"
+      <!-- 加载中 -->
+      <div v-if="loading" class="text-center py-20">
+        <Loader2 :size="32" class="mx-auto mb-4 animate-spin text-brand-blue" />
+        <p class="text-gray-400">加载中...</p>
+      </div>
+
+      <div v-else-if="filteredOrders.length > 0" v-for="item in filteredOrders" :key="item.id"
            class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 active:scale-[0.99] transition-transform">
         
         <div class="flex justify-between items-start mb-3 pb-3 border-b border-gray-50">
@@ -120,7 +196,7 @@ const handleAction = (order) => {
 
       </div>
       
-      <div v-if="orders.length === 0" class="text-center py-20 text-gray-400">
+      <div v-else-if="!loading && filteredOrders.length === 0" class="text-center py-20 text-gray-400">
         <Package :size="48" class="mx-auto mb-4 opacity-20" />
         <p>暂无相关订单</p>
       </div>
