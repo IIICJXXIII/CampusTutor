@@ -1,0 +1,120 @@
+.container {
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+}
+
+/* 定位按钮 */
+.location-btn {
+  position: absolute;
+  right: 30rpx;
+  bottom: 300rpx; /* 避开底部卡片区域 */
+  width: 80rpx;
+  height: 80rpx;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 4rpx 10rpx rgba(0,0,0,0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.location-btn .icon {
+  width: 50rpx;
+  height: 50rpx;
+}
+
+/* 底部需求详情卡片 */
+.demand-card {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 30rpx;
+  box-sizing: border-box;
+  box-shadow: 0 -4rpx 20rpx rgba(0,0,0,0.1);
+  transform: translateY(100%); /* 默认隐藏 */
+  transition: transform 0.3s ease-out;
+  z-index: 100;
+}
+
+.demand-card.show {
+  transform: translateY(0);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+
+.subject-tag {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.price {
+  font-size: 36rpx;
+  color: #f56c6c;
+  font-weight: bold;
+}
+
+.card-body {
+  margin-bottom: 30rpx;
+}
+
+.info-row {
+  display: flex;
+  margin-bottom: 16rpx;
+  font-size: 28rpx;
+}
+
+.info-row .label {
+  color: #999;
+  width: 100rpx;
+}
+
+.info-row .value {
+  color: #333;
+  flex: 1;
+}
+
+.info-row .value.desc {
+  color: #666;
+  line-height: 1.4;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+}
+
+.action-btn {
+  width: 48%;
+  height: 80rpx;
+  line-height: 80rpx;
+  font-size: 30rpx;
+  border-radius: 40rpx;
+  border: none;
+}
+
+.action-btn.contact {
+  background: #ecf5ff;
+  color: #409EFF;
+}
+
+.action-btn.apply {
+  background: #409EFF;
+  color: #fff;
+}

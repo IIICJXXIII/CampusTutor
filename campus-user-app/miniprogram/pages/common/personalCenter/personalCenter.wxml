@@ -1,0 +1,19 @@
+<view class="user-card">
+  <image class="avatar" src="{{userInfo.avatarUrl || '/static/images/default-avatar.png'}}"></image>
+  <view class="info">
+    <text class="name">{{userInfo.realName || '未认证用户'}}</text>
+    <text class="role-tag">{{userInfo.role === 'TEACHER' ? '教师' : '家长'}}</text>
+  </view>
+</view>
+
+<view class="menu-list">
+  <block wx:for="{{menuList}}" wx:key="title">
+    <view class="menu-item" bindtap="handleMenuClick" data-url="{{item.url}}">
+      <image class="menu-icon" src="/static/icons/{{item.icon}}.png"></image>
+      <text class="menu-title">{{item.title}}</text>
+      <text class="arrow">></text>
+    </view>
+  </block>
+</view>
+
+<button class="btn-logout" bindtap="handleLogout">退出登录</button>
