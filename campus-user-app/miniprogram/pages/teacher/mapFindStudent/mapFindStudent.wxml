@@ -1,0 +1,45 @@
+<view class="container">
+  <map 
+    id="myMap" 
+    class="map" 
+    longitude="{{longitude}}" 
+    latitude="{{latitude}}" 
+    scale="14" 
+    markers="{{markers}}" 
+    show-location
+    bindmarkertap="handleMarkerTap"
+    bindregionchange="handleRegionChange"
+    bindtap="closeCard"
+  >
+    <cover-view class="location-btn" bindtap="moveToLocation">
+      <cover-image class="icon" src="/static/icons/location.png"></cover-image>
+    </cover-view>
+  </map>
+
+  <view class="demand-card {{selectedDemand ? 'show' : ''}}">
+    <view class="card-header">
+      <view class="subject-tag">{{selectedDemand.subject}}</view>
+      <view class="price">¥{{selectedDemand.expectPrice}}/小时</view>
+    </view>
+    
+    <view class="card-body">
+      <view class="info-row">
+        <text class="label">年级：</text>
+        <text class="value">{{selectedDemand.grade}}</text>
+      </view>
+      <view class="info-row">
+        <text class="label">地址：</text>
+        <text class="value">{{selectedDemand.address || '距离您 ' + selectedDemand.distance + 'km'}}</text>
+      </view>
+      <view class="info-row">
+        <text class="label">要求：</text>
+        <text class="value desc">{{selectedDemand.detail || '暂无详细描述'}}</text>
+      </view>
+    </view>
+
+    <view class="card-footer">
+      <button class="action-btn contact" bindtap="handleContact">联系家长</button>
+      <button class="action-btn apply" bindtap="handleApply">立即接单</button>
+    </view>
+  </view>
+</view>
