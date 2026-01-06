@@ -71,25 +71,27 @@
 
 ## 五、优先改进清单
 
-### Step 1: 前端 API 层搭建 (1-2h)
-1. 创建 `src/api/request.js` 封装 axios
-2. 修改 `vite.config.js` 添加 `/api` 代理
-3. 改造 `Login.vue` 对接 `/api/auth/login`
+### ✅ Step 1: 前端 API 层搭建 (已完成)
+1. ✅ 创建 `src/api/request.js` 封装 axios
+2. ✅ 修改 `vite.config.js` 添加 `/api` 代理
+3. ✅ 改造 `Login.vue` 对接 `/api/auth/login`
 
-### Step 2: 后端补充课时打卡模块 (2-3h)
-1. 创建 `TeachingRecord` 实体对应 `teaching_record` 表
-2. 实现打卡 API（GPS + 照片 + 水印）
-3. 实现家长确认 API
+### ✅ Step 2: 后端补充课时打卡模块 (已完成)
+1. ✅ 创建 `TeachingRecord` 实体对应 `teaching_record` 表
+2. ✅ 实现打卡 API（开始/结束上课）
+3. ✅ 实现家长确认/申诉 API
 
-### Step 3: 集成百度 OCR (1-2h)
-1. 在后端添加 `OcrService` 调用百度 AI
-2. 改造 `/api/tutor/certification` 支持 OCR 自动填充
+### ✅ Step 3: 集成百度 OCR (已完成)
+1. ✅ 在后端添加 `OcrService` 调用百度 AI
+2. ✅ 支持学生证/身份证识别
+3. ✅ 添加模拟模式便于开发测试
 
-### Step 4: 逐步替换前端 Mock 数据
-1. `DemandForm.vue` → `/api/demand`
-2. `TeacherList.vue` → `/api/match/tutors`
-3. `Booking.vue` + `Payment.vue` → `/api/order`
-4. `OrderList.vue` → `/api/order/parent` 或 `/tutor`
+### ✅ Step 4: 逐步替换前端 Mock 数据 (已完成)
+1. ✅ `OrderList.vue` → `/api/order/parent` 或 `/tutor`
+2. ✅ `TeacherList.vue` → `/api/match/tutors`
+3. ✅ `TeacherAuth.vue` → OCR + 认证提交
+4. ✅ `DemandForm.vue` → `/api/demand`
+5. ✅ `Booking.vue` + `Payment.vue` → `/api/order`
 
 ### Further Considerations
 - **密码加密**：后端目前使用 MD5，建议升级为 BCrypt
