@@ -3,132 +3,116 @@ import api from '../../../../config/apiConfig';
 
 Page({
   data: {
-    grades: ['小学一年级', '小学二年级', '小学三年级', '小学四年级', '小学五年级', '小学六年级', '初一', '初二', '初三', '高一', '高二', '高三'],
-    gradeIndex: -1,
+    isAdding: true, // 默认新增模式(如果是新用户)
+    studentList: [],
+    selectedId: null,
     
-    // 科目列表 (带状态)
-    subjects: [
-      { name: '数学', selected: false },
-      { name: '英语', selected: false },
-      { name: '语文', selected: false },
-      { name: '物理', selected: false },
-      { name: '化学', selected: false },
-      { name: '生物', selected: false },
-      { name: '全科辅导', selected: false }
-    ],
-
-    formData: {
+    // 表单数据 (对应 StudentRequest)
+    form: {
       studentName: '',
-      gender: 1, // 1男 2女
+      gender: 1,
       grade: '',
-      weakSubjects: [], // 存储选中的科目名称
-      studyDesc: ''
+      schoolName: '',
+      studyDesc: '',
+      weakSubjects: [] // 暂未做多选UI，传空数组
     },
-    
-    isSubmitting: false
+
+    grades: ['小学一年级', '小学二年级', '小学三年级', '小学四年级', '小学五年级', '小学六年级', 
+             '初一', '初二', '初三', '高一', '高二', '高三'],
+    gradeIndex: -1
   },
 
-  onLoad() {
-    // 检查是否有草稿缓存，回显数据
-    const draft = wx.getStorageSync('demand_draft_step1');
-    if (draft) {
-      this.setData({ formData: draft });
-      this.restoreUIState(draft);
+  onShow() {
+    this.fetchStudents();
+  },
+
+  // 获取已有学生列表
+  async fetchStudents() {
+    try {
+      // 对应 ParentController.listStudents
+      const res = await request.get(api.parent.myStudents);
+      if (res && res.length > 0) {
+        this.setData({ 
+          studentList: res,
+          isAdding: false,
+          selectedId: res[0].id // 默认选中第一个
+        });
+      } else {
+        this.setData({ isAdding: true });
+      }
+    } catch (err) {
+      console.error(err);
     }
   },
 
-  // 恢复UI状态 (Picker索引和Tag选中)
-  restoreUIState(data) {
-    // 恢复年级索引
-    if (data.grade) {
-      const idx = this.data.grades.indexOf(data.grade);
-      this.setData({ gradeIndex: idx });
-    }
-    // 恢复科目选中状态
-    if (data.weakSubjects && data.weakSubjects.length > 0) {
-      const newSubjects = this.data.subjects.map(sub => ({
-        ...sub,
-        selected: data.weakSubjects.includes(sub.name)
-      }));
-      this.setData({ subjects: newSubjects });
-    }
+  // 切换选中
+  selectStudent(e) {
+    this.setData({ selectedId: e.currentTarget.dataset.id });
   },
 
+  // 切换模式
+  toggleMode() {
+    this.setData({ isAdding: !this.data.isAdding });
+  },
+
+  // 表单输入
   handleInput(e) {
     const field = e.currentTarget.dataset.field;
-    this.setData({ [`formData.${field}`]: e.detail.value });
+    this.setData({
+      [`form.${field}`]: e.detail.value
+    });
   },
 
-  selectGender(e) {
-    const val = parseInt(e.currentTarget.dataset.val);
-    this.setData({ 'formData.gender': val });
+  setGender(e) {
+    this.setData({ 'form.gender': parseInt(e.currentTarget.dataset.val) });
   },
 
   handleGradeChange(e) {
-    const idx = parseInt(e.detail.value);
+    const idx = e.detail.value;
     this.setData({
       gradeIndex: idx,
-      'formData.grade': this.data.grades[idx]
+      'form.grade': this.data.grades[idx]
     });
   },
 
-  toggleSubject(e) {
-    const index = e.currentTarget.dataset.index;
-    const subjects = this.data.subjects;
-    subjects[index].selected = !subjects[index].selected;
-    
-    // 更新 formData 中的 weakSubjects 数组
-    const selectedNames = subjects.filter(s => s.selected).map(s => s.name);
-    
-    this.setData({
-      subjects: subjects,
-      'formData.weakSubjects': selectedNames
-    });
-  },
-
-  async nextStep() {
-    const { studentName, grade, weakSubjects } = this.data.formData;
-
-    // 1. 基础校验
-    if (!studentName) return wx.showToast({ title: '请填写学生称呼', icon: 'none' });
-    if (!grade) return wx.showToast({ title: '请选择年级', icon: 'none' });
-    if (weakSubjects.length === 0) return wx.showToast({ title: '请至少选一个科目', icon: 'none' });
-
-    this.setData({ isSubmitting: true });
+  // 保存新学生并跳转
+  async saveAndNext() {
+    const { studentName, gender, grade } = this.data.form;
+    if (!studentName || !grade) {
+      return wx.showToast({ title: '请填写姓名和年级', icon: 'none' });
+    }
 
     try {
-      // 2. 调用API创建学生档案，获取 studentId
-      // 注意：根据 API 文档，POST /api/parent/student 返回 Long (studentId)
-      // 如果后端设计是更新或创建，这里也可以先判断是否已有 studentId
-      
-      const studentId = await request.post(api.parent.student, {
-        studentName: this.data.formData.studentName,
-        gender: this.data.formData.gender,
-        grade: this.data.formData.grade,
-        weakSubjects: this.data.formData.weakSubjects,
-        studyDesc: this.data.formData.studyDesc
-      });
-
-      // 3. 将关键数据存入本地，供 Step 2 和 3 使用
-      // 我们把 studentId 和 grade 存起来，匹配时用
-      const demandDraft = {
-        studentId: studentId, 
-        grade: this.data.formData.grade,
-        subject: this.data.formData.weakSubjects[0] // 默认取第一个科目作为主需求科目
-      };
-      
-      wx.setStorageSync('demand_draft_step1', this.data.formData); // 回显用
-      wx.setStorageSync('current_demand_data', demandDraft); // 流程数据用
-
-      // 4. 跳转
-      wx.navigateTo({
-        url: '../step2-teaching/step2-teaching'
-      });
-
+      // 对应 ParentController.addStudent
+      const studentId = await request.post(api.parent.student, this.data.form);
+      this.goToStep2(studentId);
     } catch (err) {
       console.error(err);
-    } finally {
-      this.setData({ isSubmitting: false });
     }
+  },
+
+  // 选已有学生跳转
+  handleNext() {
+    if (!this.data.selectedId) return;
+    this.goToStep2(this.data.selectedId);
+  },
+
+  // 跳转核心逻辑
+  goToStep2(studentId) {
+    // 找到学生对象，把年级传给下一步自动填充
+    let student = this.data.studentList.find(s => s.id === studentId);
+    if (!student) {
+      // 如果是刚新增的，列表里可能还没刷新，用form兜底
+      student = { id: studentId, grade: this.data.form.grade };
+    }
+    
+    const params = encodeURIComponent(JSON.stringify({
+      studentId: studentId,
+      grade: student.grade
+    }));
+    
+    wx.navigateTo({
+      url: `/pages/parent/publishDemand/step2-content/step2-content?data=${params}`
+    });
   }
 });

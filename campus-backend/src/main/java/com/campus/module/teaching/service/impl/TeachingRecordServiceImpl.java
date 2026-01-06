@@ -188,6 +188,35 @@ public class TeachingRecordServiceImpl implements TeachingRecordService {
         return convertToDTO(record);
     }
 
+    @Override
+    public List<TeachingRecordDTO> getRecordsByUserId(Long userId, Integer role) {
+        // 根据角色查询相关订单
+        LambdaQueryWrapper<CourseOrder> orderQuery = new LambdaQueryWrapper<>();
+        if (role == 1) {
+            // 教员：查询自己作为教员的订单
+            orderQuery.eq(CourseOrder::getTutorId, userId);
+        } else {
+            // 家长：查询自己作为家长的订单
+            orderQuery.eq(CourseOrder::getParentId, userId);
+        }
+        List<CourseOrder> orders = courseOrderMapper.selectList(orderQuery);
+        
+        if (orders.isEmpty()) {
+            return List.of();
+        }
+        
+        // 获取所有订单的课时记录
+        List<Long> orderIds = orders.stream().map(CourseOrder::getId).collect(Collectors.toList());
+        LambdaQueryWrapper<TeachingRecord> recordQuery = new LambdaQueryWrapper<>();
+        recordQuery.in(TeachingRecord::getOrderId, orderIds)
+                   .orderByDesc(TeachingRecord::getStartTime);
+        List<TeachingRecord> records = teachingRecordMapper.selectList(recordQuery);
+        
+        return records.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
     /**
      * 转换为 DTO
      */

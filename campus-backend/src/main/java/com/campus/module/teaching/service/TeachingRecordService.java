@@ -55,4 +55,12 @@ public interface TeachingRecordService {
      * @return 课时记录
      */
     TeachingRecordDTO getRecordById(Long recordId);
+
+    /**
+     * 根据用户ID获取其相关的所有课时记录
+     * @param userId 用户ID
+     * @param role 用户角色 (1-教员, 2-家长)
+     * @return 课时记录列表
+     */
+    List<TeachingRecordDTO> getRecordsByUserId(Long userId, Integer role);
 }

@@ -15,6 +15,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
 
@@ -73,6 +74,17 @@ public class GlobalExceptionHandler {
     public Result<Void> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
         log.warn("请求方法不支持: {}", e.getMethod());
         return Result.fail(405, "不支持的请求方法: " + e.getMethod());
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Result<Void> handleNoResourceFoundException(NoResourceFoundException e, HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        // 忽略 favicon.ico 等静态资源请求的错误日志
+        if (!uri.contains("favicon.ico") && !uri.contains(".ico")) {
+            log.warn("资源未找到: URI={}", uri);
+        }
+        return Result.fail(404, "资源不存在");
     }
 
     @ExceptionHandler(Exception.class)

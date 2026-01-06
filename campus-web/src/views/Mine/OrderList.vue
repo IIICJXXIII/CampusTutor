@@ -1,26 +1,25 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { store } from '../../store.js';
-import { getParentOrders, getTutorOrders } from '../../api/order.js';
-import { ChevronLeft, Package, Clock, CheckCircle, AlertCircle, Loader2 } from 'lucide-vue-next';
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/stores'
+import { getParentOrders, getTutorOrders } from '@/api/order'
 
-const router = useRouter();
-const activeTab = ref('all'); // all | pending | active | done
-const loading = ref(false);
-const orders = ref([]);
+const router = useRouter()
+const userStore = useUserStore()
+const activeTab = ref('all')
+const loading = ref(false)
+const orders = ref([])
 
 // 根据用户角色获取订单
 const fetchOrders = async () => {
-  loading.value = true;
+  loading.value = true
   try {
-    const isParent = store.userRole === 'parent';
-    const res = isParent ? await getParentOrders() : await getTutorOrders();
+    const isParent = userStore.isParent
+    const res = isParent ? await getParentOrders() : await getTutorOrders()
     
-    // 后端返回分页格式，数据在 records 字段中
-    const orderList = res.data?.records || res.data || [];
+    const orderList = res.data?.records || res.data || []
     
-    // 转换后端数据格式为前端格式
     orders.value = orderList.map(order => ({
       id: order.orderNo || `ORD-${order.id}`,
       orderId: order.id,
@@ -28,44 +27,50 @@ const fetchOrders = async () => {
       subject: `${order.subject || '课程'} · ${order.totalLessons || 10}课时包`,
       amount: order.totalPrice || order.totalAmount,
       status: mapOrderStatus(order.status),
+      statusText: getStatusTag(order.status),
       progress: order.remainLessons != null ? `${(order.totalLessons || 10) - order.remainLessons}/${order.totalLessons || 10} 课时` : null,
-      date: order.createTime,
-      tags: [getStatusTag(order.status)]
-    }));
+      date: order.createTime
+    }))
   } catch (error) {
-    console.error('获取订单失败:', error);
-    // 使用模拟数据
-    orders.value = getMockOrders();
+    console.error('获取订单失败:', error)
+    orders.value = getMockOrders()
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
-// 后端状态码映射到前端状态
 const mapOrderStatus = (status) => {
-  // 0-待支付, 1-已支付(托管中), 2-进行中, 3-已完成, 4-退款中, 5-已退款
   switch (status) {
-    case 0: return 'pending';
-    case 1: case 2: return 'active';
-    case 3: return 'done';
-    case 4: case 5: return 'refund';
-    default: return 'pending';
+    case 0: return 'pending'
+    case 1: case 2: return 'active'
+    case 3: return 'done'
+    case 4: case 5: return 'refund'
+    default: return 'pending'
   }
-};
+}
 
 const getStatusTag = (status) => {
   switch (status) {
-    case 0: return '待支付';
-    case 1: return '托管中';
-    case 2: return '授课中';
-    case 3: return '已完成';
-    case 4: return '退款中';
-    case 5: return '已退款';
-    default: return '未知';
+    case 0: return '待支付'
+    case 1: return '托管中'
+    case 2: return '授课中'
+    case 3: return '已完成'
+    case 4: return '退款中'
+    case 5: return '已退款'
+    default: return '未知'
   }
-};
+}
 
-// 模拟订单数据 (后端未连接时使用)
+const getStatusType = (status) => {
+  switch (status) {
+    case 'pending': return 'warning'
+    case 'active': return 'primary'
+    case 'done': return 'success'
+    case 'refund': return 'danger'
+    default: return 'info'
+  }
+}
+
 const getMockOrders = () => [
   {
     id: 'ORD-20250301-01',
@@ -74,8 +79,8 @@ const getMockOrders = () => [
     subject: '初中数学 · 20课时包',
     amount: 3800,
     status: 'pending',
-    date: '2025-03-01 14:30',
-    tags: ['待支付']
+    statusText: '待支付',
+    date: '2025-03-01 14:30'
   },
   {
     id: 'ORD-20250215-09',
@@ -84,9 +89,9 @@ const getMockOrders = () => [
     subject: '小学奥数 · 10课时包',
     amount: 1500,
     status: 'active',
+    statusText: '托管中',
     progress: '6/10 课时',
-    date: '2025-02-15 09:00',
-    tags: ['托管中']
+    date: '2025-02-15 09:00'
   },
   {
     id: 'ORD-20241210-33',
@@ -95,114 +100,262 @@ const getMockOrders = () => [
     subject: '高中物理 · 考前冲刺',
     amount: 2000,
     status: 'done',
-    date: '2024-12-10',
-    tags: ['已结清']
+    statusText: '已完成',
+    date: '2024-12-10'
   }
-];
+]
 
 onMounted(() => {
-  fetchOrders();
-});
+  fetchOrders()
+})
 
-// 状态样式映射
-const statusColors = {
-  pending: 'text-brand-orange bg-orange-50 border-orange-100',
-  active: 'text-brand-blue bg-blue-50 border-blue-100',
-  done: 'text-green-600 bg-green-50 border-green-100',
-  refund: 'text-red-600 bg-red-50 border-red-100'
-};
+const tabs = [
+  { value: 'all', label: '全部' },
+  { value: 'pending', label: '待支付' },
+  { value: 'active', label: '进行中' },
+  { value: 'done', label: '已完成' }
+]
 
-// 按钮操作
+const filteredOrders = computed(() => {
+  if (activeTab.value === 'all') return orders.value
+  return orders.value.filter(o => o.status === activeTab.value)
+})
+
 const handleAction = (order) => {
   if (order.status === 'pending') {
-    router.push({ path: '/payment', query: { orderId: order.orderId } });
+    router.push({ path: '/payment', query: { orderId: order.orderId } })
   } else if (order.status === 'active') {
-    router.push({ path: '/process/record', query: { orderId: order.orderId } });
+    router.push({ path: '/process/record', query: { orderId: order.orderId } })
   }
-};
-
-// 筛选后的订单
-const filteredOrders = computed(() => {
-  if (activeTab.value === 'all') return orders.value;
-  return orders.value.filter(o => o.status === activeTab.value);
-});
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-brand-gray pb-safe font-sans">
-    
-    <div class="bg-white p-4 sticky top-0 z-10 border-b flex items-center justify-center relative">
-      <button @click="router.back()" class="absolute left-4 p-1 hover:bg-gray-100 rounded-full">
-        <ChevronLeft />
-      </button>
-      <h1 class="font-bold text-lg">我的订单</h1>
+  <div class="order-list-page">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <h1 class="page-title">我的订单</h1>
+      <p class="page-subtitle">查看和管理所有家教订单</p>
     </div>
 
-    <div class="bg-white px-4 pt-2 flex justify-between text-sm text-gray-500 sticky top-[60px] z-10 shadow-sm">
-      <span v-for="tab in ['all', 'pending', 'active', 'done']" :key="tab"
-            @click="activeTab = tab"
-            class="pb-3 px-2 border-b-2 transition-colors cursor-pointer capitalize"
-            :class="activeTab === tab ? 'border-brand-blue text-brand-blue font-bold' : 'border-transparent'">
-        {{ tab === 'all' ? '全部' : tab === 'pending' ? '待支付' : tab === 'active' ? '进行中' : '已完成' }}
-      </span>
+    <!-- 标签筛选 -->
+    <div class="tab-bar">
+      <el-radio-group v-model="activeTab" size="default">
+        <el-radio-button 
+          v-for="tab in tabs" 
+          :key="tab.value" 
+          :value="tab.value"
+        >
+          {{ tab.label }}
+        </el-radio-button>
+      </el-radio-group>
     </div>
 
-    <div class="p-4 space-y-4">
-      <!-- 加载中 -->
-      <div v-if="loading" class="text-center py-20">
-        <Loader2 :size="32" class="mx-auto mb-4 animate-spin text-brand-blue" />
-        <p class="text-gray-400">加载中...</p>
-      </div>
+    <!-- 订单列表 -->
+    <div class="order-list" v-loading="loading" element-loading-text="加载中...">
+      <el-empty 
+        v-if="!loading && filteredOrders.length === 0" 
+        description="暂无相关订单"
+      >
+        <el-button type="primary" @click="router.push('/parent/demand')">
+          发布需求
+        </el-button>
+      </el-empty>
 
-      <div v-else-if="filteredOrders.length > 0" v-for="item in filteredOrders" :key="item.id"
-           class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 active:scale-[0.99] transition-transform">
-        
-        <div class="flex justify-between items-start mb-3 pb-3 border-b border-gray-50">
-          <div class="text-xs text-gray-400 font-mono">
-            {{ item.id }}
-          </div>
-          <span class="text-xs px-2 py-1 rounded border font-medium" :class="statusColors[item.status]">
-            {{ item.tags[0] }}
-          </span>
+      <el-card 
+        v-for="item in filteredOrders" 
+        :key="item.id"
+        class="order-card"
+        shadow="hover"
+      >
+        <!-- 订单头部 -->
+        <div class="order-header">
+          <span class="order-id">{{ item.id }}</span>
+          <el-tag :type="getStatusType(item.status)" size="small">
+            {{ item.statusText }}
+          </el-tag>
         </div>
 
-        <div class="flex items-start gap-4 mb-4">
-          <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-            <Package :size="24" />
+        <!-- 订单内容 -->
+        <div class="order-body">
+          <div class="order-icon">
+            <el-icon :size="28"><ShoppingCart /></el-icon>
           </div>
-          <div class="flex-1">
-            <h3 class="font-bold text-gray-800">{{ item.subject }}</h3>
-            <p class="text-sm text-gray-500 mt-1">教师：{{ item.teacher }}</p>
-            <p class="text-xs text-gray-400 mt-1">{{ item.date }}</p>
+          <div class="order-info">
+            <h3 class="order-subject">{{ item.subject }}</h3>
+            <p class="order-teacher">教师：{{ item.teacher }}</p>
+            <p class="order-date">{{ item.date }}</p>
           </div>
-          <div class="text-right">
-            <div class="text-lg font-bold text-gray-800">¥{{ item.amount }}</div>
-            <div v-if="item.progress" class="text-xs text-brand-blue mt-1">{{ item.progress }}</div>
+          <div class="order-price">
+            <div class="price-value">¥{{ item.amount }}</div>
+            <div v-if="item.progress" class="price-progress">{{ item.progress }}</div>
           </div>
         </div>
 
-        <div class="flex justify-end gap-3 pt-2">
-          <button class="px-4 py-2 text-xs font-bold text-gray-600 bg-gray-50 rounded-lg border border-gray-200">
-            查看合同
-          </button>
-          
-          <button v-if="item.status === 'pending'" @click="handleAction(item)"
-                  class="px-6 py-2 text-xs font-bold text-white bg-brand-orange rounded-lg shadow-sm">
+        <!-- 订单操作 -->
+        <div class="order-actions">
+          <el-button size="small">查看合同</el-button>
+          <el-button 
+            v-if="item.status === 'pending'" 
+            type="warning" 
+            size="small"
+            @click="handleAction(item)"
+          >
             去支付
-          </button>
-          
-          <button v-if="item.status === 'active'" @click="handleAction(item)"
-                  class="px-6 py-2 text-xs font-bold text-white bg-brand-blue rounded-lg shadow-sm">
+          </el-button>
+          <el-button 
+            v-if="item.status === 'active'" 
+            type="primary" 
+            size="small"
+            @click="handleAction(item)"
+          >
             查看进度
-          </button>
+          </el-button>
+          <el-button 
+            v-if="item.status === 'done'" 
+            type="success" 
+            size="small" 
+            plain
+          >
+            评价
+          </el-button>
         </div>
-
-      </div>
-      
-      <div v-else-if="!loading && filteredOrders.length === 0" class="text-center py-20 text-gray-400">
-        <Package :size="48" class="mx-auto mb-4 opacity-20" />
-        <p>暂无相关订单</p>
-      </div>
+      </el-card>
     </div>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.order-list-page {
+  min-height: 100vh;
+  background: $bg-light;
+  padding-bottom: 80px;
+}
+
+.page-header {
+  background: linear-gradient(135deg, $warning-color 0%, #f97316 100%);
+  padding: $spacing-xl $spacing-lg;
+  color: #fff;
+
+  .page-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .page-subtitle {
+    font-size: 14px;
+    opacity: 0.9;
+  }
+}
+
+.tab-bar {
+  background: #fff;
+  padding: $spacing-md $spacing-lg;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: $shadow-sm;
+
+  :deep(.el-radio-group) {
+    width: 100%;
+    display: flex;
+    
+    .el-radio-button {
+      flex: 1;
+      
+      .el-radio-button__inner {
+        width: 100%;
+      }
+    }
+  }
+}
+
+.order-list {
+  padding: $spacing-lg;
+  min-height: 300px;
+}
+
+.order-card {
+  margin-bottom: $spacing-md;
+  border-radius: 12px;
+
+  .order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: $spacing-sm;
+    border-bottom: 1px solid $border-light;
+    margin-bottom: $spacing-md;
+
+    .order-id {
+      font-size: 12px;
+      color: $text-muted;
+      font-family: monospace;
+    }
+  }
+
+  .order-body {
+    display: flex;
+    gap: $spacing-md;
+    margin-bottom: $spacing-md;
+
+    .order-icon {
+      width: 56px;
+      height: 56px;
+      background: $bg-light;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $text-muted;
+    }
+
+    .order-info {
+      flex: 1;
+
+      .order-subject {
+        font-size: 16px;
+        font-weight: 600;
+        color: $text-primary;
+        margin-bottom: 4px;
+      }
+
+      .order-teacher {
+        font-size: 13px;
+        color: $text-secondary;
+        margin-bottom: 2px;
+      }
+
+      .order-date {
+        font-size: 12px;
+        color: $text-muted;
+      }
+    }
+
+    .order-price {
+      text-align: right;
+
+      .price-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: $text-primary;
+      }
+
+      .price-progress {
+        font-size: 12px;
+        color: $primary-color;
+        margin-top: 4px;
+      }
+    }
+  }
+
+  .order-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-sm;
+    padding-top: $spacing-sm;
+    border-top: 1px solid $border-light;
+  }
+}
+</style>
