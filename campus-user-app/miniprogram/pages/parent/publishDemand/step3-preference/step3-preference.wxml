@@ -1,0 +1,69 @@
+<view class="container">
+  <view class="step-header">
+    <view class="step-item finished">
+      <view class="step-num">✓</view>
+      <text>学生信息</text>
+    </view>
+    <view class="step-line active"></view>
+    <view class="step-item finished">
+      <view class="step-num">✓</view>
+      <text>教学目标</text>
+    </view>
+    <view class="step-line active"></view>
+    <view class="step-item active">
+      <view class="step-num">3</view>
+      <text>提交需求</text>
+    </view>
+  </view>
+
+  <view class="form-box">
+    <view class="header-tip">
+      <text class="h1">最后一步：确认与发布</text>
+      <text class="p">选择上课地点，我们将为您匹配附近的老师</text>
+    </view>
+
+    <view class="section-card location-card" bindtap="chooseLocation">
+      <view class="row">
+        <text class="label">上课地点</text>
+        <view class="value {{address ? '' : 'placeholder'}}">
+          {{address || '点击选择地图位置 📍'}}
+        </view>
+        <text class="arrow">></text>
+      </view>
+      <view class="sub-text" wx:if="{{address}}">{{addressDetail || '已获取经纬度坐标'}}</view>
+    </view>
+
+    <view class="section-title">需求预览</view>
+    <view class="preview-card">
+      <view class="preview-row">
+        <text class="key">辅导科目</text>
+        <text class="val highlight">{{previewData.subject}}</text>
+      </view>
+      <view class="preview-row">
+        <text class="key">学生年级</text>
+        <text class="val">{{previewData.grade}}</text>
+      </view>
+      <view class="preview-row">
+        <text class="key">授课方式</text>
+        <text class="val">{{previewData.teachMode === 1 ? '上门授课' : '在线授课'}}</text>
+      </view>
+      <view class="preview-row">
+        <text class="key">期望课酬</text>
+        <text class="val price">¥{{previewData.expectPrice}}/小时</text>
+      </view>
+      <view class="preview-row">
+        <text class="key">时间要求</text>
+        <text class="val">{{previewData.scheduleStr || '协商确定'}}</text>
+      </view>
+      <view class="preview-row" wx:if="{{previewData.detail}}">
+        <text class="key">备注要求</text>
+        <text class="val desc">{{previewData.detail}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="btn-group">
+    <button class="action-btn outline" bindtap="prevStep">上一步</button>
+    <button class="action-btn primary" bindtap="submitDemand" loading="{{isSubmitting}}">发布需求</button>
+  </view>
+</view>

@@ -1,0 +1,65 @@
+<view class="container">
+  <view class="step-header">
+    <view class="step-item active">
+      <view class="step-num">1</view>
+      <text>学生信息</text>
+    </view>
+    <view class="step-line"></view>
+    <view class="step-item">
+      <view class="step-num">2</view>
+      <text>教学目标</text>
+    </view>
+    <view class="step-line"></view>
+    <view class="step-item">
+      <view class="step-num">3</view>
+      <text>提交需求</text>
+    </view>
+  </view>
+
+  <view class="form-box">
+    <view class="header-tip">
+      <text class="h1">孩子的基本情况</text>
+      <text class="p">完善的档案有助于AI更精准地匹配老师</text>
+    </view>
+
+    <view class="input-group">
+      <view class="label">学生称呼</view>
+      <input class="input" placeholder="例如：小明" bindinput="handleInput" data-field="studentName" value="{{formData.studentName}}" />
+    </view>
+
+    <view class="input-group">
+      <view class="label">性别</view>
+      <view class="radio-group">
+        <view class="radio-item {{formData.gender === 1 ? 'active' : ''}}" bindtap="selectGender" data-val="1">我是男生 👦</view>
+        <view class="radio-item {{formData.gender === 2 ? 'active' : ''}}" bindtap="selectGender" data-val="2">我是女生 👧</view>
+      </view>
+    </view>
+
+    <view class="input-group">
+      <view class="label">当前年级</view>
+      <picker bindchange="handleGradeChange" value="{{gradeIndex}}" range="{{grades}}">
+        <view class="picker {{gradeIndex === -1 ? 'placeholder' : ''}}">
+          {{gradeIndex === -1 ? '请选择年级' : grades[gradeIndex]}}
+        </view>
+      </picker>
+    </view>
+
+    <view class="input-group vertical">
+      <view class="label">需要辅导的科目 (可多选)</view>
+      <view class="tag-container">
+        <block wx:for="{{subjects}}" wx:key="*this">
+          <view class="tag {{item.selected ? 'selected' : ''}}" bindtap="toggleSubject" data-index="{{index}}">
+            {{item.name}}
+          </view>
+        </block>
+      </view>
+    </view>
+
+    <view class="input-group vertical">
+      <view class="label">学生性格/学习情况</view>
+      <textarea class="textarea" placeholder="例如：性格内向，基础较弱，需要耐心引导..." bindinput="handleInput" data-field="studyDesc" value="{{formData.studyDesc}}" maxlength="200"></textarea>
+    </view>
+  </view>
+
+  <button class="next-btn" bindtap="nextStep" loading="{{isSubmitting}}">下一步</button>
+</view>
