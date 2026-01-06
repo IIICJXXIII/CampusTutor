@@ -51,6 +51,14 @@ export function getTeachingRecords(orderId) {
 }
 
 /**
+ * 获取我的所有课时记录
+ * 根据当前用户角色返回相关的课时记录
+ */
+export function getMyTeachingRecords() {
+  return request.get('/teaching/my-records');
+}
+
+/**
  * 获取课时记录详情
  * @param {number} recordId - 课时记录ID
  */
