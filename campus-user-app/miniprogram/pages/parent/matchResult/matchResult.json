@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "智能匹配结果",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "teacher-card": "/components/teacherCard/teacherCard"
+  }
+}

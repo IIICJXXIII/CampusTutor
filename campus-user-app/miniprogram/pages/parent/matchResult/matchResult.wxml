@@ -1,0 +1,34 @@
+<view class="container">
+  <view class="filter-bar">
+    <view class="filter-item {{currentSort === 'score' ? 'active' : ''}}" bindtap="changeSort" data-type="score">
+      综合排序
+    </view>
+    <view class="filter-item {{currentSort === 'distance' ? 'active' : ''}}" bindtap="changeSort" data-type="distance">
+      距离最近
+    </view>
+    <view class="filter-item {{currentSort === 'price' ? 'active' : ''}}" bindtap="changeSort" data-type="price">
+      价格 {{sortOrder === 'asc' ? '↑' : '↓'}}
+    </view>
+  </view>
+
+  <view class="loading-box" wx:if="{{isCalculating}}">
+    <image class="loading-icon" src="/static/icons/ai-loading.png" mode="aspectFit"></image>
+    <view class="loading-text">AI正在为您分析 {{matchCount}} 位教员数据...</view>
+  </view>
+
+  <view class="result-list" wx:else>
+    <block wx:for="{{tutorList}}" wx:key="id">
+      <teacher-card teacher="{{item}}" bind:click="goToDetail"></teacher-card>
+    </block>
+    
+    <view class="empty-state" wx:if="{{!isCalculating && tutorList.length === 0}}">
+      <icon type="info" size="64" color="#ccc"/>
+      <view class="text">暂无匹配教员，建议调整筛选条件</view>
+      <button class="back-btn" size="mini" bindtap="goBack">返回修改需求</button>
+    </view>
+    
+    <view class="load-more" wx:if="{{tutorList.length > 0}}">
+      {{hasMore ? '加载中...' : '—— 到底了 ——'}}
+    </view>
+  </view>
+</view>
