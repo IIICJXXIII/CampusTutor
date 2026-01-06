@@ -17,15 +17,18 @@ const fetchOrders = async () => {
     const isParent = store.userRole === 'parent';
     const res = isParent ? await getParentOrders() : await getTutorOrders();
     
+    // 后端返回分页格式，数据在 records 字段中
+    const orderList = res.data?.records || res.data || [];
+    
     // 转换后端数据格式为前端格式
-    orders.value = (res.data || []).map(order => ({
+    orders.value = orderList.map(order => ({
       id: order.orderNo || `ORD-${order.id}`,
       orderId: order.id,
       teacher: order.tutorName || '待分配',
-      subject: `${order.subject || '课程'} · ${order.totalLessons}课时包`,
-      amount: order.totalPrice,
+      subject: `${order.subject || '课程'} · ${order.totalLessons || 10}课时包`,
+      amount: order.totalPrice || order.totalAmount,
       status: mapOrderStatus(order.status),
-      progress: order.remainLessons != null ? `${order.totalLessons - order.remainLessons}/${order.totalLessons} 课时` : null,
+      progress: order.remainLessons != null ? `${(order.totalLessons || 10) - order.remainLessons}/${order.totalLessons || 10} 课时` : null,
       date: order.createTime,
       tags: [getStatusTag(order.status)]
     }));

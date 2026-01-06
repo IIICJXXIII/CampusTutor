@@ -8,21 +8,23 @@ import request from './request';
  * @param {Object} data - { demandId, tutorId, courseType, totalLessons, unitPrice }
  */
 export function createOrder(data) {
-  return request.post('/order', data);
+  return request.post('/order/create', data);
 }
 
 /**
  * 获取家长订单列表
+ * @param {Object} params - { status, page, size }
  */
-export function getParentOrders() {
-  return request.get('/order/parent');
+export function getParentOrders(params = {}) {
+  return request.get('/order/parent/list', { params });
 }
 
 /**
  * 获取教员订单列表
+ * @param {Object} params - { status, page, size }
  */
-export function getTutorOrders() {
-  return request.get('/order/tutor');
+export function getTutorOrders(params = {}) {
+  return request.get('/order/tutor/list', { params });
 }
 
 /**
@@ -35,10 +37,11 @@ export function getOrderDetail(id) {
 
 /**
  * 支付订单
- * @param {number} id - 订单ID
+ * @param {number} orderId - 订单ID
+ * @param {string} payMethod - 支付方式
  */
-export function payOrder(id) {
-  return request.post(`/order/${id}/pay`);
+export function payOrder(orderId, payMethod = 'WECHAT') {
+  return request.post('/order/pay', { orderId, payMethod });
 }
 
 /**
@@ -47,7 +50,7 @@ export function payOrder(id) {
  * @param {string} reason - 取消原因
  */
 export function cancelOrder(id, reason) {
-  return request.post(`/order/${id}/cancel`, { reason });
+  return request.post(`/order/${id}/cancel`, null, { params: { reason } });
 }
 
 /**
