@@ -91,3 +91,6 @@ node_modules/
 
 
 campus-backend/src/main/resources/application-dev.properties
+campus-backend/src/main/resources/application-prod.properties
+campus-backend/src/main/resources/application-local.properties
+campus-backend/src/main/resources/application.properties
