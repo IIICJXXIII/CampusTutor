@@ -28,6 +28,7 @@ public class SysUser implements Serializable {
     private String nickname;
 
     /** 头像URL */
+    @TableField("avatar")
     private String avatarUrl;
 
     /** 角色: 0-管理员, 1-教员, 2-家长 */
