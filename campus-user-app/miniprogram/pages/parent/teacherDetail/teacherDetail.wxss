@@ -1,0 +1,263 @@
+page {
+  background-color: #f6f7f9;
+}
+
+/* 顶部背景 */
+.header-bg {
+  height: 220rpx;
+  background: linear-gradient(180deg, #409EFF 0%, #79bbff 100%);
+}
+
+/* 卡片通用样式 */
+.profile-card, .section-card {
+  background: #fff;
+  border-radius: 24rpx;
+  margin: 0 30rpx 30rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
+}
+
+.profile-card {
+  margin-top: -120rpx; /* 上移覆盖背景 */
+  position: relative;
+  z-index: 10;
+}
+
+/* 个人信息区 */
+.main-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 4rpx solid #fff;
+  margin-right: 24rpx;
+  background-color: #eee;
+}
+
+.content {
+  flex: 1;
+}
+
+.row-1 {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  margin-right: 12rpx;
+}
+
+.cert-badge {
+  font-size: 20rpx;
+  color: #fff;
+  background: #67c23a;
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+}
+
+.row-2 {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.divider {
+  margin: 0 10rpx;
+  color: #ddd;
+}
+
+/* 数据统计 */
+.stats-box {
+  display: flex;
+  justify-content: space-around;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-item .num {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 4rpx;
+}
+
+.stat-item .num.score {
+  color: #ff9900;
+}
+
+.stat-item .label {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 详情板块 */
+.section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  margin-bottom: 24rpx;
+  padding-left: 16rpx;
+  border-left: 8rpx solid #409EFF;
+  line-height: 1;
+}
+
+.info-row {
+  display: flex;
+  margin-bottom: 20rpx;
+}
+
+.info-row .label {
+  width: 140rpx;
+  font-size: 28rpx;
+  color: #999;
+  flex-shrink: 0;
+}
+
+.tags-wrapper {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-size: 24rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 8rpx;
+  margin-right: 16rpx;
+  margin-bottom: 12rpx;
+}
+
+.tag.blue {
+  background: #ecf5ff;
+  color: #409EFF;
+}
+
+.tag.green {
+  background: #f0f9eb;
+  color: #67c23a;
+}
+
+.text-content {
+  font-size: 28rpx;
+  color: #333;
+}
+
+/* 简介 */
+.intro-content {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.6;
+  text-align: justify;
+  margin-bottom: 20rpx;
+}
+
+.style-box {
+  background: #fffbf0;
+  padding: 16rpx;
+  border-radius: 8rpx;
+  font-size: 26rpx;
+  color: #e6a23c;
+}
+
+/* 证书 */
+.cert-scroll {
+  display: flex;
+  height: 200rpx;
+}
+
+.cert-img {
+  height: 100%;
+  margin-right: 20rpx;
+  border-radius: 8rpx;
+  background-color: #f8f8f8;
+}
+
+/* 底部栏 */
+.footer-placeholder {
+  height: 120rpx;
+}
+
+.footer-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 110rpx;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32rpx;
+  box-shadow: 0 -2rpx 10rpx rgba(0,0,0,0.05);
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.price-section {
+  color: #f56c6c;
+  display: flex;
+  align-items: baseline;
+}
+
+.currency {
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.amount {
+  font-size: 48rpx;
+  font-weight: bold;
+  margin: 0 4rpx;
+}
+
+.unit {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.book-btn {
+  margin: 0;
+  background: #409EFF;
+  color: #fff;
+  font-size: 30rpx;
+  border-radius: 40rpx;
+  padding: 0 60rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  box-shadow: 0 4rpx 12rpx rgba(64, 158, 255, 0.3);
+}
+
+/* Loading */
+.loading-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.loading-spinner {
+  width: 40rpx;
+  height: 40rpx;
+  border: 4rpx solid #f3f3f3;
+  border-top: 4rpx solid #409EFF;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

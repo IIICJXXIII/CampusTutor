@@ -1,127 +1,296 @@
 <script setup>
-import { useRouter } from 'vue-router';
-import { computed } from 'vue';
-import { store } from '../../store.js';
-import { 
-  Wallet, Clock, ChevronRight, FileText, 
-  Settings, LogOut, BookOpen, ShoppingBag 
-} from 'lucide-vue-next';
+import { useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { ElMessageBox, ElMessage } from 'element-plus'
+import { useUserStore } from '@/stores'
 
-const router = useRouter();
+const router = useRouter()
+const userStore = useUserStore()
 
-// 获取当前身份（使用 computed 保持响应式）
-const isTeacher = computed(() => store.userRole === 'teacher');
+// 获取当前身份
+const isTeacher = computed(() => userStore.isTutor)
+const isParent = computed(() => userStore.isParent)
 
-// 用户信息（使用 computed 保持响应式）
+// 用户信息
 const user = computed(() => {
-  const userInfo = store.userInfo;
-  const isT = isTeacher.value;
+  const userInfo = userStore.userInfo
+  const isT = isTeacher.value
   return {
     name: userInfo?.nickname || (isT ? '老师' : '家长'),
     id: userInfo?.userId ? (isT ? `T-${userInfo.userId}` : `P-${userInfo.userId}`) : (isT ? 'T-0000' : 'P-0000'),
-    avatar: userInfo?.avatar || `https://api.dicebear.com/7.x/${isT ? 'miniavs' : 'adventurer'}/svg?seed=${store.userRole}`,
+    avatar: userInfo?.avatar || `https://api.dicebear.com/7.x/${isT ? 'miniavs' : 'adventurer'}/svg?seed=${userInfo?.userId || 1}`,
     balance: isT ? 450 : 0,
     label: isT ? '认证教师' : 'VIP家长'
-  };
-});
+  }
+})
+
+// 统计数据
+const stats = computed(() => ({
+  balance: isTeacher.value ? 450 : 0,
+  lessons: 12,
+  pending: 3
+}))
+
+// 菜单列表
+const menuList = computed(() => {
+  const common = [
+    { icon: 'ShoppingCart', title: '我的订单', path: '/mine/orders', color: 'warning' },
+    { icon: 'Calendar', title: '课时记录', path: '/process/record', color: 'primary' }
+  ]
+  
+  if (isTeacher.value) {
+    return [
+      ...common,
+      { icon: 'Document', title: '简历与资质', path: '/teacher/resume', color: 'success' },
+      { icon: 'Wallet', title: '收益提现', path: '/teacher/wallet', color: 'info' }
+    ]
+  } else {
+    return [
+      ...common,
+      { icon: 'Notebook', title: '智能错题本', path: '/parent/wrong-book', color: 'danger' },
+      { icon: 'CreditCard', title: '托管资金', path: '/parent/wallet', color: 'info' }
+    ]
+  }
+})
 
 const handleLogout = () => {
-  store.logout();
-  router.push('/login');
-};
+  ElMessageBox.confirm(
+    '确定要退出登录吗？',
+    '提示',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
+    userStore.logout()
+    ElMessage.success('已退出登录')
+    router.push('/login')
+  }).catch(() => {})
+}
+
+// 图标颜色映射
+const getColorClass = (color) => {
+  const map = {
+    primary: 'bg-primary',
+    success: 'bg-success',
+    warning: 'bg-warning',
+    danger: 'bg-danger',
+    info: 'bg-info'
+  }
+  return map[color] || 'bg-primary'
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-brand-gray pb-24 font-sans">
-    
-    <div class="pt-10 pb-20 px-6 rounded-b-[40px] shadow-lg transition-colors duration-500"
-         :class="isTeacher ? 'bg-gradient-to-br from-green-500 to-teal-600' : 'bg-gradient-to-br from-brand-blue to-blue-600'">
-      
-      <div class="flex items-center gap-4 text-white">
-        <img :src="user.avatar" class="w-16 h-16 rounded-full border-4 border-white/20 bg-white/10" />
-        <div>
-          <h2 class="text-xl font-bold flex items-center gap-2">
+  <div class="mine-page">
+    <!-- 用户信息头部 -->
+    <div class="user-header" :class="isTeacher ? 'teacher' : 'parent'">
+      <div class="user-info">
+        <el-avatar :size="72" :src="user.avatar" />
+        <div class="user-detail">
+          <h2 class="user-name">
             {{ user.name }}
-            <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded-full border border-white/30">
+            <el-tag :type="isTeacher ? 'success' : 'primary'" size="small" effect="dark">
               {{ user.label }}
-            </span>
+            </el-tag>
           </h2>
-          <p class="text-white/70 text-xs font-mono mt-1">ID: {{ user.id }}</p>
+          <p class="user-id">ID: {{ user.id }}</p>
         </div>
       </div>
     </div>
 
-    <div class="mx-4 -mt-12 bg-white rounded-xl shadow-md p-4 flex justify-around text-center mb-6 relative z-10">
-      <div>
-        <div class="text-xl font-bold text-gray-800">{{ user.balance }}</div>
-        <div class="text-xs text-gray-400">{{ isTeacher ? '可提现(元)' : '托管资金' }}</div>
+    <!-- 数据统计卡片 -->
+    <el-card class="stats-card" shadow="hover">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-value">{{ stats.balance }}</div>
+          <div class="stat-label">{{ isTeacher ? '可提现(元)' : '托管资金' }}</div>
+        </div>
+        <el-divider direction="vertical" />
+        <div class="stat-item">
+          <div class="stat-value">{{ stats.lessons }}</div>
+          <div class="stat-label">剩余课时</div>
+        </div>
+        <el-divider direction="vertical" />
+        <div class="stat-item">
+          <div class="stat-value">{{ stats.pending }}</div>
+          <div class="stat-label">待办事项</div>
+        </div>
       </div>
-      <div class="w-[1px] bg-gray-100"></div>
-      <div>
-        <div class="text-xl font-bold text-gray-800">12</div>
-        <div class="text-xs text-gray-400">剩余课时</div>
-      </div>
-      <div class="w-[1px] bg-gray-100"></div>
-      <div>
-        <div class="text-xl font-bold text-gray-800">3</div>
-        <div class="text-xs text-gray-400">待办事项</div>
-      </div>
+    </el-card>
+
+    <!-- 功能菜单 -->
+    <div class="menu-section">
+      <el-card 
+        v-for="item in menuList" 
+        :key="item.path"
+        class="menu-card"
+        shadow="hover"
+        @click="router.push(item.path)"
+      >
+        <div class="menu-item">
+          <div class="menu-icon" :class="getColorClass(item.color)">
+            <el-icon :size="20">
+              <component :is="item.icon" />
+            </el-icon>
+          </div>
+          <span class="menu-title">{{ item.title }}</span>
+          <el-icon class="menu-arrow"><ArrowRight /></el-icon>
+        </div>
+      </el-card>
     </div>
 
-    <div class="px-4 space-y-3">
-      
-      <div @click="router.push('/mine/orders')" 
-           class="bg-white p-4 rounded-xl shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.98]">
-        <div class="flex items-center gap-3">
-          <div class="bg-orange-100 p-2 rounded-lg text-brand-orange">
-            <ShoppingBag :size="20" />
-          </div>
-          <span class="font-bold text-gray-700">我的订单 / 合同</span>
-        </div>
-        <ChevronRight :size="16" class="text-gray-300" />
-      </div>
-
-      <template v-if="isTeacher">
-        <div @click="router.push('/teacher/resume')" 
-             class="bg-white p-4 rounded-xl shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.98]">
-          <div class="flex items-center gap-3">
-            <div class="bg-green-100 p-2 rounded-lg text-green-600">
-              <FileText :size="20" />
-            </div>
-            <span class="font-bold text-gray-700">简历与资质管理</span>
-          </div>
-          <ChevronRight :size="16" class="text-gray-300" />
-        </div>
-      </template>
-
-      <template v-else>
-        <div @click="router.push('/parent/wrong-book')" 
-             class="bg-white p-4 rounded-xl shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.98]">
-          <div class="flex items-center gap-3">
-            <div class="bg-purple-100 p-2 rounded-lg text-purple-600">
-              <BookOpen :size="20" />
-            </div>
-            <span class="font-bold text-gray-700">智能错题本 (AI搜题)</span>
-          </div>
-          <ChevronRight :size="16" class="text-gray-300" />
-        </div>
-      </template>
-
-      <div @click="router.push('/process/record')" 
-           class="bg-white p-4 rounded-xl shadow-sm flex items-center justify-between cursor-pointer active:scale-[0.98]">
-        <div class="flex items-center gap-3">
-          <div class="bg-blue-100 p-2 rounded-lg text-brand-blue">
-            <Clock :size="20" />
-          </div>
-          <span class="font-bold text-gray-700">课时记录表</span>
-        </div>
-        <ChevronRight :size="16" class="text-gray-300" />
-      </div>
-
-      <button @click="handleLogout" class="w-full bg-white p-4 rounded-xl shadow-sm flex items-center justify-center gap-2 text-red-500 font-bold mt-6">
-        <LogOut :size="18" /> 退出登录
-      </button>
-
+    <!-- 设置与退出 -->
+    <div class="bottom-section">
+      <el-button size="large" @click="router.push('/settings')">
+        <el-icon><Setting /></el-icon>
+        设置
+      </el-button>
+      <el-button size="large" type="danger" plain @click="handleLogout">
+        <el-icon><SwitchButton /></el-icon>
+        退出登录
+      </el-button>
     </div>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.mine-page {
+  min-height: 100vh;
+  background: $bg-light;
+  padding-bottom: 80px;
+}
+
+.user-header {
+  padding: 40px $spacing-lg 80px;
+  border-radius: 0 0 40px 40px;
+  
+  &.teacher {
+    background: linear-gradient(135deg, $success-color 0%, #14b8a6 100%);
+  }
+  
+  &.parent {
+    background: linear-gradient(135deg, $primary-color 0%, #667eea 100%);
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: $spacing-lg;
+    color: #fff;
+
+    .user-detail {
+      .user-name {
+        font-size: 20px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        margin-bottom: 4px;
+      }
+
+      .user-id {
+        font-size: 12px;
+        opacity: 0.8;
+        font-family: monospace;
+      }
+    }
+  }
+}
+
+.stats-card {
+  margin: -50px $spacing-lg $spacing-lg;
+  border-radius: 16px;
+  position: relative;
+  z-index: 10;
+
+  .stats-grid {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .stat-item {
+      flex: 1;
+      text-align: center;
+      padding: $spacing-sm 0;
+
+      .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: $text-primary;
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: $text-muted;
+        margin-top: 4px;
+      }
+    }
+  }
+}
+
+.menu-section {
+  padding: 0 $spacing-lg;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+
+  .menu-card {
+    cursor: pointer;
+    border-radius: 12px;
+    transition: all 0.3s;
+
+    &:hover {
+      transform: translateX(4px);
+    }
+
+    :deep(.el-card__body) {
+      padding: $spacing-md;
+    }
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+
+    .menu-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+
+      &.bg-primary { background: $primary-color; }
+      &.bg-success { background: $success-color; }
+      &.bg-warning { background: $warning-color; }
+      &.bg-danger { background: $danger-color; }
+      &.bg-info { background: $info-color; }
+    }
+
+    .menu-title {
+      flex: 1;
+      font-weight: 600;
+      color: $text-primary;
+    }
+
+    .menu-arrow {
+      color: $text-muted;
+    }
+  }
+}
+
+.bottom-section {
+  padding: $spacing-xl $spacing-lg;
+  display: flex;
+  gap: $spacing-md;
+
+  .el-button {
+    flex: 1;
+    height: 48px;
+  }
+}
+</style>
