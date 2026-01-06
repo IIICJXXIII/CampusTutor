@@ -120,9 +120,9 @@ const handleSubmit = async () => {
   }
 };
 
-// 4. 完成页按钮点击
+// 4. 完成页按钮点击 - 跳转到找学生页面
 const handleFinish = () => {
-  router.push('/teacher/resume'); 
+  router.push('/teacher/students'); 
 };
 </script>
 

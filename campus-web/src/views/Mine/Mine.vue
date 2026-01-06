@@ -1,5 +1,7 @@
 <script setup>
 import { useRouter } from 'vue-router';
+import { computed } from 'vue';
+import { store } from '../../store.js';
 import { 
   Wallet, Clock, ChevronRight, FileText, 
   Settings, LogOut, BookOpen, ShoppingBag 
@@ -7,21 +9,24 @@ import {
 
 const router = useRouter();
 
-// 获取当前身份
-const userRole = localStorage.getItem('userRole') || 'parent';
-const isTeacher = userRole === 'teacher';
+// 获取当前身份（使用 computed 保持响应式）
+const isTeacher = computed(() => store.userRole === 'teacher');
 
-// 模拟用户信息
-const user = {
-  name: isTeacher ? '张同学' : '王小明家长',
-  id: isTeacher ? 'T-8821' : 'P-9902',
-  avatar: `https://api.dicebear.com/7.x/${isTeacher ? 'miniavs' : 'adventurer'}/svg?seed=${userRole}`,
-  balance: isTeacher ? 450 : 0, // 老师有收入，家长余额一般在托管
-  label: isTeacher ? '认证教师' : 'VIP家长'
-};
+// 用户信息（使用 computed 保持响应式）
+const user = computed(() => {
+  const userInfo = store.userInfo;
+  const isT = isTeacher.value;
+  return {
+    name: userInfo?.nickname || (isT ? '老师' : '家长'),
+    id: userInfo?.userId ? (isT ? `T-${userInfo.userId}` : `P-${userInfo.userId}`) : (isT ? 'T-0000' : 'P-0000'),
+    avatar: userInfo?.avatar || `https://api.dicebear.com/7.x/${isT ? 'miniavs' : 'adventurer'}/svg?seed=${store.userRole}`,
+    balance: isT ? 450 : 0,
+    label: isT ? '认证教师' : 'VIP家长'
+  };
+});
 
 const handleLogout = () => {
-  localStorage.removeItem('userRole');
+  store.logout();
   router.push('/login');
 };
 </script>
