@@ -63,6 +63,15 @@ public class TeachingController {
         return Result.success("申诉已提交");
     }
 
+    @Operation(summary = "获取我的课时记录", description = "根据用户角色获取相关的所有课时记录")
+    @GetMapping("/my-records")
+    public Result<List<TeachingRecordDTO>> getMyRecords() {
+        Long userId = UserContext.getUserId();
+        Integer role = UserContext.getRole();
+        List<TeachingRecordDTO> records = teachingRecordService.getRecordsByUserId(userId, role);
+        return Result.success(records);
+    }
+
     @Operation(summary = "获取订单课时记录", description = "获取指定订单的所有课时记录")
     @GetMapping("/records/{orderId}")
     public Result<List<TeachingRecordDTO>> getRecords(

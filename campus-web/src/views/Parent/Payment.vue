@@ -1,191 +1,519 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { store } from '../../store.js';
-import { ChevronLeft, ShieldCheck, CheckCircle, Loader2, MapPin, Wallet, Lock } from 'lucide-vue-next';
-import { payOrder, getOrderDetail } from '../../api/order.js';
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { payOrder, getOrderDetail } from '@/api/order'
+import { useOrderStore } from '@/stores'
 
-const router = useRouter();
-const route = useRoute();
-const status = ref('pending'); // pending, processing, success, error
-const errorMessage = ref('');
+const router = useRouter()
+const route = useRoute()
+const orderStore = useOrderStore()
 
-// 获取订单数据
-const orderId = route.query.orderId;
+const status = ref('pending') // pending, processing, success
+const countdown = ref(899) // 倒计时秒数 (14:59)
+const selectedPayment = ref('wechat')
+
+// 订单数据
+const orderId = route.query.orderId
 const currentOrder = ref({
-  id: orderId || 'ORD-DEMO', 
-  teacher: '演示老师', 
-  subject: '演示课程', 
+  id: orderId || 'ORD-DEMO',
+  teacher: '演示老师',
+  subject: '演示课程',
   amount: 2000,
-  total: 2000,
   location: '线上教学'
-});
+})
 
-// 从API或本地获取订单详情
+// 格式化倒计时
+const formattedCountdown = computed(() => {
+  const minutes = Math.floor(countdown.value / 60)
+  const seconds = countdown.value % 60
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+})
+
+// 支付方式选项
+const paymentMethods = [
+  { value: 'wechat', label: '微信支付', icon: 'ChatDotRound', color: '#07C160', desc: '亿万用户的选择，安全快捷' },
+  { value: 'alipay', label: '支付宝', icon: 'Wallet', color: '#1677FF', desc: '支付宝安全支付' }
+]
+
+// 获取订单详情
 onMounted(async () => {
-  // 首先尝试从本地store获取
-  const localOrder = store.orders.find(o => o.id === orderId);
+  // 从本地store获取
+  const orders = orderStore.orders
+  const localOrder = orders.find(o => o.id === orderId)
   if (localOrder) {
-    currentOrder.value = {
-      ...currentOrder.value,
-      ...localOrder
-    };
+    currentOrder.value = { ...currentOrder.value, ...localOrder }
   }
 
-  // 尝试从API获取最新数据
+  // 尝试从API获取
   if (orderId && !orderId.startsWith('ORD-')) {
     try {
-      const res = await getOrderDetail(orderId);
+      const res = await getOrderDetail(orderId)
       if (res.data) {
         currentOrder.value = {
           id: res.data.id,
           teacher: res.data.tutorName || currentOrder.value.teacher,
           subject: res.data.subject || currentOrder.value.subject,
           amount: res.data.totalAmount || currentOrder.value.amount,
-          total: res.data.totalAmount || currentOrder.value.total,
           location: res.data.location || '线上教学'
-        };
+        }
       }
     } catch (e) {
-      console.log('使用本地订单数据');
+      console.log('使用本地订单数据')
     }
   }
-});
 
-const payAmount = computed(() => currentOrder.value.amount || currentOrder.value.total);
+  // 开始倒计时
+  startCountdown()
+})
 
+// 倒计时
+const startCountdown = () => {
+  const timer = setInterval(() => {
+    if (countdown.value > 0) {
+      countdown.value--
+    } else {
+      clearInterval(timer)
+      ElMessage.warning('支付超时，请重新下单')
+      router.back()
+    }
+  }, 1000)
+}
+
+// 支付
 const handlePay = async () => {
-  status.value = 'processing';
-  
+  status.value = 'processing'
+
   try {
     // 调用后端支付API
     if (orderId && !orderId.startsWith('ORD-')) {
-      await payOrder(orderId, 'WECHAT');
+      await payOrder(orderId, selectedPayment.value.toUpperCase())
     }
-    
-    // 模拟支付处理时间
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    status.value = 'success';
-    
+
+    // 模拟支付处理
+    await new Promise(resolve => setTimeout(resolve, 2000))
+
+    status.value = 'success'
+
     // 更新本地订单状态
     if (orderId) {
-      store.updateOrderStatus(orderId, 'active');
+      orderStore.updateOrder(orderId, { status: 'active' })
     }
+
+    ElMessage.success('支付成功！')
   } catch (error) {
-    console.error('支付失败:', error);
-    // 即使API失败，也模拟成功（演示用）
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    status.value = 'success';
+    console.error('支付失败:', error)
+    // 演示用，即使失败也显示成功
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    status.value = 'success'
     if (orderId) {
-      store.updateOrderStatus(orderId, 'active');
+      orderStore.updateOrder(orderId, { status: 'active' })
     }
   }
-};
+}
+
+// 查看课表
+const goToSchedule = () => {
+  router.replace('/process/record')
+}
+
+// 返回订单列表
+const goToOrders = () => {
+  router.replace('/mine/orders')
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100 pb-safe font-sans flex flex-col">
-    
-    <div class="bg-white p-4 sticky top-0 z-10 border-b flex items-center justify-center">
-      <button v-if="status === 'pending'" @click="router.back()" class="absolute left-4 p-1">
-        <ChevronLeft />
-      </button>
-      <h1 class="font-bold text-lg">收银台</h1>
+  <div class="payment-page">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <el-button 
+        v-if="status === 'pending'"
+        text 
+        @click="router.back()"
+        class="back-btn"
+      >
+        <el-icon><ArrowLeft /></el-icon>
+      </el-button>
+      <h1 class="page-title">收银台</h1>
     </div>
 
-    <div v-if="status !== 'success'" class="flex-1 p-4 space-y-4">
-      
-      <div class="text-center py-4">
-        <p class="text-sm text-gray-500">支付剩余时间</p>
-        <p class="text-2xl font-bold font-mono text-gray-800">14:59</p>
+    <!-- 待支付状态 -->
+    <template v-if="status !== 'success'">
+      <!-- 倒计时 -->
+      <div class="countdown-section">
+        <p class="countdown-label">支付剩余时间</p>
+        <p class="countdown-value">{{ formattedCountdown }}</p>
       </div>
 
-      <div class="bg-white rounded-xl overflow-hidden shadow-sm">
-        <div class="p-6 text-center border-b border-gray-50 border-dashed">
-          <p class="text-xs text-gray-400 mb-1">易家教 - 资金托管账户</p>
-          <div class="text-4xl font-bold text-gray-900">¥{{ payAmount }}</div>
+      <!-- 订单金额卡片 -->
+      <el-card class="amount-card" shadow="never">
+        <div class="amount-header">
+          <p class="platform-name">易家教 - 资金托管账户</p>
+          <div class="amount-value">¥{{ currentOrder.amount }}</div>
         </div>
         
-        <div class="p-4 space-y-3 text-sm">
-          <div class="flex justify-between">
-            <span class="text-gray-500">课程商品</span>
-            <span class="font-bold">{{ currentOrder.subject }}</span>
-          </div>
-          <div class="flex justify-between">
-             <span class="text-gray-500">授课教师</span>
-             <span>{{ currentOrder.teacher }}</span>
-          </div>
-          <div class="flex justify-between items-start">
-             <span class="text-gray-500 shrink-0">授课地点</span>
-             <span class="text-right flex items-center gap-1">
-               <MapPin :size="12" class="text-gray-400"/> {{ currentOrder.location || '线上教学' }}
-             </span>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-xl p-4 shadow-sm space-y-4">
-        <h3 class="text-sm font-bold text-gray-400">选择支付方式</h3>
+        <el-divider style="margin: 16px 0" />
         
-        <div class="flex items-center justify-between py-2">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-[#07C160] rounded flex items-center justify-center text-white">
-              <Wallet :size="20" />
-            </div>
-            <div>
-              <p class="font-bold text-gray-800">微信支付</p>
-              <p class="text-[10px] text-gray-400">亿万用户的选择，安全快捷</p>
-            </div>
-          </div>
-          <div class="w-5 h-5 rounded-full border-4 border-brand-blue"></div>
-        </div>
-      </div>
-      
-      <div class="flex items-center justify-center gap-1 text-xs text-gray-400 mt-6">
-        <ShieldCheck :size="14" class="text-green-500" />
-        平台全程资金托管，确认课时后结算
-      </div>
-    </div>
+        <el-descriptions :column="1" size="small">
+          <el-descriptions-item label="课程商品">
+            <span class="desc-value bold">{{ currentOrder.subject }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="授课教师">
+            {{ currentOrder.teacher }}
+          </el-descriptions-item>
+          <el-descriptions-item label="授课地点">
+            <span class="location-text">
+              <el-icon><Location /></el-icon>
+              {{ currentOrder.location }}
+            </span>
+          </el-descriptions-item>
+        </el-descriptions>
+      </el-card>
 
-    <div v-else class="flex-1 flex flex-col items-center justify-center bg-white p-8 text-center animate-fade-in">
-      <div class="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mb-6 shadow-xl shadow-green-200">
-        <CheckCircle :size="48" class="text-white" />
-      </div>
-      <h2 class="text-2xl font-bold text-gray-900 mb-2">支付成功</h2>
-      <p class="text-gray-500 text-sm">订单金额已冻结至托管账户</p>
-      
-      <div class="mt-8 bg-gray-50 p-4 rounded-xl w-full border border-gray-100">
-        <div class="flex items-center gap-3 text-left">
-          <div class="bg-white p-2 rounded-full shadow-sm">
-            <Lock :size="20" class="text-brand-blue"/>
+      <!-- 支付方式 -->
+      <el-card class="payment-card" shadow="never">
+        <h3 class="card-title">选择支付方式</h3>
+        
+        <el-radio-group v-model="selectedPayment" class="payment-group">
+          <div 
+            v-for="method in paymentMethods" 
+            :key="method.value"
+            class="payment-item"
+            :class="{ active: selectedPayment === method.value }"
+            @click="selectedPayment = method.value"
+          >
+            <div class="payment-icon" :style="{ background: method.color }">
+              <el-icon :size="20" color="#fff">
+                <component :is="method.icon" />
+              </el-icon>
+            </div>
+            <div class="payment-info">
+              <p class="payment-name">{{ method.label }}</p>
+              <p class="payment-desc">{{ method.desc }}</p>
+            </div>
+            <el-radio :value="method.value" />
           </div>
-          <div>
-            <p class="font-bold text-sm text-gray-800">资金托管中</p>
-            <p class="text-xs text-gray-400">每次课后家长确认，资金分批到账</p>
+        </el-radio-group>
+      </el-card>
+
+      <!-- 安全提示 -->
+      <div class="security-tip">
+        <el-icon color="#67c23a"><ShieldCheck /></el-icon>
+        <span>平台全程资金托管，确认课时后结算</span>
+      </div>
+
+      <!-- 支付按钮 -->
+      <div class="bottom-action">
+        <el-button 
+          v-if="status === 'pending'"
+          type="success" 
+          size="large"
+          @click="handlePay"
+        >
+          立即支付 ¥{{ currentOrder.amount }}
+        </el-button>
+        <el-button 
+          v-else 
+          type="info" 
+          size="large" 
+          disabled
+          :loading="true"
+        >
+          安全处理中...
+        </el-button>
+      </div>
+    </template>
+
+    <!-- 支付成功 -->
+    <div v-else class="success-content">
+      <div class="success-icon">
+        <el-icon :size="48" color="#fff"><Check /></el-icon>
+      </div>
+      
+      <h2 class="success-title">支付成功</h2>
+      <p class="success-desc">订单金额已冻结至托管账户</p>
+
+      <el-card class="escrow-card" shadow="never">
+        <div class="escrow-info">
+          <div class="escrow-icon">
+            <el-icon :size="20" color="var(--el-color-primary)"><Lock /></el-icon>
+          </div>
+          <div class="escrow-text">
+            <p class="escrow-title">资金托管中</p>
+            <p class="escrow-desc">每次课后家长确认，资金分批到账</p>
           </div>
         </div>
-      </div>
-      
-      <div class="mt-auto w-full space-y-3">
-        <button @click="router.replace('/process/record')" class="w-full bg-brand-blue text-white py-3 rounded-xl font-bold">
+      </el-card>
+
+      <div class="success-actions">
+        <el-button type="primary" size="large" @click="goToSchedule">
           查看课表
-        </button>
-        <button @click="router.replace('/mine/orders')" class="w-full text-gray-500 py-3 text-sm">
+        </el-button>
+        <el-button size="large" @click="goToOrders">
           返回订单列表
-        </button>
+        </el-button>
       </div>
     </div>
-
-    <div v-if="status !== 'success'" class="bg-white p-4 border-t sticky bottom-0">
-      <button v-if="status === 'pending'" @click="handlePay" 
-              class="w-full bg-[#07C160] text-white py-3 rounded-xl font-bold shadow-lg active:scale-95 transition-transform">
-        立即支付 ¥{{ payAmount }}
-      </button>
-      <button v-else disabled class="w-full bg-gray-300 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
-        <Loader2 class="animate-spin" /> 安全处理中...
-      </button>
-    </div>
-
   </div>
 </template>
+
+<style lang="scss" scoped>
+.payment-page {
+  min-height: 100vh;
+  background: $bg-light;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-header {
+  background: #fff;
+  padding: $spacing-md $spacing-lg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border-bottom: 1px solid $border-color;
+
+  .back-btn {
+    position: absolute;
+    left: $spacing-md;
+  }
+
+  .page-title {
+    font-size: 18px;
+    font-weight: 600;
+  }
+}
+
+.countdown-section {
+  text-align: center;
+  padding: $spacing-lg;
+
+  .countdown-label {
+    font-size: 14px;
+    color: $text-muted;
+  }
+
+  .countdown-value {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'SF Mono', monospace;
+    color: $text-primary;
+    margin-top: $spacing-xs;
+  }
+}
+
+.amount-card {
+  margin: 0 $spacing-lg $spacing-lg;
+  border-radius: 16px;
+
+  .amount-header {
+    text-align: center;
+
+    .platform-name {
+      font-size: 12px;
+      color: $text-muted;
+      margin-bottom: $spacing-xs;
+    }
+
+    .amount-value {
+      font-size: 40px;
+      font-weight: 700;
+      color: $text-primary;
+    }
+  }
+
+  .desc-value {
+    &.bold {
+      font-weight: 600;
+    }
+  }
+
+  .location-text {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+.payment-card {
+  margin: 0 $spacing-lg $spacing-lg;
+  border-radius: 16px;
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: $text-muted;
+    margin-bottom: $spacing-md;
+  }
+
+  .payment-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .payment-item {
+    display: flex;
+    align-items: center;
+    padding: $spacing-md;
+    border-radius: 12px;
+    margin-bottom: $spacing-sm;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s;
+
+    &:hover, &.active {
+      background: rgba($primary-color, 0.05);
+      border-color: $primary-color;
+    }
+
+    .payment-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .payment-info {
+      flex: 1;
+      margin-left: $spacing-md;
+
+      .payment-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: $text-primary;
+      }
+
+      .payment-desc {
+        font-size: 11px;
+        color: $text-muted;
+        margin-top: 2px;
+      }
+    }
+
+    :deep(.el-radio) {
+      margin-right: 0;
+    }
+  }
+}
+
+.security-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+  font-size: 12px;
+  color: $text-muted;
+  margin-top: $spacing-lg;
+}
+
+.bottom-action {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: $spacing-md $spacing-lg;
+  border-top: 1px solid $border-color;
+
+  .el-button {
+    width: 100%;
+    height: 48px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 12px;
+  }
+}
+
+.success-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xl;
+  background: #fff;
+
+  .success-icon {
+    width: 80px;
+    height: 80px;
+    background: $success-color;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 30px rgba($success-color, 0.3);
+    margin-bottom: $spacing-lg;
+  }
+
+  .success-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: $text-primary;
+    margin-bottom: $spacing-xs;
+  }
+
+  .success-desc {
+    font-size: 14px;
+    color: $text-muted;
+  }
+
+  .escrow-card {
+    width: 100%;
+    margin: $spacing-xl 0;
+    border-radius: 12px;
+    background: $bg-light;
+
+    .escrow-info {
+      display: flex;
+      align-items: center;
+      gap: $spacing-md;
+
+      .escrow-icon {
+        width: 40px;
+        height: 40px;
+        background: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: $shadow-sm;
+      }
+
+      .escrow-text {
+        .escrow-title {
+          font-size: 14px;
+          font-weight: 600;
+          color: $text-primary;
+        }
+
+        .escrow-desc {
+          font-size: 12px;
+          color: $text-muted;
+          margin-top: 2px;
+        }
+      }
+    }
+  }
+
+  .success-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    margin-top: auto;
+
+    .el-button {
+      width: 100%;
+      height: 48px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 12px;
+    }
+  }
+}
+</style>

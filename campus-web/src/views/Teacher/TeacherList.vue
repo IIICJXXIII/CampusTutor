@@ -1,31 +1,30 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { matchTutors } from '../../api/match.js';
-import { Search, MapPin, Filter, Star, Loader2 } from 'lucide-vue-next';
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { matchTutors } from '@/api/match'
 
-const router = useRouter();
-const route = useRoute();
+const router = useRouter()
+const route = useRoute()
 
 // 筛选条件
-const activeFilter = ref('综合');
-const loading = ref(false);
-const teachers = ref([]);
+const activeFilter = ref('综合')
+const loading = ref(false)
+const teachers = ref([])
 
 // 获取匹配的教师列表
 const fetchTeachers = async () => {
-  loading.value = true;
+  loading.value = true
   try {
-    const demandId = route.query.demandId;
+    const demandId = route.query.demandId
     const res = await matchTutors({
       demandId,
-      latitude: 31.2304,  // 默认上海坐标
+      latitude: 31.2304,
       longitude: 121.4737,
       page: 1,
       size: 20
-    });
+    })
     
-    // 转换后端数据格式
     teachers.value = (res.data || []).map(item => ({
       id: item.tutorId,
       name: item.realName || '老师',
@@ -37,26 +36,23 @@ const fetchTeachers = async () => {
       style: item.teachStyle || '鼓励型',
       tags: buildTags(item),
       avatar: item.avatar || `https://api.dicebear.com/7.x/miniavs/svg?seed=${item.tutorId}`
-    }));
+    }))
   } catch (error) {
-    console.error('获取教师列表失败:', error);
-    // 使用模拟数据
-    teachers.value = getMockTeachers();
+    console.error('获取教师列表失败:', error)
+    teachers.value = getMockTeachers()
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
-// 构建标签
 const buildTags = (item) => {
-  const tags = [];
-  if (item.certStatus === 2) tags.push('实名认证');
-  if (item.orderCount > 10) tags.push('经验丰富');
-  if (item.rating >= 4.8) tags.push('好评率高');
-  return tags.length ? tags : ['新入驻'];
-};
+  const tags = []
+  if (item.certStatus === 2) tags.push('实名认证')
+  if (item.orderCount > 10) tags.push('经验丰富')
+  if (item.rating >= 4.8) tags.push('好评率高')
+  return tags.length ? tags : ['新入驻']
+}
 
-// 模拟教师数据
 const getMockTeachers = () => [
   {
     id: 1,
@@ -89,141 +85,328 @@ const getMockTeachers = () => [
     subject: '物理',
     price: 250,
     matchScore: 75,
-    distance: '5.8km',
+    distance: '严厉型',
     style: '严厉型',
     tags: ['在职教师', '提分快'],
     avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=3'
-  },
-  {
-    id: 4,
-    name: '赵同学',
-    school: '复旦大学',
-    subject: '英语',
-    price: 180,
-    matchScore: 65,
-    distance: '3.2km',
-    style: '鼓励型',
-    tags: ['口语好', '有耐心'],
-    avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=4'
   }
-];
+]
 
-// 排序后的教师列表
 const sortedTeachers = computed(() => {
-  const list = [...teachers.value];
+  const list = [...teachers.value]
   switch (activeFilter.value) {
     case '距离':
-      return list.sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+      return list.sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance))
     case '价格':
-      return list.sort((a, b) => a.price - b.price);
+      return list.sort((a, b) => a.price - b.price)
     case '好评':
-      return list.sort((a, b) => b.matchScore - a.matchScore);
+      return list.sort((a, b) => b.matchScore - a.matchScore)
     default:
-      return list.sort((a, b) => b.matchScore - a.matchScore);
+      return list.sort((a, b) => b.matchScore - a.matchScore)
   }
-});
+})
 
-onMounted(() => {
-  fetchTeachers();
-});
+const getScoreType = (score) => {
+  if (score >= 80) return 'success'
+  if (score >= 60) return 'warning'
+  return 'info'
+}
 
-// 风格标签颜色映射
-const styleColors = {
-  '鼓励型': 'bg-green-100 text-green-700',
-  '严厉型': 'bg-red-100 text-red-700',
-  '趣味型': 'bg-blue-100 text-blue-700'
-};
-
-// 匹配分颜色映射
-const getScoreColor = (score) => {
-  if (score >= 80) return 'text-green-600';
-  if (score >= 60) return 'text-yellow-600';
-  return 'text-gray-400';
-};
-
-const getScoreBarColor = (score) => {
-  if (score >= 80) return 'bg-green-500';
-  if (score >= 60) return 'bg-yellow-500';
-  return 'bg-gray-300';
-};
+const getStyleType = (style) => {
+  const map = {
+    '鼓励型': 'success',
+    '严厉型': 'danger',
+    '趣味型': 'primary'
+  }
+  return map[style] || 'info'
+}
 
 const goToDetail = (id) => {
-  router.push(`/teacher/${id}`);
-};
+  router.push(`/teacher/${id}`)
+}
+
+const goToBooking = (id) => {
+  router.push(`/booking/${id}`)
+}
+
+onMounted(() => {
+  fetchTeachers()
+})
 </script>
 
 <template>
-  <div class="min-h-screen bg-brand-gray pb-24 font-sans">
-    
-    <div class="bg-white p-2 sticky top-0 z-10 shadow-sm flex justify-between items-center text-sm">
-      <div class="flex gap-4 px-2">
-        <span v-for="f in ['综合', '距离', '价格', '好评']" :key="f"
-              @click="activeFilter = f"
-              class="font-bold cursor-pointer transition-colors relative py-2"
-              :class="activeFilter === f ? 'text-brand-blue' : 'text-gray-500'">
-          {{ f }}
-          <div v-if="activeFilter === f" class="absolute bottom-0 left-0 w-full h-1 bg-brand-blue rounded-full"></div>
-        </span>
-      </div>
-      <div class="p-2 text-gray-400">
-        <Filter :size="16" />
-      </div>
+  <div class="teacher-list-page">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <h1 class="page-title">找老师</h1>
+      <p class="page-subtitle">根据您的需求，为您匹配最合适的老师</p>
     </div>
 
-    <div class="p-3 grid grid-cols-2 gap-3">
-      <!-- 加载中 -->
-      <div v-if="loading" class="col-span-2 text-center py-20">
-        <Loader2 :size="32" class="mx-auto mb-4 animate-spin text-brand-blue" />
-        <p class="text-gray-400">正在匹配老师...</p>
-      </div>
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+      <el-radio-group v-model="activeFilter" size="default">
+        <el-radio-button value="综合">综合推荐</el-radio-button>
+        <el-radio-button value="距离">距离最近</el-radio-button>
+        <el-radio-button value="价格">价格最低</el-radio-button>
+        <el-radio-button value="好评">好评优先</el-radio-button>
+      </el-radio-group>
+    </div>
+
+    <!-- 教师列表 -->
+    <div class="teacher-grid" v-loading="loading" element-loading-text="正在匹配老师...">
+      <el-empty v-if="!loading && sortedTeachers.length === 0" description="暂无匹配的老师" />
       
-      <div v-else v-for="teacher in sortedTeachers" :key="teacher.id" 
-           @click="goToDetail(teacher.id)"
-           class="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 active:scale-[0.98] transition-transform flex flex-col">
-        
-        <div class="p-3 flex items-start gap-2">
-          <img :src="teacher.avatar" class="w-10 h-10 rounded-full bg-gray-100" />
-          <div class="flex-1 min-w-0">
-            <h3 class="font-bold text-gray-800 text-sm truncate">{{ teacher.name }}</h3>
-            <p class="text-xs text-gray-500 truncate">{{ teacher.school }}</p>
+      <div 
+        v-for="teacher in sortedTeachers" 
+        :key="teacher.id" 
+        class="teacher-card"
+        @click="goToDetail(teacher.id)"
+      >
+        <!-- 头像和基本信息 -->
+        <div class="card-header">
+          <el-avatar :size="56" :src="teacher.avatar" />
+          <div class="teacher-info">
+            <h3 class="teacher-name">{{ teacher.name }}</h3>
+            <p class="teacher-school">{{ teacher.school }}</p>
+          </div>
+          <el-tag :type="getStyleType(teacher.style)" size="small">
+            {{ teacher.style }}
+          </el-tag>
+        </div>
+
+        <!-- AI 匹配度 -->
+        <div class="match-score">
+          <div class="score-label">
+            <span>AI匹配度</span>
+            <span class="score-value" :class="`score-${getScoreType(teacher.matchScore)}`">
+              {{ teacher.matchScore }}%
+            </span>
+          </div>
+          <el-progress 
+            :percentage="teacher.matchScore" 
+            :status="getScoreType(teacher.matchScore)"
+            :stroke-width="8"
+            :show-text="false"
+          />
+        </div>
+
+        <!-- 标签 -->
+        <div class="tag-group">
+          <el-tag 
+            v-for="tag in teacher.tags" 
+            :key="tag" 
+            type="info" 
+            effect="plain"
+            size="small"
+          >
+            {{ tag }}
+          </el-tag>
+        </div>
+
+        <!-- 价格和距离 -->
+        <div class="card-footer">
+          <div class="price">
+            <span class="price-value">¥{{ teacher.price }}</span>
+            <span class="price-unit">/小时</span>
+          </div>
+          <div class="distance">
+            <el-icon><Location /></el-icon>
+            <span>{{ teacher.distance }}</span>
           </div>
         </div>
 
-        <div class="px-3 pb-2">
-          <div class="flex justify-between items-end mb-1">
-            <span class="text-xs font-bold text-gray-400">AI匹配度</span>
-            <span class="text-lg font-bold leading-none" :class="getScoreColor(teacher.matchScore)">
-              {{ teacher.matchScore }}<span class="text-xs">%</span>
-            </span>
-          </div>
-          <div class="w-full h-1.5 bg-gray-100 rounded-full mb-3">
-            <div class="h-full rounded-full transition-all duration-1000" 
-                 :class="getScoreBarColor(teacher.matchScore)"
-                 :style="{ width: teacher.matchScore + '%' }"></div>
-          </div>
-
-          <div class="flex justify-between items-center mb-2">
-            <span class="text-brand-orange font-bold text-sm">¥{{ teacher.price }}<span class="text-xs text-gray-400">/h</span></span>
-            <span class="text-xs px-2 py-0.5 rounded font-medium" :class="styleColors[teacher.style]">
-              {{ teacher.style }}
-            </span>
-          </div>
-          
-          <div class="flex items-center gap-1 text-xs text-gray-400">
-             <MapPin :size="10" /> {{ teacher.distance }}
-          </div>
-        </div>
-
-        <div class="mt-auto border-t p-2">
-          <button @click.stop="router.push(`/booking/${teacher.id}`)" class="...">
+        <!-- 操作按钮 -->
+        <div class="card-actions">
+          <el-button size="small" @click.stop="goToDetail(teacher.id)">
+            查看详情
+          </el-button>
+          <el-button type="primary" size="small" @click.stop="goToBooking(teacher.id)">
             预约试课
-          </button>
+          </el-button>
         </div>
       </div>
     </div>
-    
-    <div class="text-center text-xs text-gray-400 mt-4">
-      已显示全部高匹配教师
+
+    <!-- 底部提示 -->
+    <div class="list-footer" v-if="sortedTeachers.length > 0">
+      <el-divider>已显示全部高匹配教师</el-divider>
     </div>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.teacher-list-page {
+  min-height: 100vh;
+  background: $bg-light;
+  padding-bottom: 80px;
+}
+
+.page-header {
+  background: linear-gradient(135deg, $primary-color 0%, #667eea 100%);
+  padding: $spacing-xl $spacing-lg;
+  color: #fff;
+
+  .page-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .page-subtitle {
+    font-size: 14px;
+    opacity: 0.85;
+  }
+}
+
+.filter-bar {
+  background: #fff;
+  padding: $spacing-md $spacing-lg;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: $shadow-sm;
+
+  :deep(.el-radio-group) {
+    width: 100%;
+    display: flex;
+    
+    .el-radio-button {
+      flex: 1;
+      
+      .el-radio-button__inner {
+        width: 100%;
+      }
+    }
+  }
+}
+
+.teacher-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: $spacing-md;
+  padding: $spacing-lg;
+  min-height: 300px;
+}
+
+.teacher-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: $spacing-lg;
+  box-shadow: $shadow-sm;
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &:hover {
+    box-shadow: $shadow-md;
+    transform: translateY(-2px);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-md;
+    margin-bottom: $spacing-md;
+
+    .teacher-info {
+      flex: 1;
+      min-width: 0;
+
+      .teacher-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: $text-primary;
+        margin-bottom: 4px;
+      }
+
+      .teacher-school {
+        font-size: 13px;
+        color: $text-secondary;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+
+  .match-score {
+    margin-bottom: $spacing-md;
+
+    .score-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: $spacing-xs;
+      font-size: 13px;
+      color: $text-secondary;
+
+      .score-value {
+        font-size: 18px;
+        font-weight: 700;
+
+        &.score-success { color: $success-color; }
+        &.score-warning { color: $warning-color; }
+        &.score-info { color: $text-muted; }
+      }
+    }
+  }
+
+  .tag-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: $spacing-md;
+  }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-md;
+
+    .price {
+      .price-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: $warning-color;
+      }
+
+      .price-unit {
+        font-size: 12px;
+        color: $text-muted;
+      }
+    }
+
+    .distance {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      color: $text-secondary;
+    }
+  }
+
+  .card-actions {
+    display: flex;
+    gap: $spacing-sm;
+
+    .el-button {
+      flex: 1;
+    }
+  }
+}
+
+.list-footer {
+  padding: $spacing-lg;
+  
+  :deep(.el-divider__text) {
+    color: $text-muted;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .teacher-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

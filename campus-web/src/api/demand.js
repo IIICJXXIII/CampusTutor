@@ -8,7 +8,7 @@ import request from './request';
  * @param {Object} data - 需求信息
  */
 export function createDemand(data) {
-  return request.post('/demand', data);
+  return request.post('/demand/publish', data);
 }
 
 /**
@@ -16,6 +16,14 @@ export function createDemand(data) {
  */
 export function getMyDemands() {
   return request.get('/demand/my');
+}
+
+/**
+ * 获取需求列表 (公开)
+ * @param {Object} params - 查询参数
+ */
+export function getDemandList(params = {}) {
+  return request.get('/demand/list', { params });
 }
 
 /**
@@ -48,12 +56,12 @@ export function closeDemand(id) {
  * @param {Object} data - 学生信息
  */
 export function addStudent(data) {
-  return request.post('/student', data);
+  return request.post('/parent/student', data);
 }
 
 /**
  * 获取学生列表
  */
 export function getStudents() {
-  return request.get('/student/my');
+  return request.get('/parent/students');
 }

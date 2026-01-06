@@ -1,141 +1,321 @@
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { sendCode, register } from '../api/auth.js';
-import { store } from '../store.js';
-import { ArrowRight, Loader2 } from 'lucide-vue-next';
+import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { sendCode, register } from '@/api/auth'
 
-const router = useRouter();
+const router = useRouter()
 
-const phone = ref('');
-const password = ref('');
-const code = ref('');
-const nickname = ref('');
-const role = ref(2); // 2-家长,1-教师
-const loading = ref(false);
-const sending = ref(false);
-const errorMsg = ref('');
-const successMsg = ref('');
+// 表单数据
+const formRef = ref(null)
+const loading = ref(false)
+const sendingCode = ref(false)
+const countdown = ref(0)
 
+const form = reactive({
+  phone: '',
+  password: '',
+  confirmPassword: '',
+  code: '',
+  nickname: '',
+  role: 2, // 2-家长, 1-教师
+  agreed: true
+})
+
+// 表单验证规则
+const validatePhone = (rule, value, callback) => {
+  if (!value) {
+    callback(new Error('请输入手机号'))
+  } else if (!/^1[3-9]\d{9}$/.test(value)) {
+    callback(new Error('请输入正确的手机号'))
+  } else {
+    callback()
+  }
+}
+
+const validateConfirmPassword = (rule, value, callback) => {
+  if (!value) {
+    callback(new Error('请确认密码'))
+  } else if (value !== form.password) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
+}
+
+const rules = {
+  phone: [{ validator: validatePhone, trigger: 'blur' }],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码长度至少6位', trigger: 'blur' }
+  ],
+  confirmPassword: [{ validator: validateConfirmPassword, trigger: 'blur' }],
+  code: [{ required: true, message: '请输入验证码', trigger: 'blur' }]
+}
+
+// 发送验证码
 const handleSendCode = async () => {
-  if (!/^1[3-9]\d{9}$/.test(phone.value)) {
-    errorMsg.value = '请填写正确的手机号';
-    return;
+  if (!/^1[3-9]\d{9}$/.test(form.phone)) {
+    ElMessage.warning('请输入正确的手机号')
+    return
   }
-  errorMsg.value = '';
-  sending.value = true;
+  
+  sendingCode.value = true
   try {
-    await sendCode(phone.value);
-    successMsg.value = '验证码已发送';
+    await sendCode(form.phone)
+    ElMessage.success('验证码已发送')
+    // 开始倒计时
+    countdown.value = 60
+    const timer = setInterval(() => {
+      countdown.value--
+      if (countdown.value <= 0) {
+        clearInterval(timer)
+      }
+    }, 1000)
   } catch (e) {
-    errorMsg.value = e.message || '验证码发送失败';
+    ElMessage.error(e.message || '验证码发送失败')
   } finally {
-    sending.value = false;
+    sendingCode.value = false
   }
-};
+}
 
+// 注册逻辑
 const handleRegister = async () => {
-  if (!/^1[3-9]\d{9}$/.test(phone.value)) {
-    errorMsg.value = '请填写正确的手机号';
-    return;
+  if (!form.agreed) {
+    ElMessage.warning('请先同意用户协议')
+    return
   }
-  if (!password.value) {
-    errorMsg.value = '请填写密码';
-    return;
-  }
-  if (!code.value) {
-    errorMsg.value = '请填写验证码';
-    return;
-  }
-  loading.value = true;
-  errorMsg.value = '';
-  successMsg.value = '';
+
+  const valid = await formRef.value?.validate().catch(() => false)
+  if (!valid) return
+
+  loading.value = true
   try {
-    const res = await register({
-      phone: phone.value,
-      password: password.value,
-      code: code.value,
-      role: role.value,
-      nickname: nickname.value || undefined
-    });
-    store.setLoginInfo(res.data);
-    successMsg.value = '注册成功，正在跳转...';
-    if (res.data.role === 1) {
-      router.push('/teacher/auth');
-    } else {
-      router.push('/parent/demand');
-    }
+    await register({
+      phone: form.phone,
+      password: form.password,
+      code: form.code,
+      role: form.role,
+      nickname: form.nickname || undefined
+    })
+    
+    // 注册成功后跳转到登录页面，不自动登录
+    ElMessage.success('注册成功，请登录')
+    router.push('/login')
   } catch (e) {
-    errorMsg.value = e.message || '注册失败，请重试';
+    ElMessage.error(e.message || '注册失败，请重试')
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-white flex flex-col font-sans">
-    <div class="h-56 bg-brand-blue rounded-b-[32px] flex flex-col items-center justify-center text-white relative overflow-hidden">
-      <div class="absolute top-0 right-0 w-56 h-56 bg-white/10 rounded-full -mr-12 -mt-12"></div>
-      <div class="z-10 text-center">
-        <h1 class="text-2xl font-bold tracking-widest">注册账号</h1>
-        <p class="text-blue-100 text-xs mt-1">成为家长或教师，开启智能匹配</p>
-      </div>
-    </div>
-
-    <div class="flex-1 px-8 pt-8 pb-12 space-y-6">
-      <div class="space-y-1">
-        <label class="text-xs font-bold text-gray-400">手机号</label>
-        <div class="border-b border-gray-200 py-2">
-          <input v-model="phone" type="tel" class="w-full outline-none text-lg font-bold text-gray-800 placeholder-gray-300" placeholder="请输入手机号" />
+  <div class="auth-page">
+    <div class="auth-card">
+      <!-- Logo 区域 -->
+      <div class="auth-logo">
+        <div class="logo-icon">
+          <el-icon :size="48"><UserFilled /></el-icon>
         </div>
+        <h1 class="logo-title">注册账号</h1>
+        <p class="logo-subtitle">成为家长或教师，开启智能匹配</p>
       </div>
 
-      <div class="space-y-1">
-        <label class="text-xs font-bold text-gray-400">密码</label>
-        <div class="border-b border-gray-200 py-2">
-          <input v-model="password" type="password" class="w-full outline-none text-lg font-bold text-gray-800 placeholder-gray-300" placeholder="至少6位字母或数字" />
-        </div>
-      </div>
+      <!-- 注册表单 -->
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-position="top"
+        size="large"
+        class="auth-form"
+      >
+        <el-form-item label="手机号" prop="phone">
+          <el-input
+            v-model="form.phone"
+            placeholder="请输入手机号"
+            prefix-icon="Phone"
+            maxlength="11"
+          />
+        </el-form-item>
 
-      <div class="space-y-1">
-        <label class="text-xs font-bold text-gray-400">验证码</label>
-        <div class="flex items-center gap-3 border-b border-gray-200 py-2">
-          <input v-model="code" type="text" class="flex-1 outline-none text-lg font-bold text-gray-800 placeholder-gray-300" placeholder="请输入短信验证码" />
-          <button @click="handleSendCode" :disabled="sending" class="text-brand-blue text-sm font-bold disabled:opacity-50">
-            <Loader2 v-if="sending" :size="16" class="animate-spin inline" />
-            <span v-else>获取验证码</span>
-          </button>
-        </div>
-      </div>
+        <el-form-item label="验证码" prop="code">
+          <div class="code-input">
+            <el-input
+              v-model="form.code"
+              placeholder="请输入验证码"
+              prefix-icon="Message"
+            />
+            <el-button
+              type="primary"
+              :loading="sendingCode"
+              :disabled="countdown > 0"
+              @click="handleSendCode"
+            >
+              {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
+            </el-button>
+          </div>
+        </el-form-item>
 
-      <div class="space-y-1">
-        <label class="text-xs font-bold text-gray-400">昵称 (可选)</label>
-        <div class="border-b border-gray-200 py-2">
-          <input v-model="nickname" type="text" class="w-full outline-none text-lg font-bold text-gray-800 placeholder-gray-300" placeholder="方便家长或老师识别" />
-        </div>
-      </div>
+        <el-form-item label="密码" prop="password">
+          <el-input
+            v-model="form.password"
+            type="password"
+            placeholder="请输入密码（至少6位）"
+            prefix-icon="Lock"
+            show-password
+          />
+        </el-form-item>
 
-      <div class="space-y-2">
-        <label class="text-xs font-bold text-gray-400">身份</label>
-        <div class="flex gap-3">
-          <button @click="role = 2" :class="role === 2 ? 'bg-brand-blue text-white' : 'bg-gray-100 text-gray-600'" class="px-4 py-2 rounded-lg font-bold flex-1">家长</button>
-          <button @click="role = 1" :class="role === 1 ? 'bg-brand-blue text-white' : 'bg-gray-100 text-gray-600'" class="px-4 py-2 rounded-lg font-bold flex-1">教师</button>
-        </div>
-      </div>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input
+            v-model="form.confirmPassword"
+            type="password"
+            placeholder="请再次输入密码"
+            prefix-icon="Lock"
+            show-password
+          />
+        </el-form-item>
 
-      <div v-if="errorMsg" class="mt-2 p-3 bg-red-50 text-red-600 text-sm rounded-lg">{{ errorMsg }}</div>
-      <div v-if="successMsg" class="mt-2 p-3 bg-green-50 text-green-600 text-sm rounded-lg">{{ successMsg }}</div>
+        <el-form-item label="昵称（可选）">
+          <el-input
+            v-model="form.nickname"
+            placeholder="方便家长或老师识别"
+            prefix-icon="Edit"
+          />
+        </el-form-item>
 
-      <button @click="handleRegister" :disabled="loading" class="w-full bg-brand-blue text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-200 mt-2 active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-        <Loader2 v-if="loading" :size="18" class="animate-spin" />
-        <template v-else>立即注册 <ArrowRight :size="18" /></template>
-      </button>
+        <el-form-item label="注册身份">
+          <el-radio-group v-model="form.role" class="role-group">
+            <el-radio-button :value="2">
+              <el-icon><User /></el-icon>
+              <span>我是家长</span>
+            </el-radio-button>
+            <el-radio-button :value="1">
+              <el-icon><Reading /></el-icon>
+              <span>我是教师</span>
+            </el-radio-button>
+          </el-radio-group>
+        </el-form-item>
 
-      <div class="text-center text-sm text-gray-500">
+        <el-form-item>
+          <el-checkbox v-model="form.agreed">
+            我已阅读并同意
+            <el-link type="primary" underline="never">《用户协议》</el-link>
+            和
+            <el-link type="primary" underline="never">《隐私政策》</el-link>
+          </el-checkbox>
+        </el-form-item>
+
+        <el-form-item>
+          <el-button
+            type="primary"
+            :loading="loading"
+            class="submit-btn"
+            @click="handleRegister"
+          >
+            立即注册
+          </el-button>
+        </el-form-item>
+      </el-form>
+
+      <!-- 底部链接 -->
+      <div class="auth-footer">
         已有账号？
-        <span class="text-brand-blue font-bold cursor-pointer" @click="router.push('/login')">去登录</span>
+        <el-link type="primary" @click="router.push('/login')">去登录</el-link>
       </div>
     </div>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, $primary-color 0%, #667eea 100%);
+  padding: $spacing-lg;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  background: #fff;
+  border-radius: 16px;
+  padding: $spacing-xl;
+  box-shadow: $shadow-lg;
+}
+
+.auth-logo {
+  text-align: center;
+  margin-bottom: $spacing-lg;
+
+  .logo-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, $primary-color 0%, #667eea 100%);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto $spacing-md;
+    color: #fff;
+  }
+
+  .logo-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: $text-primary;
+    margin-bottom: 4px;
+  }
+
+  .logo-subtitle {
+    font-size: 14px;
+    color: $text-secondary;
+  }
+}
+
+.auth-form {
+  .code-input {
+    display: flex;
+    gap: $spacing-sm;
+    width: 100%;
+
+    .el-input {
+      flex: 1;
+    }
+  }
+
+  .role-group {
+    width: 100%;
+    
+    :deep(.el-radio-button) {
+      flex: 1;
+      
+      .el-radio-button__inner {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+    }
+  }
+
+  .submit-btn {
+    width: 100%;
+    height: 48px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+}
+
+.auth-footer {
+  text-align: center;
+  font-size: 14px;
+  color: $text-secondary;
+  margin-top: $spacing-md;
+}
+</style>
