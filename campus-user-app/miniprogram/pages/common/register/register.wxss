@@ -1,0 +1,112 @@
+/* 复用 Login 的部分基础样式 */
+.container {
+  padding: 40rpx;
+  background-color: #fff;
+  min-height: 100vh;
+}
+
+.header {
+  margin-top: 40rpx;
+  margin-bottom: 60rpx;
+}
+
+.title {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+/* 角色选择器样式 */
+.role-selector {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 60rpx;
+}
+
+.role-item {
+  width: 45%;
+  height: 160rpx;
+  background: #f5f7fa;
+  border-radius: 16rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: 2px solid transparent;
+  transition: all 0.3s;
+}
+
+.role-item.active {
+  background: #ecf5ff;
+  border-color: #409EFF;
+}
+
+.role-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.role-item.active .role-name {
+  color: #409EFF;
+}
+
+.role-desc {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 表单样式 */
+.input-group {
+  margin-bottom: 30rpx;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10rpx;
+}
+
+.input-group.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  height: 80rpx;
+  font-size: 32rpx;
+}
+
+.code-btn {
+  font-size: 28rpx;
+  color: #409EFF;
+  padding: 10rpx 0;
+  min-width: 160rpx;
+  text-align: right;
+}
+
+.code-btn.disabled {
+  color: #999;
+}
+
+.submit-btn {
+  margin-top: 60rpx;
+  background-color: #409EFF;
+  color: #fff;
+  border-radius: 44rpx;
+}
+
+.footer-actions {
+  margin-top: 40rpx;
+  text-align: center;
+  font-size: 28rpx;
+}
+
+.text {
+  color: #999;
+}
+
+.link {
+  color: #409EFF;
+  margin-left: 10rpx;
+  font-weight: bold;
+}

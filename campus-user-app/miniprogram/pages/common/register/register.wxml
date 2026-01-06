@@ -1,0 +1,48 @@
+<view class="container">
+  <view class="header">
+    <text class="title">注册新账号</text>
+  </view>
+
+  <view class="role-selector">
+    <view class="role-item {{role === 2 ? 'active' : ''}}" bindtap="selectRole" data-role="2">
+      <text class="role-name">我是家长</text>
+      <text class="role-desc">找优秀家教</text>
+    </view>
+    <view class="role-item {{role === 1 ? 'active' : ''}}" bindtap="selectRole" data-role="1">
+      <text class="role-name">我是教员</text>
+      <text class="role-desc">找兼职机会</text>
+    </view>
+  </view>
+
+  <view class="form-box">
+    <view class="input-group">
+      <input class="input" type="number" placeholder="手机号" maxlength="11" 
+             bindinput="handleInput" data-field="phone" value="{{phone}}"/>
+    </view>
+
+    <view class="input-group row">
+      <input class="input" type="number" placeholder="验证码" maxlength="6" 
+             bindinput="handleInput" data-field="code" value="{{code}}"/>
+      <view class="code-btn {{countDown > 0 ? 'disabled' : ''}}" bindtap="sendSmsCode">
+        {{countDown > 0 ? countDown + 's后重发' : '获取验证码'}}
+      </view>
+    </view>
+
+    <view class="input-group">
+      <input class="input" type="password" placeholder="设置密码 (6位以上)" 
+             bindinput="handleInput" data-field="password" value="{{password}}"/>
+    </view>
+
+    <view class="input-group">
+      <input class="input" type="text" placeholder="昵称 (可选)" 
+             bindinput="handleInput" data-field="nickname" value="{{nickname}}"/>
+    </view>
+
+    <button class="submit-btn" bindtap="handleRegister" loading="{{isSubmitting}}">立即注册</button>
+
+    <view class="footer-actions">
+      <text class="text">已有账号？</text>
+      <text class="link" bindtap="goLogin">去登录</text>
+    </view>
+  </view>
+</view>
