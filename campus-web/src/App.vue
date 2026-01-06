@@ -6,8 +6,16 @@ import { Search, FileEdit, User, ShieldCheck, FileText } from 'lucide-vue-next';
 
 const route = useRoute();
 
-// 是否显示底部导航 (登录页不显示)
-const showNav = computed(() => route.path !== '/login');
+// 白名单路由（不显示底部导航）
+const hideNavPaths = ['/login', '/register'];
+
+// 是否显示底部导航 (登录页、注册页不显示)
+const showNav = computed(() => {
+  // 未登录时不显示导航
+  if (!store.isLoggedIn()) return false;
+  // 白名单页面不显示导航
+  return !hideNavPaths.includes(route.path);
+});
 
 // 当前角色
 const currentRole = computed(() => store.userRole);

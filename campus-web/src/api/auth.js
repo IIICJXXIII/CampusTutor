@@ -5,11 +5,11 @@ import request from './request';
 
 /**
  * 用户登录
- * @param {Object} data - { phone, password, loginType }
+ * @param {Object} data - { account, password, loginType }
  */
 export function login(data) {
   return request.post('/auth/login', {
-    phone: data.phone,
+    account: data.account,
     password: data.password,
     loginType: data.loginType || 'password'
   });

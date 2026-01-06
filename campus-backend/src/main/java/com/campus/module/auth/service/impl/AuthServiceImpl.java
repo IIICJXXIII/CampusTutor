@@ -1,7 +1,6 @@
 package com.campus.module.auth.service.impl;
 
 import cn.hutool.core.util.RandomUtil;
-import cn.hutool.crypto.SecureUtil;
 import com.campus.common.exception.BusinessException;
 import com.campus.common.result.ResultCode;
 import com.campus.common.utils.JwtUtils;
@@ -55,8 +54,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(LoginRequest request) {
-        // 根据手机号查询用户
-        SysUser user = sysUserService.getByUsername(request.getPhone());
+        // 根据账号/手机号查询用户
+        SysUser user = sysUserService.getByUsername(request.getAccount());
         if (user == null) {
             throw new BusinessException(ResultCode.USER_NOT_EXIST);
         }
@@ -68,14 +67,17 @@ public class AuthServiceImpl implements AuthService {
 
         // 根据登录方式校验
         if ("code".equals(request.getLoginType())) {
-            // 验证码登录
-            if (!verifyCode(request.getPhone(), request.getCode())) {
+            // 验证码登录，仅支持手机号
+            String phone = request.getAccount();
+            if (phone == null || !phone.matches("^1[3-9]\\d{9}$")) {
+                throw new BusinessException("验证码登录仅支持手机号");
+            }
+            if (!verifyCode(phone, request.getCode())) {
                 throw new BusinessException("验证码错误或已过期");
             }
         } else {
-            // 密码登录
-            String encryptPassword = SecureUtil.md5(request.getPassword());
-            if (!encryptPassword.equals(user.getPassword())) {
+            // 密码登录（账号或手机号），开发环境暂时使用明文比对
+            if (!request.getPassword().equals(user.getPassword())) {
                 throw new BusinessException(ResultCode.PASSWORD_ERROR);
             }
         }
@@ -109,7 +111,8 @@ public class AuthServiceImpl implements AuthService {
         // 创建用户
         SysUser user = new SysUser();
         user.setUsername(request.getPhone());
-        user.setPassword(SecureUtil.md5(request.getPassword()));
+        // 开发环境暂存明文密码（上线前务必改为加密存储）
+        user.setPassword(request.getPassword());
         user.setNickname(request.getNickname() != null ? request.getNickname() : "用户" + RandomUtil.randomNumbers(6));
         user.setRole(request.getRole());
         user.setStatus(1);

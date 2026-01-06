@@ -75,6 +75,7 @@ temp/
 *-local.yml
 *-local.yaml
 local.properties
+*.properties
 *.jks
 *.p12
 *.key
@@ -87,3 +88,6 @@ project.private.config.json
 miniprogram_npm/
 node_modules/
 .swan/
+
+
+campus-backend/src/main/resources/application-dev.properties
