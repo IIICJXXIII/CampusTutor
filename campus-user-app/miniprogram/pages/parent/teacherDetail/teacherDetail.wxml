@@ -1,0 +1,103 @@
+<view class="container" wx:if="{{tutor}}">
+  <view class="header-bg"></view>
+
+  <view class="profile-card">
+    <view class="main-info">
+      <image class="avatar" src="{{tutor.avatarUrl}}" mode="aspectFill"></image>
+      <view class="content">
+        <view class="row-1">
+          <text class="name">{{tutor.realName}}</text>
+          <view class="cert-badge" wx:if="{{tutor.certStatus === 2}}">
+            <text class="icon">✓</text> 已认证
+          </view>
+        </view>
+        <view class="row-2">
+          <text>{{tutor.universityName}}</text>
+          <text class="divider">|</text>
+          <text>{{tutor.major}}</text>
+          <text class="divider">|</text>
+          <text>{{tutor.educationText}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="stats-box">
+      <view class="stat-item">
+        <text class="num score">{{tutor.rating || '5.0'}}</text>
+        <text class="label">综合评分</text>
+      </view>
+      <view class="stat-item">
+        <text class="num">{{tutor.orderCount || 0}}</text>
+        <text class="label">授课次数</text>
+      </view>
+      <view class="stat-item">
+        <text class="num">{{tutor.teachYearText}}</text>
+        <text class="label">教学经验</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-card">
+    <view class="section-title">教学能力</view>
+    
+    <view class="info-row">
+      <text class="label">擅长科目</text>
+      <view class="tags-wrapper">
+        <block wx:for="{{tutor.teachSubjectsList}}" wx:key="*this">
+          <view class="tag blue">{{item}}</view>
+        </block>
+      </view>
+    </view>
+
+    <view class="info-row">
+      <text class="label">辅导年级</text>
+      <view class="tags-wrapper">
+        <block wx:for="{{tutor.teachGradesList}}" wx:key="*this">
+          <view class="tag green">{{item}}</view>
+        </block>
+      </view>
+    </view>
+
+    <view class="info-row">
+      <text class="label">授课方式</text>
+      <view class="text-content">
+        <text wx:if="{{tutor.canVisit === 1}}">线下上门 </text>
+        <text wx:if="{{tutor.canOnline === 1}}"> 在线授课</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-card">
+    <view class="section-title">个人简介</view>
+    <view class="intro-content">
+      {{tutor.introduction || '这位教员很低调，暂无详细介绍。'}}
+    </view>
+    <view class="style-box" wx:if="{{tutor.teachStyle}}">
+      <text class="style-label">教学风格：</text>
+      <text>{{tutor.teachStyle}}</text>
+    </view>
+  </view>
+
+  <view class="section-card" wx:if="{{tutor.certificateUrlsList && tutor.certificateUrlsList.length > 0}}">
+    <view class="section-title">资质证明</view>
+    <scroll-view class="cert-scroll" scroll-x enable-flex>
+      <block wx:for="{{tutor.certificateUrlsList}}" wx:key="*this">
+        <image class="cert-img" src="{{item}}" mode="heightFix" bindtap="previewImage" data-src="{{item}}"></image>
+      </block>
+    </scroll-view>
+  </view>
+
+  <view class="footer-placeholder"></view>
+  <view class="footer-bar">
+    <view class="price-section">
+      <text class="currency">¥</text>
+      <text class="amount">{{tutor.expectPrice}}</text>
+      <text class="unit">/小时起</text>
+    </view>
+    <button class="book-btn" bindtap="handleBook">立即预约</button>
+  </view>
+</view>
+
+<view class="loading-container" wx:else>
+  <view class="loading-spinner"></view>
+</view>

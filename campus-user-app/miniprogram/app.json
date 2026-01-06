@@ -9,7 +9,11 @@
     "pages/parent/publishDemand/step1-student/step1-student",
     "pages/parent/publishDemand/step2-teaching/step2-teaching",
     "pages/parent/publishDemand/step3-preference/step3-preference",
-    "pages/parent/matchResult/matchResult"
+    "pages/parent/matchResult/matchResult",
+    "pages/parent/teacherDetail/teacherDetail",
+    "pages/parent/order/confirm/confirm",
+    "pages/parent/order/list/list",
+    "pages/parent/publishDemand/step2-content/step2-content"
   ],
   "permission": {
     "scope.userLocation": {
