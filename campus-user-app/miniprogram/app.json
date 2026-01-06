@@ -8,7 +8,8 @@
     "pages/teacher/mapFindStudent/mapFindStudent",
     "pages/parent/publishDemand/step1-student/step1-student",
     "pages/parent/publishDemand/step2-teaching/step2-teaching",
-    "pages/parent/publishDemand/step3-preference/step3-preference"
+    "pages/parent/publishDemand/step3-preference/step3-preference",
+    "pages/parent/matchResult/matchResult"
   ],
   "permission": {
     "scope.userLocation": {
