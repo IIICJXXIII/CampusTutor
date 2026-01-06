@@ -68,7 +68,7 @@ public class TutorController {
     }
 
     @Operation(summary = "根据ID获取教员档案(公开)")
-    @GetMapping("/{id}")
+    @GetMapping("/public/{id}")
     public Result<TutorProfile> getById(@PathVariable Long id) {
         TutorProfile profile = tutorProfileService.getById(id);
         return Result.success(profile);

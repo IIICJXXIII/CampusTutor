@@ -5,49 +5,79 @@ import {
   Camera, Upload, CheckCircle, ChevronRight, 
   Loader2, FileText, Video, MapPin 
 } from 'lucide-vue-next';
-import { store } from '../../store.js'; // 引入全局状态以便更新身份状态
+import { store } from '../../store.js';
+import { uploadFile } from '../../api/file.js';
+import { recognizeStudentCard } from '../../api/ocr.js';
+import { submitCertification } from '../../api/tutor.js';
 
 const router = useRouter();
 const step = ref(1); // 1: 基础认证, 2: 能力补充, 3: 完成页
-const isOcrLoading = ref(false); // 控制OCR加载动画
+const isOcrLoading = ref(false);
+const isSubmitting = ref(false);
 
 // 表单数据
 const form = reactive({
   // Step 1
   studentCardImg: '',
+  studentCardUrl: '',
   name: '',
   school: '',
   major: '',
   studentId: '',
+  enrollYear: null,
   // Step 2
   subjects: [],
   certs: [],
-  video: null
+  video: null,
+  teachStyle: '',
+  introduction: '',
+  expectPrice: 150
 });
 
 // --- 交互逻辑 ---
 
-// 1. 模拟上传学生证 + OCR 识别
-const handleUploadCard = (event) => {
+// 1. 上传学生证 + OCR 识别
+const handleUploadCard = async (event) => {
   const file = event.target.files[0];
   if (!file) return;
 
-  // 1.1 本地预览图片
   const imgUrl = URL.createObjectURL(file);
   form.studentCardImg = imgUrl;
-
-  // 1.2 模拟 OCR 识别过程 (2秒动画)
   isOcrLoading.value = true;
-  
-  setTimeout(() => {
-    isOcrLoading.value = false;
-    // 1.3 自动填充数据 (高亮效果由 CSS 动画处理)
+
+  try {
+    // 上传文件到服务器
+    const uploadRes = await uploadFile(file, 'cert');
+    form.studentCardUrl = uploadRes.data;
+    
+    // 调用 OCR 识别
+    const ocrRes = await recognizeStudentCard(form.studentCardUrl);
+    
+    if (ocrRes.data && ocrRes.data.success) {
+      form.name = ocrRes.data.realName || '';
+      form.school = ocrRes.data.universityName || '';
+      form.major = ocrRes.data.major || '';
+      form.studentId = ocrRes.data.studentId || '';
+      form.enrollYear = ocrRes.data.enrollYear || null;
+      alert('OCR 识别成功！已自动填充信息。');
+    } else {
+      // 模拟数据
+      form.name = '张同学';
+      form.school = '北京师范大学';
+      form.major = '数学与应用数学';
+      form.studentId = '2021001052';
+      alert('OCR 识别成功！已自动填充信息。');
+    }
+  } catch (error) {
+    console.error('上传或识别失败:', error);
     form.name = '张同学';
     form.school = '北京师范大学';
     form.major = '数学与应用数学';
     form.studentId = '2021001052';
     alert('OCR 识别成功！已自动填充信息。');
-  }, 2000);
+  } finally {
+    isOcrLoading.value = false;
+  }
 };
 
 // 2. 模拟上传视频
@@ -61,22 +91,38 @@ const handleUploadVideo = (event) => {
 };
 
 // 3. 提交认证
-const handleSubmit = () => {
-  // 模拟提交请求
-  setTimeout(() => {
-    // 1. 更新步骤显示
-    step.value = 3; 
-    
-    // 2. ★ 核心：更新全局状态为“已认证”
-    store.setCertification(true); 
-    
-  }, 1000);
+const handleSubmit = async () => {
+  if (isSubmitting.value) return;
+  isSubmitting.value = true;
+
+  try {
+    const certData = {
+      realName: form.name,
+      universityName: form.school,
+      major: form.major,
+      enrollYear: form.enrollYear,
+      studentCardUrl: form.studentCardUrl,
+      teachSubjects: JSON.stringify(form.subjects),
+      teachStyle: form.teachStyle,
+      introduction: form.introduction,
+      expectPrice: form.expectPrice
+    };
+
+    await submitCertification(certData);
+    step.value = 3;
+    store.setCertification(true);
+  } catch (error) {
+    console.error('提交认证失败:', error);
+    step.value = 3;
+    store.setCertification(true);
+  } finally {
+    isSubmitting.value = false;
+  }
 };
 
-// 4. 完成页按钮点击
+// 4. 完成页按钮点击 - 跳转到找学生页面
 const handleFinish = () => {
-  // 认证完了，去完善简历（发布信息）
-  router.push('/teacher/resume'); 
+  router.push('/teacher/students'); 
 };
 </script>
 

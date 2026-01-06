@@ -25,7 +25,16 @@ const showModal = ref(false);
 
 const handleBook = () => {
   showModal.value = false;
-  alert('预约申请已发送！等待老师确认。');
+  // 跳转到预约签约页面，传递教师信息
+  router.push({
+    path: `/booking/${teacher.id}`,
+    query: {
+      teacherId: teacher.id,
+      teacherName: teacher.name,
+      subject: '英语', // 可从实际数据获取
+      price: teacher.price
+    }
+  });
 };
 </script>
 

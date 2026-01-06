@@ -12,6 +12,11 @@ const routes = [
     name: 'Login',
     component: () => import('../views/Login.vue')
   },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('../views/Register.vue')
+  },
 
   // === 家长端核心流程 ===
   {
@@ -103,6 +108,37 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+// 白名单路由（无需登录即可访问）
+const whiteList = ['/login', '/register']
+
+// 路由守卫 - 检查登录状态
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token')
+  
+  if (whiteList.includes(to.path)) {
+    // 白名单页面直接放行
+    // 如果已登录且访问登录页，重定向到首页
+    if (token && to.path === '/login') {
+      const userRole = localStorage.getItem('userRole')
+      if (userRole === 'teacher') {
+        next('/teacher/students')
+      } else {
+        next('/parent/demand')
+      }
+    } else {
+      next()
+    }
+  } else {
+    // 非白名单页面需要检查登录状态
+    if (token) {
+      next()
+    } else {
+      // 未登录，重定向到登录页
+      next('/login')
+    }
+  }
 })
 
 export default router

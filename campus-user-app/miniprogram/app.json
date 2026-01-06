@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "pages/common/login/login",
+    "pages/common/register/register",
+    "pages/teacher/certification/step1-base/step1-base",
+    "pages/teacher/certification/step2-ability/step2-ability",
+    "pages/teacher/certification/step3-result/step3-result",
+    "pages/teacher/mapFindStudent/mapFindStudent",
+    "pages/parent/publishDemand/step1-student/step1-student",
+    "pages/parent/publishDemand/step2-teaching/step2-teaching",
+    "pages/parent/publishDemand/step3-preference/step3-preference",
+    "pages/parent/matchResult/matchResult"
+  ],
+  "permission": {
+    "scope.userLocation": {
+      "desc": "我们需要您的位置以寻找附近的家教需求"
+    }
+  },
+  "requiredPrivateInfos": [
+    "getLocation",
+    "chooseLocation"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#fff",
+    "navigationBarTitleText": "CampusTutor",
+    "navigationBarTextStyle": "black"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

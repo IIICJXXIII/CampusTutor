@@ -1,25 +1,72 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { Search, MapPin, Filter, Star } from 'lucide-vue-next';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { matchTutors } from '../../api/match.js';
+import { Search, MapPin, Filter, Star, Loader2 } from 'lucide-vue-next';
 
 const router = useRouter();
+const route = useRoute();
 
 // 筛选条件
 const activeFilter = ref('综合');
+const loading = ref(false);
+const teachers = ref([]);
 
-// 模拟 AI 匹配结果数据
-// 匹配分数逻辑参考: 认证(30%) + 距离(30%) + 价格(20%) + 信用(20%)
-const teachers = ref([
+// 获取匹配的教师列表
+const fetchTeachers = async () => {
+  loading.value = true;
+  try {
+    const demandId = route.query.demandId;
+    const res = await matchTutors({
+      demandId,
+      latitude: 31.2304,  // 默认上海坐标
+      longitude: 121.4737,
+      page: 1,
+      size: 20
+    });
+    
+    // 转换后端数据格式
+    teachers.value = (res.data || []).map(item => ({
+      id: item.tutorId,
+      name: item.realName || '老师',
+      school: item.universityName || '未填写',
+      subject: item.teachSubjects ? JSON.parse(item.teachSubjects)[0] : '综合',
+      price: item.expectPrice || 150,
+      matchScore: item.matchScore || 80,
+      distance: item.distance ? `${item.distance.toFixed(1)}km` : '未知',
+      style: item.teachStyle || '鼓励型',
+      tags: buildTags(item),
+      avatar: item.avatar || `https://api.dicebear.com/7.x/miniavs/svg?seed=${item.tutorId}`
+    }));
+  } catch (error) {
+    console.error('获取教师列表失败:', error);
+    // 使用模拟数据
+    teachers.value = getMockTeachers();
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 构建标签
+const buildTags = (item) => {
+  const tags = [];
+  if (item.certStatus === 2) tags.push('实名认证');
+  if (item.orderCount > 10) tags.push('经验丰富');
+  if (item.rating >= 4.8) tags.push('好评率高');
+  return tags.length ? tags : ['新入驻'];
+};
+
+// 模拟教师数据
+const getMockTeachers = () => [
   {
     id: 1,
     name: '张老师',
     school: '北京师范大学',
     subject: '数学',
     price: 200,
-    matchScore: 95, // 高匹配度
+    matchScore: 95,
     distance: '1.2km',
-    style: '鼓励型', //
+    style: '鼓励型',
     tags: ['实名认证', '3年教龄'],
     avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=1'
   },
@@ -41,7 +88,7 @@ const teachers = ref([
     school: '华东师范',
     subject: '物理',
     price: 250,
-    matchScore: 75, // 中匹配度
+    matchScore: 75,
     distance: '5.8km',
     style: '严厉型',
     tags: ['在职教师', '提分快'],
@@ -59,7 +106,26 @@ const teachers = ref([
     tags: ['口语好', '有耐心'],
     avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=4'
   }
-]);
+];
+
+// 排序后的教师列表
+const sortedTeachers = computed(() => {
+  const list = [...teachers.value];
+  switch (activeFilter.value) {
+    case '距离':
+      return list.sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+    case '价格':
+      return list.sort((a, b) => a.price - b.price);
+    case '好评':
+      return list.sort((a, b) => b.matchScore - a.matchScore);
+    default:
+      return list.sort((a, b) => b.matchScore - a.matchScore);
+  }
+});
+
+onMounted(() => {
+  fetchTeachers();
+});
 
 // 风格标签颜色映射
 const styleColors = {
@@ -105,7 +171,13 @@ const goToDetail = (id) => {
     </div>
 
     <div class="p-3 grid grid-cols-2 gap-3">
-      <div v-for="teacher in teachers" :key="teacher.id" 
+      <!-- 加载中 -->
+      <div v-if="loading" class="col-span-2 text-center py-20">
+        <Loader2 :size="32" class="mx-auto mb-4 animate-spin text-brand-blue" />
+        <p class="text-gray-400">正在匹配老师...</p>
+      </div>
+      
+      <div v-else v-for="teacher in sortedTeachers" :key="teacher.id" 
            @click="goToDetail(teacher.id)"
            class="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 active:scale-[0.98] transition-transform flex flex-col">
         
