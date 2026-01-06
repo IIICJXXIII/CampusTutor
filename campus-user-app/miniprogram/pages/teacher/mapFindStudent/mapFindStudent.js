@@ -3,157 +3,148 @@ import api from '../../../config/apiConfig';
 
 Page({
   data: {
-    latitude: 39.9042, // 默认北京坐标，后续会被真实定位覆盖
-    longitude: 116.4074,
+    latitude: 39.9088, // 默认北京坐标，防止未授权时地图白屏
+    longitude: 116.3975,
     markers: [],
-    selectedDemand: null, // 当前选中的需求
+    demandList: [],
+    currentDemand: null, // 当前选中的需求
+    isLoading: false
   },
 
   onLoad() {
-    this.getCurrentLocation();
+    this.initLocation();
   },
 
   onShow() {
-    // 每次显示页面时刷新数据
+    // 每次显示页面时尝试刷新数据
     if (this.data.latitude && this.data.longitude) {
-      this.getNearbyDemands(this.data.latitude, this.data.longitude);
+      this.fetchNearbyDemands();
     }
   },
 
-  // 1. 获取当前位置
-  getCurrentLocation() {
+  // 1. 初始化位置
+  initLocation() {
+    const that = this;
     wx.getLocation({
       type: 'gcj02',
-      success: (res) => {
-        this.setData({
+      success(res) {
+        that.setData({
           latitude: res.latitude,
           longitude: res.longitude
         });
-        // 获取附近需求
-        this.getNearbyDemands(res.latitude, res.longitude);
+        that.fetchNearbyDemands();
       },
-      fail: () => {
-        wx.showToast({ title: '请授权位置信息以获取附近需求', icon: 'none' });
-        // 授权失败也尝试获取一次数据（用默认坐标）
-        this.getNearbyDemands(this.data.latitude, this.data.longitude);
+      fail(err) {
+        console.error('定位失败', err);
+        wx.showToast({ title: '请授权位置信息', icon: 'none' });
+        // 定位失败也尝试加载一次（用默认坐标或上次坐标）
+        that.fetchNearbyDemands();
       }
     });
   },
 
-  // 2. 移动地图到当前位置
-  moveToLocation() {
-    const mapCtx = wx.createMapContext('myMap');
-    mapCtx.moveToLocation();
-    this.getCurrentLocation(); // 重新获取数据
-  },
+  // 2. 获取附近需求 (核心修复)
+  async fetchNearbyDemands() {
+    if (this.data.isLoading) return;
+    this.setData({ isLoading: true });
 
-  // 3. 获取附近需求数据
-  async getNearbyDemands(lat, lng) {
     try {
-      // 调用后端接口
       const res = await request.get(api.demand.nearby, {
-        latitude: lat,
-        longitude: lng,
-        radius: 10 // 搜索半径 10km
+        longitude: this.data.longitude,
+        latitude: this.data.latitude,
+        radius: 50 // 搜索半径 50km
       });
 
-      // 转换数据为 Markers
-      const demands = res || []; 
-      const markers = demands.map(item => ({
-        id: item.id,
+      // 【修复点】：后端如果因Redis挂了返回空，或者真没数据，res可能是空数组
+      if (!res || res.length === 0) {
+        this.setData({ 
+          demandList: [],
+          markers: [],
+          currentDemand: null,
+          isLoading: false
+        });
+        console.log('附近暂无需求数据');
+        return;
+      }
+
+      // 处理数据，计算距离
+      const list = res.map(item => {
+        return {
+          ...item,
+          // 简单计算距离展示 (保留1位小数)
+          distance: this.getDistance(
+            this.data.latitude, 
+            this.data.longitude, 
+            item.latitude, 
+            item.longitude
+          ).toFixed(1)
+        };
+      });
+
+      // 生成地图标记
+      const markers = list.map((item, index) => ({
+        id: item.id, // 使用需求ID作为Marker ID
         latitude: item.latitude,
         longitude: item.longitude,
-        iconPath: '/static/images/marker-student.png', // 请确保 static/images 下有此图标，否则不显示
-        width: 40,
-        height: 40,
+        width: 30,
+        height: 30,
+        // 如果没有自定义图标，不设置 iconPath，微信会用默认红色大头针
+        // iconPath: '/static/icons/location.png', 
         callout: {
-          content: `${item.grade}${item.subject} ¥${item.expectPrice}`,
+          content: `¥${item.expectPrice}\n${item.subject}`,
           padding: 8,
           borderRadius: 4,
           display: 'ALWAYS',
-          bgColor: '#ffffff',
-          color: '#409EFF'
-        },
-        // 保存完整数据以便点击时使用
-        rawData: item 
+          textAlign: 'center'
+        }
       }));
 
-      // --- Mock 数据逻辑 (如果后端返回空，用于演示) ---
-      if (markers.length === 0) {
-        markers.push({
-          id: 999,
-          latitude: lat + 0.005,
-          longitude: lng + 0.005,
-          width: 40,
-          height: 40,
-          iconPath: '/static/images/marker-student.png', // 临时用
-          callout: { content: '小学数学 ¥150', padding: 8, borderRadius: 4, display: 'ALWAYS' },
-          rawData: {
-            id: 999,
-            subject: '数学',
-            grade: '小学三年级',
-            expectPrice: 150,
-            address: '幸福家园小区',
-            detail: '基础较弱，需要耐心辅导',
-            distance: 0.8
-          }
-        });
-      }
-      // ---------------------------------------------
-
-      this.setData({ markers });
+      this.setData({
+        demandList: list,
+        markers: markers,
+        // 默认选中第一个，防止 currentDemand 为空
+        currentDemand: list[0],
+        isLoading: false
+      });
 
     } catch (err) {
       console.error('获取附近需求失败', err);
-    }
-  },
-
-  // 4. 点击 Marker
-  handleMarkerTap(e) {
-    const markerId = e.detail.markerId;
-    const targetMarker = this.data.markers.find(m => m.id === markerId);
-    
-    if (targetMarker) {
-      this.setData({
-        selectedDemand: targetMarker.rawData
+      // 出错时重置为空，防止页面崩坏
+      this.setData({ 
+        demandList: [], 
+        currentDemand: null,
+        markers: [],
+        isLoading: false 
       });
     }
   },
 
-  // 5. 点击地图空白处，关闭卡片
-  closeCard() {
-    this.setData({ selectedDemand: null });
-  },
-
-  // 6. 联系家长（模拟）
-  handleContact() {
-    wx.showModal({
-      title: '提示',
-      content: '即将拨打虚拟中间号联系家长',
-      confirmText: '呼叫',
-      success: (res) => {
-        if (res.confirm) wx.showToast({ title: '呼叫中...', icon: 'none' });
-      }
-    });
-  },
-
-  // 7. 立即接单
-  async handleApply() {
-    if (!this.data.selectedDemand) return;
-    
-    wx.showLoading({ title: '接单中...' });
-    try {
-      // 这里应该调用 create order 接口，或者先创建一个 match 记录
-      // 简化 MVP：直接提示成功并跳转
-      // await request.post(api.order.create, { ... });
-      
-      setTimeout(() => {
-        wx.hideLoading();
-        wx.showToast({ title: '接单申请已发送', icon: 'success' });
-        this.setData({ selectedDemand: null });
-      }, 1000);
-    } catch(err) {
-      wx.hideLoading();
+  // 点击地图标记
+  onMarkerTap(e) {
+    const demandId = e.markerId;
+    const target = this.data.demandList.find(d => d.id === demandId);
+    if (target) {
+      this.setData({ currentDemand: target });
     }
+  },
+
+  // 点击“立即接单”
+  handleAccept() {
+    if (!this.data.currentDemand) return;
+    wx.showToast({ title: '接单功能开发中', icon: 'none' });
+    // 后续跳转逻辑：
+    // wx.navigateTo({ url: `/pages/demand/detail/detail?id=${this.data.currentDemand.id}` });
+  },
+
+  // 辅助：计算两点距离 (单位：km)
+  getDistance(lat1, lng1, lat2, lng2) {
+    const radLat1 = lat1 * Math.PI / 180.0;
+    const radLat2 = lat2 * Math.PI / 180.0;
+    const a = radLat1 - radLat2;
+    const b = (lng1 * Math.PI / 180.0) - (lng2 * Math.PI / 180.0);
+    let s = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(a / 2), 2) +
+    Math.cos(radLat1) * Math.cos(radLat2) * Math.pow(Math.sin(b / 2), 2)));
+    s = s * 6378.137; // 地球半径
+    return s;
   }
 });
