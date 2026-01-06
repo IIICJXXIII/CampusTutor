@@ -1,10 +1,18 @@
 import { reactive } from 'vue';
 
+// 从 localStorage 恢复用户信息
+const savedUserInfo = JSON.parse(localStorage.getItem('userInfo') || 'null');
+
 // 全局响应式数据仓库 (就像一个小型的数据库)
 export const store = reactive({
   // 1. 当前用户身份 (同步 localStorage)
   userRole: localStorage.getItem('userRole') || 'parent',
   isCertified: false,
+  
+  // 用户信息
+  userInfo: savedUserInfo || null,
+  token: localStorage.getItem('token') || null,
+  
   // 2. 模拟订单列表 (初始有一些历史数据，为了让列表不为空)
   orders: [
     {
@@ -38,6 +46,43 @@ export const store = reactive({
   },
   setCertification(status) {
     this.isCertified = status;
+  },
+  
+  // 登录成功后保存用户信息
+  setLoginInfo(data) {
+    this.token = data.token;
+    this.userInfo = {
+      userId: data.userId,
+      username: data.username,
+      nickname: data.nickname,
+      avatar: data.avatar,
+      role: data.role
+    };
+    // 根据角色设置 userRole
+    const roleMap = { 0: 'admin', 1: 'teacher', 2: 'parent' };
+    this.userRole = roleMap[data.role] || 'parent';
+    
+    // 持久化
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('userInfo', JSON.stringify(this.userInfo));
+    localStorage.setItem('userRole', this.userRole);
+  },
+  
+  // 登出
+  logout() {
+    this.token = null;
+    this.userInfo = null;
+    this.userRole = 'parent';
+    this.isCertified = false;
+    
+    localStorage.removeItem('token');
+    localStorage.removeItem('userInfo');
+    localStorage.removeItem('userRole');
+  },
+  
+  // 检查是否已登录
+  isLoggedIn() {
+    return !!this.token;
   },
 
   // 创建新订单 (签约后调用)

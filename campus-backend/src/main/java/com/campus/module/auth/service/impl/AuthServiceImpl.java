@@ -13,13 +13,15 @@ import com.campus.module.user.entity.SysUser;
 import com.campus.module.user.service.SysUserService;
 import com.campus.module.wallet.entity.SysWallet;
 import com.campus.module.wallet.service.SysWalletService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -27,18 +29,29 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final SysUserService sysUserService;
     private final SysWalletService sysWalletService;
     private final JwtUtils jwtUtils;
-    private final StringRedisTemplate stringRedisTemplate;
+    
+    // Redis 可选注入
+    @Autowired(required = false)
+    private StringRedisTemplate stringRedisTemplate;
+    
+    // 内存缓存作为 Redis 不可用时的后备方案（仅用于开发环境）
+    private final Map<String, String> memoryCodeCache = new ConcurrentHashMap<>();
 
     /** 验证码 Redis Key 前缀 */
     private static final String CODE_PREFIX = "sms:code:";
     /** 验证码有效期 (分钟) */
     private static final long CODE_EXPIRE_MINUTES = 5;
+    
+    public AuthServiceImpl(SysUserService sysUserService, SysWalletService sysWalletService, JwtUtils jwtUtils) {
+        this.sysUserService = sysUserService;
+        this.sysWalletService = sysWalletService;
+        this.jwtUtils = jwtUtils;
+    }
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -126,9 +139,19 @@ public class AuthServiceImpl implements AuthService {
         // 生成6位随机验证码
         String code = RandomUtil.randomNumbers(6);
 
-        // 存入 Redis，设置过期时间
         String key = CODE_PREFIX + phone;
-        stringRedisTemplate.opsForValue().set(key, code, CODE_EXPIRE_MINUTES, TimeUnit.MINUTES);
+        
+        // 优先使用 Redis，不可用时使用内存缓存
+        if (stringRedisTemplate != null) {
+            try {
+                stringRedisTemplate.opsForValue().set(key, code, CODE_EXPIRE_MINUTES, TimeUnit.MINUTES);
+            } catch (Exception e) {
+                log.warn("Redis不可用，使用内存缓存存储验证码");
+                memoryCodeCache.put(key, code);
+            }
+        } else {
+            memoryCodeCache.put(key, code);
+        }
 
         // TODO: 实际项目中接入短信服务商 API 发送短信
         // 这里只做 Mock，打印日志
@@ -145,11 +168,26 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String key = CODE_PREFIX + phone;
-        String cachedCode = stringRedisTemplate.opsForValue().get(key);
+        String cachedCode = null;
+        
+        // 优先使用 Redis，不可用时使用内存缓存
+        if (stringRedisTemplate != null) {
+            try {
+                cachedCode = stringRedisTemplate.opsForValue().get(key);
+                if (cachedCode != null && cachedCode.equals(code)) {
+                    stringRedisTemplate.delete(key);
+                    return true;
+                }
+            } catch (Exception e) {
+                log.warn("Redis不可用，使用内存缓存验证验证码");
+                cachedCode = memoryCodeCache.get(key);
+            }
+        } else {
+            cachedCode = memoryCodeCache.get(key);
+        }
 
         if (cachedCode != null && cachedCode.equals(code)) {
-            // 验证成功后删除验证码
-            stringRedisTemplate.delete(key);
+            memoryCodeCache.remove(key);
             return true;
         }
         return false;
