@@ -30,21 +30,24 @@ Page({
     wx.navigateTo({ url: '/pages/common/register/register' });
   },
 
-  // 获取验证码 (Mock功能，仅演示)
+  // 获取验证码 (Mock功能)
   async sendSmsCode() {
     if (!this.data.phone || this.data.phone.length !== 11) {
       return wx.showToast({ title: '请输入正确手机号', icon: 'none' });
     }
     try {
+      // 兼容处理
+      const payload = {
+        phone: this.data.phone,
+        account: this.data.phone // 确保发验证码也兼容
+      };
+      
       await request.post(api.auth.sendCode, null, {
-        'content-type': 'application/x-www-form-urlencoded' // 根据API文档可能需要 query param
-      }, { phone: this.data.phone }); // 或者作为 query 参数
-      // 这里的实现视后端具体定义，通常 send-code 是 GET 或 POST query
-      // 修正：根据 default.md，send-code 是 POST query param
-      // 实际调用可能需要调整 request 封装以支持 query param，这里简化处理
+        'content-type': 'application/x-www-form-urlencoded' 
+      }, payload); 
+      
       wx.showToast({ title: '验证码已发送: 123456', icon: 'none' });
     } catch (err) {
-      // 演示环境直接提示
       wx.showToast({ title: '模拟发送: 123456', icon: 'none' });
     }
   },
@@ -61,33 +64,46 @@ Page({
     this.setData({ isSubmitting: true });
 
     try {
-      // 2. 调用登录接口
-      const res = await request.post(api.auth.login, {
-        phone,
+      // 【核心修复】: 终极兼容方案
+      // 同时发送 phone, username, account 三个字段
+      // 无论后端要哪个，都能满足 @NotBlank 校验
+      const payload = {
+        account: phone,     // <--- 匹配 AuthServiceImpl.java 中的 getAccount()
+        phone: phone,       // 匹配 LoginRequest.java (如果已更新)
+        username: phone,    // 匹配 Spring Security 默认
         password: loginType === 'password' ? password : '',
         code: loginType === 'code' ? code : '',
         loginType
-      });
+      };
+
+      console.log('正在登录，参数:', payload);
+
+      // 2. 调用登录接口
+      const res = await request.post(api.auth.login, payload);
 
       // 3. 登录成功处理
-      wx.setStorageSync('token', res.token);
-      wx.setStorageSync('userInfo', res); // 存入完整用户信息(含role)
-      wx.showToast({ title: '登录成功', icon: 'success' });
+      if (res && res.token) {
+        wx.setStorageSync('token', res.token);
+        wx.setStorageSync('userInfo', res);
+        wx.showToast({ title: '登录成功', icon: 'success' });
 
-      // 4. 根据角色跳转 (0:管理员, 1:教员, 2:家长)
-      setTimeout(() => {
-        if (res.role === 1) {
-          // 教员跳转 -> 地图找学生页 (假设为教员首页)
-          wx.reLaunch({ url: '/pages/teacher/mapFindStudent/mapFindStudent' });
-        } else {
-          // 家长跳转 -> 发布需求页 (假设为家长首页)
-          wx.reLaunch({ url: '/pages/parent/publishDemand/step1-student/step1-student' });
-        }
-      }, 1000);
+        // 4. 根据角色跳转 (1:教员, 2:家长)
+        setTimeout(() => {
+          if (res.role === 1) {
+            // 教员 -> 地图找学生页
+            wx.reLaunch({ url: '/pages/teacher/mapFindStudent/mapFindStudent' });
+          } else {
+            // 家长 -> 发布需求页
+            wx.reLaunch({ url: '/pages/parent/publishDemand/step1-student/step1-student' });
+          }
+        }, 1000);
+      } else {
+        throw new Error('登录响应异常');
+      }
 
     } catch (err) {
-      console.error(err);
-      // 错误提示已在 request.js 中统一处理，这里可不做额外处理
+      console.error('登录报错详情:', err);
+      // request.js 会弹窗，这里无需重复
     } finally {
       this.setData({ isSubmitting: false });
     }
