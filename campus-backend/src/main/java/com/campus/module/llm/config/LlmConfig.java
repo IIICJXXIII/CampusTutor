@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * LLM配置类
- * 支持多种LLM服务商: OpenAI, Azure OpenAI, 通义千问, 文心一言等
+ * 支持多种LLM服务商: DeepSeek, OpenAI, Azure OpenAI, 通义千问等
  */
 @Data
 @Component
@@ -19,9 +19,9 @@ public class LlmConfig {
     private boolean enabled = false;
 
     /**
-     * LLM服务提供商: openai, azure, qwen, wenxin
+     * LLM服务提供商: deepseek, openai, azure, qwen
      */
-    private String provider = "openai";
+    private String provider = "deepseek";
 
     /**
      * API Key
@@ -36,12 +36,12 @@ public class LlmConfig {
     /**
      * API基础URL
      */
-    private String baseUrl = "https://api.openai.com/v1";
+    private String baseUrl = "https://api.deepseek.com";
 
     /**
      * 模型名称
      */
-    private String model = "gpt-3.5-turbo";
+    private String model = "deepseek-chat";
 
     /**
      * 最大Token数

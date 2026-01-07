@@ -43,18 +43,73 @@ public class LlmClientService {
 
         try {
             switch (config.getProvider().toLowerCase()) {
+                case "deepseek":
+                    return callDeepSeek(messages);
                 case "openai":
                 case "azure":
                     return callOpenAI(messages);
                 case "qwen":
                     return callQwen(messages);
                 default:
-                    return callOpenAI(messages);
+                    return callDeepSeek(messages);
             }
         } catch (Exception e) {
             log.error("LLM调用失败: {}", e.getMessage(), e);
             return ChatResponse.fail("LLM调用失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 调用DeepSeek API
+     * DeepSeek V3使用OpenAI兼容的API格式
+     */
+    private ChatResponse callDeepSeek(List<ChatMessage> messages) {
+        String url = config.getBaseUrl() + "/chat/completions";
+
+        JSONObject requestBody = new JSONObject();
+        requestBody.set("model", config.getModel());
+        requestBody.set("max_tokens", config.getMaxTokens());
+        requestBody.set("temperature", config.getTemperature());
+
+        JSONArray messagesArray = new JSONArray();
+        for (ChatMessage msg : messages) {
+            JSONObject msgObj = new JSONObject();
+            msgObj.set("role", msg.getRole());
+            msgObj.set("content", msg.getContent());
+            messagesArray.add(msgObj);
+        }
+        requestBody.set("messages", messagesArray);
+
+        log.debug("DeepSeek请求: {}", requestBody);
+
+        HttpResponse response = HttpRequest.post(url)
+                .header("Authorization", "Bearer " + config.getApiKey())
+                .header("Content-Type", "application/json")
+                .body(requestBody.toString())
+                .timeout(config.getTimeout() * 1000)
+                .execute();
+
+        String responseBody = response.body();
+        log.debug("DeepSeek响应: {}", responseBody);
+
+        if (!response.isOk()) {
+            return ChatResponse.fail("DeepSeek API调用失败: " + response.getStatus() + " - " + responseBody);
+        }
+
+        JSONObject jsonResponse = JSONUtil.parseObj(responseBody);
+        JSONArray choices = jsonResponse.getJSONArray("choices");
+        if (choices != null && !choices.isEmpty()) {
+            JSONObject choice = choices.getJSONObject(0);
+            JSONObject message = choice.getJSONObject("message");
+            String content = message.getStr("content");
+
+            JSONObject usage = jsonResponse.getJSONObject("usage");
+            Integer tokensUsed = usage != null ? usage.getInt("total_tokens") : null;
+
+            return ChatResponse.success(content, tokensUsed);
+        }
+
+        return ChatResponse.fail("DeepSeek API响应格式错误");
     }
 
     /**
