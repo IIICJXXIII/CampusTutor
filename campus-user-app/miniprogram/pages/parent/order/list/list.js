@@ -1,5 +1,5 @@
-import request from '../../../utils/request';
-import api from '../../../config/apiConfig';
+const request = require('../../../../utils/request.js');
+const api = require('../../../../config/apiConfig.js');
 
 Page({
   data: {
@@ -86,7 +86,8 @@ Page({
       if (refresh) wx.stopPullDownRefresh();
 
     } catch (err) {
-      console.error(err);
+      console.error('loadOrders error:', err);
+      wx.showToast({ title: '加载订单失败，请稍后重试', icon: 'none' });
       this.setData({ loading: false });
       wx.stopPullDownRefresh();
     }
@@ -183,10 +184,9 @@ Page({
     }
   },
 
-  // 跳转详情 (暂未开发，先占位)
+  // 跳转详情
   goToDetail(e) {
     const id = e.currentTarget.dataset.id;
-    // wx.navigateTo({ url: `/pages/parent/order/detail/detail?id=${id}` });
-    console.log('查看详情', id);
+    wx.navigateTo({ url: `/pages/parent/order/detail/detail?id=${id}` });
   }
 });

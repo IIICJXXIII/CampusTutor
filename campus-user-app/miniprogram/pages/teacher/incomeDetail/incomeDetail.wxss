@@ -390,9 +390,7 @@ page {
 /* 渠道选择 */
 .channel-options {
   display: flex;
-  gap: 24rpx;
 }
-
 .channel-item {
   flex: 1;
   text-align: center;
@@ -403,6 +401,7 @@ page {
   color: #666;
   border: 2rpx solid transparent;
 }
+.channel-item + .channel-item { margin-left: 24rpx; }
 
 .channel-item.active {
   background: rgba(102, 126, 234, 0.1);
@@ -414,9 +413,9 @@ page {
 .popup-footer {
   display: flex;
   padding: 32rpx;
-  gap: 24rpx;
   padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
 }
+.popup-footer .btn-cancel + .btn-submit { margin-left: 24rpx; }
 
 .btn-cancel, .btn-submit {
   flex: 1;

@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+
+# CampusTutor
+=======
+>>>>>>> main
 # 🎓 CampusTutor (校园智教)
 
 <div align="center">
@@ -164,5 +169,208 @@ npm run dev
 
 ---
 
+<<<<<<< HEAD
+## 🔑 核心功能模块
+
+### 1️⃣ 认证模块 (Auth)
+- 用户注册/登录
+- 手机验证码发送与校验
+- JWT Token 生成与验证
+- 用户信息上下文管理
+
+### 2️⃣ 教员模块 (Tutor)
+- 教员资质认证 (学生证、成绩单上传)
+- 个人信息完善
+- 授课科目与价格设置
+- 接单记录查询
+
+### 3️⃣ 家长模块 (Parent)
+- 学生信息管理 (支持多个孩子)
+- 薄弱科目标注
+- 学习情况描述
+
+### 4️⃣ 智能匹配模块 (Match)
+- **多维度搜索**: 
+  - 科目筛选
+  - 年级匹配
+  - 价格区间
+  - 性别偏好
+  - 学历要求
+  - 授课方式 (上门/网课)
+- **LBS 地理位置搜索**: 
+  - 基于经纬度的距离计算
+  - 半径范围筛选
+  - 距离排序
+- **智能排序**:
+  - 按距离排序
+  - 按评分排序
+  - 按价格排序
+
+### 5️⃣ 订单模块 (Order)
+- 订单创建
+- 在线支付
+- 订单状态管理
+- 订单评价
+
+---
+
+## 📊 数据库设计
+
+主要数据表: 
+
+- `sys_user` - 用户表 (统一管理所有角色)
+- `tutor_info` - 教员信息表
+- `tutor_subject` - 教员授课科目表
+- `parent_info` - 家长信息表
+- `student_info` - 学生信息表
+- `tutor_order` - 订单表
+- `order_evaluation` - 订单评价表
+- `admin_info` - 管理员信息表
+
+详细的表结构请查看 `campus-backend/initdatabase.sql`
+
+---
+
+## 🔐 API 认证
+
+### 请求头格式
+
+```http
+Authorization: Bearer <JWT_TOKEN>
+```
+
+### 白名单路径 (无需认证)
+
+- `/api/auth/**` - 登录注册接口
+- `/doc.html` - API 文档
+- `/swagger-ui/**` - Swagger UI
+- `/v3/api-docs/**` - OpenAPI 规范
+
+---
+
+## 🛠️ 团队协作规范
+
+我们使用 Git Flow 工作流，详细的协作指南请参考 [tips.md](tips.md)
+
+### 核心原则
+
+1. ❌ 永远不要直接在 `main` 分支上写代码
+2. ❌ 永远不要强制推送 (`git push -f`)
+3. ✅ 每天开工前，必须先同步 `main` 分支的最新代码
+
+### 标准工作流
+
+```bash
+# 1. 同步主分支
+git checkout main
+git pull origin main
+
+# 2. 切换到功能分支并合并最新代码
+git checkout feature/your-feature
+git merge main
+
+# 3. 开发完成后提交
+git add .
+git commit -m "feat: 完成xx功能"
+git push origin feature/your-feature
+
+# 4. 在 GitHub 上创建 Pull Request
+```
+
+---
+
+## 📝 提交规范
+
+我们采用 [约定式提交](https://www.conventionalcommits.org/zh-hans/) 规范: 
+
+- `feat`: 新功能
+- `fix`: 修复 Bug
+- `docs`: 文档更新
+- `style`: 代码格式调整
+- `refactor`: 重构代码
+- `test`: 测试相关
+- `chore`: 构建/工具链更新
+
+示例: 
+```bash
+git commit -m "feat: 添加教员地理位置搜索功能"
+git commit -m "fix: 修复订单状态更新异常的问题"
+```
+
+---
+
+## 🧪 测试
+
+```bash
+# 后端单元测试
+cd campus-backend
+mvn test
+
+# 前端测试
+cd campus-web
+npm run test
+```
+
+---
+
+## 📦 部署
+
+### Docker 部署 (推荐)
+
+```bash
+# 构建镜像
+docker-compose build
+
+# 启动服务
+docker-compose up -d
+```
+
+### 传统部署
+
+1. 后端打包
+```bash
+cd campus-backend
+mvn clean package -DskipTests
+java -jar target/campus-backend-1.0.0.jar
+```
+
+2. 前端打包
+```bash
+cd campus-web
+npm run build
+# 将 dist 目录部署到 Nginx
+```
+
+---
+
+## 🤝 贡献指南
+
+我们欢迎所有形式的贡献！
+
+1. Fork 本仓库
+2. 创建你的特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交你的改动 (`git commit -m 'feat: Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 打开一个 Pull Request
+
+---
+
+## 📄 开源协议
+
+本项目采用 [MIT License](LICENSE) 开源协议
+
+---
+
+
+<div align="center">
+
+**如果这个项目对你有帮助，请给我们一个 ⭐️ Star！**
+
+Made with ❤️ by CampusTutor Team
+
+</div>
+
+=======
 ## 📄 版权说明
 本项目采用 MIT 开源协议，仅供学习交流使用。
+>>>>>>> main

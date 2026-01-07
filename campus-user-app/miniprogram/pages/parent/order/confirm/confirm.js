@@ -1,5 +1,5 @@
-import request from '../../../../utils/request';
-import api from '../../../../config/apiConfig';
+const request = require('../../../../utils/request.js');
+const api = require('../../../../config/apiConfig.js');
 
 Page({
   data: {
