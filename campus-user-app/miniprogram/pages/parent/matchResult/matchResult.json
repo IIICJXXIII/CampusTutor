@@ -1,7 +1,6 @@
 {
-  "navigationBarTitleText": "智能匹配结果",
+  "navigationBarTitleText": "找老师",
   "enablePullDownRefresh": true,
-  "usingComponents": {
-    "teacher-card": "/components/teacherCard/teacherCard"
-  }
+  "onReachBottomDistance": 50,
+  "usingComponents": {}
 }

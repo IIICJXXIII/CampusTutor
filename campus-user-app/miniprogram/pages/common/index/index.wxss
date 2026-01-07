@@ -1,0 +1,326 @@
+/* 首页样式 - index.wxss */
+page {
+  background: #f8f9fc; /* 更柔和的背景色 */
+}
+
+.container {
+  padding: 32rpx; /* 增加页面边距 */
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+}
+
+/* 顶部欢迎区域 */
+.header {
+  padding: 20rpx 0 40rpx;
+}
+
+.welcome {
+  display: flex;
+  flex-direction: column;
+}
+
+.greeting {
+  font-size: 48rpx; /* 更大的标题 */
+  font-weight: 800;
+  color: #1a1a1a;
+  margin-bottom: 12rpx;
+  letter-spacing: -1rpx;
+}
+
+.subtitle {
+  font-size: 30rpx;
+  color: #666;
+  font-weight: 400;
+}
+
+/* 数据统计卡片（教师端） */
+.stats-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 32rpx; /* 更大的圆角 */
+  padding: 40rpx 32rpx;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-bottom: 48rpx; /* 增加下边距 */
+  box-shadow: 0 12rpx 36rpx rgba(102, 126, 234, 0.25);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 8rpx;
+  text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.1);
+}
+
+.stat-label {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.stat-divider {
+  width: 2rpx;
+  height: 60rpx;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 快捷功能区 */
+.quick-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 48rpx;
+}
+
+.quick-actions.four .action-item {
+  margin: 0 10rpx;
+}
+
+.action-item {
+  flex: 1;
+  background: #fff;
+  border-radius: 32rpx;
+  padding: 32rpx 20rpx;
+  margin: 0 12rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+}
+
+.action-item:active {
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.02);
+}
+
+.action-item:first-child {
+  margin-left: 0;
+}
+
+.action-item:last-child {
+  margin-right: 0;
+}
+
+.action-icon {
+  width: 96rpx; /* 更大的图标区域 */
+  height: 96rpx;
+  border-radius: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+  box-shadow: 0 8rpx 20rpx rgba(0,0,0,0.06);
+}
+
+.icon-text {
+  font-size: 44rpx;
+}
+
+.action-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6rpx;
+}
+
+.action-desc {
+  font-size: 22rpx;
+  color: #999;
+}
+
+/* 区块 */
+.section {
+  background: #fff;
+  border-radius: 32rpx;
+  padding: 32rpx;
+  margin-bottom: 32rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.03);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32rpx;
+}
+
+.section-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1a1a1a;
+  position: relative;
+  padding-left: 0;
+}
+
+.section-more {
+  font-size: 26rpx;
+  color: #667eea;
+  font-weight: 500;
+  padding: 10rpx 0;
+}
+
+/* 需求卡片（教师端） */
+.demand-card {
+  padding: 24rpx;
+  background: #f8f9fc;
+  border-radius: 24rpx;
+  margin-bottom: 24rpx;
+  border: 1rpx solid rgba(0,0,0,0.02);
+}
+
+.demand-card:last-child {
+  margin-bottom: 0;
+}
+
+.demand-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.demand-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.demand-price {
+  font-size: 30rpx;
+  color: #f56c6c;
+  font-weight: 700;
+}
+
+.demand-sub {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.demand-address {
+  font-size: 26rpx;
+  color: #666;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demand-mode {
+  font-size: 22rpx;
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+  padding: 6rpx 16rpx;
+  border-radius: 12rpx;
+  margin-left: 20rpx;
+  font-weight: 500;
+}
+
+/* 需求卡片（家长端） */
+.demand-card-simple {
+  padding: 32rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.demand-card-simple:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.demand-card-simple:first-child {
+  padding-top: 0;
+}
+
+.demand-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.demand-time {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 12rpx;
+  background: #f5f5f5;
+  align-self: flex-start;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.demand-status {
+  font-size: 24rpx;
+  padding: 8rpx 20rpx;
+  border-radius: 24rpx;
+  font-weight: 500;
+}
+
+.demand-status.active {
+  background: #e8f4fd;
+  color: #409EFF;
+}
+
+.demand-status.matched {
+  background: #f0f9eb;
+  color: #67c23a;
+}
+
+/* 订单卡片 */
+.order-card {
+  padding: 32rpx;
+  background: #f8f9fc;
+  border-radius: 20rpx;
+  margin-bottom: 24rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.order-card:last-child {
+  margin-bottom: 0;
+}
+
+.order-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.order-subject {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.order-progress {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.order-btn {
+  font-size: 28rpx;
+  color: #667eea;
+  font-weight: 500;
+  background: #fff;
+  padding: 12rpx 24rpx;
+  border-radius: 30rpx;
+  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.1);
+}
+
+/* 空提示 */
+.empty-tip {
+  text-align: center;
+  padding: 60rpx 0;
+  color: #999;
+  font-size: 28rpx;
+  background: #fcfcfc;
+  border-radius: 20rpx;
+  border: 2rpx dashed #eee;
+}
