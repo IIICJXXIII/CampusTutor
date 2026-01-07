@@ -1,0 +1,68 @@
+<!-- 家长课时详情页面 -->
+<view class="container">
+  <!-- 状态卡片 -->
+  <view class="status-card {{record.status === 1 ? 'confirmed' : record.status === 2 ? 'disputed' : 'pending'}}">
+    <text class="status-icon">{{record.status === 1 ? '✓' : record.status === 2 ? '!' : '⏰'}}</text>
+    <text class="status-text">{{record.statusText || (record.status === 1 ? '已确认' : record.status === 2 ? '申诉中' : '待确认')}}</text>
+  </view>
+
+  <!-- 课时信息 -->
+  <view class="info-card">
+    <view class="card-title">课时信息</view>
+    <view class="info-list">
+      <view class="info-item">
+        <text class="label">课时序号</text>
+        <text class="value">第 {{record.lessonIndex}} 节课</text>
+      </view>
+      <view class="info-item">
+        <text class="label">上课时间</text>
+        <text class="value">{{record.startTimeText || '--'}}</text>
+      </view>
+      <view class="info-item" wx:if="{{record.endTime}}">
+        <text class="label">下课时间</text>
+        <text class="value">{{record.endTimeText || '--'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 打卡凭证 -->
+  <view class="info-card" wx:if="{{record.clockInImg}}">
+    <view class="card-title">打卡凭证</view>
+    <image class="checkin-photo" src="{{record.clockInImg}}" mode="aspectFill" bindtap="previewPhoto"/>
+    <view class="location-info" wx:if="{{record.clockInLat}}">
+      <text class="location-icon">📍</text>
+      <text>{{record.clockInLat}}, {{record.clockInLng}}</text>
+    </view>
+  </view>
+
+  <!-- 教学内容 -->
+  <view class="info-card" wx:if="{{record.contentSummary}}">
+    <view class="card-title">教学内容</view>
+    <view class="content-text">{{record.contentSummary}}</view>
+  </view>
+
+  <!-- 布置作业 -->
+  <view class="info-card" wx:if="{{record.homeworkAssigned}}">
+    <view class="card-title">布置作业</view>
+    <view class="content-text">{{record.homeworkAssigned}}</view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="action-area" wx:if="{{record.status === 0 && record.endTime}}">
+    <button class="btn-confirm" bindtap="handleConfirm">确认课时</button>
+    <button class="btn-dispute" bindtap="showDisputeModal">申诉课时</button>
+  </view>
+</view>
+
+<!-- 申诉弹窗 -->
+<view class="modal-mask" wx:if="{{showDispute}}" bindtap="hideDisputeModal">
+  <view class="modal-content" catchtap="">
+    <view class="modal-title">申诉课时</view>
+    <textarea class="dispute-input" placeholder="请描述申诉原因..." 
+              bindinput="onDisputeInput" value="{{disputeReason}}" maxlength="200"/>
+    <view class="modal-actions">
+      <button class="modal-btn cancel" bindtap="hideDisputeModal">取消</button>
+      <button class="modal-btn confirm" bindtap="handleDispute" loading="{{isSubmitting}}">提交</button>
+    </view>
+  </view>
+</view>
