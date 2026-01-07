@@ -112,8 +112,8 @@ public class AuthServiceImpl implements AuthService {
         // 创建用户
         SysUser user = new SysUser();
         user.setUsername(request.getPhone());
-        // 开发环境暂存明文密码（上线前务必改为加密存储）
-        user.setPassword(request.getPassword());
+        // 密码加密存储 (MD5)
+        user.setPassword(cn.hutool.crypto.SecureUtil.md5(request.getPassword()));
         user.setNickname(request.getNickname() != null ? request.getNickname() : "用户" + RandomUtil.randomNumbers(6));
         user.setRole(request.getRole());
         user.setStatus(1);
