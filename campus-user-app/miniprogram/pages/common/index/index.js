@@ -114,6 +114,10 @@ Page({
         wx.navigateTo({ url: '/pages/teacher/orderList/orderList' });
     },
 
+    goToTeacherLessons() {
+        wx.navigateTo({ url: '/pages/teacher/lessonList/lessonList' });
+    },
+
     goToIncome() {
         wx.navigateTo({ url: '/pages/teacher/incomeDetail/incomeDetail' });
     },
@@ -155,6 +159,10 @@ Page({
 
     goToParentOrders() {
         wx.navigateTo({ url: '/pages/parent/order/list/list' });
+    },
+
+    goToParentLessons() {
+        wx.navigateTo({ url: '/pages/parent/lessonList/lessonList' });
     },
 
     formatTime(timeStr) {

@@ -63,6 +63,16 @@ export default {
     transactions: `${API_HOST}/api/wallet/transactions`,
     withdraw: `${API_HOST}/api/wallet/withdraw`,
     withdrawals: `${API_HOST}/api/wallet/withdrawals`,
+  },
+  // 课时打卡模块 (Teaching)
+  teaching: {
+    checkIn: `${API_HOST}/api/teaching/check-in`,
+    checkOut: (recordId) => `${API_HOST}/api/teaching/check-out/${recordId}`,
+    confirm: (recordId) => `${API_HOST}/api/teaching/confirm/${recordId}`,
+    dispute: (recordId) => `${API_HOST}/api/teaching/dispute/${recordId}`,
+    myRecords: `${API_HOST}/api/teaching/my-records`,
+    orderRecords: (orderId) => `${API_HOST}/api/teaching/records/${orderId}`,
+    detail: (recordId) => `${API_HOST}/api/teaching/record/${recordId}`,
   }
 };
 
