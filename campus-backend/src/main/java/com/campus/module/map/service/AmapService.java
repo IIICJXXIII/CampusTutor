@@ -279,7 +279,14 @@ public class AmapService {
                     component.setProvince(addressComponent.getStr("province"));
                     component.setCity(getStringOrFirst(addressComponent, "city"));
                     component.setDistrict(addressComponent.getStr("district"));
-                    component.setStreet(addressComponent.getStr("streetNumber", new JSONObject()).toString());
+                    // 解析streetNumber，可能是对象或字符串
+                    Object streetNumber = addressComponent.get("streetNumber");
+                    if (streetNumber instanceof JSONObject) {
+                        JSONObject sn = (JSONObject) streetNumber;
+                        component.setStreet(sn.getStr("street", "") + sn.getStr("number", ""));
+                    } else if (streetNumber != null) {
+                        component.setStreet(streetNumber.toString());
+                    }
                     data.setAddressComponent(component);
                 }
 
