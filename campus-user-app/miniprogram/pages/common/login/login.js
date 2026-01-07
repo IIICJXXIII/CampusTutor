@@ -41,11 +41,11 @@ Page({
         phone: this.data.phone,
         account: this.data.phone // 确保发验证码也兼容
       };
-      
+
       await request.post(api.auth.sendCode, null, {
-        'content-type': 'application/x-www-form-urlencoded' 
-      }, payload); 
-      
+        'content-type': 'application/x-www-form-urlencoded'
+      }, payload);
+
       wx.showToast({ title: '验证码已发送: 123456', icon: 'none' });
     } catch (err) {
       wx.showToast({ title: '模拟发送: 123456', icon: 'none' });
@@ -87,15 +87,9 @@ Page({
         wx.setStorageSync('userInfo', res);
         wx.showToast({ title: '登录成功', icon: 'success' });
 
-        // 4. 根据角色跳转 (1:教员, 2:家长)
+        // 4. 登录成功后跳转到首页
         setTimeout(() => {
-          if (res.role === 1) {
-            // 教员 -> 地图找学生页
-            wx.reLaunch({ url: '/pages/teacher/mapFindStudent/mapFindStudent' });
-          } else {
-            // 家长 -> 发布需求页
-            wx.reLaunch({ url: '/pages/parent/publishDemand/step1-student/step1-student' });
-          }
+          wx.switchTab({ url: '/pages/common/index/index' });
         }, 1000);
       } else {
         throw new Error('登录响应异常');
