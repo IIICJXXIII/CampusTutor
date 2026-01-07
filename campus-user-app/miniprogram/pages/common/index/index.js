@@ -110,8 +110,8 @@ Page({
         wx.navigateTo({ url: '/pages/teacher/certification/step3-result/step3-result' });
     },
 
-    goToTeacherOrders() {
-        wx.showToast({ title: '订单功能开发中', icon: 'none' });
+    goToTeacherLessons() {
+        wx.navigateTo({ url: '/pages/teacher/lessonList/lessonList' });
     },
 
     goToIncome() {
@@ -155,6 +155,10 @@ Page({
 
     goToParentOrders() {
         wx.navigateTo({ url: '/pages/parent/order/list/list' });
+    },
+
+    goToParentLessons() {
+        wx.navigateTo({ url: '/pages/parent/lessonList/lessonList' });
     },
 
     formatTime(timeStr) {
