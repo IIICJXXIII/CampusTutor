@@ -48,7 +48,8 @@ Page({
           { icon: 'goods', title: '我的订单', url: '/pages/parent/order/list/list', bgColor: '#e8f4fd' },
           { icon: 'examples', title: '课时记录', url: '/pages/parent/lessonList/lessonList', bgColor: '#f0f9eb' },
           { icon: 'goods', title: '我的需求', url: '/pages/parent/demand/myList/myList', bgColor: '#fdf6ec' },
-          { icon: 'copy', title: '发布需求', url: '/pages/parent/publishDemand/step1-student/step1-student', bgColor: '#fef0f0' }
+          { icon: 'copy', title: '发布需求', url: '/pages/parent/publishDemand/step1-student/step1-student', bgColor: '#fef0f0' },
+          { icon: 'examples', title: '错题本', url: '/pages/common/wrongBook/wrongBook', bgColor: '#fff7e6' }
         ]
       });
     }

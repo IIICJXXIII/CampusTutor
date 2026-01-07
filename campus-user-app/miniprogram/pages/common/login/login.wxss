@@ -62,6 +62,17 @@
   line-height: 88rpx;
 }
 
+.wx-login-btn {
+  margin-top: 24rpx;
+  background-color: #07C160;
+  color: #fff;
+  border-radius: 44rpx;
+  font-size: 30rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+}
+
 .footer-actions {
   margin-top: 40rpx;
   display: flex;
