@@ -9,6 +9,8 @@
     "pages/teacher/certification/step3-result/step3-result",
     "pages/teacher/incomeDetail/incomeDetail",
     "pages/teacher/mapFindStudent/mapFindStudent",
+    "pages/teacher/lessonCheckIn/lessonCheckIn",
+    "pages/teacher/lessonList/lessonList",
     "pages/parent/publishDemand/step1-student/step1-student",
     "pages/parent/publishDemand/step2-teaching/step2-teaching",
     "pages/parent/publishDemand/step3-preference/step3-preference",
@@ -17,7 +19,9 @@
     "pages/parent/order/confirm/confirm",
     "pages/parent/order/list/list",
     "pages/parent/publishDemand/step2-content/step2-content",
-    "pages/parent/demand/myList/myList"
+    "pages/parent/demand/myList/myList",
+    "pages/parent/lessonList/lessonList",
+    "pages/parent/lessonDetail/lessonDetail"
   ],
   "permission": {
     "scope.userLocation": {
