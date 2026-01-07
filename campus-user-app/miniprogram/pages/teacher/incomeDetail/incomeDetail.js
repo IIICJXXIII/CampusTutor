@@ -1,6 +1,6 @@
 // 收入明细页面逻辑 - incomeDetail.js
-import request from '../../../utils/request';
-import apiConfig from '../../../config/apiConfig';
+const request = require('../../../utils/request.js');
+const apiConfig = require('../../../config/apiConfig.js');
 
 Page({
     data: {

@@ -1,4 +1,4 @@
-import apiConfig from '../config/apiConfig';
+const apiConfig = require('../config/apiConfig.js');
 
 const request = (url, method = 'GET', data = {}, header = {}) => {
   return new Promise((resolve, reject) => {
@@ -78,7 +78,7 @@ const request = (url, method = 'GET', data = {}, header = {}) => {
 };
 
 // 导出快捷方法
-export default {
+module.exports = {
   get: (url, data) => request(url, 'GET', data),
   post: (url, data) => request(url, 'POST', data),
   put: (url, data) => request(url, 'PUT', data),

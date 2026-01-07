@@ -65,3 +65,7 @@ export default {
     withdrawals: `${API_HOST}/api/wallet/withdrawals`,
   }
 };
+
+// 兼容 CommonJS `require` 导出
+module.exports = module.exports || {};
+module.exports = exports.default || module.exports;
