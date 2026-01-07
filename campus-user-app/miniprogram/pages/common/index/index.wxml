@@ -43,11 +43,11 @@
         </view>
         <text class="action-title">我的认证</text>
       </view>
-      <view class="action-item" bindtap="goToTeacherOrders">
+      <view class="action-item" bindtap="goToTeacherLessons">
         <view class="action-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)">
-          <text class="icon-text">📚</text>
+          <text class="icon-text">📖</text>
         </view>
-        <text class="action-title">我的订单</text>
+        <text class="action-title">课时记录</text>
       </view>
       <view class="action-item" bindtap="goToIncome">
         <view class="action-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)">
@@ -111,12 +111,12 @@
         <text class="action-title">我的需求</text>
         <text class="action-desc">查看进度</text>
       </view>
-      <view class="action-item" bindtap="goToParentOrders">
+      <view class="action-item" bindtap="goToParentLessons">
         <view class="action-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)">
-          <text class="icon-text">📚</text>
+          <text class="icon-text">📖</text>
         </view>
-        <text class="action-title">我的订单</text>
-        <text class="action-desc">课程管理</text>
+        <text class="action-title">课时记录</text>
+        <text class="action-desc">确认课时</text>
       </view>
     </view>
 
