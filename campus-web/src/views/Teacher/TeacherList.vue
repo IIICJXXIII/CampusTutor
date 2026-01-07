@@ -25,8 +25,9 @@ const fetchTeachers = async () => {
       size: 20
     })
     
-    teachers.value = (res.data || []).map(item => ({
-      id: item.tutorId,
+    const list = res.data?.records || [] // <--- 关键修改：取 .records
+    teachers.value = list.map(item => ({
+      id: item.tutorId || item.id, // 兼容字段
       name: item.realName || '老师',
       school: item.universityName || '未填写',
       subject: item.teachSubjects ? JSON.parse(item.teachSubjects)[0] : '综合',

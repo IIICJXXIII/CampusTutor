@@ -56,5 +56,12 @@ export default {
     listTutor: `${API_HOST}/api/order/tutor/list`,
     pay: `${API_HOST}/api/order/pay`,
     detail: (id) => `${API_HOST}/api/order/${id}`,
+  },
+  // 钱包模块 (Wallet)
+  wallet: {
+    info: `${API_HOST}/api/wallet`,
+    transactions: `${API_HOST}/api/wallet/transactions`,
+    withdraw: `${API_HOST}/api/wallet/withdraw`,
+    withdrawals: `${API_HOST}/api/wallet/withdrawals`,
   }
 };

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campus.module.demand.service.GeoService;
+import com.campus.module.match.dto.MatchScoreResult;
 import com.campus.module.match.dto.TutorSearchRequest;
 import com.campus.module.match.dto.TutorSearchResult;
 import com.campus.module.tutor.entity.TutorProfile;
@@ -28,6 +29,7 @@ public class MatchService {
     private final TutorProfileMapper tutorProfileMapper;
     private final SysUserMapper sysUserMapper;
     private final GeoService geoService;
+    private final MatchScoreCalculator scoreCalculator;
 
     /**
      * 搜索教员
@@ -35,19 +37,17 @@ public class MatchService {
      * @return 分页结果
      */
     public IPage<TutorSearchResult> searchTutors(TutorSearchRequest request) {
-        // 1. 如果有位置信息，先从GEO获取附近的教员ID
+        // 1. 如果有位置信息，先从GEO获取附近的教员ID和真实距离
         Set<Long> nearbyTutorIds = null;
         Map<Long, Double> distanceMap = new HashMap<>();
         
         if (request.getLongitude() != null && request.getLatitude() != null) {
             double radius = request.getRadius() != null ? request.getRadius() : 10.0;
-            List<Long> nearbyIds = geoService.searchNearbyTutors(
+            // 使用新方法获取带距离信息的结果
+            Map<Long, Double> nearbyWithDistance = geoService.searchNearbyTutorsWithDistance(
                     request.getLongitude(), request.getLatitude(), radius);
-            nearbyTutorIds = new HashSet<>(nearbyIds);
-            // 计算距离(简化处理，实际应从Redis结果中获取)
-            for (int i = 0; i < nearbyIds.size(); i++) {
-                distanceMap.put(nearbyIds.get(i), (double) i * 0.5); // 模拟距离
-            }
+            nearbyTutorIds = nearbyWithDistance.keySet();
+            distanceMap = nearbyWithDistance;
         }
 
         // 2. 构建查询条件
@@ -81,6 +81,21 @@ public class MatchService {
             }
         }
 
+        // 性别筛选
+        if (request.getGender() != null) {
+            // 需要关联用户表查询性别
+            List<Long> genderUserIds = sysUserMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SysUser>()
+                    .eq(SysUser::getGender, request.getGender())
+            ).stream().map(SysUser::getId).collect(Collectors.toList());
+            if (!genderUserIds.isEmpty()) {
+                wrapper.in(TutorProfile::getUserId, genderUserIds);
+            } else {
+                // 没有符合性别条件的用户，返回空结果
+                return new Page<>(request.getPage(), request.getSize());
+            }
+        }
+
         // 学历筛选
         if (request.getEducations() != null && !request.getEducations().isEmpty()) {
             wrapper.in(TutorProfile::getEducation, request.getEducations());
@@ -102,8 +117,8 @@ public class MatchService {
             wrapper.orderBy(true, isAsc, TutorProfile::getRating);
         } else if ("price".equals(sortBy)) {
             wrapper.orderBy(true, isAsc, TutorProfile::getExpectPrice);
-        } else {
-            // 默认按评分降序
+        } else if (!"distance".equals(sortBy) && !"score".equals(sortBy)) {
+            // 默认按评分降序（distance和score排序在后面处理）
             wrapper.orderByDesc(TutorProfile::getRating);
         }
 
@@ -126,46 +141,55 @@ public class MatchService {
         Map<Long, Double> finalDistanceMap = distanceMap;
         
         List<TutorSearchResult> results = profilePage.getRecords().stream().map(profile -> {
-            TutorSearchResult result = new TutorSearchResult();
-            result.setId(profile.getId());
-            result.setUserId(profile.getUserId());
+            // 计算匹配评分
+            MatchScoreResult scoreResult = scoreCalculator.calculateScoreByCondition(
+                    profile,
+                    request.getSubject(),
+                    request.getGrade(),
+                    finalDistanceMap.get(profile.getId()),
+                    request.getMaxPrice()
+            );
+
+            // 复制评分数据到结果
+            scoreResult.setId(profile.getId());
+            scoreResult.setUserId(profile.getUserId());
             
             // 姓名脱敏
             String name = profile.getRealName();
             if (name != null && name.length() > 1) {
-                result.setRealName(name.charAt(0) + "**");
+                scoreResult.setRealName(name.charAt(0) + "**");
             } else {
-                result.setRealName(name);
+                scoreResult.setRealName(name);
             }
 
             // 获取头像
             SysUser user = finalUserMap.get(profile.getUserId());
             if (user != null) {
-                result.setAvatarUrl(user.getAvatarUrl());
+                scoreResult.setAvatarUrl(user.getAvatarUrl());
             }
 
-            result.setUniversityName(profile.getUniversityName());
-            result.setMajor(profile.getMajor());
-            result.setEducation(profile.getEducation());
+            scoreResult.setUniversityName(profile.getUniversityName());
+            scoreResult.setMajor(profile.getMajor());
+            scoreResult.setEducation(profile.getEducation());
             
             // 解析JSON
             if (StringUtils.hasText(profile.getTeachSubjects())) {
-                result.setTeachSubjects(JSONUtil.toList(profile.getTeachSubjects(), String.class));
+                scoreResult.setTeachSubjects(JSONUtil.toList(profile.getTeachSubjects(), String.class));
             }
             if (StringUtils.hasText(profile.getTeachGrades())) {
-                result.setTeachGrades(JSONUtil.toList(profile.getTeachGrades(), String.class));
+                scoreResult.setTeachGrades(JSONUtil.toList(profile.getTeachGrades(), String.class));
             }
 
-            result.setTeachStyle(profile.getTeachStyle());
-            result.setIntroduction(profile.getIntroduction());
-            result.setExpectPrice(profile.getExpectPrice());
-            result.setCanVisit(profile.getCanVisit());
-            result.setCanOnline(profile.getCanOnline());
-            result.setRating(profile.getRating());
-            result.setOrderCount(profile.getOrderCount());
-            result.setDistance(finalDistanceMap.get(profile.getId()));
+            scoreResult.setTeachStyle(profile.getTeachStyle());
+            scoreResult.setIntroduction(profile.getIntroduction());
+            scoreResult.setExpectPrice(profile.getExpectPrice());
+            scoreResult.setCanVisit(profile.getCanVisit());
+            scoreResult.setCanOnline(profile.getCanOnline());
+            scoreResult.setRating(profile.getRating());
+            scoreResult.setOrderCount(profile.getOrderCount());
+            scoreResult.setDistance(finalDistanceMap.get(profile.getId()));
 
-            return result;
+            return (TutorSearchResult) scoreResult;
         }).collect(Collectors.toList());
 
         // 如果按距离排序
@@ -174,6 +198,20 @@ public class MatchService {
                 Double da = a.getDistance() != null ? a.getDistance() : Double.MAX_VALUE;
                 Double db = b.getDistance() != null ? b.getDistance() : Double.MAX_VALUE;
                 return isAsc ? da.compareTo(db) : db.compareTo(da);
+            });
+        }
+        
+        // 如果按匹配分数排序（智能推荐）
+        if ("score".equals(sortBy) && !results.isEmpty()) {
+            results.sort((a, b) -> {
+                if (a instanceof MatchScoreResult && b instanceof MatchScoreResult) {
+                    Double sa = ((MatchScoreResult) a).getMatchScore();
+                    Double sb = ((MatchScoreResult) b).getMatchScore();
+                    sa = sa != null ? sa : 0.0;
+                    sb = sb != null ? sb : 0.0;
+                    return isAsc ? sa.compareTo(sb) : sb.compareTo(sa);
+                }
+                return 0;
             });
         }
 

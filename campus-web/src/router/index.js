@@ -29,6 +29,12 @@ const routes = [
     meta: { title: '发布需求', role: 'parent' }
   },
   {
+    path: '/parent/tutors',
+    name: 'ParentTutorList',
+    component: () => import('@/views/Parent/TutorList.vue'),
+    meta: { title: '匹配老师', role: 'parent' }
+  },
+  {
     path: '/teacher/list',
     name: 'TeacherList',
     component: () => import('@/views/Teacher/TeacherList.vue'),
@@ -107,6 +113,19 @@ const routes = [
     name: 'OrderList',
     component: () => import('@/views/Mine/OrderList.vue'),
     meta: { title: '我的订单' }
+  },
+  // 钱包模块
+  {
+    path: '/wallet',
+    name: 'Wallet',
+    component: () => import('@/views/Mine/Wallet.vue'),
+    meta: { title: '我的钱包' }
+  },
+  {
+    path: '/wallet/withdraw',
+    name: 'Withdraw',
+    component: () => import('@/views/Mine/Withdraw.vue'),
+    meta: { title: '提现' }
   },
 
   // 404
