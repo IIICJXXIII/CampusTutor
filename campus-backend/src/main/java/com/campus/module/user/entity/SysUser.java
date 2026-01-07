@@ -28,6 +28,7 @@ public class SysUser implements Serializable {
     private String nickname;
 
     /** 头像URL */
+    @TableField("avatar")
     private String avatarUrl;
 
     /** 角色: 0-管理员, 1-教员, 2-家长 */
@@ -38,6 +39,9 @@ public class SysUser implements Serializable {
 
     /** 状态: 1-正常, 0-禁用 */
     private Integer status;
+
+    /** 性别: 0-未知, 1-男, 2-女 */
+    private Integer gender;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

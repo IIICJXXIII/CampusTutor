@@ -7,7 +7,7 @@
         <result column="username" property="username"/>
         <result column="password" property="password"/>
         <result column="nickname" property="nickname"/>
-        <result column="avatar" property="avatar"/>
+        <result column="avatar" property="avatarUrl"/>
         <result column="role" property="role"/>
         <result column="openid" property="openid"/>
         <result column="status" property="status"/>

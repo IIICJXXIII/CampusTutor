@@ -1,93 +1,371 @@
 <script setup>
-import { reactive } from 'vue';
-import { useRouter } from 'vue-router';
-import { Camera, CheckCircle } from 'lucide-vue-next';
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { getTutorProfile, updateTutorProfile } from '@/api/tutor'
+import { useUserStore } from '@/stores'
 
-const router = useRouter();
+const router = useRouter()
+const userStore = useUserStore()
+const loading = ref(false)
+const avatarUrl = ref('')
 
-// 模拟教师发布的个人信息
+// 表单数据
 const form = reactive({
-  name: '张同学',
-  school: '北京师范大学',
-  major: '英语教育',
+  name: '',
+  school: '',
+  major: '',
   price: 150,
-  subjects: ['小学全科', '初中英语'],
-  intro: '本人北师大在读，性格开朗，擅长与孩子沟通。英语专八通过，有两年家教经验。',
-  isPublic: true // 是否公开展示
-});
+  subjects: [],
+  intro: '',
+  isPublic: true,
+  phone: '',
+  gender: 1,
+  teachExperience: '',
+  availableTime: ''
+})
 
-const handlePublish = () => {
-  // 模拟保存/发布
-  alert('发布成功！家长现在可以在列表看到您的信息了。');
-  router.push('/teacher/students'); // 发布完去看看生源
-};
+// 表单验证规则
+const rules = {
+  name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
+  school: [{ required: true, message: '请输入就读高校', trigger: 'blur' }],
+  subjects: [{ required: true, message: '请选择擅长科目', trigger: 'change' }],
+  price: [{ required: true, message: '请输入期望时薪', trigger: 'blur' }]
+}
+
+const formRef = ref(null)
+
+// 科目选项
+const subjectOptions = [
+  '小学语文', '小学数学', '小学英语', '小学全科',
+  '初中语文', '初中数学', '初中英语', '初中物理', '初中化学',
+  '高中语文', '高中数学', '高中英语', '高中物理', '高中化学', '高中生物'
+]
+
+// 获取教师信息
+const fetchProfile = async () => {
+  loading.value = true
+  try {
+    const res = await getTutorProfile()
+    if (res.data) {
+      const data = res.data
+      form.name = data.realName || userStore.userInfo?.username || ''
+      form.school = data.universityName || ''
+      form.major = data.major || ''
+      form.price = data.expectPrice || 150
+      form.intro = data.introduction || ''
+      form.phone = data.phone || userStore.userInfo?.phone || ''
+      form.gender = data.gender || 1
+      form.teachExperience = data.teachExperience || ''
+      form.availableTime = data.availableTime || ''
+      avatarUrl.value = data.avatarUrl || ''
+      
+      if (data.teachSubjects) {
+        try {
+          form.subjects = JSON.parse(data.teachSubjects)
+        } catch {
+          form.subjects = []
+        }
+      }
+    }
+  } catch (error) {
+    console.error('获取简历失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 上传头像
+const handleAvatarChange = (file) => {
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    avatarUrl.value = e.target.result
+  }
+  reader.readAsDataURL(file.raw)
+  return false
+}
+
+// 发布简历
+const handlePublish = async () => {
+  if (!formRef.value) return
+  
+  try {
+    await formRef.value.validate()
+  } catch {
+    ElMessage.warning('请完善必填信息')
+    return
+  }
+
+  loading.value = true
+  try {
+    await updateTutorProfile({
+      realName: form.name,
+      universityName: form.school,
+      major: form.major,
+      expectPrice: form.price,
+      teachSubjects: JSON.stringify(form.subjects),
+      introduction: form.intro,
+      phone: form.phone,
+      gender: form.gender,
+      teachExperience: form.teachExperience,
+      availableTime: form.availableTime
+    })
+    ElMessage.success('发布成功！家长现在可以看到您的信息了')
+    router.push('/find-students')
+  } catch (error) {
+    ElMessage.error(error.message || '发布失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchProfile()
+})
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 pb-24">
-    <div class="bg-blue-600 p-6 text-white shadow-md">
-      <h1 class="text-2xl font-bold">发布家教信息</h1>
-      <p class="text-blue-100 text-sm mt-1">完善简历，让家长更容易找到你</p>
+  <div class="resume-page" v-loading="loading">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <h1 class="page-title">发布家教信息</h1>
+      <p class="page-subtitle">完善简历，让家长更容易找到你</p>
     </div>
 
-    <div class="p-4 -mt-4">
-      <div class="bg-white rounded-xl shadow-sm p-6 space-y-6">
-        
-        <div class="flex flex-col items-center">
-          <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
-            <Camera :size="28" class="text-gray-400" />
-          </div>
-          <span class="text-xs text-gray-400 mt-2">点击上传真实头像</span>
-        </div>
-
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-bold text-gray-700 mb-1">姓名 / 昵称</label>
-            <input v-model="form.name" class="w-full border border-gray-200 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="例如：张同学" />
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-bold text-gray-700 mb-1">就读高校</label>
-              <input v-model="form.school" class="w-full border border-gray-200 p-3 rounded-lg outline-none" placeholder="学校名称" />
-            </div>
-            <div>
-              <label class="block text-sm font-bold text-gray-700 mb-1">期望时薪</label>
-              <div class="relative">
-                <span class="absolute left-3 top-3 text-gray-500">¥</span>
-                <input v-model="form.price" type="number" class="w-full border border-gray-200 p-3 pl-8 rounded-lg outline-none" />
+    <!-- 表单区域 -->
+    <div class="form-container">
+      <el-card shadow="never">
+        <el-form 
+          ref="formRef"
+          :model="form" 
+          :rules="rules" 
+          label-position="top"
+        >
+          <!-- 头像上传 -->
+          <div class="avatar-section">
+            <el-upload
+              class="avatar-uploader"
+              :show-file-list="false"
+              :before-upload="handleAvatarChange"
+              accept="image/*"
+            >
+              <el-avatar :size="100" :src="avatarUrl" v-if="avatarUrl" />
+              <div v-else class="avatar-placeholder">
+                <el-icon :size="32"><Camera /></el-icon>
               </div>
+            </el-upload>
+            <span class="avatar-tip">点击上传真实头像</span>
+          </div>
+
+          <!-- 基本信息 -->
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="姓名 / 昵称" prop="name">
+                <el-input v-model="form.name" placeholder="例如：张同学" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="性别">
+                <el-radio-group v-model="form.gender">
+                  <el-radio :value="1">男</el-radio>
+                  <el-radio :value="2">女</el-radio>
+                </el-radio-group>
+              </el-form-item>
+            </el-col>
+          </el-row>
+
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="就读高校" prop="school">
+                <el-input v-model="form.school" placeholder="学校名称" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="专业">
+                <el-input v-model="form.major" placeholder="专业名称" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="期望时薪" prop="price">
+                <el-input-number 
+                  v-model="form.price" 
+                  :min="50" 
+                  :max="1000" 
+                  :step="10"
+                  controls-position="right"
+                >
+                  <template #prefix>¥</template>
+                </el-input-number>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="联系电话">
+                <el-input v-model="form.phone" placeholder="手机号码" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+
+          <el-form-item label="擅长科目" prop="subjects">
+            <el-select
+              v-model="form.subjects"
+              multiple
+              filterable
+              placeholder="请选择擅长科目"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="sub in subjectOptions"
+                :key="sub"
+                :label="sub"
+                :value="sub"
+              />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="教学经验">
+            <el-input 
+              v-model="form.teachExperience" 
+              type="textarea" 
+              :rows="2"
+              placeholder="例如：有2年家教经验，辅导过5名学生"
+            />
+          </el-form-item>
+
+          <el-form-item label="可授课时间">
+            <el-input 
+              v-model="form.availableTime" 
+              placeholder="例如：周末全天、工作日晚上"
+            />
+          </el-form-item>
+
+          <el-form-item label="自我介绍 / 教学优势">
+            <el-input 
+              v-model="form.intro" 
+              type="textarea" 
+              :rows="4"
+              placeholder="请介绍您的教学经验、性格特点等..."
+              show-word-limit
+              :maxlength="500"
+            />
+          </el-form-item>
+
+          <el-form-item>
+            <div class="switch-row">
+              <span class="switch-label">公开展示我的信息</span>
+              <el-switch v-model="form.isPublic" />
             </div>
-          </div>
+          </el-form-item>
 
-          <div>
-            <label class="block text-sm font-bold text-gray-700 mb-1">擅长科目</label>
-            <div class="flex flex-wrap gap-2 mb-2">
-              <span v-for="sub in form.subjects" :key="sub" class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                {{ sub }} <button class="hover:text-blue-800">×</button>
-              </span>
-              <button class="text-gray-400 text-sm border border-dashed border-gray-300 px-3 py-1 rounded-full">+ 添加</button>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-bold text-gray-700 mb-1">自我介绍 / 教学优势</label>
-            <textarea v-model="form.intro" rows="4" class="w-full border border-gray-200 p-3 rounded-lg outline-none" placeholder="请介绍您的教学经验、性格特点等..."></textarea>
-          </div>
-          
-          <div class="flex items-center justify-between pt-2">
-            <span class="text-sm font-medium text-gray-700">公开展示我的信息</span>
-            <div class="w-12 h-6 bg-blue-600 rounded-full relative cursor-pointer">
-              <div class="w-4 h-4 bg-white rounded-full absolute top-1 right-1"></div>
-            </div>
-          </div>
-        </div>
-
-        <button @click="handlePublish" class="w-full bg-black text-white py-4 rounded-xl font-bold hover:bg-gray-800 transition-transform active:scale-95 flex items-center justify-center gap-2">
-          <CheckCircle :size="20" /> 确认发布
-        </button>
-
-      </div>
+          <el-form-item>
+            <el-button 
+              type="primary" 
+              size="large" 
+              class="submit-btn"
+              @click="handlePublish"
+              :loading="loading"
+            >
+              <el-icon class="mr-1"><CircleCheck /></el-icon>
+              确认发布
+            </el-button>
+          </el-form-item>
+        </el-form>
+      </el-card>
     </div>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.resume-page {
+  min-height: 100vh;
+  background: $bg-light;
+  padding-bottom: $spacing-xl;
+}
+
+.page-header {
+  background: linear-gradient(135deg, $primary-color 0%, #667eea 100%);
+  padding: $spacing-xl $spacing-lg;
+  color: #fff;
+
+  .page-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .page-subtitle {
+    font-size: 14px;
+    opacity: 0.9;
+  }
+}
+
+.form-container {
+  padding: $spacing-lg;
+  margin-top: -$spacing-md;
+
+  .el-card {
+    border-radius: 16px;
+  }
+
+  .avatar-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: $spacing-xl;
+
+    .avatar-uploader {
+      cursor: pointer;
+    }
+
+    .avatar-placeholder {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: $bg-light;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $text-muted;
+      transition: all 0.3s;
+
+      &:hover {
+        background: #e5e7eb;
+      }
+    }
+
+    .avatar-tip {
+      font-size: 12px;
+      color: $text-muted;
+      margin-top: $spacing-sm;
+    }
+  }
+
+  .switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: $spacing-sm 0;
+
+    .switch-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: $text-primary;
+    }
+  }
+
+  .submit-btn {
+    width: 100%;
+    height: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 12px;
+  }
+
+  :deep(.el-input-number) {
+    width: 100%;
+  }
+}
+</style>
