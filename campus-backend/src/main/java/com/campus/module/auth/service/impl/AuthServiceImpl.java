@@ -76,8 +76,9 @@ public class AuthServiceImpl implements AuthService {
                 throw new BusinessException("验证码错误或已过期");
             }
         } else {
-            // 密码登录（账号或手机号），开发环境暂时使用明文比对
-            if (!request.getPassword().equals(user.getPassword())) {
+            // 密码登录（账号或手机号）
+            String encryptPassword = cn.hutool.crypto.SecureUtil.md5(request.getPassword());
+            if (!encryptPassword.equals(user.getPassword())) {
                 throw new BusinessException(ResultCode.PASSWORD_ERROR);
             }
         }
