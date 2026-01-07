@@ -1,0 +1,66 @@
+{
+  "pages": [
+    "pages/common/index/index",
+    "pages/common/login/login",
+    "pages/common/register/register",
+    "pages/common/personalCenter/personalCenter",
+    "pages/teacher/certification/step1-base/step1-base",
+    "pages/teacher/certification/step2-ability/step2-ability",
+    "pages/teacher/certification/step3-result/step3-result",
+    "pages/teacher/incomeDetail/incomeDetail",
+    "pages/teacher/mapFindStudent/mapFindStudent",
+    "pages/parent/publishDemand/step1-student/step1-student",
+    "pages/parent/publishDemand/step2-teaching/step2-teaching",
+    "pages/parent/publishDemand/step3-preference/step3-preference",
+    "pages/parent/matchResult/matchResult",
+    "pages/parent/teacherDetail/teacherDetail",
+    "pages/parent/order/confirm/confirm",
+    "pages/parent/order/list/list",
+    "pages/parent/order/detail/detail",
+    "pages/parent/publishDemand/step2-content/step2-content",
+    "pages/parent/demand/myList/myList",
+    "pages/teacher/orderList/orderList",
+    "pages/teacher/orderDetail/orderDetail"
+  ],
+  "permission": {
+    "scope.userLocation": {
+      "desc": "我们需要您的位置以寻找附近的家教需求"
+    }
+  },
+  "requiredPrivateInfos": [
+    "getLocation",
+    "chooseLocation"
+  ],
+  "usingComponents": {
+    "teacher-card": "/components/teacherCard/teacherCard"
+  },
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#fff",
+    "navigationBarTitleText": "CampusTutor",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#667eea",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/common/index/index",
+        "text": "首页",
+        "iconPath": "static/icons/home.png",
+        "selectedIconPath": "static/icons/home-active.png"
+      },
+      {
+        "pagePath": "pages/common/personalCenter/personalCenter",
+        "text": "我的",
+        "iconPath": "static/icons/usercenter.png",
+        "selectedIconPath": "static/icons/usercenter-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

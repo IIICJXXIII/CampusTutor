@@ -1,126 +1,337 @@
 <script setup>
-import { ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router'; // 用于获取参数和跳转
-import { ChevronLeft, Star, Award, Clock, Calendar } from 'lucide-vue-next';
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { getTutorProfile } from '@/api/tutor'
 
-const route = useRoute();
-const router = useRouter();
+const route = useRoute()
+const router = useRouter()
+const loading = ref(false)
+const showBookingDialog = ref(false)
 
-// 1. 模拟根据 ID 获取到的教师详细数据 (FR1.1)
-const teacher = {
+// 教师数据
+const teacher = ref({
   id: route.params.id,
   name: '张老师',
   title: '北京师范大学 · 英语硕士',
+  avatar: '',
   tags: ['实名认证', '英语专八', '3年教龄', '幽默风趣'],
   rating: 4.9,
+  renewRate: 98,
+  totalHours: 300,
   price: 200,
-  // FR1.1 能力证明层
   intro: '擅长引导式教学，主攻初中英语语法与口语。曾帮助3名学生在期末考试中提分30+。',
-  // FR1.2 可授课时间
-  schedule: ['周六上午 09:00-11:00', '周日晚上 19:00-21:00'] 
-};
+  schedule: ['周六上午 09:00-11:00', '周日晚上 19:00-21:00'],
+  subjects: ['英语', '口语']
+})
 
-// 控制“预约弹窗”显示 (FR2.3 试课预约)
-const showModal = ref(false);
+// 预约表单
+const bookingForm = ref({
+  studentName: '王小明',
+  grade: '三年级',
+  subject: '英语',
+  time: '周六上午 09:00'
+})
+
+// 获取教师详情
+const fetchTeacherDetail = async () => {
+  loading.value = true
+  try {
+    const res = await getTutorProfile(route.params.id)
+    if (res.data) {
+      teacher.value = {
+        ...teacher.value,
+        ...res.data,
+        name: res.data.realName || teacher.value.name,
+        title: `${res.data.universityName || ''} · ${res.data.major || ''}`,
+        tags: buildTags(res.data),
+        price: res.data.expectPrice || teacher.value.price
+      }
+    }
+  } catch (error) {
+    console.error('获取教师详情失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const buildTags = (data) => {
+  const tags = []
+  if (data.certStatus === 2) tags.push('实名认证')
+  if (data.teachSubjects) {
+    try {
+      const subjects = JSON.parse(data.teachSubjects)
+      tags.push(...subjects.slice(0, 2))
+    } catch {}
+  }
+  if (data.teachStyle) tags.push(data.teachStyle)
+  return tags.length ? tags : ['新入驻']
+}
 
 const handleBook = () => {
-  showModal.value = false;
-  alert('预约申请已发送！等待老师确认。');
-};
+  showBookingDialog.value = false
+  router.push({
+    path: `/booking/${teacher.value.id}`,
+    query: {
+      teacherId: teacher.value.id,
+      teacherName: teacher.value.name,
+      subject: bookingForm.value.subject,
+      price: teacher.value.price
+    }
+  })
+}
+
+onMounted(() => {
+  fetchTeacherDetail()
+})
 </script>
 
 <template>
-  <div class="min-h-screen bg-white pb-24">
-    
-    <div class="sticky top-0 bg-white p-4 flex items-center border-b z-10">
-      <button @click="router.back()" class="p-1 hover:bg-gray-100 rounded-full">
-        <ChevronLeft />
-      </button>
-      <span class="ml-4 font-bold text-lg">教师详情</span>
-    </div>
-
-    <div class="p-6">
-      <h1 class="text-2xl font-bold mb-2">{{ teacher.name }}</h1>
-      <p class="text-gray-500 mb-4">{{ teacher.title }}</p>
-      
-      <div class="flex flex-wrap gap-2 mb-6">
-        <span v-for="tag in teacher.tags" :key="tag" 
-              class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium">
-          {{ tag }}
-        </span>
-      </div>
-
-      <div class="flex justify-between bg-gray-50 p-4 rounded-xl mb-6">
-        <div class="text-center">
-          <div class="font-bold text-lg flex justify-center items-center gap-1">
-            4.9 <Star :size="14" class="fill-yellow-400 text-yellow-400"/>
-          </div>
-          <div class="text-xs text-gray-400">评分</div>
-        </div>
-        <div class="text-center">
-          <div class="font-bold text-lg">98%</div>
-          <div class="text-xs text-gray-400">续课率</div>
-        </div>
-        <div class="text-center">
-          <div class="font-bold text-lg">300+</div>
-          <div class="text-xs text-gray-400">授课时</div>
-        </div>
-      </div>
-
-      <div class="mb-6">
-        <h3 class="font-bold text-lg mb-2 flex items-center gap-2">
-          <Award :size="20" class="text-blue-500"/> 教学经历
-        </h3>
-        <p class="text-gray-600 text-sm leading-relaxed">{{ teacher.intro }}</p>
-      </div>
-
-      <div class="mb-6">
-        <h3 class="font-bold text-lg mb-2 flex items-center gap-2">
-          <Clock :size="20" class="text-green-500"/> 可约时间
-        </h3>
-        <div class="space-y-2">
-          <div v-for="time in teacher.schedule" :key="time" 
-               class="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-            <Calendar :size="16" /> {{ time }}
-          </div>
-        </div>
+  <div class="teacher-profile-page" v-loading="loading">
+    <!-- 教师头部信息 -->
+    <div class="profile-header">
+      <el-avatar :size="80" :src="teacher.avatar || `https://api.dicebear.com/7.x/miniavs/svg?seed=${teacher.id}`" />
+      <div class="header-info">
+        <h1 class="teacher-name">{{ teacher.name }}</h1>
+        <p class="teacher-title">{{ teacher.title }}</p>
       </div>
     </div>
 
-    <div class="fixed bottom-0 left-0 w-full bg-white border-t p-4 flex items-center justify-between shadow-lg">
-      <div>
-        <span class="text-red-500 font-bold text-2xl">¥{{ teacher.price }}</span>
-        <span class="text-gray-400 text-xs">/小时</span>
+    <!-- 标签 -->
+    <div class="tag-section">
+      <el-tag 
+        v-for="tag in teacher.tags" 
+        :key="tag" 
+        type="primary" 
+        effect="plain"
+        size="small"
+      >
+        {{ tag }}
+      </el-tag>
+    </div>
+
+    <!-- 数据统计 -->
+    <el-card class="stats-card" shadow="never">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-value">
+            {{ teacher.rating }}
+            <el-icon class="star"><Star /></el-icon>
+          </div>
+          <div class="stat-label">评分</div>
+        </div>
+        <el-divider direction="vertical" />
+        <div class="stat-item">
+          <div class="stat-value">{{ teacher.renewRate }}%</div>
+          <div class="stat-label">续课率</div>
+        </div>
+        <el-divider direction="vertical" />
+        <div class="stat-item">
+          <div class="stat-value">{{ teacher.totalHours }}+</div>
+          <div class="stat-label">授课时</div>
+        </div>
       </div>
-      <button @click="showModal = true" 
-              class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 active:scale-95 transition-all">
+    </el-card>
+
+    <!-- 教学经历 -->
+    <el-card class="info-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <el-icon><Trophy /></el-icon>
+          <span>教学经历</span>
+        </div>
+      </template>
+      <p class="intro-text">{{ teacher.intro }}</p>
+    </el-card>
+
+    <!-- 可约时间 -->
+    <el-card class="info-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <el-icon><Clock /></el-icon>
+          <span>可约时间</span>
+        </div>
+      </template>
+      <div class="schedule-list">
+        <div v-for="time in teacher.schedule" :key="time" class="schedule-item">
+          <el-icon><Calendar /></el-icon>
+          <span>{{ time }}</span>
+        </div>
+      </div>
+    </el-card>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-bar">
+      <div class="price-info">
+        <span class="price-value">¥{{ teacher.price }}</span>
+        <span class="price-unit">/小时</span>
+      </div>
+      <el-button type="primary" size="large" @click="showBookingDialog = true">
         立即预约试听
-      </button>
+      </el-button>
     </div>
 
-    <div v-if="showModal" class="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
-      <div class="bg-white w-full sm:w-80 p-6 rounded-t-2xl sm:rounded-2xl animate-slide-up">
-        <h3 class="text-xl font-bold mb-4">确认预约信息</h3>
-        <div class="space-y-3 mb-6">
-          <div class="flex justify-between text-sm"><span>学生:</span> <span class="font-bold">王小明 (三年级)</span></div>
-          <div class="flex justify-between text-sm"><span>科目:</span> <span class="font-bold">英语</span></div>
-          <div class="flex justify-between text-sm"><span>时段:</span> <span class="text-blue-600">周六上午 09:00</span></div>
-        </div>
-        <button @click="handleBook" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">确认发送请求</button>
-        <button @click="showModal = false" class="w-full mt-2 py-3 text-gray-500 text-sm">取消</button>
-      </div>
-    </div>
-
+    <!-- 预约弹窗 -->
+    <el-dialog 
+      v-model="showBookingDialog" 
+      title="确认预约信息" 
+      width="400px"
+      :append-to-body="true"
+    >
+      <el-descriptions :column="1" border>
+        <el-descriptions-item label="学生">{{ bookingForm.studentName }} ({{ bookingForm.grade }})</el-descriptions-item>
+        <el-descriptions-item label="科目">{{ bookingForm.subject }}</el-descriptions-item>
+        <el-descriptions-item label="时段">
+          <el-tag type="primary">{{ bookingForm.time }}</el-tag>
+        </el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <el-button @click="showBookingDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleBook">确认发送请求</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
-<style>
-/* 简单的弹窗动画 */
-@keyframes slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+<style lang="scss" scoped>
+.teacher-profile-page {
+  min-height: 100vh;
+  background: $bg-light;
+  padding-bottom: 100px;
 }
-.animate-slide-up {
-  animation: slide-up 0.3s ease-out;
+
+.profile-header {
+  background: linear-gradient(135deg, $primary-color 0%, #667eea 100%);
+  padding: $spacing-xl $spacing-lg;
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+  color: #fff;
+
+  .header-info {
+    .teacher-name {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .teacher-title {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+  }
+}
+
+.tag-section {
+  background: #fff;
+  padding: $spacing-md $spacing-lg;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.stats-card {
+  margin: $spacing-md $spacing-lg;
+  border-radius: 12px;
+
+  .stats-grid {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .stat-item {
+      flex: 1;
+      text-align: center;
+
+      .stat-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: $text-primary;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+
+        .star {
+          color: #facc15;
+        }
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: $text-muted;
+        margin-top: 4px;
+      }
+    }
+  }
+}
+
+.info-card {
+  margin: $spacing-md $spacing-lg;
+  border-radius: 12px;
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .intro-text {
+    font-size: 14px;
+    color: $text-secondary;
+    line-height: 1.8;
+  }
+
+  .schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+
+    .schedule-item {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      padding: $spacing-sm $spacing-md;
+      background: $bg-light;
+      border-radius: 8px;
+      font-size: 14px;
+      color: $text-secondary;
+    }
+  }
+}
+
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: $spacing-md $spacing-lg;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .price-info {
+    .price-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: $danger-color;
+    }
+
+    .price-unit {
+      font-size: 12px;
+      color: $text-muted;
+    }
+  }
+
+  .el-button {
+    height: 48px;
+    padding: 0 32px;
+    font-size: 16px;
+    font-weight: 600;
+  }
 }
 </style>

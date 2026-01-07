@@ -1,0 +1,81 @@
+<!-- 教师端首页 - index.wxml -->
+<view class="container">
+  <!-- 顶部欢迎区域 -->
+  <view class="header">
+    <view class="welcome">
+      <text class="greeting">您好，{{userInfo.nickname || '老师'}} 👋</text>
+      <text class="subtitle">今天也要加油哦</text>
+    </view>
+  </view>
+
+  <!-- 数据统计卡片 -->
+  <view class="stats-card">
+    <view class="stat-item">
+      <text class="stat-value">{{stats.orderCount || 0}}</text>
+      <text class="stat-label">完成订单</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-value">{{stats.rating || '5.0'}}</text>
+      <text class="stat-label">综合评分</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item" bindtap="goToIncome">
+      <text class="stat-value">¥{{walletInfo.balance || '0'}}</text>
+      <text class="stat-label">账户余额</text>
+    </view>
+  </view>
+
+  <!-- 快捷功能区 -->
+  <view class="quick-actions">
+    <view class="action-item" bindtap="goToMap">
+      <view class="action-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
+        <text class="icon-text">🗺️</text>
+      </view>
+      <text class="action-title">找学生</text>
+    </view>
+    <view class="action-item" bindtap="goToCertification">
+      <view class="action-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)">
+        <text class="icon-text">📜</text>
+      </view>
+      <text class="action-title">我的认证</text>
+    </view>
+    <view class="action-item" bindtap="goToOrders">
+      <view class="action-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)">
+        <text class="icon-text">📚</text>
+      </view>
+      <text class="action-title">我的订单</text>
+    </view>
+    <view class="action-item" bindtap="goToIncome">
+      <view class="action-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)">
+        <text class="icon-text">💰</text>
+      </view>
+      <text class="action-title">收入明细</text>
+    </view>
+  </view>
+
+  <!-- 附近需求 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">附近的家教需求</text>
+      <text class="section-more" bindtap="goToMap">查看地图 ></text>
+    </view>
+    <view class="demand-list" wx:if="{{nearbyDemands.length > 0}}">
+      <block wx:for="{{nearbyDemands}}" wx:key="id">
+        <view class="demand-card" bindtap="goToDemandDetail" data-id="{{item.id}}">
+          <view class="demand-main">
+            <text class="demand-title">{{item.subject}} - {{item.grade}}</text>
+            <text class="demand-price">¥{{item.expectPrice}}/小时</text>
+          </view>
+          <view class="demand-sub">
+            <text class="demand-address">{{item.address || '位置未知'}}</text>
+            <text class="demand-mode">{{item.teachMode === 1 ? '上门' : item.teachMode === 2 ? '网课' : '均可'}}</text>
+          </view>
+        </view>
+      </block>
+    </view>
+    <view class="empty-tip" wx:else>
+      <text>暂无附近需求，点击上方查看地图</text>
+    </view>
+  </view>
+</view>

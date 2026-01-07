@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "找老师",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 50,
+  "usingComponents": {}
+}

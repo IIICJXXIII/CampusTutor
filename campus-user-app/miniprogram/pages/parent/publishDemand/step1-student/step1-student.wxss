@@ -1,0 +1,142 @@
+.container {
+  padding: 30rpx;
+  background-color: #f6f7f9;
+  min-height: 100vh;
+}
+
+.header-tips {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 30rpx;
+}
+
+/* 列表模式 */
+.student-card {
+  background: #fff;
+  padding: 30rpx;
+  border-radius: 16rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 2rpx solid transparent;
+}
+.student-card.active {
+  border-color: #409EFF;
+  background: #ecf5ff;
+}
+
+.card-left .name {
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-right: 20rpx;
+}
+.card-left .tag {
+  font-size: 24rpx;
+  color: #666;
+  background: #f0f2f5;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  margin-right: 10rpx;
+}
+
+.check-icon {
+  color: #409EFF;
+  font-weight: bold;
+}
+
+.action-row {
+  text-align: center;
+  margin: 40rpx 0;
+}
+.add-link {
+  display: inline-block;
+  color: #409EFF;
+  font-size: 28rpx;
+  padding: 10rpx 20rpx;
+}
+
+/* 表单模式 */
+.form-group {
+  background: #fff;
+  padding: 30rpx;
+  border-radius: 16rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  align-items: center;
+}
+.form-group.vertical {
+  display: block;
+}
+
+.label {
+  width: 180rpx;
+  font-size: 30rpx;
+  color: #333;
+}
+.input {
+  flex: 1;
+  font-size: 30rpx;
+}
+.picker-val {
+  flex: 1;
+  font-size: 30rpx;
+  color: #333;
+}
+.picker-val.placeholder {
+  color: #ccc;
+}
+
+.radio-group {
+  display: flex;
+}
+.radio {
+  padding: 10rpx 40rpx;
+  background: #f5f7fa;
+  border-radius: 30rpx;
+  margin-right: 20rpx;
+  font-size: 28rpx;
+  border: 1px solid transparent;
+}
+.radio.active {
+  background: #ecf5ff;
+  color: #409EFF;
+  border-color: #409EFF;
+}
+
+.textarea {
+  width: 100%;
+  height: 160rpx;
+  background: #f9f9f9;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  box-sizing: border-box;
+  margin-top: 20rpx;
+  font-size: 28rpx;
+}
+
+/* 按钮 */
+.next-btn {
+  margin-top: 60rpx;
+  background: #409EFF;
+  color: #fff;
+  border-radius: 44rpx;
+}
+.btn-row {
+  display: flex;
+  margin-top: 60rpx;
+}
+.btn {
+  flex: 1;
+  border-radius: 44rpx;
+  margin: 0 10rpx;
+}
+.btn.plain {
+  background: #fff;
+  color: #666;
+}
+.btn.primary {
+  background: #409EFF;
+  color: #fff;
+}

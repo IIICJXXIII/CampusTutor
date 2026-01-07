@@ -1,0 +1,58 @@
+<view class="container">
+  <map 
+    id="myMap" 
+    class="map" 
+    latitude="{{latitude}}" 
+    longitude="{{longitude}}" 
+    markers="{{markers}}"
+    show-location
+    bindmarkertap="onMarkerTap"
+  ></map>
+
+  <view class="footer-panel">
+    
+    <block wx:if="{{currentDemand}}">
+      <view class="demand-card">
+        <view class="card-top">
+          <view class="title-row">
+            <text class="subject">{{currentDemand.subject}}</text>
+            <text class="grade-tag">{{currentDemand.grade}}</text>
+          </view>
+          <text class="price">¥{{currentDemand.expectPrice}}<text class="unit">/小时</text></text>
+        </view>
+
+        <view class="info-list">
+          <view class="info-item">
+            <text class="label">距离：</text>
+            <text class="val">{{currentDemand.distance}} km</text>
+          </view>
+          <view class="info-item">
+            <text class="label">地址：</text>
+            <text class="val addr">{{currentDemand.address || '未显示详细地址'}}</text>
+          </view>
+          <view class="info-item">
+            <text class="label">要求：</text>
+            <text class="val desc">{{currentDemand.detail || '暂无详细描述'}}</text>
+          </view>
+        </view>
+
+        <view class="btn-row">
+          <button class="btn chat">联系家长</button>
+          <button class="btn accept" bindtap="handleAccept">立即接单</button>
+        </view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="empty-card">
+        <image class="empty-img" src="/static/images/empty.png" mode="aspectFit" wx:if="{{false}}"></image>
+        <view class="empty-text">
+          <text class="main-tip">附近暂无家教需求</text>
+          <text class="sub-tip">您可以尝试拖动地图或稍后再来</text>
+        </view>
+        <button class="btn refresh" bindtap="fetchNearbyDemands">刷新试试</button>
+      </view>
+    </block>
+
+  </view>
+</view>

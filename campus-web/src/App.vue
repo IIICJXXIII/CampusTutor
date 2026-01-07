@@ -1,57 +1,29 @@
 <script setup>
-import { ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import { FileText, Users, User, Search, FileEdit } from 'lucide-vue-next';
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import MainLayout from '@/layout/MainLayout.vue'
 
-const route = useRoute();
-const currentRole = ref('parent');
-const showNav = ref(true);
+const route = useRoute()
 
-watch(route, (newPath) => {
-  showNav.value = newPath.path !== '/login';
-  const savedRole = localStorage.getItem('userRole');
-  if (savedRole) currentRole.value = savedRole;
-}, { immediate: true });
+// 不使用布局的页面
+const noLayoutPaths = ['/login', '/register']
+const useLayout = computed(() => !noLayoutPaths.includes(route.path))
 </script>
 
 <template>
-  <router-view />
-
-  <div v-if="showNav" class="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-around py-3 pb-safe shadow-lg z-50">
-    
-    <template v-if="currentRole === 'teacher'">
-      <router-link to="/teacher/students" class="flex flex-col items-center gap-1 text-xs transition-colors" 
-        :class="route.path.includes('students') ? 'text-blue-600' : 'text-gray-400'">
-        <Search :size="24" />
-        <span>找学生</span>
-      </router-link>
-
-      <router-link to="/teacher/resume" class="flex flex-col items-center gap-1 text-xs transition-colors"
-        :class="route.path.includes('resume') ? 'text-blue-600' : 'text-gray-400'">
-        <FileEdit :size="24" />
-        <span>发布信息</span>
-      </router-link>
-    </template>
-
-    <template v-else>
-      <router-link to="/parent/demand" class="flex flex-col items-center gap-1 text-xs transition-colors" 
-        :class="route.path.includes('demand') ? 'text-blue-600' : 'text-gray-400'">
-        <FileEdit :size="24" />
-        <span>发需求</span>
-      </router-link>
-
-      <router-link to="/teacher/list" class="flex flex-col items-center gap-1 text-xs transition-colors"
-        :class="route.path.includes('teacher') ? 'text-blue-600' : 'text-gray-400'">
-        <Search :size="24" />
-        <span>找老师</span>
-      </router-link>
-    </template>
-
-    <router-link to="/mine" class="flex flex-col items-center gap-1 text-xs transition-colors"
-      :class="route.path.includes('mine') ? 'text-blue-600' : 'text-gray-400'">
-      <User :size="24" />
-      <span>我的</span>
-    </router-link>
-
-  </div>
+  <el-config-provider :locale="zhCn">
+    <MainLayout v-if="useLayout">
+      <router-view />
+    </MainLayout>
+    <router-view v-else />
+  </el-config-provider>
 </template>
+
+<script>
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
+export default {
+  data() {
+    return { zhCn }
+  }
+}
+</script>
