@@ -1,7 +1,7 @@
 Page({
   goHome() {
-    wx.reLaunch({
-      url: '/pages/teacher/mapFindStudent/mapFindStudent'
+    wx.switchTab({
+      url: '/pages/common/index/index'
     });
   }
 });

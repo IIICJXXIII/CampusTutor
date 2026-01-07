@@ -1,0 +1,340 @@
+/* 教师课时打卡页面样式 */
+page {
+  background: #f8f9fc;
+}
+
+.container {
+  padding: 32rpx;
+  padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
+}
+
+/* 订单卡片 */
+.order-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 32rpx;
+  color: #fff;
+  box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.25);
+}
+
+.order-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.order-subject {
+  font-size: 36rpx;
+  font-weight: 700;
+  margin-right: 16rpx;
+}
+
+.order-grade {
+  font-size: 24rpx;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+}
+
+.order-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.info-item {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 通用卡片 */
+.location-card,
+.photo-card,
+.content-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.03);
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24rpx;
+}
+
+.card-title .icon {
+  margin-right: 12rpx;
+  font-size: 36rpx;
+}
+
+/* 定位区域 */
+.location-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx;
+  background: #f8f9fc;
+  border-radius: 16rpx;
+}
+
+.location-text {
+  font-size: 26rpx;
+  color: #666;
+  flex: 1;
+}
+
+.refresh-btn {
+  font-size: 24rpx;
+  color: #667eea;
+  background: #fff;
+  border: 1rpx solid #667eea;
+  border-radius: 30rpx;
+  padding: 0 24rpx;
+}
+
+.location-tip {
+  display: flex;
+  align-items: center;
+  margin-top: 16rpx;
+  color: #67c23a;
+  font-size: 26rpx;
+}
+
+.tip-icon {
+  margin-right: 8rpx;
+}
+
+/* 拍照区域 */
+.photo-area {
+  width: 100%;
+  height: 400rpx;
+  background: #f8f9fc;
+  border-radius: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2rpx dashed #ddd;
+}
+
+.photo-preview {
+  width: 100%;
+  height: 100%;
+}
+
+.photo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #999;
+}
+
+.photo-icon {
+  font-size: 80rpx;
+  color: #ccc;
+  line-height: 1;
+}
+
+.photo-text {
+  font-size: 28rpx;
+  margin-top: 16rpx;
+}
+
+.photo-tip {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 16rpx;
+  text-align: center;
+}
+
+/* 教学内容输入 */
+.content-input {
+  width: 100%;
+  min-height: 160rpx;
+  padding: 20rpx;
+  background: #f8f9fc;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 16rpx;
+  box-sizing: border-box;
+}
+
+/* 操作按钮 */
+.action-area {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 32rpx;
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05);
+}
+
+.btn-checkin {
+  width: 100%;
+  height: 96rpx;
+  line-height: 96rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 600;
+  border-radius: 48rpx;
+  border: none;
+}
+
+.btn-checkin[disabled] {
+  background: #ccc;
+  color: #fff;
+}
+
+.btn-checkout {
+  width: 100%;
+  height: 96rpx;
+  line-height: 96rpx;
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 600;
+  border-radius: 48rpx;
+  border: none;
+}
+
+/* 选择订单卡片 */
+.select-order-card {
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 32rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.03);
+  border: 2rpx dashed #667eea;
+}
+
+.select-order-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.select-icon {
+  font-size: 40rpx;
+  margin-right: 16rpx;
+}
+
+.select-text {
+  font-size: 30rpx;
+  color: #667eea;
+  font-weight: 500;
+}
+
+.select-arrow {
+  font-size: 28rpx;
+  color: #999;
+  margin-left: 12rpx;
+}
+
+.change-order {
+  margin-left: auto;
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+}
+
+/* 订单选择弹窗 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  z-index: 1000;
+}
+
+.modal-content.order-picker {
+  width: 100%;
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 32rpx;
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+}
+
+.modal-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #333;
+  text-align: center;
+  margin-bottom: 24rpx;
+}
+
+.order-picker-list {
+  max-height: 60vh;
+}
+
+.order-picker-item {
+  background: #f8f9fc;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+}
+
+.order-picker-item:active {
+  background: #f0f0f0;
+}
+
+.picker-item-main {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.picker-subject {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-right: 16rpx;
+}
+
+.picker-grade {
+  font-size: 24rpx;
+  color: #667eea;
+  background: #e8f4fd;
+  padding: 4rpx 12rpx;
+  border-radius: 12rpx;
+}
+
+.picker-item-sub {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.empty-tip {
+  text-align: center;
+  padding: 60rpx 0;
+  color: #999;
+  font-size: 28rpx;
+}
+
+.modal-close-btn {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  background: #f5f5f5;
+  color: #666;
+  font-size: 30rpx;
+  border-radius: 44rpx;
+  margin-top: 16rpx;
+  border: none;
+}
