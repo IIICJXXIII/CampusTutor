@@ -114,6 +114,17 @@ public class GeoService {
     }
 
     /**
+     * 搜索附近的教员(带距离)
+     * @param longitude 中心点经度
+     * @param latitude 中心点纬度
+     * @param radiusKm 半径(公里)
+     * @return Map<教员ID, 距离(公里)>
+     */
+    public java.util.Map<Long, Double> searchNearbyTutorsWithDistance(double longitude, double latitude, double radiusKm) {
+        return searchNearbyWithDistance(TUTOR_GEO_KEY, longitude, latitude, radiusKm);
+    }
+
+    /**
      * 搜索附近的需求
      * @param longitude 中心点经度
      * @param latitude 中心点纬度
@@ -122,6 +133,17 @@ public class GeoService {
      */
     public List<Long> searchNearbyDemands(double longitude, double latitude, double radiusKm) {
         return searchNearby(DEMAND_GEO_KEY, longitude, latitude, radiusKm);
+    }
+
+    /**
+     * 搜索附近的需求(带距离)
+     * @param longitude 中心点经度
+     * @param latitude 中心点纬度
+     * @param radiusKm 半径(公里)
+     * @return Map<需求ID, 距离(公里)>
+     */
+    public java.util.Map<Long, Double> searchNearbyDemandsWithDistance(double longitude, double latitude, double radiusKm) {
+        return searchNearbyWithDistance(DEMAND_GEO_KEY, longitude, latitude, radiusKm);
     }
 
     /**
@@ -158,6 +180,70 @@ public class GeoService {
         }
         
         return result;
+    }
+
+    /**
+     * 通用附近搜索(带距离信息)
+     * @return Map<ID, 距离(公里)>，按距离升序排列
+     */
+    private java.util.Map<Long, Double> searchNearbyWithDistance(String key, double longitude, double latitude, double radiusKm) {
+        java.util.Map<Long, Double> result = new java.util.LinkedHashMap<>();
+        
+        if (!isRedisAvailable()) {
+            log.debug("Redis不可用，附近搜索返回空Map");
+            return result;
+        }
+        
+        try {
+            Circle circle = new Circle(new Point(longitude, latitude), 
+                    new Distance(radiusKm, Metrics.KILOMETERS));
+            
+            // 添加距离参数
+            RedisGeoCommands.GeoRadiusCommandArgs args = RedisGeoCommands.GeoRadiusCommandArgs
+                    .newGeoRadiusArgs()
+                    .includeDistance()
+                    .sortAscending()
+                    .limit(100);
+            
+            GeoResults<RedisGeoCommands.GeoLocation<String>> geoResults = 
+                    redisTemplate.opsForGeo().radius(key, circle, args);
+            
+            if (geoResults != null) {
+                for (GeoResult<RedisGeoCommands.GeoLocation<String>> geoResult : geoResults) {
+                    String member = geoResult.getContent().getName();
+                    Distance distance = geoResult.getDistance();
+                    double distanceKm = distance != null ? distance.getValue() : 0.0;
+                    result.put(Long.parseLong(member), distanceKm);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("附近搜索(带距离)失败: {}", e.getMessage());
+        }
+        
+        return result;
+    }
+
+    /**
+     * 使用Haversine公式计算两点间距离(当Redis不可用时备用)
+     * @param lon1 点1经度
+     * @param lat1 点1纬度
+     * @param lon2 点2经度
+     * @param lat2 点2纬度
+     * @return 距离(公里)
+     */
+    public double calculateDistance(double lon1, double lat1, double lon2, double lat2) {
+        final double R = 6371.0; // 地球半径(公里)
+        
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+        
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        
+        return R * c;
     }
 
     /**
