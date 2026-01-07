@@ -16,8 +16,11 @@
     "pages/parent/teacherDetail/teacherDetail",
     "pages/parent/order/confirm/confirm",
     "pages/parent/order/list/list",
+    "pages/parent/order/detail/detail",
     "pages/parent/publishDemand/step2-content/step2-content",
-    "pages/parent/demand/myList/myList"
+    "pages/parent/demand/myList/myList",
+    "pages/teacher/orderList/orderList",
+    "pages/teacher/orderDetail/orderDetail"
   ],
   "permission": {
     "scope.userLocation": {
@@ -28,6 +31,9 @@
     "getLocation",
     "chooseLocation"
   ],
+  "usingComponents": {
+    "teacher-card": "/components/teacherCard/teacherCard"
+  },
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#fff",

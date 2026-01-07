@@ -1,6 +1,6 @@
 // 个人中心页面逻辑 - personalCenter.js
-import request from '../../../utils/request';
-import apiConfig from '../../../config/apiConfig';
+const request = require('../../../utils/request.js');
+const apiConfig = require('../../../config/apiConfig.js');
 const storageUtil = require('../../../utils/storageUtil');
 
 Page({
@@ -33,10 +33,10 @@ Page({
       // 教师端菜单
       this.setData({
         menuList: [
-          { icon: 'cert', title: '我的认证', url: '/pages/teacher/certification/step3-result/step3-result', bgColor: '#e8f4fd' },
-          { icon: 'schedule', title: '我的课表', url: '/pages/teacher/teacherSchedule/teacherSchedule', bgColor: '#f0f9eb' },
-          { icon: 'order', title: '我的订单', url: '/pages/teacher/orderList/orderList', bgColor: '#fdf6ec' },
-          { icon: 'map', title: '找学生', url: '/pages/teacher/mapFindStudent/mapFindStudent', bgColor: '#fef0f0' }
+          { icon: 'business', title: '我的认证', url: '/pages/teacher/certification/step3-result/step3-result', bgColor: '#e8f4fd' },
+          { icon: 'examples', title: '我的课表', url: '/pages/teacher/teacherSchedule/teacherSchedule', bgColor: '#f0f9eb' },
+          { icon: 'goods', title: '我的订单', url: '/pages/teacher/orderList/orderList', bgColor: '#fdf6ec' },
+          { icon: 'home', title: '找学生', url: '/pages/teacher/mapFindStudent/mapFindStudent', bgColor: '#fef0f0' }
         ]
       });
       // 加载钱包信息
@@ -45,10 +45,10 @@ Page({
       // 家长端菜单
       this.setData({
         menuList: [
-          { icon: 'order', title: '我的订单', url: '/pages/parent/order/list/list', bgColor: '#e8f4fd' },
-          { icon: 'list', title: '课时记录', url: '/pages/parent/lessonList/lessonList', bgColor: '#f0f9eb' },
-          { icon: 'demand', title: '我的需求', url: '/pages/parent/demand/myList/myList', bgColor: '#fdf6ec' },
-          { icon: 'edit', title: '发布需求', url: '/pages/parent/publishDemand/step1-student/step1-student', bgColor: '#fef0f0' }
+          { icon: 'goods', title: '我的订单', url: '/pages/parent/order/list/list', bgColor: '#e8f4fd' },
+          { icon: 'examples', title: '课时记录', url: '/pages/parent/lessonList/lessonList', bgColor: '#f0f9eb' },
+          { icon: 'goods', title: '我的需求', url: '/pages/parent/demand/myList/myList', bgColor: '#fdf6ec' },
+          { icon: 'copy', title: '发布需求', url: '/pages/parent/publishDemand/step1-student/step1-student', bgColor: '#fef0f0' }
         ]
       });
     }
