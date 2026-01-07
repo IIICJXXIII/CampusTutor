@@ -1,6 +1,6 @@
 package com.campus.module.auth.controller;
 
-import com.campus.common.result.Result;
+import com.campus.common.result .Result;
 import com.campus.module.auth.dto.LoginRequest;
 import com.campus.module.auth.dto.LoginResponse;
 import com.campus.module.auth.dto.RegisterRequest;
@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -21,7 +22,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthService authService;
+    @Autowired  // <--- 1. 关键：加这个
+    private AuthService authService;
 
     @Operation(summary = "用户登录", description = "支持密码登录和验证码登录")
     @PostMapping("/login")

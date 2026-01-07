@@ -18,6 +18,7 @@
         >
           <el-menu-item v-if="isParent" index="/parent/demand">发布需求</el-menu-item>
           <el-menu-item v-if="isParent" index="/teacher/list">找老师</el-menu-item>
+          <el-menu-item v-if="isParent" index="/parent/tutors">智能推荐</el-menu-item>
           <el-menu-item v-if="isTutor" index="/teacher/students">找学生</el-menu-item>
           <el-menu-item v-if="isTutor" index="/teacher/resume">我的简历</el-menu-item>
           <el-menu-item index="/mine/orders">我的订单</el-menu-item>
@@ -100,7 +101,7 @@ const activeMenu = computed(() => route.path)
 
 const goHome = () => {
   if (isParent.value) {
-    router.push('/teacher/list')
+    router.push('/parent/tutors')
   } else {
     router.push('/teacher/students')
   }
@@ -116,7 +117,7 @@ const handleRoleSwitch = (role) => {
   
   // 切换后跳转到对应首页
   if (role === 'parent') {
-    router.push('/teacher/list')
+    router.push('/parent/tutors')
   } else {
     router.push('/teacher/students')
   }
