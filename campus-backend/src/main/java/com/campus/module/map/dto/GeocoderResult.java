@@ -24,6 +24,36 @@ public class GeocoderResult {
      */
     private Result result;
 
+    /**
+     * 高德兼容 - 结果数据别名
+     */
+    private ResultData resultData;
+
+    public void setResult(ResultData data) {
+        this.resultData = data;
+        // 同时设置兼容字段
+        if (this.result == null) {
+            this.result = new Result();
+        }
+        if (data != null) {
+            this.result.setAddress(data.getAddress());
+            this.result.setAddressComponent(data.getAddressComponent());
+        }
+    }
+
+    @Data
+    public static class ResultData {
+        private String address;
+        private Location location;
+        private AddressComponent addressComponent;
+    }
+
+    @Data
+    public static class Location {
+        private Double lat;
+        private Double lng;
+    }
+
     @Data
     public static class Result {
         /**
@@ -55,6 +85,10 @@ public class GeocoderResult {
 
     @Data
     public static class AddressComponent {
+        /**
+         * 国家
+         */
+        private String nation;
         /**
          * 省
          */

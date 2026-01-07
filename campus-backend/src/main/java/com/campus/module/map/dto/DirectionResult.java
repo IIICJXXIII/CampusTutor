@@ -24,6 +24,16 @@ public class DirectionResult {
      */
     private Result result;
 
+    /**
+     * 高德地图兼容 - 直接设置Route
+     */
+    public void setResult(Route route) {
+        if (this.result == null) {
+            this.result = new Result();
+        }
+        this.result.setRoutes(List.of(route));
+    }
+
     @Data
     public static class Result {
         /**
@@ -58,6 +68,10 @@ public class DirectionResult {
          * 路段列表
          */
         private List<Step> steps;
+
+        public void setSteps(List<Step> steps) {
+            this.steps = steps;
+        }
     }
 
     @Data
@@ -86,5 +100,10 @@ public class DirectionResult {
          * 转向类型
          */
         private String dirDesc;
+
+        /**
+         * 路段轨迹点(高德返回的polyline字符串)
+         */
+        private String polyline;
     }
 }
