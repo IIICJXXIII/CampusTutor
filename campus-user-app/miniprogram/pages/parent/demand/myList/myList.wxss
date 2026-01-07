@@ -1,0 +1,149 @@
+page {
+  background-color: #f6f7f9;
+}
+
+.container {
+  padding: 24rpx;
+  padding-bottom: 120rpx;
+}
+
+.demand-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.02);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+  border-bottom: 1rpx solid #f5f5f5;
+  padding-bottom: 20rpx;
+}
+
+.title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 20rpx;
+}
+
+.status-tag {
+  font-size: 24rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.card-body {
+  margin-bottom: 20rpx;
+}
+
+.info-row {
+  display: flex;
+  margin-bottom: 10rpx;
+  font-size: 28rpx;
+}
+
+.label {
+  color: #999;
+  width: 100rpx;
+}
+
+.val {
+  color: #333;
+}
+
+.val.price {
+  color: #f56c6c;
+  font-weight: bold;
+}
+
+.val.time {
+  color: #999;
+  font-size: 26rpx;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f5f5f5;
+}
+
+.left-info {
+  font-size: 24rpx;
+  color: #999;
+  background: #f5f7fa;
+  padding: 4rpx 12rpx;
+  border-radius: 6rpx;
+}
+
+.btn-group {
+  display: flex;
+}
+
+.btn {
+  margin: 0 0 0 16rpx;
+  font-size: 26rpx;
+  padding: 0 24rpx;
+  height: 56rpx;
+  line-height: 54rpx;
+  border-radius: 28rpx;
+}
+
+.btn.delete {
+  background: #fff;
+  border: 1rpx solid #ff4d4f;
+  color: #ff4d4f;
+}
+
+.btn.action {
+  background: #fff;
+  border: 1rpx solid #409EFF;
+  color: #409EFF;
+}
+
+/* 空状态 */
+.empty-state {
+  margin-top: 100rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #999;
+  font-size: 28rpx;
+}
+
+.pub-btn {
+  margin-top: 40rpx;
+  background: #409EFF;
+  color: #fff;
+  border-radius: 40rpx;
+  width: 240rpx;
+}
+
+/* 悬浮按钮 */
+.float-btn {
+  position: fixed;
+  bottom: 60rpx;
+  right: 40rpx;
+  width: 100rpx;
+  height: 100rpx;
+  background: #409EFF;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 20rpx rgba(64, 158, 255, 0.4);
+  color: #fff;
+  font-size: 60rpx;
+  padding-bottom: 10rpx; /* 调整+号位置 */
+  box-sizing: border-box;
+}

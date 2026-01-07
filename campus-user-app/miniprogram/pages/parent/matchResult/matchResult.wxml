@@ -1,34 +1,75 @@
 <view class="container">
-  <view class="filter-bar">
-    <view class="filter-item {{currentSort === 'score' ? 'active' : ''}}" bindtap="changeSort" data-type="score">
-      综合排序
+  <view class="header-fixed">
+    <view class="search-bar">
+      <view class="search-input-box">
+        <icon type="search" size="16" color="#999"></icon>
+        <input class="input" placeholder="搜索科目/姓名" confirm-type="search" bindconfirm="onSearchConfirm" bindinput="onSearchInput" value="{{query.subject}}"/>
+      </view>
     </view>
-    <view class="filter-item {{currentSort === 'distance' ? 'active' : ''}}" bindtap="changeSort" data-type="distance">
-      距离最近
-    </view>
-    <view class="filter-item {{currentSort === 'price' ? 'active' : ''}}" bindtap="changeSort" data-type="price">
-      价格 {{sortOrder === 'asc' ? '↑' : '↓'}}
+
+    <view class="filter-bar">
+      <picker range="{{subjects}}" bindchange="onSubjectChange" value="{{activeSubject}}">
+        <view class="filter-item {{activeSubject>0?'active':''}}">
+          {{activeSubject>0 ? subjects[activeSubject] : '科目'}} ▾
+        </view>
+      </picker>
+      
+      <picker range="{{grades}}" bindchange="onGradeChange" value="{{activeGrade}}">
+        <view class="filter-item {{activeGrade>0?'active':''}}">
+          {{activeGrade>0 ? grades[activeGrade] : '年级'}} ▾
+        </view>
+      </picker>
+
+      <picker range="{{sortOptions}}" range-key="label" bindchange="onSortChange" value="{{activeSort}}">
+        <view class="filter-item {{activeSort>0?'active':''}}">
+          {{sortOptions[activeSort].label}} ▾
+        </view>
+      </picker>
     </view>
   </view>
 
-  <view class="loading-box" wx:if="{{isCalculating}}">
-    <image class="loading-icon" src="/static/icons/ai-loading.png" mode="aspectFit"></image>
-    <view class="loading-text">AI正在为您分析 {{matchCount}} 位教员数据...</view>
-  </view>
+  <view class="header-placeholder"></view>
 
-  <view class="result-list" wx:else>
+  <view class="list-container">
     <block wx:for="{{tutorList}}" wx:key="id">
-      <teacher-card teacher="{{item}}" bind:click="goToDetail"></teacher-card>
+      <view class="tutor-card" bindtap="goToDetail" data-id="{{item.id}}">
+        <view class="card-left">
+          <image class="avatar" src="{{item.avatarUrl || '/static/images/default-avatar.png'}}" mode="aspectFill"></image>
+          <view class="rating-badge" wx:if="{{item.rating}}">⭐ {{item.rating}}</view>
+        </view>
+
+        <view class="card-right">
+          <view class="row-1">
+            <text class="name">{{item.realName}}</text>
+            <text class="price">¥{{item.expectPrice}}<text class="unit">/小时</text></text>
+          </view>
+
+          <view class="row-2">
+            <text class="uni">{{item.universityName}}</text>
+            <text class="sep">|</text>
+            <text class="major">{{item.major}}</text>
+            <text class="sep">|</text>
+            <text class="edu">{{eduMap[item.education]}}</text>
+          </view>
+
+          <view class="tags-row">
+            <block wx:for="{{item.teachSubjects}}" wx:key="*this" wx:for-item="sub" wx:if="{{index < 3}}">
+              <text class="tag">{{sub}}</text>
+            </block>
+            <text class="distance" wx:if="{{item.distText}}">📍 {{item.distText}}</text>
+          </view>
+
+          <view class="intro">{{item.introduction || '暂无简介'}}</view>
+        </view>
+      </view>
     </block>
-    
-    <view class="empty-state" wx:if="{{!isCalculating && tutorList.length === 0}}">
-      <icon type="info" size="64" color="#ccc"/>
-      <view class="text">暂无匹配教员，建议调整筛选条件</view>
-      <button class="back-btn" size="mini" bindtap="goBack">返回修改需求</button>
+
+    <view wx:if="{{!loading && tutorList.length === 0}}" class="empty-state">
+      <image class="empty-img" src="/static/images/empty.png" wx:if="{{false}}"></image>
+      <text>暂无符合条件的老师，换个条件试试？</text>
     </view>
-    
-    <view class="load-more" wx:if="{{tutorList.length > 0}}">
-      {{hasMore ? '加载中...' : '—— 到底了 ——'}}
-    </view>
+
+    <view class="loading-more" wx:if="{{loading}}">加载中...</view>
+    <view class="no-more" wx:if="{{!loading && !hasMore && tutorList.length > 0}}">—— 到底啦 ——</view>
   </view>
 </view>
