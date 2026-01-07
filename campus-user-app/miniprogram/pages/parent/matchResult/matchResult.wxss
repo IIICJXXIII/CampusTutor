@@ -1,89 +1,173 @@
-.container {
-  min-height: 100vh;
-  background-color: #f8f8f8;
-  display: flex;
-  flex-direction: column;
+page {
+  background-color: #f6f7f9;
 }
 
-/* 筛选栏 */
+/* 顶部固定区域 */
+.header-fixed {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: #fff;
+  z-index: 100;
+  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.03);
+}
+
+.header-placeholder {
+  height: 180rpx; /* search(88) + filter(88) + padding */
+}
+
+/* 搜索框 */
+.search-bar {
+  padding: 16rpx 30rpx;
+  background: #fff;
+}
+.search-input-box {
+  background: #f5f7fa;
+  height: 72rpx;
+  border-radius: 36rpx;
+  display: flex;
+  align-items: center;
+  padding: 0 24rpx;
+}
+.input {
+  flex: 1;
+  margin-left: 16rpx;
+  font-size: 28rpx;
+}
+
+/* 筛选条 */
 .filter-bar {
   display: flex;
-  background: #fff;
-  padding: 24rpx 0;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
+  height: 88rpx;
+  align-items: center;
+  border-top: 1rpx solid #f5f5f5;
 }
 .filter-item {
   flex: 1;
   text-align: center;
   font-size: 28rpx;
   color: #666;
-  position: relative;
+  height: 88rpx;
+  line-height: 88rpx;
 }
 .filter-item.active {
   color: #409EFF;
   font-weight: bold;
 }
-.filter-item.active::after {
-  content: '';
+
+/* 列表容器 */
+.list-container {
+  padding: 20rpx;
+}
+
+/* 卡片样式 */
+.tutor-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  align-items: flex-start;
+}
+
+.card-left {
+  position: relative;
+  margin-right: 24rpx;
+}
+.avatar {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background: #eee;
+}
+.rating-badge {
   position: absolute;
   bottom: -10rpx;
   left: 50%;
   transform: translateX(-50%);
-  width: 32rpx;
-  height: 4rpx;
-  background: #409EFF;
-  border-radius: 2rpx;
+  background: #ff9900;
+  color: #fff;
+  font-size: 20rpx;
+  padding: 2rpx 8rpx;
+  border-radius: 10rpx;
+  white-space: nowrap;
 }
 
-/* Loading 动画区 */
-.loading-box {
+.card-right {
   flex: 1;
+}
+
+.row-1 {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  padding-top: 200rpx;
+  margin-bottom: 8rpx;
 }
-.loading-icon {
-  width: 120rpx;
-  height: 120rpx;
-  animation: rotate 2s linear infinite; /* 确保有对应的 keyframes */
-  margin-bottom: 30rpx;
+.name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
 }
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.price {
+  font-size: 32rpx;
+  color: #f56c6c;
+  font-weight: bold;
 }
-.loading-text {
-  font-size: 28rpx;
+.unit {
+  font-size: 22rpx;
+  font-weight: normal;
   color: #999;
 }
 
-/* 结果列表 */
-.result-list {
-  padding: 20rpx 30rpx;
-}
-
-/* 空状态 */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 150rpx;
-}
-.empty-state .text {
-  margin-top: 20rpx;
-  color: #999;
-  font-size: 28rpx;
-  margin-bottom: 40rpx;
-}
-
-.load-more {
-  text-align: center;
-  padding: 30rpx 0;
-  color: #ccc;
+.row-2 {
   font-size: 24rpx;
+  color: #666;
+  margin-bottom: 12rpx;
+}
+.sep {
+  margin: 0 8rpx;
+  color: #ddd;
+}
+
+.tags-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12rpx;
+  flex-wrap: wrap;
+}
+.tag {
+  font-size: 22rpx;
+  color: #409EFF;
+  background: #ecf5ff;
+  padding: 4rpx 10rpx;
+  border-radius: 6rpx;
+  margin-right: 10rpx;
+  margin-bottom: 6rpx;
+}
+.distance {
+  margin-left: auto;
+  font-size: 22rpx;
+  color: #999;
+}
+
+.intro {
+  font-size: 24rpx;
+  color: #888;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+}
+
+/* 状态样式 */
+.empty-state {
+  text-align: center;
+  padding: 100rpx 0;
+  color: #999;
+  font-size: 28rpx;
+}
+.loading-more, .no-more {
+  text-align: center;
+  padding: 20rpx;
+  font-size: 24rpx;
+  color: #ccc;
 }
