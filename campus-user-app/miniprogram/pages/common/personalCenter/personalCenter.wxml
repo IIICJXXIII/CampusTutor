@@ -63,7 +63,7 @@
       <view class="menu-item" bindtap="handleAbout">
         <view class="menu-left">
           <view class="menu-icon-wrap" style="background: #e8f4fd">
-            <image class="menu-icon" src="/static/icons/about.png" mode="aspectFit"></image>
+            <image class="menu-icon" src="/static/icons/question.svg" mode="aspectFit"></image>
           </view>
           <text class="menu-title-text">关于我们</text>
         </view>
@@ -72,7 +72,7 @@
       <view class="menu-item" bindtap="handleFeedback">
         <view class="menu-left">
           <view class="menu-icon-wrap" style="background: #fff5e6">
-            <image class="menu-icon" src="/static/icons/feedback.png" mode="aspectFit"></image>
+            <image class="menu-icon" src="/static/icons/customer-service.svg" mode="aspectFit"></image>
           </view>
           <text class="menu-title-text">意见反馈</text>
         </view>

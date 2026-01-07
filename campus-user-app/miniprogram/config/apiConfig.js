@@ -75,3 +75,7 @@ export default {
     detail: (recordId) => `${API_HOST}/api/teaching/record/${recordId}`,
   }
 };
+
+// 兼容 CommonJS `require` 导出
+module.exports = module.exports || {};
+module.exports = exports.default || module.exports;
