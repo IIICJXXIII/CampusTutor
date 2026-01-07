@@ -1,0 +1,26 @@
+<view class="container">
+  <view class="header">
+    <text class="title">错题本</text>
+  </view>
+
+  <block wx:if="{{loading}}">
+    <view class="loading">加载中...</view>
+  </block>
+
+  <block wx:if="{{!loading && items.length === 0}}">
+    <view class="empty">暂无错题；若后端未实现该功能，会在此显示说明。</view>
+  </block>
+
+  <block wx:for="{{items}}" wx:key="id">
+    <view class="item" bindtap="goDetail" data-id="{{item.id}}">
+      <view class="row">
+        <text class="q">{{item.questionTitle}}</text>
+        <text class="tag">{{item.subject}}</text>
+      </view>
+      <view class="meta">
+        <text class="date">{{item.createdAt}}</text>
+        <button class="resolve" data-id="{{item.id}}" bindtap="markResolved">标为已解决</button>
+      </view>
+    </view>
+  </block>
+</view>
