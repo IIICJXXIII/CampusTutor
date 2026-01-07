@@ -31,6 +31,7 @@ CREATE TABLE `sys_user` (
   `password` varchar(128) NOT NULL COMMENT '加密密码',
   `nickname` varchar(64) DEFAULT NULL COMMENT '昵称',
   `avatar` varchar(255) DEFAULT NULL COMMENT '头像URL',
+  `gender` tinyint DEFAULT NULL COMMENT '性别: 1-男, 2-女',
   `role` tinyint NOT NULL COMMENT '角色: 0-管理员, 1-教员, 2-家长',
   `openid` varchar(64) DEFAULT NULL COMMENT '微信OpenID (小程序用)',
   `status` tinyint DEFAULT '1' COMMENT '状态: 1-正常, 0-禁用',
