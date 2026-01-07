@@ -41,7 +41,11 @@ public class SysWalletServiceImpl extends ServiceImpl<SysWalletMapper, SysWallet
         if (wallet == null) {
             throw new BusinessException("钱包不存在");
         }
-        // 直接增加冻结金额(用于托管教员收益)
+        if (wallet.getBalance().compareTo(amount) < 0) {
+            return false; // 余额不足
+        }
+        // 减少余额，增加冻结金额
+        wallet.setBalance(wallet.getBalance().subtract(amount));
         wallet.setFrozenAmount(wallet.getFrozenAmount().add(amount));
         return updateById(wallet);
     }
@@ -56,8 +60,9 @@ public class SysWalletServiceImpl extends ServiceImpl<SysWalletMapper, SysWallet
         if (wallet.getFrozenAmount().compareTo(amount) < 0) {
             throw new BusinessException("冻结金额不足");
         }
-        // 减少冻结金额
+        // 减少冻结金额，增加回余额
         wallet.setFrozenAmount(wallet.getFrozenAmount().subtract(amount));
+        wallet.setBalance(wallet.getBalance().add(amount));
         return updateById(wallet);
     }
 
