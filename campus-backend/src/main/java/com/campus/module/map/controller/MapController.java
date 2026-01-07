@@ -5,7 +5,7 @@ import com.campus.module.map.dto.DirectionRequest;
 import com.campus.module.map.dto.DirectionResult;
 import com.campus.module.map.dto.DistanceResult;
 import com.campus.module.map.dto.GeocoderResult;
-import com.campus.module.map.service.TencentMapService;
+import com.campus.module.map.service.AmapService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,14 +15,15 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * 地图服务控制器
+ * 使用高德地图API
  */
-@Tag(name = "地图服务", description = "逆地址解析、路径规划、距离计算")
+@Tag(name = "地图服务", description = "逆地址解析、路径规划、距离计算（高德地图）")
 @RestController
 @RequestMapping("/api/map")
 @RequiredArgsConstructor
 public class MapController {
 
-    private final TencentMapService mapService;
+    private final AmapService mapService;
 
     /**
      * 逆地址解析 - 根据经纬度获取地址
