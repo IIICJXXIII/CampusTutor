@@ -40,6 +40,9 @@ public class SysUser implements Serializable {
     /** 状态: 1-正常, 0-禁用 */
     private Integer status;
 
+    /** 性别: 0-未知, 1-男, 2-女 */
+    private Integer gender;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 }
