@@ -1,6 +1,15 @@
 const request = require('../../../../utils/request.js');
 const api = require('../../../../config/apiConfig.js');
 
+// 调试：查看request和api对象结构
+console.log('=== request 对象结构 ===');
+console.log('request:', request);
+console.log('request.get:', request.get);
+console.log('=== api 对象结构 ===');
+console.log('api:', api);
+console.log('api.demand:', api.demand);
+console.log('api.demand.my:', api.demand.my);
+
 Page({
   data: {
     demandList: [],

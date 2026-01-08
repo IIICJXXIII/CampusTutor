@@ -25,6 +25,7 @@
     "pages/teacher/orderDetail/orderDetail",
     "pages/parent/lessonList/lessonList",
     "pages/parent/lessonDetail/lessonDetail",
+    "pages/teacher/demandDetail/demandDetail"
     "pages/teacher/teacherSchedule/teacherSchedule",
     "pages/common/wrongBook/wrongBook",
     "pages/common/wrongBookDetail/wrongBookDetail"
