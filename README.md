@@ -1,8 +1,5 @@
-<<<<<<< HEAD
-
 # CampusTutor
-=======
->>>>>>> main
+
 # 🎓 CampusTutor (校园智教)
 
 <div align="center">
@@ -169,7 +166,6 @@ npm run dev
 
 ---
 
-<<<<<<< HEAD
 ## 🔑 核心功能模块
 
 ### 1️⃣ 认证模块 (Auth)
@@ -370,7 +366,3 @@ Made with ❤️ by CampusTutor Team
 
 </div>
 
-=======
-## 📄 版权说明
-本项目采用 MIT 开源协议，仅供学习交流使用。
->>>>>>> main

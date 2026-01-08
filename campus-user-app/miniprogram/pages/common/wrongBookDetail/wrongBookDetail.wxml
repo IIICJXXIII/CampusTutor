@@ -1,0 +1,24 @@
+<view class="container">
+  <view class="header">
+    <text class="title">错题详情</text>
+  </view>
+
+  <block wx:if="{{loading}}">
+    <view class="loading">加载中...</view>
+  </block>
+
+  <block wx:if="{{!loading}}">
+    <view class="card">
+      <text class="q-title">{{item.questionTitle}}</text>
+      <view class="meta">科目：{{item.subject}}  •  创建于：{{item.createdAt}}</view>
+      <view class="section">
+        <text class="label">题目描述</text>
+        <text class="content">{{item.content || '暂无描述'}}</text>
+      </view>
+      <view class="section">
+        <text class="label">错因分析 / 答案</text>
+        <text class="content">{{item.analysis || '暂无解析'}}</text>
+      </view>
+    </view>
+  </block>
+</view>

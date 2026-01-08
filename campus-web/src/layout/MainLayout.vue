@@ -1,6 +1,5 @@
 <template>
   <div class="main-layout">
-    <!-- 顶部导航栏 -->
     <header class="header">
       <div class="header-left">
         <div class="logo" @click="goHome">
@@ -27,7 +26,6 @@
       </div>
       
       <div class="header-right">
-        <!-- 角色切换 -->
         <el-dropdown class="role-switch" @command="handleRoleSwitch">
           <span class="role-label">
             <el-icon><User /></el-icon>
@@ -46,11 +44,10 @@
           </template>
         </el-dropdown>
         
-        <!-- 用户下拉 -->
         <el-dropdown @command="handleUserCommand">
           <div class="user-info">
-            <el-avatar :size="36" :src="userStore.avatar" />
-            <span class="username">{{ userStore.nickname }}</span>
+            <el-avatar :size="36" :src="userStore.avatar || 'https://api.dicebear.com/7.x/adventurer/svg?seed=User'" />
+            <span class="username">{{ userStore.nickname || '用户' }}</span>
           </div>
           <template #dropdown>
             <el-dropdown-menu>
@@ -69,7 +66,6 @@
       </div>
     </header>
     
-    <!-- 主内容区域 -->
     <main class="main-content">
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
@@ -77,8 +73,15 @@
         </transition>
       </router-view>
     </main>
+
+    <div class="ai-float-btn" @click="goToAiChat">
+      <el-tooltip content="AI 智能助手 (DeepSeek)" placement="left">
+        <div class="btn-content">
+          <img src="https://api.dicebear.com/7.x/bottts/svg?seed=DeepSeek" alt="AI" />
+        </div>
+      </el-tooltip>
+    </div>
     
-    <!-- 页脚 -->
     <footer class="footer">
       <p>© 2026 校园智教 CampusTutor - 大学生家教智能服务平台</p>
     </footer>
@@ -90,6 +93,10 @@ import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/index'
+// 补充图标引入，防止报错
+import { 
+  User, ArrowDown, Reading, UserFilled, Medal, SwitchButton 
+} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -112,6 +119,7 @@ const handleMenuSelect = (index) => {
 }
 
 const handleRoleSwitch = (role) => {
+  // 这里保留您原本的逻辑
   userStore.setRole(role)
   ElMessage.success(`已切换为${role === 'parent' ? '家长' : '教师'}模式`)
   
@@ -132,20 +140,46 @@ const handleUserCommand = async (command) => {
       router.push('/teacher/auth')
       break
     case 'logout':
-      await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      })
-      userStore.logout()
-      router.push('/login')
-      ElMessage.success('已退出登录')
+      try {
+        await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        userStore.logout()
+        router.push('/login')
+        ElMessage.success('已退出登录')
+      } catch(e) {
+        // 取消逻辑
+      }
       break
   }
+}
+
+// === 【新增】跳转 AI 聊天方法 ===
+const goToAiChat = () => {
+  router.push('/service/chat')
 }
 </script>
 
 <style lang="scss" scoped>
+/* 为了确保不报错，这里定义一下您原本使用的 SCSS 变量 */
+/* 如果您全局已经有 variables.scss，这些可以删除 */
+$bg-color: #f5f7fa;
+$bg-white: #ffffff;
+$primary-color: #409eff;
+$primary-light: #ecf5ff;
+$text-primary: #303133;
+$text-secondary: #909399;
+$border-lighter: #ebeef5;
+$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+$header-height: 60px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$radius-md: 4px;
+$breakpoint-md: 768px;
+
 .main-layout {
   min-height: 100vh;
   display: flex;
@@ -258,6 +292,34 @@ const handleUserCommand = async (command) => {
   }
 }
 
+/* === 【新增】AI 悬浮按钮样式 === */
+.ai-float-btn {
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  width: 56px;
+  height: 56px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  cursor: pointer;
+  z-index: 999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  &:hover {
+    transform: scale(1.1) translateY(-5px);
+    box-shadow: 0 8px 24px rgba(64, 158, 255, 0.35);
+  }
+
+  .btn-content img {
+    width: 36px;
+    height: 36px;
+  }
+}
+
 @media (max-width: $breakpoint-md) {
   .header {
     padding: 0 $spacing-md;
@@ -273,6 +335,19 @@ const handleUserCommand = async (command) => {
   
   .main-content {
     padding: $spacing-md;
+  }
+
+  /* 移动端调整 AI 按钮位置 */
+  .ai-float-btn {
+    bottom: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    
+    .btn-content img {
+      width: 28px;
+      height: 28px;
+    }
   }
 }
 </style>

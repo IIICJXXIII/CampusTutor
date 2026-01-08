@@ -25,7 +25,10 @@
     "pages/teacher/orderDetail/orderDetail",
     "pages/parent/lessonList/lessonList",
     "pages/parent/lessonDetail/lessonDetail",
-    "pages/teacher/teacherSchedule/teacherSchedule"
+    "pages/teacher/teacherSchedule/teacherSchedule",
+    "pages/parent/lessonDetail/lessonDetail",
+    "pages/common/wrongBook/wrongBook",
+    "pages/common/wrongBookDetail/wrongBookDetail"
   ],
   "permission": {
     "scope.userLocation": {

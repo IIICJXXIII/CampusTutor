@@ -31,6 +31,13 @@
       <text class="action-title">我的订单</text>
       <text class="action-desc">课程管理</text>
     </view>
+    <view class="action-item" bindtap="goToWrongBook">
+      <view class="action-icon" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)">
+        <text class="icon-text">📕</text>
+      </view>
+      <text class="action-title">错题本</text>
+      <text class="action-desc">记录错题与解析</text>
+    </view>
   </view>
 
   <!-- 最近需求 -->
