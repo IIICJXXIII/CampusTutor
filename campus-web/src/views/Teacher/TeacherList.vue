@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { matchTutors } from '@/api/match'
+import { getStudents } from '@/api/demand'
 
 const router = useRouter()
 const route = useRoute()
@@ -12,36 +13,115 @@ const activeFilter = ref('综合')
 const loading = ref(false)
 const teachers = ref([])
 
+// 学生选择相关
+const studentList = ref([])
+const selectedStudentId = ref(null)
+
+// 计算当前选中的学生
+const selectedStudent = computed(() => {
+  if (!selectedStudentId.value) return null
+  return studentList.value.find(s => s.id === selectedStudentId.value)
+})
+
+// 解析薄弱科目
+const parseWeakSubjects = (weakSubjects) => {
+  if (!weakSubjects) return []
+  if (Array.isArray(weakSubjects)) return weakSubjects
+  try {
+    const parsed = JSON.parse(weakSubjects)
+    return Array.isArray(parsed) ? parsed : [weakSubjects]
+  } catch {
+    return weakSubjects.split(',').map(s => s.trim()).filter(Boolean)
+  }
+}
+
+// 获取学生列表
+const fetchStudents = async () => {
+  try {
+    const res = await getStudents()
+    if (res.code === 200 && res.data) {
+      studentList.value = res.data
+      
+      // 如果路由传了 studentId，自动选中
+      if (route.query.studentId) {
+        selectedStudentId.value = parseInt(route.query.studentId)
+      }
+    }
+  } catch (error) {
+    console.log('获取学生列表失败', error)
+  }
+}
+
+// 学生选择变更
+const handleStudentChange = () => {
+  fetchTeachers()
+}
+
+// 安全解析JSON或逗号分隔字符串
+const safeParse = (str) => {
+  if (!str) return []
+  if (Array.isArray(str)) return str
+  try {
+    const res = JSON.parse(str)
+    return Array.isArray(res) ? res : [res]
+  } catch {
+    return str.split(',').map(s => s.trim()).filter(Boolean)
+  }
+}
+
 // 获取匹配的教师列表
 const fetchTeachers = async () => {
   loading.value = true
   try {
     const demandId = route.query.demandId
-    const res = await matchTutors({
+    const student = selectedStudent.value
+    
+    // 构造请求参数
+    const params = {
       demandId,
-      latitude: 31.2304,
-      longitude: 121.4737,
+      latitude: 39.9042, // 北京坐标
+      longitude: 116.4074, // 北京坐标
       page: 1,
       size: 20
-    })
+    }
+
+    // 如果选了学生，增加筛选条件
+    if (student) {
+      params.grade = student.grade
+      const subjects = parseWeakSubjects(student.weakSubjects)
+      if (subjects.length > 0) {
+        params.subject = subjects[0] // 取第一个薄弱科目作为匹配
+      }
+    } else if (route.query.subject || route.query.grade) {
+      // 兼容路由传参
+      params.subject = route.query.subject
+      params.grade = route.query.grade
+    }
+
+    const res = await matchTutors(params)
     
     const list = res.data?.records || [] // <--- 关键修改：取 .records
-    teachers.value = list.map(item => ({
-      id: item.tutorId || item.id, // 兼容字段
-      tutorProfileId: item.id, // 教员档案ID
-      userId: item.userId, // 用户ID
-      name: item.realName || '老师',
-      school: item.universityName || '未填写',
-      subject: item.teachSubjects ? JSON.parse(item.teachSubjects)[0] : '综合',
-      subjects: item.teachSubjects ? JSON.parse(item.teachSubjects) : [],
-      grades: item.teachGrades ? JSON.parse(item.teachGrades) : [],
-      price: item.expectPrice || 150,
-      matchScore: item.matchScore || 80,
-      distance: item.distance ? `${item.distance.toFixed(1)}km` : '未知',
-      style: item.teachStyle || '鼓励型',
-      tags: buildTags(item),
-      avatar: item.avatar || `https://api.dicebear.com/7.x/miniavs/svg?seed=${item.tutorId}`
-    }))
+    teachers.value = list.map(item => {
+      const subjects = safeParse(item.teachSubjects)
+      const grades = safeParse(item.teachGrades)
+      
+      return {
+        id: item.tutorId || item.id, // 兼容字段
+        tutorProfileId: item.id, // 教员档案ID
+        userId: item.userId, // 用户ID
+        name: item.realName || '老师',
+        school: item.universityName || '未填写',
+        subject: subjects.length > 0 ? subjects[0] : '综合',
+        subjects: subjects,
+        grades: grades,
+        price: item.expectPrice || 150,
+        matchScore: item.matchScore || 80,
+        distance: item.distance ? `${item.distance.toFixed(1)}km` : '未知',
+        style: item.teachStyle || '鼓励型',
+        tags: buildTags(item),
+        avatar: item.avatar || `https://api.dicebear.com/7.x/miniavs/svg?seed=${item.tutorId}`
+      }
+    })
   } catch (error) {
     console.error('获取教师列表失败:', error)
     teachers.value = getMockTeachers()
@@ -145,7 +225,8 @@ const goToBooking = (teacher) => {
   })
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await fetchStudents()
   fetchTeachers()
 })
 </script>
@@ -156,6 +237,44 @@ onMounted(() => {
     <div class="page-header">
       <h1 class="page-title">找老师</h1>
       <p class="page-subtitle">根据您的需求，为您匹配最合适的老师</p>
+    </div>
+
+    <!-- 孩子选择器 (仅家长端显示) -->
+    <div class="student-select-section" v-if="studentList.length > 0">
+      <el-card shadow="never" class="student-card">
+        <div class="selector-content">
+          <div class="selector-left">
+            <span class="label">👨‍👧 为孩子找老师：</span>
+            <el-select 
+              v-model="selectedStudentId" 
+              placeholder="选择孩子" 
+              @change="handleStudentChange"
+              size="default"
+              class="child-select"
+            >
+              <el-option label="全部老师" :value="null" />
+              <el-option 
+                v-for="s in studentList" 
+                :key="s.id" 
+                :label="`${s.studentName} (${s.grade})`" 
+                :value="s.id" 
+              />
+            </el-select>
+          </div>
+          <div class="selector-right" v-if="selectedStudent">
+            <el-tag size="small" type="success" effect="light">年级：{{ selectedStudent.grade }}</el-tag>
+            <el-tag 
+              v-for="subj in parseWeakSubjects(selectedStudent.weakSubjects)" 
+              :key="subj"
+              size="small" 
+              type="warning" 
+              effect="light"
+            >
+              薄弱：{{ subj }}
+            </el-tag>
+          </div>
+        </div>
+      </el-card>
     </div>
 
     <!-- 筛选栏 -->
@@ -255,6 +374,48 @@ onMounted(() => {
   min-height: 100vh;
   background: $bg-light;
   padding-bottom: 80px;
+}
+
+.student-select-section {
+  max-width: 1200px;
+  margin: -30px auto 20px;
+  padding: 0 20px;
+  position: relative;
+  z-index: 10;
+
+  .student-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border: none;
+  }
+
+  .selector-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .selector-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+
+    .label {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .child-select {
+      width: 180px;
+    }
+  }
+
+  .selector-right {
+    display: flex;
+    gap: 8px;
+  }
 }
 
 .page-header {
