@@ -1,6 +1,33 @@
 <template>
   <div class="tutor-list-page">
     <div class="page-container">
+      <!-- 孩子选择器 -->
+      <el-card class="student-selector-card" shadow="hover" v-if="studentList.length > 0">
+        <div class="student-selector">
+          <span class="selector-label">👨‍👧 为孩子找老师：</span>
+          <el-select 
+            v-model="selectedStudentId" 
+            placeholder="请选择孩子" 
+            @change="handleStudentChange"
+            class="student-select"
+          >
+            <el-option :label="'全部'" :value="null" />
+            <el-option 
+              v-for="student in studentList" 
+              :key="student.id" 
+              :label="`${student.studentName} (${student.grade})`"
+              :value="student.id"
+            />
+          </el-select>
+          <span v-if="selectedStudent" class="student-info">
+            <el-tag type="info" size="small">{{ selectedStudent.grade }}</el-tag>
+            <el-tag v-for="subj in parseWeakSubjects(selectedStudent.weakSubjects)" :key="subj" type="warning" size="small">
+              薄弱: {{ subj }}
+            </el-tag>
+          </span>
+        </div>
+      </el-card>
+
       <el-row :gutter="24">
         <el-col :span="6" class="filter-col">
           <el-card class="filter-card" shadow="hover">
@@ -171,9 +198,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { searchTutors } from '@/api/match'
+import { getStudents } from '@/api/demand'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
@@ -181,6 +209,62 @@ const route = useRoute()
 const loading = ref(false)
 const tutors = ref([])
 const total = ref(0)
+
+// 学生选择相关
+const studentList = ref([])
+const selectedStudentId = ref(null)
+
+// 计算当前选中的学生
+const selectedStudent = computed(() => {
+  if (!selectedStudentId.value) return null
+  return studentList.value.find(s => s.id === selectedStudentId.value)
+})
+
+// 解析薄弱科目（可能是JSON数组字符串或普通字符串）
+const parseWeakSubjects = (weakSubjects) => {
+  if (!weakSubjects) return []
+  if (Array.isArray(weakSubjects)) return weakSubjects
+  try {
+    const parsed = JSON.parse(weakSubjects)
+    return Array.isArray(parsed) ? parsed : [weakSubjects]
+  } catch {
+    return weakSubjects.split(',').map(s => s.trim()).filter(Boolean)
+  }
+}
+
+// 获取学生列表
+const fetchStudents = async () => {
+  try {
+    const res = await getStudents()
+    if (res.code === 200 && res.data) {
+      studentList.value = res.data
+    }
+  } catch (error) {
+    console.log('获取学生列表失败', error)
+  }
+}
+
+// 学生选择变更
+const handleStudentChange = (studentId) => {
+  if (studentId) {
+    const student = studentList.value.find(s => s.id === studentId)
+    if (student) {
+      // 自动填充年级
+      filterForm.grade = student.grade || ''
+      // 自动填充第一个薄弱科目
+      const subjects = parseWeakSubjects(student.weakSubjects)
+      if (subjects.length > 0) {
+        filterForm.subject = subjects[0]
+      }
+    }
+  } else {
+    // 选择"全部"时清空筛选
+    filterForm.grade = ''
+    filterForm.subject = ''
+  }
+  // 重新搜索
+  handleSearch()
+}
 
 // 筛选表单数据
 const filterForm = reactive({
@@ -281,7 +365,10 @@ const getScoreColor = (score) => {
   return '#909399' // Info Grey
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // 先获取学生列表
+  await fetchStudents()
+  
   // 从路由参数读取筛选条件（发布需求后跳转会带上科目和年级）
   if (route.query.subject) {
     filterForm.subject = route.query.subject
@@ -289,6 +376,12 @@ onMounted(() => {
   if (route.query.grade) {
     filterForm.grade = route.query.grade
   }
+  
+  // 如果有studentId参数，自动选中该学生
+  if (route.query.studentId) {
+    selectedStudentId.value = parseInt(route.query.studentId)
+  }
+  
   fetchList()
 })
 </script>
@@ -304,6 +397,41 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+}
+
+/* 孩子选择器卡片 */
+.student-selector-card {
+  margin-bottom: 20px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  
+  :deep(.el-card__body) {
+    padding: 15px 20px;
+  }
+}
+
+.student-selector {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  
+  .selector-label {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+  }
+  
+  .student-select {
+    width: 200px;
+  }
+  
+  .student-info {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
 }
 
 /* 筛选侧边栏 */
