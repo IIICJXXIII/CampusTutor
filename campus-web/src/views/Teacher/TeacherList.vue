@@ -194,7 +194,7 @@ const sortedTeachers = computed(() => {
 const getScoreType = (score) => {
   if (score >= 80) return 'success'
   if (score >= 60) return 'warning'
-  return 'info'
+  return '' // el-progress 不支持 'info' 状态
 }
 
 const getStyleType = (style) => {
@@ -293,9 +293,9 @@ onMounted(async () => {
       
       <div 
         v-for="teacher in sortedTeachers" 
-        :key="teacher.id" 
+        :key="teacher.tutorProfileId || teacher.id" 
         class="teacher-card"
-        @click="goToDetail(teacher.id)"
+        @click="goToDetail(teacher.tutorProfileId || teacher.id)"
       >
         <!-- 头像和基本信息 -->
         <div class="card-header">
