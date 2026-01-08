@@ -10,9 +10,12 @@
              bindinput="handleInput" data-field="phone" value="{{phone}}"/>
     </view>
 
-    <view class="input-group" wx:if="{{loginType === 'password'}}">
-      <input class="input" type="password" placeholder="请输入密码" 
-             bindinput="handleInput" data-field="password" value="{{password}}"/>
+    <view class="input-group row" wx:if="{{loginType === 'password'}}">
+      <input class="input" type="{{showPassword ? 'text' : 'password'}}" placeholder="请输入密码" 
+             bindinput="handleInput" data-field="password" value="{{password}}" password="{{!showPassword}}"/>
+      <view class="eye-btn" bindtap="togglePasswordVisibility">
+        <text>{{showPassword ? '🙈' : '👁️'}}</text>
+      </view>
     </view>
 
     <view class="input-group row" wx:else>
@@ -22,6 +25,8 @@
     </view>
 
     <button class="submit-btn" bindtap="handleLogin" loading="{{isSubmitting}}">登 录</button>
+
+    <button class="wx-login-btn" bindtap="handleWxLogin">微信一键登录</button>
 
     <view class="footer-actions">
       <text class="link" bindtap="switchLoginType">{{loginType === 'password' ? '验证码登录' : '密码登录'}}</text>

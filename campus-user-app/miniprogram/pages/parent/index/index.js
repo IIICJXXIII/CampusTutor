@@ -88,6 +88,11 @@ Page({
         });
     },
 
+    // 错题本
+    goToWrongBook() {
+        wx.navigateTo({ url: '/pages/common/wrongBook/wrongBook' });
+    },
+
     // 格式化时间
     formatTime(timeStr) {
         if (!timeStr) return '';

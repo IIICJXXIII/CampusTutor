@@ -1,0 +1,191 @@
+/* 教师课表页面样式 - 细化时间段版本 */
+page {
+  background: #f8f9fc;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 说明卡片 */
+.info-card {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #e8f4fd 0%, #d6e8f5 100%);
+  border-radius: 20rpx;
+  padding: 20rpx 28rpx;
+  margin: 24rpx;
+  flex-shrink: 0;
+}
+
+.info-icon {
+  font-size: 36rpx;
+  margin-right: 12rpx;
+}
+
+.info-text {
+  font-size: 24rpx;
+  color: #4a7c9b;
+  flex: 1;
+}
+
+/* 课表滚动区域 */
+.schedule-scroll {
+  flex: 1;
+  margin: 0 24rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.03);
+}
+
+.schedule-grid {
+  min-width: 650rpx;
+}
+
+.grid-header {
+  display: flex;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  padding-bottom: 12rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.header-cell {
+  flex: 1;
+  min-width: 70rpx;
+  text-align: center;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #333;
+  padding: 12rpx 0;
+}
+
+.header-cell.corner {
+  min-width: 100rpx;
+  flex: none;
+  color: #999;
+  font-weight: normal;
+}
+
+/* 时段标题 */
+.period-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #667eea;
+  padding: 16rpx 8rpx 8rpx;
+  background: #f8f9fc;
+  margin: 8rpx 0;
+  border-radius: 8rpx;
+}
+
+.grid-row {
+  display: flex;
+  margin-bottom: 8rpx;
+}
+
+.time-cell {
+  min-width: 100rpx;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-right: 8rpx;
+}
+
+.time-start {
+  font-size: 22rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.time-end {
+  font-size: 18rpx;
+  color: #999;
+}
+
+.schedule-cell {
+  flex: 1;
+  min-width: 70rpx;
+  height: 56rpx;
+  margin: 2rpx;
+  border-radius: 10rpx;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.schedule-cell.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-weight: bold;
+  box-shadow: 0 2rpx 8rpx rgba(102, 126, 234, 0.3);
+}
+
+.schedule-cell:active {
+  transform: scale(0.95);
+}
+
+/* 图例 */
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 48rpx;
+  padding: 20rpx 0;
+  flex-shrink: 0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.legend-dot {
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 6rpx;
+  background: #f5f5f5;
+  margin-right: 12rpx;
+  border: 1rpx solid #ddd;
+}
+
+.legend-dot.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+/* 保存按钮 */
+.action-area {
+  padding: 20rpx 32rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.btn-save {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 600;
+  border-radius: 44rpx;
+  border: none;
+}
+
+.btn-save[disabled] {
+  background: #ccc;
+}
