@@ -114,6 +114,7 @@ const routes = [
     component: () => import('@/views/Mine/OrderList.vue'),
     meta: { title: '我的订单' }
   },
+  
   // 钱包模块
   {
     path: '/wallet',
@@ -121,6 +122,7 @@ const routes = [
     component: () => import('@/views/Mine/Wallet.vue'),
     meta: { title: '我的钱包' }
   },
+  
   {
     path: '/wallet/withdraw',
     name: 'Withdraw',
@@ -132,7 +134,16 @@ const routes = [
   {
     path: '/:pathMatch(.*)*',
     redirect: '/login'
+  },
+  {
+  path: '/service/chat',
+  name: 'AiChat',
+  component: () => import('@/views/Service/AiChat.vue'),
+  meta: { 
+    title: 'AI智能助手', 
+    requiresAuth: true // 确保只有登录后才能访问
   }
+}
 ]
 
 const router = createRouter({
