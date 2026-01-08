@@ -8,6 +8,8 @@ const BASE_URL = {
 
 const API_HOST = BASE_URL[ENV];
 
+// 使用 CommonJS 导出
+module.exports = {
 const api = {
   host: API_HOST,
   // 认证模块
@@ -75,6 +77,8 @@ const api = {
     myRecords: `${API_HOST}/api/teaching/my-records`,
     orderRecords: (orderId) => `${API_HOST}/api/teaching/records/${orderId}`,
     detail: (recordId) => `${API_HOST}/api/teaching/record/${recordId}`,
+  }
+};
   },
   // 学习辅助模块（错题本）
   study: {

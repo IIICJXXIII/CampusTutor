@@ -85,7 +85,7 @@ Page({
       const res = await request.get(api.demand.nearby, {
         longitude: this.data.longitude,
         latitude: this.data.latitude,
-        radius: 50 // 搜索半径 50km
+        radius: 10 // 搜索半径 10km
       });
 
       // 【修复点】：后端如果因Redis挂了返回空，或者真没数据，res可能是空数组
@@ -124,7 +124,7 @@ Page({
         // 如果没有自定义图标，不设置 iconPath，微信会用默认红色大头针
         // iconPath: '/static/icons/location.png', 
         callout: {
-          content: `¥${item.expectPrice}\n${item.subject}`,
+          content: `¥${item.expectPrice}\n${item.subject} ${item.grade}`,
           padding: 8,
           borderRadius: 4,
           display: 'ALWAYS',
@@ -167,6 +167,15 @@ Page({
     wx.showToast({ title: '接单功能开发中', icon: 'none' });
     // 后续跳转逻辑：
     // wx.navigateTo({ url: `/pages/demand/detail/detail?id=${this.data.currentDemand.id}` });
+  },
+
+  // 点击“查看详情”
+  handleViewDetail() {
+    if (!this.data.currentDemand) return;
+    // 跳转到需求详情页面
+    wx.navigateTo({
+      url: `/pages/teacher/demandDetail/demandDetail?id=${this.data.currentDemand.id}`
+    });
   },
 
   // 辅助：计算两点距离 (单位：km)

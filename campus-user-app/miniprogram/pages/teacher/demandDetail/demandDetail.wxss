@@ -1,0 +1,227 @@
+.container {
+  position: relative;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.loading-text {
+  font-size: 14px;
+  color: #909399;
+}
+
+/* 错误状态 */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.error-text {
+  font-size: 14px;
+  color: #f56c6c;
+  margin-bottom: 20px;
+}
+
+.btn-reload {
+  padding: 8px 20px;
+  background-color: #409eff;
+  color: white;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* 滚动容器 */
+.detail-scroll {
+  height: 100vh;
+  padding: 0 20px 100px;
+  box-sizing: border-box;
+}
+
+/* 详情卡片 */
+.detail-card {
+  margin-top: 20px;
+  background-color: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* 卡片头部 */
+.card-header {
+  margin-bottom: 20px;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.subject {
+  font-size: 20px;
+  font-weight: bold;
+  color: #303133;
+  margin-right: 10px;
+}
+
+.grade-tag {
+  padding: 4px 10px;
+  background-color: #ecf5ff;
+  color: #409eff;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.price {
+  font-size: 24px;
+  font-weight: bold;
+  color: #f56c6c;
+}
+
+.unit {
+  font-size: 14px;
+  font-weight: normal;
+  color: #909399;
+}
+
+/* 卡片内容 */
+.card-content {
+}
+
+/* 信息区块 */
+.info-section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  display: block;
+  font-size: 16px;
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 12px;
+  padding-left: 4px;
+  border-left: 4px solid #409eff;
+}
+
+/* 文本样式 */
+.detail-text,
+.address-text,
+.schedule-text,
+.other-text,
+.time-text {
+  font-size: 14px;
+  color: #606266;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+/* 地图预览 */
+.map-preview {
+  margin-top: 12px;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 200px;
+  border: 1px solid #ebeef5;
+}
+
+.mini-map {
+  width: 100%;
+  height: 100%;
+}
+
+/* 学生信息 */
+.student-info {
+  background-color: #f5f7fa;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.info-item {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.label {
+  font-size: 14px;
+  color: #909399;
+  width: 80px;
+}
+
+.value {
+  font-size: 14px;
+  color: #606266;
+  flex: 1;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: white;
+  padding: 20px;
+  box-shadow: 0 -2px 12px 0 rgba(0, 0, 0, 0.05);
+  display: flex;
+  gap: 12px;
+}
+
+.btn-contact,
+.btn-accept {
+  flex: 1;
+  height: 48px;
+  border-radius: 24px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.btn-contact {
+  background-color: #f56c6c;
+  color: white;
+  border: none;
+}
+
+.btn-accept {
+  background-color: #409eff;
+  color: white;
+  border: none;
+}
+
+/* 返回按钮 */
+.back-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.back-icon {
+  font-size: 20px;
+  color: #606266;
+}
+
+.back-text {
+  display: none;
+}
