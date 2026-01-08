@@ -80,6 +80,12 @@ const startCountdown = () => {
   }, 1000)
 }
 
+// 支付方式映射：wechat -> 2, alipay -> 3, wallet -> 1
+const getPayType = (method) => {
+  const map = { wechat: 2, alipay: 3, wallet: 1 }
+  return map[method] || 2
+}
+
 // 支付
 const handlePay = async () => {
   status.value = 'processing'
@@ -87,11 +93,12 @@ const handlePay = async () => {
   try {
     // 调用后端支付API
     if (orderId && !orderId.startsWith('ORD-')) {
-      await payOrder(orderId, selectedPayment.value.toUpperCase())
+      const payType = getPayType(selectedPayment.value)
+      await payOrder(orderId, payType)
     }
 
     // 模拟支付处理
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
     status.value = 'success'
 
@@ -103,8 +110,8 @@ const handlePay = async () => {
     ElMessage.success('支付成功！')
   } catch (error) {
     console.error('支付失败:', error)
-    // 演示用，即使失败也显示成功
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // 演示模式：即使API调用失败也显示成功，方便测试
+    await new Promise(resolve => setTimeout(resolve, 1000))
     status.value = 'success'
     if (orderId) {
       orderStore.updateOrder(orderId, { status: 'active' })
