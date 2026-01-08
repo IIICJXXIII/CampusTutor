@@ -1,6 +1,6 @@
 // 家长端首页逻辑 - index.js
-import request from '../../../utils/request';
-import apiConfig from '../../../config/apiConfig';
+const request = require('../../../utils/request.js');
+const apiConfig = require('../../../config/apiConfig.js');
 const storageUtil = require('../../../utils/storageUtil');
 
 Page({

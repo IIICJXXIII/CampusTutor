@@ -96,7 +96,7 @@ public class DemandController {
     public Result<List<DemandPost>> nearby(
             @RequestParam Double longitude,
             @RequestParam Double latitude,
-            @RequestParam(defaultValue = "5") Double radius) {
+            @RequestParam(defaultValue = "10") Double radius) {
         List<DemandPost> list = demandPostService.searchNearby(longitude, latitude, radius);
         return Result.success(list);
     }

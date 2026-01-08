@@ -8,7 +8,8 @@ const BASE_URL = {
 
 const API_HOST = BASE_URL[ENV];
 
-export default {
+// 使用 CommonJS 导出
+module.exports = {
   host: API_HOST,
   // 认证模块
   auth: {

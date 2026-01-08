@@ -1,6 +1,6 @@
 // 首页逻辑（根据角色显示不同内容） - index.js
-import request from '../../../utils/request';
-import apiConfig from '../../../config/apiConfig';
+const request = require('../../../utils/request.js');
+const apiConfig = require('../../../config/apiConfig.js');
 const storageUtil = require('../../../utils/storageUtil');
 
 Page({
@@ -108,6 +108,10 @@ Page({
 
     goToCertification() {
         wx.navigateTo({ url: '/pages/teacher/certification/step3-result/step3-result' });
+    },
+
+    goToTeacherOrders() {
+        wx.navigateTo({ url: '/pages/teacher/orderList/orderList' });
     },
 
     goToTeacherLessons() {
