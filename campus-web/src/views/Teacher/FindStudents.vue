@@ -274,7 +274,7 @@ const refreshMapData = () => {
 
 const goDetail = (id) => {
   console.log('查看详情:', id)
-  // router.push(`/demand/${id}`)
+  router.push(`/student/${id}`) // 修正为正确的路由路径 /student/:id
 }
 
 const formatDistance = (d) => {
