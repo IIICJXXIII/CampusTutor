@@ -70,14 +70,16 @@ const fetchProfile = async () => {
         try {
           form.subjects = JSON.parse(data.teachSubjects)
         } catch {
-          form.subjects = []
+          // 兼容逗号分隔格式
+          form.subjects = data.teachSubjects.split(',').map(s => s.trim()).filter(Boolean)
         }
       }
       if (data.teachGrades) {
         try {
           form.grades = JSON.parse(data.teachGrades)
         } catch {
-          form.grades = []
+          // 兼容逗号分隔格式
+          form.grades = data.teachGrades.split(',').map(s => s.trim()).filter(Boolean)
         }
       }
     }
