@@ -1,11 +1,13 @@
 <script setup>
 import { useRouter } from 'vue-router'
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores'
+import { getUnreadCount } from '@/api/chat'
 
 const router = useRouter()
 const userStore = useUserStore()
+const unreadCount = ref(0)
 
 // 获取当前身份
 const isTeacher = computed(() => userStore.isTutor)
@@ -34,6 +36,7 @@ const stats = computed(() => ({
 // 菜单列表
 const menuList = computed(() => {
   const common = [
+    { icon: 'ChatDotRound', title: '消息中心', path: '/chat', color: 'primary', badge: unreadCount.value },
     { icon: 'ShoppingCart', title: '我的订单', path: '/mine/orders', color: 'warning' },
     { icon: 'Calendar', title: '课时记录', path: '/process/record', color: 'primary' }
   ]
@@ -80,6 +83,20 @@ const getColorClass = (color) => {
   }
   return map[color] || 'bg-primary'
 }
+
+// 加载未读消息数
+const loadUnreadCount = async () => {
+  try {
+    const res = await getUnreadCount()
+    unreadCount.value = res.data || 0
+  } catch (error) {
+    console.error('获取未读消息数失败:', error)
+  }
+}
+
+onMounted(() => {
+  loadUnreadCount()
+})
 </script>
 
 <template>
@@ -129,13 +146,19 @@ const getColorClass = (color) => {
         shadow="hover"
         @click="router.push(item.path)"
       >
-        <div class="menu-item">
+      <div class="menu-item">
           <div class="menu-icon" :class="getColorClass(item.color)">
             <el-icon :size="20">
               <component :is="item.icon" />
             </el-icon>
           </div>
           <span class="menu-title">{{ item.title }}</span>
+          <el-badge 
+            v-if="item.badge" 
+            :value="item.badge" 
+            :max="99"
+            class="menu-badge"
+          />
           <el-icon class="menu-arrow"><ArrowRight /></el-icon>
         </div>
       </el-card>

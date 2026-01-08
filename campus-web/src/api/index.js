@@ -9,3 +9,4 @@ export * from './order';
 export * from './file';
 export * from './teaching';
 export * from './ocr';
+export * from './user';

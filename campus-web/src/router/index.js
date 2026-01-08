@@ -6,7 +6,7 @@ const routes = [
     path: '/',
     redirect: '/login'
   },
-  
+
   // === 公共页面 (无需登录) ===
   {
     path: '/login',
@@ -109,12 +109,18 @@ const routes = [
     meta: { title: '个人中心' }
   },
   {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('@/views/Mine/Settings.vue'),
+    meta: { title: '设置' }
+  },
+  {
     path: '/mine/orders',
     name: 'OrderList',
     component: () => import('@/views/Mine/OrderList.vue'),
     meta: { title: '我的订单' }
   },
-  
+
   // 钱包模块
   {
     path: '/wallet',
@@ -122,12 +128,26 @@ const routes = [
     component: () => import('@/views/Mine/Wallet.vue'),
     meta: { title: '我的钱包' }
   },
-  
+
   {
     path: '/wallet/withdraw',
     name: 'Withdraw',
     component: () => import('@/views/Mine/Withdraw.vue'),
     meta: { title: '提现' }
+  },
+
+  // === 聊天模块 ===
+  {
+    path: '/chat',
+    name: 'ChatList',
+    component: () => import('@/views/Chat/Chat.vue'),
+    meta: { title: '消息中心', requiresAuth: true }
+  },
+  {
+    path: '/chat/:targetUserId',
+    name: 'ChatRoom',
+    component: () => import('@/views/Chat/Chat.vue'),
+    meta: { title: '私聊', requiresAuth: true }
   },
 
   // 404
@@ -136,14 +156,14 @@ const routes = [
     redirect: '/login'
   },
   {
-  path: '/service/chat',
-  name: 'AiChat',
-  component: () => import('@/views/Service/AiChat.vue'),
-  meta: { 
-    title: 'AI智能助手', 
-    requiresAuth: true // 确保只有登录后才能访问
+    path: '/service/chat',
+    name: 'AiChat',
+    component: () => import('@/views/Service/AiChat.vue'),
+    meta: {
+      title: 'AI智能助手',
+      requiresAuth: true // 确保只有登录后才能访问
+    }
   }
-}
 ]
 
 const router = createRouter({
@@ -158,9 +178,9 @@ const whiteList = ['/login', '/register']
 router.beforeEach((to, from, next) => {
   // 设置页面标题
   document.title = to.meta.title ? `${to.meta.title} - 校园智教` : '校园智教'
-  
+
   const token = localStorage.getItem('token')
-  
+
   if (whiteList.includes(to.path)) {
     if (token && to.path === '/login') {
       const userRole = localStorage.getItem('userRole')
