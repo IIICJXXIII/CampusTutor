@@ -1,32 +1,19 @@
 <view class="container">
-  <view class="header-fixed">
-    <view class="search-bar">
-      <view class="search-input-box">
-        <icon type="search" size="16" color="#999"></icon>
-        <input class="input" placeholder="搜索科目/姓名" confirm-type="search" bindconfirm="onSearchConfirm" bindinput="onSearchInput" value="{{query.subject}}"/>
+  <block wx:if="{{!loading && tutorList.length === 0}}">
+      <view class="empty-state" wx:if="{{!fallbackMessage}}">
+        <image class="empty-img" src="/static/images/empty.png" wx:if="{{false}}"></image>
+        <text>未找到匹配的老师。可能原因：定位/坐标未填写、定位权限被拒，或当前无可见老师。</text>
+        <view style="margin-top:16rpx;display:flex;gap:12rpx;justify-content:center;">
+          <button class="btn show-rec" bindtap="showSystemRecommend">显示系统推荐</button>
+          <button class="btn show-all" bindtap="showAllTeachers">查看全部老师</button>
+          <button class="btn diag" bindtap="runVisibilityDiagnostic">诊断可见性</button>
+        </view>
       </view>
-    </view>
-
-    <view class="filter-bar">
-      <picker range="{{subjects}}" bindchange="onSubjectChange" value="{{activeSubject}}">
-        <view class="filter-item {{activeSubject>0?'active':''}}">
-          {{activeSubject>0 ? subjects[activeSubject] : '科目'}} ▾
-        </view>
-      </picker>
-      
-      <picker range="{{grades}}" bindchange="onGradeChange" value="{{activeGrade}}">
-        <view class="filter-item {{activeGrade>0?'active':''}}">
-          {{activeGrade>0 ? grades[activeGrade] : '年级'}} ▾
-        </view>
-      </picker>
-
-      <picker range="{{sortOptions}}" range-key="label" bindchange="onSortChange" value="{{activeSort}}">
-        <view class="filter-item {{activeSort>0?'active':''}}">
-          {{sortOptions[activeSort].label}} ▾
-        </view>
-      </picker>
-    </view>
-  </view>
+      <view class="empty-state" wx:elif="{{fallbackMessage}}">
+        <text>{{fallbackMessage}}</text>
+        <button class="btn refresh" bindtap="refreshList">重新加载</button>
+      </view>
+    </block>
 
   <view class="header-placeholder"></view>
 
@@ -41,6 +28,7 @@
         <view class="card-right">
           <view class="row-1">
             <text class="name">{{item.realName}}</text>
+            <view class="score-badge" wx:if="{{item.matchScore}}">推荐 {{item.matchScore.toFixed(0)}} 分</view>
             <text class="price">¥{{item.expectPrice}}<text class="unit">/小时</text></text>
           </view>
 
@@ -56,6 +44,12 @@
             <block wx:for="{{item.teachSubjects}}" wx:key="*this" wx:for-item="sub" wx:if="{{index < 3}}">
               <text class="tag">{{sub}}</text>
             </block>
+
+            <!-- 匹配标签 -->
+            <block wx:for="{{item.matchTags}}" wx:key="*this" wx:for-item="tag">
+              <text class="tag tag-match">{{tag}}</text>
+            </block>
+
             <text class="distance" wx:if="{{item.distText}}">📍 {{item.distText}}</text>
           </view>
 
@@ -64,10 +58,16 @@
       </view>
     </block>
 
-    <view wx:if="{{!loading && tutorList.length === 0}}" class="empty-state">
-      <image class="empty-img" src="/static/images/empty.png" wx:if="{{false}}"></image>
-      <text>暂无符合条件的老师，换个条件试试？</text>
-    </view>
+    <block wx:if="{{!loading && tutorList.length === 0}}">
+      <view class="empty-state" wx:if="{{!fallbackMessage}}">
+        <image class="empty-img" src="/static/images/empty.png" wx:if="{{false}}"></image>
+        <text>暂无符合条件的老师，换个条件试试？</text>
+      </view>
+      <view class="empty-state" wx:elif="{{fallbackMessage}}">
+        <text>{{fallbackMessage}}</text>
+        <button class="btn refresh" bindtap="refreshList">重新加载</button>
+      </view>
+    </block>
 
     <view class="loading-more" wx:if="{{loading}}">加载中...</view>
     <view class="no-more" wx:if="{{!loading && !hasMore && tutorList.length > 0}}">—— 到底啦 ——</view>

@@ -52,6 +52,13 @@ Page({
                     stats: {
                         orderCount: result.orderCount || 0,
                         rating: result.rating ? Number(result.rating).toFixed(1) : '5.0'
+                    },
+                    tutorProfile: result,
+                    isCertified: result.certStatus === 2,
+                    missingProfile: {
+                        teachSubjects: !(result.teachSubjects && result.teachSubjects.length > 2),
+                        teachGrades: !(result.teachGrades && result.teachGrades.length > 2),
+                        location: !(result.latitude && result.longitude)
                     }
                 });
             }
