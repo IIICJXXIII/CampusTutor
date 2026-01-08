@@ -1,6 +1,6 @@
 // 教师课时打卡页面逻辑
-import request from '../../../utils/request';
-import apiConfig from '../../../config/apiConfig';
+const request = require('../../../utils/request.js');
+const apiConfig = require('../../../config/apiConfig.js');
 
 Page({
     data: {
@@ -198,7 +198,7 @@ Page({
         this.setData({ isSubmitting: true });
 
         try {
-            await request.post(apiConfig.teaching.checkOut(checkInRecordId), null, {}, {
+            await request.post(apiConfig.teaching.checkOut(checkInRecordId), {
                 contentSummary: contentSummary,
                 homeworkAssigned: homeworkAssigned
             });

@@ -1,0 +1,9 @@
+.container { padding: 30rpx }
+.title { font-size: 36rpx; font-weight: bold; margin-bottom: 20rpx }
+.card { background:#fff; padding:20rpx; border-radius:10rpx; box-shadow: 0 2rpx 6rpx rgba(0,0,0,0.04) }
+.q-title { font-size:32rpx; color:#333; margin-bottom:10rpx }
+.meta { font-size:24rpx; color:#999; margin-bottom:14rpx }
+.section { margin-top:16rpx }
+.label { font-size:28rpx; font-weight:600 }
+.content { display:block; margin-top:8rpx; font-size:28rpx; color:#444 }
+.loading { text-align:center; color:#999; padding:40rpx }
