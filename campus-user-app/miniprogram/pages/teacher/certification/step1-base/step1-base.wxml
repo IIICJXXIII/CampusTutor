@@ -56,8 +56,12 @@
     </view>
 
     <view class="section-title">证件上传 (学生证/校园卡)</view>
+    <view class="upload-tip" wx:if="{{!formData.studentCardUrl}}">📷 上传学生证后将自动识别填充信息</view>
     <view class="upload-area" bindtap="chooseImage">
       <image wx:if="{{formData.studentCardUrl}}" src="{{formData.studentCardUrl}}" mode="aspectFill" class="preview-img"></image>
+      <view wx:elif="{{isRecognizing}}" class="upload-placeholder">
+        <text class="text">识别中...</text>
+      </view>
       <view wx:else class="upload-placeholder">
         <text class="icon">+</text>
         <text class="text">点击上传学生证正面</text>
