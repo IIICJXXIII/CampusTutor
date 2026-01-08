@@ -1,7 +1,8 @@
 <view class="container result-page">
-  <icon type="success" size="80" color="#409EFF"/>
-  <view class="title">提交成功</view>
-  <view class="desc">您的认证申请已提交，平台将在1个工作日内完成审核。审核通过后您即可开始接单。</view>
+  <icon type="success" size="80" color="#67C23A"/>
+  <view class="title">注册成功</view>
+  <view class="subtitle">认证资料已提交</view>
+  <view class="desc">平台将在1个工作日内完成审核，审核通过后您即可开始接单。</view>
   
-  <button class="home-btn" bindtap="goHome">返回首页</button>
+  <button class="home-btn" bindtap="goHome">进入首页</button>
 </view>

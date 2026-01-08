@@ -5,6 +5,7 @@ Page({
   data: {
     latitude: 39.9088, // 默认北京坐标，防止未授权时地图白屏
     longitude: 116.3975,
+    currentAddress: '', // 当前位置地址（通过高德API获取）
     markers: [],
     demandList: [],
     currentDemand: null, // 当前选中的需求
