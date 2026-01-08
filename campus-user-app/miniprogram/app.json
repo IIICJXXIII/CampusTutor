@@ -24,8 +24,8 @@
     "pages/teacher/orderList/orderList",
     "pages/teacher/orderDetail/orderDetail",
     "pages/parent/lessonList/lessonList",
-    "pages/parent/lessonDetail/lessonDetail"
-    ,
+    "pages/parent/lessonDetail/lessonDetail",
+    "pages/teacher/teacherSchedule/teacherSchedule",
     "pages/common/wrongBook/wrongBook",
     "pages/common/wrongBookDetail/wrongBookDetail"
   ],

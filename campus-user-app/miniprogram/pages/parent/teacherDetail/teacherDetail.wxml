@@ -87,6 +87,42 @@
     </scroll-view>
   </view>
 
+  <!-- 课表预约 -->
+  <view class="section-card schedule-section">
+    <view class="section-title">
+      <text>可预约时段</text>
+      <text class="schedule-tip">点击选择上课时间</text>
+    </view>
+    <scroll-view class="schedule-scroll" scroll-x scroll-y wx:if="{{scheduleData.length > 0}}">
+      <view class="schedule-grid">
+        <view class="grid-header">
+          <view class="header-cell corner">时间</view>
+          <view class="header-cell" wx:for="{{weekDays}}" wx:key="index">{{item}}</view>
+        </view>
+        <block wx:for="{{timeSlots}}" wx:for-item="slot" wx:for-index="slotIdx" wx:key="slotIdx">
+          <view class="grid-row">
+            <view class="time-cell">{{slot.label}}</view>
+            <view class="schedule-cell {{getBookingCellClass(slotIdx, dayIdx)}}" 
+                  wx:for="{{weekDays}}" wx:for-index="dayIdx" wx:key="dayIdx"
+                  bindtap="toggleBooking" data-slot="{{slotIdx}}" data-day="{{dayIdx}}">
+              <text wx:if="{{isSlotBooked(slotIdx, dayIdx)}}">✓</text>
+              <text wx:elif="{{isSlotAvailable(slotIdx, dayIdx)}}"></text>
+              <text wx:else>-</text>
+            </view>
+          </view>
+        </block>
+      </view>
+    </scroll-view>
+    <view class="no-schedule" wx:else>
+      <text>教师暂未设置可预约时间</text>
+    </view>
+    <view class="legend">
+      <view class="legend-item"><view class="legend-dot available"></view><text>可预约</text></view>
+      <view class="legend-item"><view class="legend-dot selected"></view><text>已选择</text></view>
+      <view class="legend-item"><view class="legend-dot unavailable"></view><text>不可约</text></view>
+    </view>
+  </view>
+
   <view class="footer-placeholder"></view>
   <view class="footer-bar">
     <view class="price-section">

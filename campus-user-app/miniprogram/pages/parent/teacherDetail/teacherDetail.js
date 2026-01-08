@@ -13,29 +13,130 @@ Page({
       3: '硕士在读',
       4: '硕士毕业',
       5: '博士'
-    }
+    },
+    // 课表相关
+    weekDays: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+    timeSlots: [
+      { label: '08:00', startTime: '08:00', endTime: '08:40' },
+      { label: '08:50', startTime: '08:50', endTime: '09:30' },
+      { label: '09:40', startTime: '09:40', endTime: '10:20' },
+      { label: '10:30', startTime: '10:30', endTime: '11:10' },
+      { label: '11:20', startTime: '11:20', endTime: '12:00' },
+      { label: '14:00', startTime: '14:00', endTime: '14:40' },
+      { label: '14:50', startTime: '14:50', endTime: '15:30' },
+      { label: '15:40', startTime: '15:40', endTime: '16:20' },
+      { label: '16:30', startTime: '16:30', endTime: '17:10' },
+      { label: '17:20', startTime: '17:20', endTime: '18:00' },
+      { label: '19:00', startTime: '19:00', endTime: '19:40' },
+      { label: '19:50', startTime: '19:50', endTime: '20:30' },
+      { label: '20:40', startTime: '20:40', endTime: '21:20' }
+    ],
+    scheduleData: [], // 教师可用时段 [slotIndex][dayIndex] = true/false
+    bookingData: []   // 家长选择的预约时段
   },
 
   onLoad(options) {
     if (options.id) {
       this.setData({ tutorId: options.id });
+      this.initScheduleData();
       this.fetchTutorDetail(options.id);
+      this.loadTutorSchedule(options.id);
     }
+  },
+
+  // 初始化课表数据结构
+  initScheduleData() {
+    const data = [];
+    const booking = [];
+    for (let i = 0; i < this.data.timeSlots.length; i++) {
+      data.push(new Array(7).fill(false));
+      booking.push(new Array(7).fill(false));
+    }
+    this.setData({ scheduleData: data, bookingData: booking });
+  },
+
+  // 加载教师课表
+  async loadTutorSchedule(tutorId) {
+    try {
+      // 使用教师公开详情中的schedule字段，或单独API
+      const result = await request.get(`${api.host}/api/tutor/${tutorId}/schedule`);
+      if (result && Array.isArray(result)) {
+        this.parseScheduleFromServer(result);
+      }
+    } catch (err) {
+      console.error('加载课表失败:', err);
+    }
+  },
+
+  // 解析服务器返回的课表
+  parseScheduleFromServer(serverData) {
+    const data = [];
+    for (let i = 0; i < this.data.timeSlots.length; i++) {
+      data.push(new Array(7).fill(false));
+    }
+    serverData.forEach(item => {
+      if (item.available === 1) {
+        const dayIndex = item.dayOfWeek - 1;
+        const slotIndex = this.matchTimeSlot(item.startTime);
+        if (slotIndex !== -1 && dayIndex >= 0 && dayIndex < 7) {
+          data[slotIndex][dayIndex] = true;
+        }
+      }
+    });
+    this.setData({ scheduleData: data });
+  },
+
+  matchTimeSlot(startTime) {
+    const slots = this.data.timeSlots;
+    for (let i = 0; i < slots.length; i++) {
+      if (slots[i].startTime === startTime) return i;
+    }
+    return -1;
+  },
+
+  // 判断时段是否可用
+  isSlotAvailable(slotIdx, dayIdx) {
+    return this.data.scheduleData[slotIdx] && this.data.scheduleData[slotIdx][dayIdx];
+  },
+
+  // 判断时段是否被选择
+  isSlotBooked(slotIdx, dayIdx) {
+    return this.data.bookingData[slotIdx] && this.data.bookingData[slotIdx][dayIdx];
+  },
+
+  // 获取单元格样式
+  getBookingCellClass(slotIdx, dayIdx) {
+    if (this.isSlotBooked(slotIdx, dayIdx)) return 'selected';
+    if (this.isSlotAvailable(slotIdx, dayIdx)) return 'available';
+    return 'unavailable';
+  },
+
+  // 切换预约选择
+  toggleBooking(e) {
+    const { slot, day } = e.currentTarget.dataset;
+    // 只能选择可用时段
+    if (!this.isSlotAvailable(slot, day)) {
+      wx.showToast({ title: '该时段不可预约', icon: 'none' });
+      return;
+    }
+    const data = this.data.bookingData;
+    data[slot][day] = !data[slot][day];
+    this.setData({ bookingData: data });
   },
 
   async fetchTutorDetail(id) {
     try {
       this.setData({ loading: true });
       // 调用后端 GET /api/tutor/{id}
-      const url = api.tutor.detail(id); 
+      const url = api.tutor.detail(id);
       const res = await request.get(url);
-      
+
       // 数据预处理
       const tutor = this.processTutorData(res);
-      
-      this.setData({ 
-        tutor, 
-        loading: false 
+
+      this.setData({
+        tutor,
+        loading: false
       });
     } catch (err) {
       console.error(err);
@@ -71,7 +172,7 @@ Page({
       // 教龄显示逻辑
       teachYearText: teachYears > 0 ? `${teachYears}年教龄` : '新晋教员',
       // 由于 TutorProfile 没有 avatar 字段，使用默认头像
-      avatarUrl: '/static/images/default-avatar.png' 
+      avatarUrl: '/static/images/default-avatar.png'
     };
   },
 
