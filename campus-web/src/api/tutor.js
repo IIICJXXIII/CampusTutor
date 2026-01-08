@@ -21,7 +21,10 @@ export function submitCertification(data) {
 /**
  * 获取教员档案
  */
-export function getTutorProfile() {
+export function getTutorProfile(id) {
+  if (id) {
+    return request.get(`/tutor/public/${id}`);
+  }
   return request.get('/tutor/profile', {
     params: { _t: new Date().getTime() }
   });

@@ -1,28 +1,31 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getDemandDetail } from '@/api/demand'
+import { useUserStore } from '@/stores/index'
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
 const loading = ref(false)
 
 // 需求详情数据
 const demand = ref({
   id: route.params.id,
-  name: '王女士',
-  subject: '小学三年级 · 数学',
-  price: 180,
-  frequency: '每周2次',
-  location: '阳光花园 (距您1.2km)',
-  desc: '孩子目前三年级，计算基础比较薄弱，做题粗心。希望找一位有耐心的大学生老师，最好是理科专业的，能带孩子整理错题。',
-  tags: ['需要耐心', '基础巩固', '提供零食'],
-  idVerified: true,
-  publishTime: '2024-01-15 10:30',
-  teachMode: '线下',
+  publisherId: null, // 新增 publisherId
+  name: '家长', // 默认显示
+  subject: '',
+  price: 0,
+  frequency: '',
+  location: '',
+  desc: '',
+  tags: [],
+  idVerified: false,
+  publishTime: '',
+  teachMode: '面授',
   gender: '不限',
-  studentAge: 9
+  studentAge: 0
 })
 
 // 获取需求详情
@@ -31,14 +34,18 @@ const fetchDemandDetail = async () => {
   try {
     const res = await getDemandDetail(route.params.id)
     if (res.data) {
+      const data = res.data
       demand.value = {
         ...demand.value,
-        ...res.data,
-        name: res.data.parentName || demand.value.name,
-        subject: `${res.data.gradeLevel || '小学'}${res.data.gradeName || '三年级'} · ${res.data.subjects || '数学'}`,
-        price: res.data.maxPrice || demand.value.price,
-        desc: res.data.description || demand.value.desc,
-        location: res.data.teachLocation || demand.value.location
+        ...data,
+        publisherId: data.publisherId, // 映射 publisherId
+        name: data.contactName || '家长', // 后端可能没有直接返回家长姓名，暂时用默认或 contactName
+        subject: `${data.grade || ''} · ${data.subject || ''}`,
+        price: data.expectPrice || 0,
+        desc: data.detail || '',
+        location: data.address || '',
+        idVerified: true, // 假设能发布需求的都是验证过的
+        teachMode: data.teachMode === 1 ? '线下上门' : (data.teachMode === 2 ? '在线网课' : '不限')
       }
     }
   } catch (error) {
@@ -48,10 +55,22 @@ const fetchDemandDetail = async () => {
   }
 }
 
+// 判断是否是自己发布的需求
+const isSelf = computed(() => {
+  return userStore.userId && demand.value.publisherId === userStore.userId
+})
+
 // 联系家长
 const handleContact = () => {
-  ElMessage.success('沟通请求已发送！请等待家长回复')
-  // 实际应该调用后端API发送沟通请求
+  if (isSelf.value) {
+    ElMessage.warning('不能联系自己发布的需求')
+    return
+  }
+  if (!demand.value.publisherId) {
+    ElMessage.warning('无法获取家长信息')
+    return
+  }
+  router.push(`/chat/${demand.value.publisherId}`)
 }
 
 // 返回
@@ -163,9 +182,9 @@ onMounted(() => {
 
     <!-- 底部操作栏 -->
     <div class="bottom-action">
-      <el-button type="primary" size="large" @click="handleContact">
+      <el-button type="primary" size="large" @click="handleContact" :disabled="isSelf">
         <el-icon class="mr-1"><Promotion /></el-icon>
-        立即沟通
+        {{ isSelf ? '这是您发布的需求' : '立即沟通' }}
       </el-button>
     </div>
   </div>
