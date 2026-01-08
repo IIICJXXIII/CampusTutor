@@ -164,6 +164,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { tutorApi, statsApi } from '@/api'
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -171,9 +172,9 @@ const reviewVisible = ref(false)
 const activeTab = ref('idFront')
 const currentTutor = ref({})
 
-const pendingCount = ref(12)
-const todayApproved = ref(5)
-const todayRejected = ref(2)
+const pendingCount = ref(0)
+const todayApproved = ref(0)
+const todayRejected = ref(0)
 
 const reviewForm = reactive({
   result: 'approve',
@@ -186,28 +187,7 @@ const pagination = reactive({
   total: 0
 })
 
-// 模拟待审核数据
-const tableData = ref([
-  { 
-    id: 1, realName: '赵六', universityName: '浙江大学', major: '数学', 
-    education: 2, enrollYear: 2023, submitTime: '2026-01-06 09:30:00',
-    idCard: '330***********5678',
-    idCardFrontUrl: 'https://via.placeholder.com/400x250?text=ID+Card+Front',
-    idCardBackUrl: 'https://via.placeholder.com/400x250?text=ID+Card+Back',
-    studentCardUrl: 'https://via.placeholder.com/400x250?text=Student+Card',
-    certificateUrls: ['https://via.placeholder.com/200x200?text=Cert1', 'https://via.placeholder.com/200x200?text=Cert2']
-  },
-  { 
-    id: 2, realName: '孙七', universityName: '南京大学', major: '物理', 
-    education: 3, enrollYear: 2022, submitTime: '2026-01-06 08:15:00',
-    idCard: '320***********9012'
-  },
-  { 
-    id: 3, realName: '周八', universityName: '武汉大学', major: '化学', 
-    education: 2, enrollYear: 2024, submitTime: '2026-01-05 16:45:00',
-    idCard: '420***********3456'
-  }
-])
+const tableData = ref([])
 
 const getEducationText = (education) => {
   const texts = { 1: '专科', 2: '本科', 3: '硕士', 4: '博士' }
@@ -220,10 +200,19 @@ onMounted(() => {
 
 const fetchData = async () => {
   loading.value = true
-  setTimeout(() => {
-    pagination.total = tableData.value.length
+  try {
+    const res = await tutorApi.getPendingList({
+      page: pagination.page,
+      size: pagination.size
+    })
+    tableData.value = res.data.records || []
+    pagination.total = res.data.total || 0
+    pendingCount.value = pagination.total
+  } catch (error) {
+    console.error('获取待审核列表失败:', error)
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 const handleReview = (row) => {
@@ -243,25 +232,21 @@ const handleSubmitReview = async () => {
   submitting.value = true
   
   try {
-    // TODO: 调用真实API
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    ElMessage.success(reviewForm.result === 'approve' ? '认证已通过' : '认证已拒绝')
-    reviewVisible.value = false
-    
-    // 从列表中移除
-    tableData.value = tableData.value.filter(t => t.id !== currentTutor.value.id)
-    
-    // 更新统计
     if (reviewForm.result === 'approve') {
+      await tutorApi.approve(currentTutor.value.id)
+      ElMessage.success('认证已通过')
       todayApproved.value++
     } else {
+      await tutorApi.reject(currentTutor.value.id, reviewForm.rejectReason)
+      ElMessage.success('认证已拒绝')
       todayRejected.value++
     }
-    pendingCount.value--
     
+    reviewVisible.value = false
+    pendingCount.value--
+    fetchData()
   } catch (error) {
-    console.error(error)
+    console.error('审核操作失败:', error)
   } finally {
     submitting.value = false
   }
