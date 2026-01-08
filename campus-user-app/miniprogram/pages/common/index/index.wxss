@@ -81,6 +81,11 @@ page {
   margin: 0 10rpx;
 }
 
+.quick-actions.five .action-item {
+  margin: 0 6rpx;
+  padding: 28rpx 12rpx;
+}
+
 .action-item {
   flex: 1;
   background: #fff;
