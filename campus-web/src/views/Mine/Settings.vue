@@ -2,6 +2,7 @@
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { updateUserInfo } from '@/api/user'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -19,6 +20,37 @@ const handleLogout = () => {
     userStore.logout()
     ElMessage.success('已退出登录')
     router.push('/login')
+  }).catch(() => {})
+}
+
+// 修改昵称
+const handleEditNickname = () => {
+  ElMessageBox.prompt('请输入新的昵称', '修改昵称', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    inputValue: userStore.nickname,
+    inputPattern: /^[\u4e00-\u9fa5a-zA-Z0-9]{2,10}$/,
+    inputErrorMessage: '昵称长度2-10位，只能包含中文、字母或数字'
+  }).then(async ({ value }) => {
+    try {
+      if (value === userStore.nickname) return
+      
+      const updateData = {
+        id: userStore.userId,
+        nickname: value
+      }
+      
+      await updateUserInfo(updateData)
+      
+      // 更新本地 store
+      const newUserInfo = { ...userStore.userInfo, nickname: value }
+      userStore.setUserInfo(newUserInfo)
+      
+      ElMessage.success('修改成功')
+    } catch (error) {
+      console.error('修改昵称失败:', error)
+      ElMessage.error('修改失败，请稍后重试')
+    }
   }).catch(() => {})
 }
 
@@ -41,6 +73,14 @@ const showFeatureTip = (feature) => {
     <div class="settings-group">
       <div class="group-title">账号与安全</div>
       <el-card shadow="never" class="settings-card">
+        <div class="setting-item" @click="handleEditNickname">
+          <span class="label">昵称</span>
+          <div class="right-content">
+            <span class="value">{{ userStore.nickname }}</span>
+            <el-icon><ArrowRight /></el-icon>
+          </div>
+        </div>
+        <el-divider />
         <div class="setting-item" @click="showFeatureTip('修改密码')">
           <span class="label">修改密码</span>
           <el-icon><ArrowRight /></el-icon>
@@ -160,6 +200,11 @@ const showFeatureTip = (feature) => {
       .label {
         font-size: 16px;
         color: $text-primary;
+      }
+
+      .right-content {
+        display: flex;
+        align-items: center;
       }
 
       .value {
