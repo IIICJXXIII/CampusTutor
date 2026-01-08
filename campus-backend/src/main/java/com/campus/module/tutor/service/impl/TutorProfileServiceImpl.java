@@ -37,14 +37,7 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
         TutorProfile existing = getByUserId(userId);
         
         if (existing != null) {
-            // 已有档案，检查状态
-            if (existing.getCertStatus() == 1) {
-                throw new BusinessException(ResultCode.PARAM_ERROR, "认证审核中，请勿重复提交");
-            }
-            if (existing.getCertStatus() == 2) {
-                throw new BusinessException(ResultCode.PARAM_ERROR, "已通过认证，无需重复提交");
-            }
-            // 状态为0(待提交)或3(已拒绝)，可以更新
+            // 已有档案，允许重复提交并直接通过
             existing.setRealName(request.getRealName());
             existing.setIdCard(request.getIdCard());
             existing.setIdCardFrontUrl(request.getIdCardFrontUrl());
@@ -57,7 +50,8 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
             if (request.getCertificateUrls() != null) {
                 existing.setCertificateUrls(JSONUtil.toJsonStr(request.getCertificateUrls()));
             }
-            existing.setCertStatus(1); // 待审核
+            // 开发阶段：直接通过审核
+            existing.setCertStatus(2); // 已通过
             existing.setRejectReason(null);
             updateById(existing);
         } else {
@@ -76,7 +70,8 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
             if (request.getCertificateUrls() != null) {
                 profile.setCertificateUrls(JSONUtil.toJsonStr(request.getCertificateUrls()));
             }
-            profile.setCertStatus(1); // 待审核
+            // 开发阶段：直接通过审核
+            profile.setCertStatus(2); // 已通过
             profile.setRating(new BigDecimal("5.0"));
             profile.setOrderCount(0);
             save(profile);
@@ -101,6 +96,15 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
         }
 
         // 更新字段
+        if (request.getRealName() != null) {
+            profile.setRealName(request.getRealName());
+        }
+        if (request.getUniversityName() != null) {
+            profile.setUniversityName(request.getUniversityName());
+        }
+        if (request.getMajor() != null) {
+            profile.setMajor(request.getMajor());
+        }
         if (request.getTeachSubjects() != null) {
             profile.setTeachSubjects(JSONUtil.toJsonStr(request.getTeachSubjects()));
         }

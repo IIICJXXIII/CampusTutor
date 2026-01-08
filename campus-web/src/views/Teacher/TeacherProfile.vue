@@ -65,13 +65,15 @@ const fetchTeacherDetail = async () => {
   }
 }
 
-// 解析JSON字符串
-const parseJson = (str, defaultVal) => {
+// 解析JSON字符串或逗号分隔字符串
+const parseJson = (str, defaultVal = []) => {
   if (!str) return defaultVal
+  if (Array.isArray(str)) return str
   try {
-    return JSON.parse(str)
+    const res = JSON.parse(str)
+    return Array.isArray(res) ? res : [res]
   } catch {
-    return defaultVal
+    return str.split(',').map(s => s.trim()).filter(Boolean)
   }
 }
 
@@ -79,10 +81,8 @@ const buildTags = (data) => {
   const tags = []
   if (data.certStatus === 2) tags.push('实名认证')
   if (data.teachSubjects) {
-    try {
-      const subjects = JSON.parse(data.teachSubjects)
-      tags.push(...subjects.slice(0, 2))
-    } catch {}
+    const subjects = parseJson(data.teachSubjects)
+    tags.push(...subjects.slice(0, 2))
   }
   if (data.teachStyle) tags.push(data.teachStyle)
   return tags.length ? tags : ['新入驻']
