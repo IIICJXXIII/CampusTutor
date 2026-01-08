@@ -23,6 +23,8 @@
 
     <button class="submit-btn" bindtap="handleLogin" loading="{{isSubmitting}}">登 录</button>
 
+    <button class="wx-login-btn" bindtap="handleWxLogin">微信一键登录</button>
+
     <view class="footer-actions">
       <text class="link" bindtap="switchLoginType">{{loginType === 'password' ? '验证码登录' : '密码登录'}}</text>
       <text class="divider">|</text>

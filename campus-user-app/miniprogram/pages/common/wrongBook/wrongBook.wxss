@@ -1,0 +1,19 @@
+.container {
+  padding: 30rpx;
+}
+.header .title {
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+}
+.item {
+  padding: 24rpx;
+  border-bottom: 1px solid #f0f0f0;
+}
+.row { display:flex; justify-content:space-between; align-items:center }
+.q { font-size: 30rpx; color: #333 }
+.tag { font-size: 24rpx; color:#999 }
+.meta { display:flex; justify-content:space-between; align-items:center; margin-top:10rpx }
+.date { font-size:24rpx; color:#bbb }
+.resolve { background:#f56c6c; color:#fff; border-radius:10rpx; padding:8rpx 16rpx }
+.loading, .empty { text-align:center; color:#999; padding:40rpx }
