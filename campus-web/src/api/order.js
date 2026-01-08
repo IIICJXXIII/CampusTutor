@@ -38,10 +38,10 @@ export function getOrderDetail(id) {
 /**
  * 支付订单
  * @param {number} orderId - 订单ID
- * @param {string} payMethod - 支付方式
+ * @param {number} payType - 支付方式: 1钱包 2微信 3支付宝
  */
-export function payOrder(orderId, payMethod = 'WECHAT') {
-  return request.post('/order/pay', { orderId, payMethod });
+export function payOrder(orderId, payType = 2) {
+  return request.post('/order/pay', { orderId, payType });
 }
 
 /**

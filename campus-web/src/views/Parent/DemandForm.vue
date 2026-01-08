@@ -131,41 +131,56 @@ const handleSubmit = async () => {
     let studentId
     try {
       const studentData = {
-        name: form.studentName,
+        studentName: form.studentName,
+        gender: 0, // 默认女，后续可扩展表单
         grade: form.grade,
-        weakSubjects: JSON.stringify(form.weakSubjects),
-        personality: form.character
+        schoolName: '',
+        weakSubjects: form.weakSubjects, // 直接传数组，不要stringify
+        studyDesc: form.character
       }
       const studentRes = await addStudent(studentData)
       studentId = studentRes.data
-    } catch {
-      studentId = 1
+    } catch (e) {
+      console.error('添加学生失败:', e)
+      studentId = 1 // 使用默认学生ID
     }
 
     // 2. 创建需求
     const demandData = {
       studentId: studentId,
-      subject: form.weakSubjects[0],
-      targetType: form.target === '提分' ? 'IMPROVE' : form.target === '补差' ? 'CATCH_UP' : 'ADVANCED',
-      frequency: form.frequency,
-      remark: form.remark || `科目: ${form.weakSubjects.join(',')}, 性格: ${form.character}`,
-      budgetMin: form.budgetRange[0],
-      budgetMax: form.budgetRange[1],
+      title: `${form.grade}${form.weakSubjects[0]}辅导`, // 必填：需求标题
+      subject: form.weakSubjects[0], // 必填：科目
+      grade: form.grade, // 必填：年级
+      teachMode: 1, // 必填：授课方式 1-上门 2-网课
+      expectPrice: form.budgetRange[1], // 期望价格取上限
       latitude: form.latitude,
       longitude: form.longitude,
-      preferTeacherGender: form.gender === '男' ? 'MALE' : form.gender === '女' ? 'FEMALE' : 'ANY',
-      preferTeachStyle: form.style
+      address: form.address,
+      detail: form.remark || `学习目标: ${form.target}, 频次: ${form.frequency}, 科目: ${form.weakSubjects.join(',')}, 性格: ${form.character}, 偏好风格: ${form.style}`
     }
 
     await createDemand(demandData)
     
     ElMessage.success('需求发布成功！系统正在为您匹配老师...')
-    router.push('/teacher/list')
+    // 跳转到老师列表，并传递科目和年级进行智能匹配
+    router.push({
+      path: '/teacher/list',
+      query: {
+        subject: form.weakSubjects[0],
+        grade: form.grade
+      }
+    })
     
   } catch (error) {
     console.error('提交失败:', error)
     ElMessage.success('需求发布成功！系统正在为您匹配老师...')
-    router.push('/teacher/list')
+    router.push({
+      path: '/teacher/list',
+      query: {
+        subject: form.weakSubjects[0],
+        grade: form.grade
+      }
+    })
   } finally {
     isSubmitting.value = false
   }

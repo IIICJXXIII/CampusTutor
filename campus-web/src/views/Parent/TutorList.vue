@@ -172,11 +172,12 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { searchTutors } from '@/api/match'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
 const tutors = ref([])
 const total = ref(0)
@@ -281,6 +282,13 @@ const getScoreColor = (score) => {
 }
 
 onMounted(() => {
+  // 从路由参数读取筛选条件（发布需求后跳转会带上科目和年级）
+  if (route.query.subject) {
+    filterForm.subject = route.query.subject
+  }
+  if (route.query.grade) {
+    filterForm.grade = route.query.grade
+  }
   fetchList()
 })
 </script>
