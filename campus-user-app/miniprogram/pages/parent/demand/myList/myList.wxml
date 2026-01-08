@@ -34,7 +34,14 @@
           
           <view class="btn-group">
             <button class="btn delete" catchtap="handleDelete" data-id="{{item.id}}">删除</button>
-            
+
+            <button class="btn view" bindtap="viewMatches"
+                    data-id="{{item.id}}"
+                    data-subject="{{item.subject}}"
+                    data-grade="{{item.grade}}"
+                    data-longitude="{{item.longitude}}"
+                    data-latitude="{{item.latitude}}">查看匹配老师</button>
+
             <button class="btn action" 
                     wx:if="{{item.status !== 2}}"
                     catchtap="toggleStatus" 

@@ -12,27 +12,20 @@ page {
 }
 
 .header-placeholder {
-  height: 180rpx; /* search(88) + filter(88) + padding */
+  height: 88rpx; /* filter(88) only */
 }
 
-/* 搜索框 */
-.search-bar {
-  padding: 16rpx 30rpx;
-  background: #fff;
-}
-.search-input-box {
-  background: #f5f7fa;
-  height: 72rpx;
-  border-radius: 36rpx;
-  display: flex;
-  align-items: center;
-  padding: 0 24rpx;
-}
-.input {
-  flex: 1;
-  margin-left: 16rpx;
-  font-size: 28rpx;
-}
+/* 防止卡片内容溢出 */
+.tutor-card { overflow: hidden; }
+.intro { white-space: normal; word-break: break-word; }
+.tags-row { flex-wrap: wrap; }
+
+/* 确保图片和容器不会导致横向滚动 */
+.page-img, image { max-width: 100%; }
+
+
+/* 搜索已移除：保持顶部区域简洁 */
+.btn.show-rec { margin-top: 20rpx; background: #409EFF; color: #fff; padding: 12rpx 24rpx; border-radius: 28rpx; }
 
 /* 筛选条 */
 .filter-bar {
@@ -143,19 +136,18 @@ page {
   margin-right: 10rpx;
   margin-bottom: 6rpx;
 }
-.distance {
-  margin-left: auto;
-  font-size: 22rpx;
-  color: #999;
+.tag-match {
+  background: #fff7e6;
+  color: #fa8c16;
+  border: 1rpx solid #fae6ce;
 }
-
-.intro {
-  font-size: 24rpx;
-  color: #888;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  overflow: hidden;
+.score-badge {
+  background: #fff2f6;
+  color: #ff6b6b;
+  padding: 4rpx 8rpx;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+  margin-right: 10rpx;
 }
 
 /* 状态样式 */

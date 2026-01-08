@@ -1,0 +1,36 @@
+<view class="container">
+  <view class="filters">
+    <picker mode="selector" range="{{subjects}}" value="{{subjectIndex}}" bindchange="handleSubjectChange">
+      <view class="filter-item">科目：{{subjects[subjectIndex]}}</view>
+    </picker>
+    <picker mode="selector" range="{{grades}}" value="{{gradeIndex}}" bindchange="handleGradeChange">
+      <view class="filter-item">年级：{{grades[gradeIndex]}}</view>
+    </picker>
+    <picker mode="selector" range="{{sortOptions}}" value="{{sortIndex}}" bindchange="handleSortChange">
+      <view class="filter-item">排序：{{sortOptions[sortIndex]}}</view>
+    </picker>
+  </view>
+
+  <view class="list">
+    <block wx:for="{{list}}" wx:key="id">
+      <view class="item">
+        <view class="left">
+          <view class="title">{{item.subject}} {{item.grade}}</view>
+          <view class="meta">{{item.address || '未显示地址'}} <text wx:if="{{item.distance}}"> • {{item.distance}} km</text></view>
+        </view>
+        <view class="right">
+          <view class="price">¥{{item.expectPrice}}/小时</view>
+          <view class="actions">
+            <button class="btn small" data-id="{{item.id}}" bindtap="viewDetail">查看详情</button>
+            <button class="btn small" data-id="{{item.id}}" bindtap="contactParent">联系家长</button>
+            <button class="btn small ghost" data-id="{{item.id}}" bindtap="copyId">复制ID</button>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <view wx:if="{{list.length === 0 && !loading}}" class="empty">暂无匹配的学生/需求</view>
+    <view wx:if="{{loading}}" class="loading">加载中…</view>
+    <button wx:if="{{!noMore && !loading}}" bindtap="loadMore" class="btn load-more">加载更多</button>
+  </view>
+</view>
