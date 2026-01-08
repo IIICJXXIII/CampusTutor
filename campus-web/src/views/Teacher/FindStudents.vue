@@ -12,10 +12,10 @@
       </div>
       <div class="view-switch">
         <el-radio-group v-model="viewMode" size="small" @change="handleViewChange">
-          <el-radio-button label="list">
+          <el-radio-button value="list">
             <el-icon><List /></el-icon> 列表
           </el-radio-button>
-          <el-radio-button label="map">
+          <el-radio-button value="map">
             <el-icon><MapLocation /></el-icon> 地图
           </el-radio-button>
         </el-radio-group>
@@ -90,20 +90,23 @@ import { ref, onMounted, onBeforeUnmount, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { findNearbyDemands } from '@/api/match'
+import request from '@/api/request'
 import AMapLoader from '@amap/amap-jsapi-loader'
 
 // ==========================================
 // 1. 配置高德地图 (请务必保留引号)
 // ==========================================
 // 替换为你的 Key (Web端 JS API)
-const MY_AMAP_KEY = 'y395b2de0b9cf263e585280d5d81821a4' 
-// 替换为你的安全密钥
-//const MY_SECURITY_KEY = '你的安全密钥'
+// 注意：高德地图Web JS API Key需要在高德开放平台申请
+// 申请地址：https://console.amap.com/dev/key/app
+const MY_AMAP_KEY = '395b2de0b9cf263e585280d5d81821a4' 
+
+const MY_SECURITY_KEY = '67ca393e1f0e458d3aa46ef4d1c92e3d'
 
 // 2. 注入安全密钥 (必须在加载地图前执行)
-//window._AMapSecurityConfig = {
-//  securityJsCode: MY_SECURITY_KEY,
-//}
+window._AMapSecurityConfig = {
+ securityJsCode: MY_SECURITY_KEY,
+}
 // ==========================================
 
 const router = useRouter()
@@ -187,17 +190,28 @@ const fetchData = async (lng, lat) => {
     const params = {
       longitude: lng,
       latitude: lat,
-      radius: 10,
+      radius: 50, // 扩大搜索半径到50公里
       subject: searchQuery.value || null
     }
 
-    const res = await findNearbyDemands(params)
-    if (res.code === 200) {
-      students.value = res.data || []
-      // 仅在地图模式下渲染标记
-      if (viewMode.value === 'map') {
-        renderMarkers()
+    let res = await findNearbyDemands(params)
+    
+    // 如果LBS搜索返回空，降级到列表接口获取所有上架需求
+    if (res.code === 200 && (!res.data || res.data.length === 0)) {
+      console.log('LBS搜索无结果，降级到列表接口')
+      const listRes = await request.get('/demand/list', { params: { page: 1, size: 20, status: 1 } })
+      if (listRes.code === 200 && listRes.data?.records) {
+        students.value = listRes.data.records
+      } else {
+        students.value = []
       }
+    } else if (res.code === 200) {
+      students.value = res.data || []
+    }
+    
+    // 仅在地图模式下渲染标记
+    if (viewMode.value === 'map') {
+      renderMarkers()
     }
   } catch (error) {
     console.error('获取数据失败', error)

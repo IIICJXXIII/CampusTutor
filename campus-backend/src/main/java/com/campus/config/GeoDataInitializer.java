@@ -1,8 +1,11 @@
 package com.campus.config;
 
+import com.campus.module.demand.entity.DemandPost;
+import com.campus.module.demand.mapper.DemandPostMapper;
 import com.campus.module.demand.service.GeoService;
 import com.campus.module.tutor.entity.TutorProfile;
 import com.campus.module.tutor.mapper.TutorProfileMapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -12,7 +15,7 @@ import java.util.List;
 
 /**
  * GEO数据初始化器
- * 应用启动时将已认证教员的位置信息同步到Redis
+ * 应用启动时将已认证教员和上架需求的位置信息同步到Redis
  */
 @Slf4j
 @Component
@@ -20,19 +23,26 @@ import java.util.List;
 public class GeoDataInitializer implements CommandLineRunner {
 
     private final TutorProfileMapper tutorProfileMapper;
+    private final DemandPostMapper demandPostMapper;
     private final GeoService geoService;
 
     @Override
     public void run(String... args) {
+        initTutorGeoData();
+        initDemandGeoData();
+    }
+
+    /**
+     * 初始化教员GEO位置数据
+     */
+    private void initTutorGeoData() {
         try {
             log.info("开始初始化教员GEO位置数据...");
             
-            // 查询所有已认证且有位置信息的教员
             List<TutorProfile> tutors = tutorProfileMapper.selectList(null);
             
             int count = 0;
             for (TutorProfile tutor : tutors) {
-                // 只同步已认证且有位置信息的教员
                 if (tutor.getCertStatus() != null && tutor.getCertStatus() == 2 
                         && tutor.getLongitude() != null && tutor.getLatitude() != null) {
                     geoService.addTutorLocation(
@@ -47,6 +57,36 @@ public class GeoDataInitializer implements CommandLineRunner {
             log.info("教员GEO位置数据初始化完成，共同步{}条记录", count);
         } catch (Exception e) {
             log.warn("教员GEO位置数据初始化失败（Redis可能不可用）: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 初始化需求GEO位置数据
+     */
+    private void initDemandGeoData() {
+        try {
+            log.info("开始初始化需求GEO位置数据...");
+            
+            // 查询所有上架且有位置信息的需求 (status=1表示上架)
+            LambdaQueryWrapper<DemandPost> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(DemandPost::getStatus, 1)
+                   .isNotNull(DemandPost::getLongitude)
+                   .isNotNull(DemandPost::getLatitude);
+            List<DemandPost> demands = demandPostMapper.selectList(wrapper);
+            
+            int count = 0;
+            for (DemandPost demand : demands) {
+                geoService.addDemandLocation(
+                        demand.getId(), 
+                        demand.getLongitude().doubleValue(), 
+                        demand.getLatitude().doubleValue()
+                );
+                count++;
+            }
+            
+            log.info("需求GEO位置数据初始化完成，共同步{}条记录", count);
+        } catch (Exception e) {
+            log.warn("需求GEO位置数据初始化失败（Redis可能不可用）: {}", e.getMessage());
         }
     }
 }

@@ -22,7 +22,9 @@ export function submitCertification(data) {
  * 获取教员档案
  */
 export function getTutorProfile() {
-  return request.get('/tutor/profile');
+  return request.get('/tutor/profile', {
+    params: { _t: new Date().getTime() }
+  });
 }
 
 /**
