@@ -25,6 +25,39 @@ Page({
   // 1. 初始化位置
   initLocation() {
     const that = this;
+
+    // 先检查用户是否已授权
+    wx.getSetting({
+      success(res) {
+        if (res.authSetting['scope.userLocation'] === false) {
+          // 用户之前拒绝过，引导去设置页开启
+          wx.showModal({
+            title: '需要位置权限',
+            content: '请在设置中开启位置权限，以便查找附近的家教需求',
+            confirmText: '去设置',
+            success(modalRes) {
+              if (modalRes.confirm) {
+                wx.openSetting({
+                  success(settingRes) {
+                    if (settingRes.authSetting['scope.userLocation']) {
+                      that.getLocationAndFetch();
+                    }
+                  }
+                });
+              }
+            }
+          });
+        } else {
+          // 未拒绝过，直接请求
+          that.getLocationAndFetch();
+        }
+      }
+    });
+  },
+
+  // 获取位置并加载数据
+  getLocationAndFetch() {
+    const that = this;
     wx.getLocation({
       type: 'gcj02',
       success(res) {
@@ -36,8 +69,8 @@ Page({
       },
       fail(err) {
         console.error('定位失败', err);
-        wx.showToast({ title: '请授权位置信息', icon: 'none' });
-        // 定位失败也尝试加载一次（用默认坐标或上次坐标）
+        wx.showToast({ title: '定位失败，使用默认位置', icon: 'none' });
+        // 使用默认坐标
         that.fetchNearbyDemands();
       }
     });
@@ -57,7 +90,7 @@ Page({
 
       // 【修复点】：后端如果因Redis挂了返回空，或者真没数据，res可能是空数组
       if (!res || res.length === 0) {
-        this.setData({ 
+        this.setData({
           demandList: [],
           markers: [],
           currentDemand: null,
@@ -73,9 +106,9 @@ Page({
           ...item,
           // 简单计算距离展示 (保留1位小数)
           distance: this.getDistance(
-            this.data.latitude, 
-            this.data.longitude, 
-            item.latitude, 
+            this.data.latitude,
+            this.data.longitude,
+            item.latitude,
             item.longitude
           ).toFixed(1)
         };
@@ -110,11 +143,11 @@ Page({
     } catch (err) {
       console.error('获取附近需求失败', err);
       // 出错时重置为空，防止页面崩坏
-      this.setData({ 
-        demandList: [], 
+      this.setData({
+        demandList: [],
         currentDemand: null,
         markers: [],
-        isLoading: false 
+        isLoading: false
       });
     }
   },
@@ -152,7 +185,7 @@ Page({
     const a = radLat1 - radLat2;
     const b = (lng1 * Math.PI / 180.0) - (lng2 * Math.PI / 180.0);
     let s = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(a / 2), 2) +
-    Math.cos(radLat1) * Math.cos(radLat2) * Math.pow(Math.sin(b / 2), 2)));
+      Math.cos(radLat1) * Math.cos(radLat2) * Math.pow(Math.sin(b / 2), 2)));
     s = s * 6378.137; // 地球半径
     return s;
   }

@@ -1,4 +1,5 @@
 
+const apiConfig = require('../config/apiConfig.js');
 
 const request = (url, method = 'GET', data = {}, header = {}) => {
   return new Promise((resolve, reject) => {

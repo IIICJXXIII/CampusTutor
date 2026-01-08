@@ -10,12 +10,15 @@ const API_HOST = BASE_URL[ENV];
 
 // 使用 CommonJS 导出
 module.exports = {
+const api = {
   host: API_HOST,
   // 认证模块
   auth: {
     login: `${API_HOST}/api/auth/login`,
     register: `${API_HOST}/api/auth/register`,
     sendCode: `${API_HOST}/api/auth/send-code`, // Mock验证码
+    // 小程序前端：微信授权登录，后端需实现 jscode2session+登录绑定
+    wxLogin: `${API_HOST}/api/auth/wx-login`
   },
   // 用户模块
   user: {
@@ -76,3 +79,16 @@ module.exports = {
     detail: (recordId) => `${API_HOST}/api/teaching/record/${recordId}`,
   }
 };
+  },
+  // 学习辅助模块（错题本）
+  study: {
+    wrongbook: {
+      list: `${API_HOST}/api/study/wrongbook`, // GET 列表
+      detail: (id) => `${API_HOST}/api/study/wrongbook/${id}`, // GET 详情
+      resolve: (id) => `${API_HOST}/api/study/wrongbook/${id}/resolve` // POST 标记为已解决
+    }
+  },
+};
+
+// CommonJS 导出，确保微信小程序环境使用 `require()` 正常
+module.exports = api;

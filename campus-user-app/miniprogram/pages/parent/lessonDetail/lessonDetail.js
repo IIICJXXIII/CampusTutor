@@ -1,6 +1,6 @@
 // 家长课时详情页面逻辑
-import request from '../../../utils/request';
-import apiConfig from '../../../config/apiConfig';
+const request = require('../../../utils/request');
+const apiConfig = require('../../../config/apiConfig');
 
 Page({
     data: {
@@ -55,7 +55,7 @@ Page({
             success: async (res) => {
                 if (res.confirm) {
                     try {
-                        await request.post(apiConfig.teaching.confirm(recordId));
+                        await request.post(apiConfig.teaching.confirm(recordId), {});
                         wx.showToast({ title: '确认成功', icon: 'success' });
                         this.loadDetail(recordId);
                     } catch (err) {
@@ -93,7 +93,7 @@ Page({
         this.setData({ isSubmitting: true });
 
         try {
-            await request.post(apiConfig.teaching.dispute(recordId), null, {}, {
+            await request.post(apiConfig.teaching.dispute(recordId), {
                 reason: disputeReason
             });
 
