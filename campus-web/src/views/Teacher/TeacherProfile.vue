@@ -42,16 +42,36 @@ const fetchTeacherDetail = async () => {
       teacher.value = {
         ...teacher.value,
         ...res.data,
+        userId: res.data.userId, // 保存用户ID
         name: res.data.realName || teacher.value.name,
         title: `${res.data.universityName || ''} · ${res.data.major || ''}`,
         tags: buildTags(res.data),
-        price: res.data.expectPrice || teacher.value.price
+        price: res.data.expectPrice || teacher.value.price,
+        subjects: parseJson(res.data.teachSubjects, []),
+        grades: parseJson(res.data.teachGrades, [])
+      }
+      // 更新预约表单的默认科目
+      if (teacher.value.subjects.length > 0) {
+        bookingForm.value.subject = teacher.value.subjects[0]
+      }
+      if (teacher.value.grades.length > 0) {
+        bookingForm.value.grade = teacher.value.grades[0]
       }
     }
   } catch (error) {
     console.error('获取教师详情失败:', error)
   } finally {
     loading.value = false
+  }
+}
+
+// 解析JSON字符串
+const parseJson = (str, defaultVal) => {
+  if (!str) return defaultVal
+  try {
+    return JSON.parse(str)
+  } catch {
+    return defaultVal
   }
 }
 
@@ -73,9 +93,11 @@ const handleBook = () => {
   router.push({
     path: `/booking/${teacher.value.id}`,
     query: {
-      teacherId: teacher.value.id,
+      teacherId: teacher.value.userId, // 用户ID
+      tutorProfileId: teacher.value.id, // 教员档案ID
       teacherName: teacher.value.name,
       subject: bookingForm.value.subject,
+      grade: bookingForm.value.grade,
       price: teacher.value.price
     }
   })
