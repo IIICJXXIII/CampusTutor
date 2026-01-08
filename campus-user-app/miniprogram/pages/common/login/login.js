@@ -36,15 +36,8 @@ Page({
       return wx.showToast({ title: '请输入正确手机号', icon: 'none' });
     }
     try {
-      // 兼容处理
-      const payload = {
-        phone: this.data.phone,
-        account: this.data.phone // 确保发验证码也兼容
-      };
-
-      await request.post(api.auth.sendCode, null, {
-        'content-type': 'application/x-www-form-urlencoded'
-      }, payload);
+      // 兼容处理：后端使用 @RequestParam 接收 phone，直接把 phone 放到查询参数中
+      await request.post(api.auth.sendCode + '?phone=' + encodeURIComponent(this.data.phone));
 
       wx.showToast({ title: '验证码已发送: 123456', icon: 'none' });
     } catch (err) {
@@ -101,5 +94,50 @@ Page({
     } finally {
       this.setData({ isSubmitting: false });
     }
+  }
+  ,
+
+  // 微信一键登录
+  handleWxLogin() {
+    // 小程序获取临时 code，发送给后端换取 session / 登录
+    wx.login({
+      timeout: 10000,
+      success: async (res) => {
+        if (!res.code) {
+          return wx.showToast({ title: '微信登录失败：未获取到 code', icon: 'none' });
+        }
+
+        wx.showLoading({ title: '微信登录中...' });
+        try {
+          const payload = { code: res.code };
+          const r = await request.post(api.auth.wxLogin, payload);
+
+          if (r && r.token) {
+            wx.setStorageSync('token', r.token);
+            wx.setStorageSync('userInfo', r);
+            wx.showToast({ title: '登录成功', icon: 'success' });
+            setTimeout(() => wx.switchTab({ url: '/pages/common/index/index' }), 800);
+          } else if (r && r.needBind) {
+            // 后端表示需要绑定手机号或完善信息
+            wx.hideLoading();
+            wx.showModal({ title: '需绑定手机号', content: '请先绑定手机号或完善账号信息', showCancel: false, success() {
+              wx.navigateTo({ url: '/pages/common/register/register?from=wx' });
+            }});
+          } else {
+            throw new Error('微信登录响应异常');
+          }
+
+        } catch (err) {
+          console.error('微信登录失败:', err);
+          wx.showToast({ title: err.msg || err.message || '微信登录失败', icon: 'none' });
+        } finally {
+          wx.hideLoading();
+        }
+      },
+      fail: (e) => {
+        console.error('wx.login fail', e);
+        wx.showToast({ title: '微信登录失败', icon: 'none' });
+      }
+    });
   }
 });
