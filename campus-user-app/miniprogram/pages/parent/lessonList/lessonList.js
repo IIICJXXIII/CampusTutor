@@ -1,6 +1,6 @@
 // 家长课时列表页面逻辑
-import request from '../../../utils/request';
-import apiConfig from '../../../config/apiConfig';
+const request = require('../../../utils/request.js');
+const apiConfig = require('../../../config/apiConfig.js');
 
 Page({
     data: {
@@ -96,7 +96,7 @@ Page({
         this.setData({ isSubmitting: true });
 
         try {
-            await request.post(apiConfig.teaching.dispute(disputeRecordId), null, {}, {
+            await request.post(apiConfig.teaching.dispute(disputeRecordId), {
                 reason: disputeReason
             });
 
