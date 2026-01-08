@@ -147,7 +147,7 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
         if (longitude == null || latitude == null) {
             return new ArrayList<>();
         }
-        double radius = radiusKm != null ? radiusKm : 5.0; // 默认5公里
+        double radius = radiusKm != null ? radiusKm : 10.0; // 默认10公里
         List<Long> demandIds = geoService.searchNearbyDemands(longitude, latitude, radius);
         if (demandIds.isEmpty()) {
             return new ArrayList<>();

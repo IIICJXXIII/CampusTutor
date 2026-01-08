@@ -37,6 +37,7 @@
         </view>
 
         <view class="btn-row">
+          <button class="btn detail" bindtap="handleViewDetail">查看详情</button>
           <button class="btn chat">联系家长</button>
           <button class="btn accept" bindtap="handleAccept">立即接单</button>
         </view>
