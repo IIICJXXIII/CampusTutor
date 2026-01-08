@@ -25,10 +25,12 @@ Page({
       // 友好提示并显示空白状态
       wx.showToast({ title: '无法获取错题，显示本地示例', icon: 'none' });
       // 本地示例数据，便于前端联调
-      this.setData({ items: [
-        { id: 'mock1', questionTitle: '示例：二次函数顶点如何求？', subject: '数学', createdAt: '2026-01-07' },
-        { id: 'mock2', questionTitle: '示例：英语时态选择题解析', subject: '英语', createdAt: '2026-01-06' }
-      ]});
+      this.setData({
+        items: [
+          { id: 'mock1', questionTitle: '示例：二次函数顶点如何求？', subject: '数学', createdAt: '2026-01-07' },
+          { id: 'mock2', questionTitle: '示例：英语时态选择题解析', subject: '英语', createdAt: '2026-01-06' }
+        ]
+      });
     } finally {
       this.setData({ loading: false });
     }
@@ -40,7 +42,7 @@ Page({
   },
 
   async markResolved(e) {
-    e.stopPropagation();
+    if (e && e.stopPropagation) e.stopPropagation();
     const id = e.currentTarget.dataset.id;
     wx.showLoading({ title: '提交中...' });
     try {
