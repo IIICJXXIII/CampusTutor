@@ -28,9 +28,13 @@ const fetchTeachers = async () => {
     const list = res.data?.records || [] // <--- 关键修改：取 .records
     teachers.value = list.map(item => ({
       id: item.tutorId || item.id, // 兼容字段
+      tutorProfileId: item.id, // 教员档案ID
+      userId: item.userId, // 用户ID
       name: item.realName || '老师',
       school: item.universityName || '未填写',
       subject: item.teachSubjects ? JSON.parse(item.teachSubjects)[0] : '综合',
+      subjects: item.teachSubjects ? JSON.parse(item.teachSubjects) : [],
+      grades: item.teachGrades ? JSON.parse(item.teachGrades) : [],
       price: item.expectPrice || 150,
       matchScore: item.matchScore || 80,
       distance: item.distance ? `${item.distance.toFixed(1)}km` : '未知',
@@ -126,8 +130,19 @@ const goToDetail = (id) => {
   router.push(`/teacher/${id}`)
 }
 
-const goToBooking = (id) => {
-  router.push(`/booking/${id}`)
+const goToBooking = (teacher) => {
+  router.push({
+    path: `/booking/${teacher.tutorProfileId || teacher.id}`,
+    query: {
+      teacherId: teacher.userId,
+      tutorProfileId: teacher.tutorProfileId || teacher.id,
+      teacherName: teacher.name,
+      subject: teacher.subject,
+      grade: teacher.grades?.[0] || '',
+      price: teacher.price,
+      demandId: route.query.demandId
+    }
+  })
 }
 
 onMounted(() => {
@@ -218,10 +233,10 @@ onMounted(() => {
 
         <!-- 操作按钮 -->
         <div class="card-actions">
-          <el-button size="small" @click.stop="goToDetail(teacher.id)">
+          <el-button size="small" @click.stop="goToDetail(teacher.tutorProfileId || teacher.id)">
             查看详情
           </el-button>
-          <el-button type="primary" size="small" @click.stop="goToBooking(teacher.id)">
+          <el-button type="primary" size="small" @click.stop="goToBooking(teacher)">
             预约试课
           </el-button>
         </div>

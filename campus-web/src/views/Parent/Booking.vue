@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { createOrder } from '@/api/order'
+import { getStudents } from '@/api/demand'
 import { useOrderStore } from '@/stores'
 
 const router = useRouter()
@@ -16,10 +17,23 @@ const isAgreed = ref(false)
 // 教师信息
 const teacher = ref({
   id: null,
+  tutorProfileId: null, // 教员档案ID
   name: '张老师',
   subject: '初中数学',
+  grade: '',
   price: 200
 })
+
+// 学生列表和选中的学生
+const studentList = ref([])
+const selectedStudentId = ref(null)
+
+// 授课方式选项
+const teachModeOptions = [
+  { value: 1, label: '上门授课' },
+  { value: 2, label: '在线授课' }
+]
+const selectedTeachMode = ref(1)
 
 // 选择的日期和时间
 const selectedDate = ref('')
@@ -60,16 +74,34 @@ const agreementTerms = [
   { title: '争议处理', content: '如发生纠纷，平台将在24小时内介入协调。' }
 ]
 
-// 初始化教师信息
-onMounted(() => {
+// 初始化教师信息和学生列表
+onMounted(async () => {
+  // 从路由参数获取教员信息
   if (route.query.teacherId) teacher.value.id = route.query.teacherId
+  if (route.query.tutorProfileId) teacher.value.tutorProfileId = route.query.tutorProfileId
   if (route.query.teacherName) teacher.value.name = route.query.teacherName
   if (route.query.subject) teacher.value.subject = route.query.subject
+  if (route.query.grade) teacher.value.grade = route.query.grade
   if (route.query.price) teacher.value.price = parseInt(route.query.price) || 200
+  
+  // 获取学生列表
+  try {
+    const res = await getStudents()
+    if (res.data && res.data.length > 0) {
+      studentList.value = res.data
+      selectedStudentId.value = res.data[0].id // 默认选中第一个
+    }
+  } catch (error) {
+    console.error('获取学生列表失败:', error)
+  }
 })
 
 // 下一步
 const handleNext = () => {
+  if (!selectedStudentId.value) {
+    ElMessage.warning('请选择学生')
+    return
+  }
   if (!selectedDate.value || !selectedTime.value) {
     ElMessage.warning('请选择日期和时间段')
     return
@@ -86,38 +118,49 @@ const handleSign = async () => {
 
   loading.value = true
   try {
-    const lessonCount = 10
-    const totalAmount = teacher.value.price * lessonCount
+    const totalHours = 10
+    const totalAmount = teacher.value.price * totalHours
     
+    // 获取选中的学生信息
+    const selectedStudent = studentList.value.find(s => s.id === selectedStudentId.value)
+    const grade = selectedStudent?.grade || teacher.value.grade || '初一'
+    
+    // 构建符合后端 CreateOrderRequest 的请求体
     const orderData = {
-      tutorId: teacher.value.id || 1,
-      demandId: 1,
-      lessonCount: lessonCount,
+      studentId: selectedStudentId.value,
+      tutorProfileId: parseInt(teacher.value.tutorProfileId || teacher.value.id),
+      demandId: route.query.demandId ? parseInt(route.query.demandId) : null,
+      subject: teacher.value.subject,
+      grade: grade,
+      teachMode: selectedTeachMode.value,
       unitPrice: teacher.value.price,
-      totalAmount: totalAmount,
-      scheduledTime: selectedDate.value + ' ' + selectedTime.value.split(' - ')[0]
+      totalHours: totalHours,
+      remark: `首课时间: ${selectedDate.value} ${selectedTime.value}`
     }
 
     let orderId
     try {
       const res = await createOrder(orderData)
       orderId = res.data
-    } catch {
-      orderId = 'ORD-' + Date.now().toString().slice(-6)
+      ElMessage.success('订单创建成功！请前往支付')
+    } catch (error) {
+      console.error('创建订单失败:', error)
+      ElMessage.error(error.response?.data?.message || '创建订单失败')
+      loading.value = false
+      return
     }
 
     // 添加到本地store
     orderStore.addOrder({
       id: orderId,
       teacher: teacher.value.name,
-      subject: `${teacher.value.subject} · ${lessonCount}课时包`,
+      subject: `${teacher.value.subject} · ${totalHours}课时包`,
       amount: totalAmount,
       status: 'pending',
       date: new Date().toLocaleString(),
       tags: ['待支付']
     })
 
-    ElMessage.success('签约成功！请前往支付')
     router.push({ path: '/payment', query: { orderId } })
   } catch (error) {
     ElMessage.error(error.message || '签约失败')
@@ -152,6 +195,54 @@ const handleSign = async () => {
           </div>
           <span class="teacher-price">¥{{ teacher.price }}</span>
         </div>
+      </el-card>
+
+      <!-- 选择学生 -->
+      <el-card class="select-card" shadow="never">
+        <template #header>
+          <div class="card-header">
+            <el-icon><User /></el-icon>
+            <span>选择学生</span>
+          </div>
+        </template>
+        <el-select 
+          v-model="selectedStudentId" 
+          placeholder="请选择学生"
+          style="width: 100%"
+          v-if="studentList.length > 0"
+        >
+          <el-option 
+            v-for="student in studentList" 
+            :key="student.id" 
+            :label="`${student.studentName} (${student.grade})`"
+            :value="student.id"
+          />
+        </el-select>
+        <el-empty v-else description="暂无学生信息，请先添加学生" :image-size="60">
+          <el-button type="primary" size="small" @click="router.push('/parent/profile')">
+            去添加学生
+          </el-button>
+        </el-empty>
+      </el-card>
+
+      <!-- 选择授课方式 -->
+      <el-card class="select-card" shadow="never">
+        <template #header>
+          <div class="card-header">
+            <el-icon><Location /></el-icon>
+            <span>授课方式</span>
+          </div>
+        </template>
+        <el-radio-group v-model="selectedTeachMode" style="width: 100%">
+          <el-radio-button 
+            v-for="mode in teachModeOptions" 
+            :key="mode.value" 
+            :value="mode.value"
+            style="flex: 1"
+          >
+            {{ mode.label }}
+          </el-radio-button>
+        </el-radio-group>
       </el-card>
 
       <!-- 选择日期 -->

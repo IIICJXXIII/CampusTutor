@@ -12,9 +12,10 @@ import com.campus.module.order.dto.PayOrderRequest;
 import com.campus.module.order.entity.CourseOrder;
 import com.campus.module.order.mapper.CourseOrderMapper;
 import com.campus.module.order.service.CourseOrderService;
+import com.campus.module.teaching.entity.TeachingRecord;
+import com.campus.module.teaching.mapper.TeachingRecordMapper;
 import com.campus.module.tutor.entity.TutorProfile;
 import com.campus.module.tutor.mapper.TutorProfileMapper;
-import com.campus.module.wallet.entity.SysWallet;
 import com.campus.module.wallet.service.SysWalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 课程订单Service实现
@@ -34,6 +37,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
 
     private final TutorProfileMapper tutorProfileMapper;
     private final SysWalletService walletService;
+    private final TeachingRecordMapper teachingRecordMapper;
 
     /**
      * 平台服务费比例(10%)
@@ -113,6 +117,63 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         order.setPayTime(LocalDateTime.now());
         order.setPayType(request.getPayType());
         updateById(order);
+        
+        // 支付成功后生成课程记录（课表）
+        generateTeachingRecords(order);
+    }
+    
+    /**
+     * 根据订单生成课程记录(课表)
+     */
+    private void generateTeachingRecords(CourseOrder order) {
+        // 解析首课时间 (格式: "首课时间: 01-09 14:00 - 15:00")
+        LocalDateTime firstLessonStart = parseFirstLessonTime(order.getRemark());
+        if (firstLessonStart == null) {
+            firstLessonStart = LocalDateTime.now().plusDays(1).withHour(14).withMinute(0).withSecond(0).withNano(0);
+        }
+        
+        int totalHours = order.getTotalHours();
+        
+        for (int i = 1; i <= totalHours; i++) {
+            TeachingRecord record = new TeachingRecord();
+            record.setOrderId(order.getId());
+            record.setLessonIndex(i);
+            // 每周一节课，从首课时间开始
+            LocalDateTime lessonStart = firstLessonStart.plusWeeks(i - 1);
+            record.setStartTime(lessonStart);
+            record.setEndTime(lessonStart.plusHours(1)); // 每节课1小时
+            record.setStatus(0); // 待确认
+            // createTime/updateTime 由 MyBatis-Plus 自动填充
+            teachingRecordMapper.insert(record);
+        }
+    }
+    
+    /**
+     * 解析首课时间
+     * 格式: "首课时间: 01-09 14:00 - 15:00"
+     */
+    private LocalDateTime parseFirstLessonTime(String remark) {
+        if (remark == null || remark.isEmpty()) {
+            return null;
+        }
+        try {
+            // 匹配 "01-09 14:00" 这样的格式
+            Pattern pattern = Pattern.compile("(\\d{2})-(\\d{2})\\s+(\\d{2}):(\\d{2})");
+            Matcher matcher = pattern.matcher(remark);
+            if (matcher.find()) {
+                int month = Integer.parseInt(matcher.group(1));
+                int day = Integer.parseInt(matcher.group(2));
+                int hour = Integer.parseInt(matcher.group(3));
+                int minute = Integer.parseInt(matcher.group(4));
+                
+                // 使用当前年份
+                int year = LocalDateTime.now().getYear();
+                return LocalDateTime.of(year, month, day, hour, minute);
+            }
+        } catch (Exception e) {
+            // 解析失败，返回null
+        }
+        return null;
     }
 
     @Override

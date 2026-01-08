@@ -4,6 +4,7 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.campus.common.utils.GradeUtils;
 import com.campus.module.demand.service.GeoService;
 import com.campus.module.match.dto.MatchScoreResult;
 import com.campus.module.match.dto.TutorSearchRequest;
@@ -46,8 +47,15 @@ public class MatchService {
             // 使用新方法获取带距离信息的结果
             Map<Long, Double> nearbyWithDistance = geoService.searchNearbyTutorsWithDistance(
                     request.getLongitude(), request.getLatitude(), radius);
-            nearbyTutorIds = nearbyWithDistance.keySet();
-            distanceMap = nearbyWithDistance;
+            
+            // 如果Redis返回空（Redis不可用或无数据），则不限制ID，后续从数据库计算距离
+            if (nearbyWithDistance.isEmpty()) {
+                // Redis无数据，查询所有已认证教员并在内存中计算距离
+                nearbyTutorIds = null; // 不限制ID
+            } else {
+                nearbyTutorIds = nearbyWithDistance.keySet();
+                distanceMap = nearbyWithDistance;
+            }
         }
 
         // 2. 构建查询条件
@@ -59,9 +67,21 @@ public class MatchService {
             wrapper.like(TutorProfile::getTeachSubjects, request.getSubject());
         }
 
-        // 年级筛选
+        // 年级筛选 - 使用GradeUtils进行智能匹配，同时匹配具体年级和对应的"全科"选项
         if (StringUtils.hasText(request.getGrade())) {
-            wrapper.like(TutorProfile::getTeachGrades, request.getGrade());
+            String normalizedGrade = GradeUtils.normalize(request.getGrade());
+            List<String> keywords = GradeUtils.getSearchKeywords(normalizedGrade);
+            
+            // 构建OR条件：匹配具体年级或对应的全科
+            wrapper.and(w -> {
+                for (int i = 0; i < keywords.size(); i++) {
+                    if (i == 0) {
+                        w.like(TutorProfile::getTeachGrades, keywords.get(i));
+                    } else {
+                        w.or().like(TutorProfile::getTeachGrades, keywords.get(i));
+                    }
+                }
+            });
         }
 
         // 价格区间
@@ -101,14 +121,11 @@ public class MatchService {
             wrapper.in(TutorProfile::getEducation, request.getEducations());
         }
 
-        // LBS筛选
-        if (nearbyTutorIds != null) {
-            if (nearbyTutorIds.isEmpty()) {
-                // 附近没有教员，返回空结果
-                return new Page<>(request.getPage(), request.getSize());
-            }
+        // LBS筛选 - 只有当Redis返回有效数据时才按ID过滤
+        if (nearbyTutorIds != null && !nearbyTutorIds.isEmpty()) {
             wrapper.in(TutorProfile::getId, nearbyTutorIds);
         }
+        // 注意：如果nearbyTutorIds为null，表示Redis不可用，此时不限制ID，查询所有教员
 
         // 排序
         String sortBy = request.getSortBy();
@@ -126,7 +143,24 @@ public class MatchService {
         Page<TutorProfile> pageParam = new Page<>(request.getPage(), request.getSize());
         IPage<TutorProfile> profilePage = tutorProfileMapper.selectPage(pageParam, wrapper);
 
-        // 4. 转换结果
+        // 4. 如果Redis无数据但有位置请求，在内存中计算距离
+        if (distanceMap.isEmpty() && request.getLongitude() != null && request.getLatitude() != null) {
+            double radius = request.getRadius() != null ? request.getRadius() : 10.0;
+            for (TutorProfile profile : profilePage.getRecords()) {
+                if (profile.getLongitude() != null && profile.getLatitude() != null) {
+                    double distance = geoService.calculateDistance(
+                            request.getLongitude(), request.getLatitude(),
+                            profile.getLongitude().doubleValue(), profile.getLatitude().doubleValue()
+                    );
+                    // 只保留在半径范围内的教员
+                    if (distance <= radius) {
+                        distanceMap.put(profile.getId(), distance);
+                    }
+                }
+            }
+        }
+
+        // 5. 转换结果
         List<Long> userIds = profilePage.getRecords().stream()
                 .map(TutorProfile::getUserId)
                 .collect(Collectors.toList());
