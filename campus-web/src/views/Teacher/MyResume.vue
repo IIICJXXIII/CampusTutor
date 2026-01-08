@@ -9,6 +9,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(false)
 const avatarUrl = ref('')
+const certStatus = ref(null)
 
 // 表单数据
 const form = reactive({
@@ -55,6 +56,7 @@ const fetchProfile = async () => {
     const res = await getTutorProfile()
     if (res.data) {
       const data = res.data
+      certStatus.value = data.certStatus
       form.name = data.realName || userStore.userInfo?.username || ''
       form.school = data.universityName || ''
       form.major = data.major || ''
@@ -111,6 +113,12 @@ const handlePublish = async () => {
     return
   }
 
+  if (certStatus.value !== 2) {
+    ElMessage.warning('认证通过后才能更新简历，请先完成/等待审核')
+    router.push('/teacher/auth')
+    return
+  }
+
   loading.value = true
   try {
     await updateTutorProfile({
@@ -118,8 +126,9 @@ const handlePublish = async () => {
       universityName: form.school,
       major: form.major,
       expectPrice: form.price,
-      teachSubjects: JSON.stringify(form.subjects),
-      teachGrades: JSON.stringify(form.grades),
+      // 后端 DTO 期望 List<String>，直接传数组
+      teachSubjects: form.subjects || [],
+      teachGrades: form.grades || [],
       introduction: form.intro,
       phone: form.phone,
       gender: form.gender,

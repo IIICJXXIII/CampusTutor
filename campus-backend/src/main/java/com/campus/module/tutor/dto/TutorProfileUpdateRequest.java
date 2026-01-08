@@ -11,6 +11,21 @@ import java.util.List;
 public class TutorProfileUpdateRequest {
 
     /**
+     * 真实姓名
+     */
+    private String realName;
+
+    /**
+     * 学校名称
+     */
+    private String universityName;
+
+    /**
+     * 专业
+     */
+    private String major;
+
+    /**
      * 可授科目
      */
     private List<String> teachSubjects;
