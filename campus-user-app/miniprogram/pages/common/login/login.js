@@ -7,7 +7,13 @@ Page({
     password: '',
     code: '',
     loginType: 'password', // password | code
+    showPassword: false,   // 密码可见状态
     isSubmitting: false
+  },
+
+  // 切换密码可见性
+  togglePasswordVisibility() {
+    this.setData({ showPassword: !this.data.showPassword });
   },
 
   // 切换登录方式
