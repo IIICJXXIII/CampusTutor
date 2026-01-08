@@ -162,12 +162,13 @@ const handleSubmit = async () => {
     await createDemand(demandData)
     
     ElMessage.success('需求发布成功！系统正在为您匹配老师...')
-    // 跳转到老师列表，并传递科目和年级进行智能匹配
+    // 跳转到老师列表，并传递科目、年级和学生ID进行智能匹配
     router.push({
       path: '/teacher/list',
       query: {
         subject: form.weakSubjects[0],
-        grade: form.grade
+        grade: form.grade,
+        studentId: studentId
       }
     })
     
