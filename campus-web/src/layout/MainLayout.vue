@@ -34,10 +34,10 @@
           </span>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="parent" :disabled="isParent">
+              <el-dropdown-item command="parent" :disabled="userStore.userRole === 'parent'">
                 <el-icon><User /></el-icon>切换为家长
               </el-dropdown-item>
-              <el-dropdown-item command="tutor" :disabled="isTutor">
+              <el-dropdown-item command="tutor" :disabled="userStore.userRole === 'tutor'">
                 <el-icon><Reading /></el-icon>切换为教师
               </el-dropdown-item>
             </el-dropdown-menu>

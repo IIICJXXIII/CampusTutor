@@ -10,8 +10,8 @@ export const useUserStore = defineStore('user', () => {
 
   // 计算属性
   const isLoggedIn = computed(() => !!token.value)
-  const isParent = computed(() => userRole.value === 'parent' || userInfo.value?.role === 2)
-  const isTutor = computed(() => userRole.value === 'tutor' || userInfo.value?.role === 1)
+  const isParent = computed(() => userRole.value === 'parent')
+  const isTutor = computed(() => userRole.value === 'tutor')
   const userId = computed(() => userInfo.value?.id || null)
   const nickname = computed(() => userInfo.value?.nickname || '用户')
   const avatar = computed(() => userInfo.value?.avatar || 'https://api.dicebear.com/7.x/miniavs/svg?seed=default')
