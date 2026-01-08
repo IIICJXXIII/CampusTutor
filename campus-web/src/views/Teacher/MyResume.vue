@@ -17,6 +17,7 @@ const form = reactive({
   major: '',
   price: 150,
   subjects: [],
+  grades: [], // 可授年级
   intro: '',
   isPublic: true,
   phone: '',
@@ -37,9 +38,14 @@ const formRef = ref(null)
 
 // 科目选项
 const subjectOptions = [
-  '小学语文', '小学数学', '小学英语', '小学全科',
-  '初中语文', '初中数学', '初中英语', '初中物理', '初中化学',
-  '高中语文', '高中数学', '高中英语', '高中物理', '高中化学', '高中生物'
+  '语文', '数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治'
+]
+
+// 年级选项 - 与数据库tutor_profile.teach_grades和前端搜索保持一致
+const gradeOptions = [
+  '小学一年级', '小学二年级', '小学三年级', '小学四年级', '小学五年级', '小学六年级',
+  '初一', '初二', '初三',
+  '高一', '高二', '高三'
 ]
 
 // 获取教师信息
@@ -65,6 +71,13 @@ const fetchProfile = async () => {
           form.subjects = JSON.parse(data.teachSubjects)
         } catch {
           form.subjects = []
+        }
+      }
+      if (data.teachGrades) {
+        try {
+          form.grades = JSON.parse(data.teachGrades)
+        } catch {
+          form.grades = []
         }
       }
     }
@@ -104,6 +117,7 @@ const handlePublish = async () => {
       major: form.major,
       expectPrice: form.price,
       teachSubjects: JSON.stringify(form.subjects),
+      teachGrades: JSON.stringify(form.grades),
       introduction: form.intro,
       phone: form.phone,
       gender: form.gender,
@@ -221,6 +235,23 @@ onMounted(() => {
                 :key="sub"
                 :label="sub"
                 :value="sub"
+              />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="可授年级" prop="grades">
+            <el-select
+              v-model="form.grades"
+              multiple
+              filterable
+              placeholder="请选择可授年级"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="g in gradeOptions"
+                :key="g"
+                :label="g"
+                :value="g"
               />
             </el-select>
           </el-form-item>

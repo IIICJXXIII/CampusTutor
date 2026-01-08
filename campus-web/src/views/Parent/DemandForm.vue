@@ -29,7 +29,7 @@ const form = reactive({
   address: '系统自动定位中...'
 })
 
-// 选项数据
+// 选项数据 - 年级命名与数据库tutor_profile.teach_grades保持一致
 const gradeOptions = [
   { label: '小学一年级', value: '小学一年级' },
   { label: '小学二年级', value: '小学二年级' },
@@ -37,12 +37,12 @@ const gradeOptions = [
   { label: '小学四年级', value: '小学四年级' },
   { label: '小学五年级', value: '小学五年级' },
   { label: '小学六年级', value: '小学六年级' },
-  { label: '初中一年级', value: '初中一年级' },
-  { label: '初中二年级', value: '初中二年级' },
-  { label: '初中三年级', value: '初中三年级' },
-  { label: '高中一年级', value: '高中一年级' },
-  { label: '高中二年级', value: '高中二年级' },
-  { label: '高中三年级', value: '高中三年级' }
+  { label: '初一', value: '初一' },
+  { label: '初二', value: '初二' },
+  { label: '初三', value: '初三' },
+  { label: '高一', value: '高一' },
+  { label: '高二', value: '高二' },
+  { label: '高三', value: '高三' }
 ]
 
 const subjectOptions = [
