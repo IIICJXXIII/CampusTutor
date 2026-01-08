@@ -25,17 +25,19 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, TutorProfile> 
+public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, TutorProfile>
         implements TutorProfileService {
 
     private final TutorScheduleConfigMapper scheduleConfigMapper;
+    private final com.campus.module.demand.service.GeoService geoService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void submitCertification(Long userId, TutorCertRequest request) {
         // 检查是否已有档案
         TutorProfile existing = getByUserId(userId);
-        
+
+        TutorProfile targetProfile;
         if (existing != null) {
             // 已有档案，允许重复提交并直接通过
             existing.setRealName(request.getRealName());
@@ -54,6 +56,7 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
             existing.setCertStatus(2); // 已通过
             existing.setRejectReason(null);
             updateById(existing);
+            targetProfile = existing;
         } else {
             // 新建档案
             TutorProfile profile = new TutorProfile();
@@ -75,6 +78,15 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
             profile.setRating(new BigDecimal("5.0"));
             profile.setOrderCount(0);
             save(profile);
+            targetProfile = profile;
+        }
+
+        // 同步位置信息到Redis (如果已有位置信息)
+        if (targetProfile.getLongitude() != null && targetProfile.getLatitude() != null) {
+            geoService.addTutorLocation(
+                    targetProfile.getId(),
+                    targetProfile.getLongitude().doubleValue(),
+                    targetProfile.getLatitude().doubleValue());
         }
     }
 
@@ -137,6 +149,14 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
         }
 
         updateById(profile);
+
+        // 同步位置信息到Redis
+        if (profile.getLongitude() != null && profile.getLatitude() != null) {
+            geoService.addTutorLocation(
+                    profile.getId(),
+                    profile.getLongitude().doubleValue(),
+                    profile.getLatitude().doubleValue());
+        }
     }
 
     @Override

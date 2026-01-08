@@ -25,7 +25,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandPost> 
+public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandPost>
         implements DemandPostService {
 
     private final GeoService geoService;
@@ -53,8 +53,8 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
 
         // 如果有位置信息，加入GEO索引
         if (request.getLongitude() != null && request.getLatitude() != null) {
-            geoService.addDemandLocation(demand.getId(), 
-                    request.getLongitude().doubleValue(), 
+            geoService.addDemandLocation(demand.getId(),
+                    request.getLongitude().doubleValue(),
                     request.getLatitude().doubleValue());
         }
 
@@ -162,6 +162,13 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
         });
         // 只返回上架状态的
         demands.removeIf(d -> d.getStatus() != 1);
+
+        // 过滤掉自己发布的需求
+        Long currentUserId = com.campus.common.context.UserContext.getUserId();
+        if (currentUserId != null) {
+            demands.removeIf(d -> d.getPublisherId().equals(currentUserId));
+        }
+
         return demands;
     }
 }
