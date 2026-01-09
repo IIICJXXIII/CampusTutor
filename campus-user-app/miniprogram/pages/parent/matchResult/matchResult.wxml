@@ -23,12 +23,23 @@
         <view class="card-left">
           <image class="avatar" src="{{item.avatarUrl || '/static/images/default-avatar.png'}}" mode="aspectFill"></image>
           <view class="rating-badge" wx:if="{{item.rating}}">⭐ {{item.rating}}</view>
+          <!-- 匹配等级徽章 -->
+          <view class="match-badge {{item.matchLevel}}" wx:if="{{item.matchScore}}">
+            <text wx:if="{{item.matchLevel === 'excellent'}}">✨ 极佳匹配</text>
+            <text wx:elif="{{item.matchLevel === 'good'}}">👍 优质匹配</text>
+            <text wx:elif="{{item.matchLevel === 'fair'}}">🙂 一般匹配</text>
+            <text wx:else>🤔 基础匹配</text>
+          </view>
         </view>
 
         <view class="card-right">
           <view class="row-1">
             <text class="name">{{item.realName}}</text>
-            <view class="score-badge" wx:if="{{item.matchScore}}">推荐 {{item.matchScore.toFixed(0)}} 分</view>
+            <view class="score-badge" wx:if="{{item.matchScore}}">
+              <text class="score-icon">🎯</text>
+              <text class="score-value">{{item.matchScore.toFixed(0)}}</text>
+              <text class="score-unit">分</text>
+            </view>
             <text class="price">¥{{item.expectPrice}}<text class="unit">/小时</text></text>
           </view>
 
@@ -38,22 +49,36 @@
             <text class="major">{{item.major}}</text>
             <text class="sep">|</text>
             <text class="edu">{{eduMap[item.education]}}</text>
-          </view>
-
-          <view class="tags-row">
-            <block wx:for="{{item.teachSubjects}}" wx:key="*this" wx:for-item="sub" wx:if="{{index < 3}}">
-              <text class="tag">{{sub}}</text>
-            </block>
-
-            <!-- 匹配标签 -->
-            <block wx:for="{{item.matchTags}}" wx:key="*this" wx:for-item="tag">
-              <text class="tag tag-match">{{tag}}</text>
-            </block>
-
+            <text class="sep" wx:if="{{item.distText}}">|</text>
             <text class="distance" wx:if="{{item.distText}}">📍 {{item.distText}}</text>
           </view>
 
+          <view class="tags-container">
+            <view class="tags-row">
+              <block wx:for="{{item.teachSubjects}}" wx:key="*this" wx:for-item="sub" wx:if="{{index < 4}}">
+                <text class="tag tag-subject">{{sub}}</text>
+              </block>
+            </view>
+            <view class="tags-row">
+              <block wx:for="{{item.teachGrades}}" wx:key="*this" wx:for-item="grade" wx:if="{{index < 3}}">
+                <text class="tag tag-grade">{{grade}}</text>
+              </block>
+            </view>
+            <!-- 匹配标签 -->
+            <view class="tags-row" wx:if="{{item.matchTags && item.matchTags.length > 0}}">
+              <block wx:for="{{item.matchTags}}" wx:key="*this" wx:for-item="tag">
+                <text class="tag tag-match">{{tag}}</text>
+              </block>
+            </view>
+          </view>
+
           <view class="intro">{{item.introduction || '暂无简介'}}</view>
+          
+          <!-- 教学方式标签 -->
+          <view class="teach-mode" wx:if="{{item.canVisit || item.canOnline}}">
+            <text class="mode-tag" wx:if="{{item.canVisit}}">🏠 可上门</text>
+            <text class="mode-tag" wx:if="{{item.canOnline}}">💻 可网课</text>
+          </view>
         </view>
       </view>
     </block>

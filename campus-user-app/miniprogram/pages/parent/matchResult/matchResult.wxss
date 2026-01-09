@@ -141,6 +141,14 @@ page {
   color: #fa8c16;
   border: 1rpx solid #fae6ce;
 }
+.tag-subject {
+  background: #ecf5ff;
+  color: #409EFF;
+}
+.tag-grade {
+  background: #f0f9eb;
+  color: #67c23a;
+}
 .score-badge {
   background: #fff2f6;
   color: #ff6b6b;
@@ -148,6 +156,59 @@ page {
   border-radius: 8rpx;
   font-size: 22rpx;
   margin-right: 10rpx;
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+.score-icon {
+  font-size: 24rpx;
+}
+.score-value {
+  font-weight: bold;
+  font-size: 24rpx;
+}
+.match-badge {
+  position: absolute;
+  top: 10rpx;
+  right: 10rpx;
+  font-size: 20rpx;
+  padding: 2rpx 8rpx;
+  border-radius: 8rpx;
+  color: white;
+}
+.match-badge.excellent {
+  background: linear-gradient(135deg, #67c23a, #85ce61);
+}
+.match-badge.good {
+  background: linear-gradient(135deg, #e6a23c, #ebb563);
+}
+.match-badge.fair {
+  background: linear-gradient(135deg, #409EFF, #66b1ff);
+}
+.match-badge.poor {
+  background: linear-gradient(135deg, #909399, #a6a9ad);
+}
+.tags-container {
+  margin-bottom: 12rpx;
+}
+.tags-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8rpx;
+  flex-wrap: wrap;
+}
+.teach-mode {
+  display: flex;
+  gap: 8rpx;
+  margin-top: 12rpx;
+  flex-wrap: wrap;
+}
+.mode-tag {
+  background: #f0f9eb;
+  color: #67c23a;
+  padding: 4rpx 10rpx;
+  border-radius: 6rpx;
+  font-size: 20rpx;
 }
 
 /* 状态样式 */
