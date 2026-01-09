@@ -31,15 +31,38 @@ Page({
         this.setData({ userInfo });
 
         if (userInfo.role === 1) {
-            // 教师端
-            this.loadWalletInfo();
-            this.loadTutorProfile();
-            this.loadNearbyDemands();
+            // 教师端 - 检查认证状态
+            this.checkCertificationStatus();
         } else {
             // 家长端
             this.loadDemands();
             this.loadOrders();
         }
+    },
+
+    // 检查教师认证状态
+    async checkCertificationStatus() {
+        // 先检查本地缓存
+        const certSubmitted = wx.getStorageSync('certificationSubmitted');
+
+        if (!certSubmitted) {
+            // 未提交认证，跳转认证页
+            wx.showModal({
+                title: '请完成认证',
+                content: '您还未完成教师认证，请先提交认证资料',
+                showCancel: false,
+                confirmText: '去认证',
+                success: () => {
+                    wx.redirectTo({ url: '/pages/teacher/certification/step1-base/step1-base' });
+                }
+            });
+            return;
+        }
+
+        // 已提交认证，加载数据
+        this.loadWalletInfo();
+        this.loadTutorProfile();
+        this.loadNearbyDemands();
     },
 
     // ========== 教师端方法 ==========
