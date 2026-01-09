@@ -29,6 +29,12 @@ const routes = [
     meta: { title: '发布需求', role: 'parent' }
   },
   {
+    path: '/parent/demands',
+    name: 'MyDemands',
+    component: () => import('@/views/Parent/DemandList.vue'),
+    meta: { title: '我的需求', role: 'parent' }
+  },
+  {
     path: '/parent/tutors',
     name: 'ParentTutorList',
     component: () => import('@/views/Parent/TutorList.vue'),
@@ -63,6 +69,26 @@ const routes = [
     name: 'WrongBook',
     component: () => import('@/views/Parent/WrongBook.vue'),
     meta: { title: '错题本', role: 'parent' }
+  },
+
+  // === 学生管理 ===
+  {
+    path: '/students',
+    name: 'StudentList',
+    component: () => import('@/views/Parent/StudentList.vue'),
+    meta: { title: '我的孩子', role: 'parent' }
+  },
+  {
+    path: '/students/add',
+    name: 'AddStudent',
+    component: () => import('@/views/Parent/StudentForm.vue'),
+    meta: { title: '添加孩子', role: 'parent' }
+  },
+  {
+    path: '/students/:id/edit',
+    name: 'EditStudent',
+    component: () => import('@/views/Parent/StudentForm.vue'),
+    meta: { title: '编辑孩子', role: 'parent' }
   },
 
   // === 教师端 ===
