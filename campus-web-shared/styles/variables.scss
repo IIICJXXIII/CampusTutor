@@ -1,0 +1,92 @@
+// =====================================
+// 全局 SCSS 变量文件 (共享模块)
+// =====================================
+
+// 教师端主题色 (蓝色系)
+$teacher-primary: #409eff;
+$teacher-primary-light: #ecf5ff;
+$teacher-primary-dark: #337ecc;
+
+// 家长端主题色 (橙色系)
+$parent-primary: #ff9500;
+$parent-primary-light: #fff7e6;
+$parent-primary-dark: #cc7700;
+
+// 通用主题色 (默认蓝色)
+$primary-color: #409eff;
+$primary-light: #ecf5ff;
+$primary-dark: #337ecc;
+
+// 功能色
+$success-color: #67c23a;
+$warning-color: #e6a23c;
+$danger-color: #f56c6c;
+$info-color: #909399;
+
+// 文字色
+$text-primary: #303133;
+$text-regular: #606266;
+$text-secondary: #909399;
+$text-muted: #909399;
+$text-placeholder: #c0c4cc;
+
+// 边框色
+$border-color: #dcdfe6;
+$border-light: #e4e7ed;
+$border-lighter: #ebeef5;
+$border-extra-light: #f2f6fc;
+
+// 背景色
+$bg-color: #f5f7fa;
+$bg-light: #fafafa;
+$bg-white: #ffffff;
+
+// 阴影
+$shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
+$shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+$shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+$shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.15);
+
+// 圆角
+$radius-sm: 4px;
+$radius-md: 8px;
+$radius-lg: 12px;
+$radius-xl: 16px;
+$radius-full: 9999px;
+
+// 间距
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+$spacing-2xl: 48px;
+
+// 过渡
+$transition-fast: 0.2s ease;
+$transition-normal: 0.3s ease;
+$transition-slow: 0.4s ease;
+
+// 布局
+$header-height: 60px;
+$sidebar-width: 220px;
+$sidebar-collapsed-width: 64px;
+$footer-height: 60px;
+$content-max-width: 1200px;
+
+// 响应式断点
+$breakpoint-xs: 480px;
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+$breakpoint-2xl: 1400px;
+
+// Z-Index 层级
+$z-dropdown: 1000;
+$z-sticky: 1020;
+$z-fixed: 1030;
+$z-modal-backdrop: 1040;
+$z-modal: 1050;
+$z-popover: 1060;
+$z-tooltip: 1070;
