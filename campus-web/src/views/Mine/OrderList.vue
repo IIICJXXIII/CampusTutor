@@ -204,22 +204,32 @@ const handleAction = (order) => {
         <!-- 订单操作 -->
         <div class="order-actions">
           <el-button size="small">查看合同</el-button>
+          <!-- 家长专属：确认接单 -->
           <el-button 
-            v-if="item.status === 'confirm'" 
+            v-if="item.status === 'confirm' && userStore.isParent" 
             type="primary" 
             size="small"
             @click="handleConfirm(item)"
           >
             确认接单
           </el-button>
+          <!-- 教师看到的待确认状态提示 -->
+          <el-tag v-if="item.status === 'confirm' && !userStore.isParent" type="info" size="small">
+            等待家长确认
+          </el-tag>
+          <!-- 家长专属：去支付 -->
           <el-button 
-            v-if="item.status === 'pending'" 
+            v-if="item.status === 'pending' && userStore.isParent" 
             type="warning" 
             size="small"
             @click="handleAction(item)"
           >
             去支付
           </el-button>
+          <!-- 教师看到的待支付状态提示 -->
+          <el-tag v-if="item.status === 'pending' && !userStore.isParent" type="warning" size="small">
+            等待家长支付
+          </el-tag>
           <el-button 
             v-if="item.status === 'active'" 
             type="primary" 
