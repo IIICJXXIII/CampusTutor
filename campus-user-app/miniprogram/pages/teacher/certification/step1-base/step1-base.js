@@ -44,53 +44,69 @@ Page({
     });
   },
 
-  // 上传学生证并触发OCR识别
+  // 上传学生证并触发OCR识别（使用Base64模式）
   chooseImage() {
     wx.chooseImage({
       count: 1,
       sizeType: ['compressed'],
       success: async (res) => {
         const filePath = res.tempFilePaths[0];
-        wx.showLoading({ title: '上传中...' });
+        wx.showLoading({ title: '处理中...' });
 
         try {
-          // 1. 上传图片获取URL
+          // 1. 读取图片为Base64
+          const base64 = await this.readFileAsBase64(filePath);
+
+          // 2. 上传图片获取URL（用于显示和存储）
           const uploadUrl = await request.upload(api.file.upload, filePath, { folder: 'cert' });
-          // 兼容处理：可能是字符串URL或对象
           const imageUrl = typeof uploadUrl === 'string' ? uploadUrl : uploadUrl.url;
-
           this.setData({ 'formData.studentCardUrl': imageUrl });
-          wx.hideLoading();
 
-          // 2. 触发OCR识别
-          this.recognizeStudentCard(imageUrl);
+          wx.hideLoading();
+          console.log(base64);
+          // 3. 使用Base64调用OCR识别
+          this.recognizeStudentCardByBase64(base64);
 
         } catch (err) {
           wx.hideLoading();
-          console.error('上传失败:', err);
-          wx.showToast({ title: '上传失败，请重试', icon: 'none' });
+          console.error('处理失败:', err);
+          wx.showToast({ title: '处理失败，请重试', icon: 'none' });
         }
       }
     });
   },
 
-  // OCR识别学生证
-  async recognizeStudentCard(imageUrl) {
+  // 读取文件为Base64
+  readFileAsBase64(filePath) {
+    return new Promise((resolve, reject) => {
+      const fs = wx.getFileSystemManager();
+      fs.readFile({
+        filePath: filePath,
+        encoding: 'base64',
+        success: (res) => resolve(res.data),
+        fail: reject
+      });
+    });
+  },
+
+  // OCR识别学生证（Base64模式 + 大模型解析）
+  async recognizeStudentCardByBase64(imageBase64) {
     this.setData({ isRecognizing: true });
-    wx.showLoading({ title: '识别中...' });
+    wx.showLoading({ title: '智能识别中...' });
 
     try {
-      // 调用OCR接口，imageUrl作为query参数
       const ocrResult = await new Promise((resolve, reject) => {
         const token = wx.getStorageSync('token');
         wx.request({
-          url: `${api.ocr.studentCard}?imageUrl=${encodeURIComponent(imageUrl)}`,
+          url: api.ocr.studentCardBase64,
           method: 'POST',
           header: {
             'Authorization': `Bearer ${token}`,
             'content-type': 'application/json'
           },
+          data: imageBase64,
           success: (res) => {
+            console.log('【OCR Base64识别结果】', res.data);
             if (res.data.code === 200) {
               resolve(res.data.data);
             } else {
