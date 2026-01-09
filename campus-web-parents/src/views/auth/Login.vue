@@ -17,19 +17,15 @@
           />
         </el-form-item>
         
-        <el-form-item prop="code">
+        <el-form-item prop="password">
           <el-input
-            v-model="form.code"
-            placeholder="请输入验证码"
+            v-model="form.password"
+            type="password"
+            placeholder="请输入密码"
             size="large"
-            :prefix-icon="Message"
-          >
-            <template #append>
-              <el-button :disabled="countdown > 0" @click="sendCode">
-                {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
-              </el-button>
-            </template>
-          </el-input>
+            :prefix-icon="Lock"
+            show-password
+          />
         </el-form-item>
         
         <el-form-item>
@@ -75,20 +71,19 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Phone, Message, ChatDotRound } from '@element-plus/icons-vue'
+import { Phone, Lock, ChatDotRound } from '@element-plus/icons-vue'
 import { useUserStore } from '@shared/stores'
-import { login, sendCode as sendCodeApi } from '@shared/api/auth'
+import { login } from '@shared/api/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
 
 const formRef = ref(null)
 const loading = ref(false)
-const countdown = ref(0)
 
 const form = reactive({
   phone: '',
-  code: ''
+  password: ''
 })
 
 const rules = {
@@ -96,33 +91,10 @@ const rules = {
     { required: true, message: '请输入手机号', trigger: 'blur' },
     { pattern: /^1\d{10}$/, message: '手机号格式不正确', trigger: 'blur' }
   ],
-  code: [
-    { required: true, message: '请输入验证码', trigger: 'blur' },
-    { len: 6, message: '验证码为6位数字', trigger: 'blur' }
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码至少6位', trigger: 'blur' }
   ]
-}
-
-const sendCode = async () => {
-  if (!form.phone || !/^1\d{10}$/.test(form.phone)) {
-    ElMessage.warning('请输入正确的手机号')
-    return
-  }
-  
-  try {
-    const res = await sendCodeApi({ phone: form.phone })
-    if (res.code === 200) {
-      ElMessage.success('验证码已发送')
-      countdown.value = 60
-      const timer = setInterval(() => {
-        countdown.value--
-        if (countdown.value <= 0) {
-          clearInterval(timer)
-        }
-      }, 1000)
-    }
-  } catch (error) {
-    ElMessage.error(error.message || '发送失败')
-  }
 }
 
 const handleLogin = async () => {
@@ -131,14 +103,22 @@ const handleLogin = async () => {
     
     loading.value = true
     const res = await login({
-      phone: form.phone,
-      code: form.code,
+      account: form.phone,
+      password: form.password,
+      loginType: 'password',
       role: 'parent'
     })
     
     if (res.code === 200) {
+      if (res.data.role !== 2 && res.data.role !== 0) { // 2 is parent, 0 is admin (optional check)
+         ElMessage.warning('非家长账号，请前往教师端登录')
+         loading.value = false
+         return
+      }
+
       userStore.setToken(res.data.token)
-      userStore.setUserInfo(res.data.user)
+      // LoginResponse 为扁平结构，直接作为 userInfo 使用
+      userStore.setUserInfo(res.data)
       ElMessage.success('登录成功')
       router.push('/')
     }

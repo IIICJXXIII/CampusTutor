@@ -17,7 +17,7 @@ export function checkIn(data) {
  * @param {Object} data - { longitude, latitude }
  */
 export function checkOut(id, data) {
-  return request.post(`/teaching/${id}/check-out`, data);
+  return request.post(`/teaching/check-out/${id}`, data);
 }
 
 /**
@@ -25,7 +25,7 @@ export function checkOut(id, data) {
  * @param {number} id - 课时记录ID
  */
 export function confirmLesson(id) {
-  return request.post(`/teaching/${id}/confirm`);
+  return request.post(`/teaching/confirm/${id}`);
 }
 
 /**
@@ -34,7 +34,7 @@ export function confirmLesson(id) {
  * @param {string} reason - 申诉原因
  */
 export function disputeLesson(id, reason) {
-  return request.post(`/teaching/${id}/dispute`, null, {
+  return request.post(`/teaching/dispute/${id}`, null, {
     params: { reason }
   });
 }
@@ -44,7 +44,7 @@ export function disputeLesson(id, reason) {
  * @param {Object} params - 分页参数
  */
 export function getMyLessons(params) {
-  return request.get('/teaching/my', { params });
+  return request.get('/teaching/my-records', { params });
 }
 
 /**

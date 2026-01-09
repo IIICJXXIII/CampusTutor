@@ -1,6 +1,7 @@
 package com.campus.module.user.controller;
 
 import com.campus.common.result.Result;
+import com.campus.common.context.UserContext;
 import com.campus.module.user.entity.SysUser;
 import com.campus.module.user.service.SysUserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +20,18 @@ import org.springframework.web.bind.annotation.*;
 public class SysUserController {
 
     private final SysUserService sysUserService;
+
+    @Operation(summary = "获取当前用户信息")
+    @GetMapping("/current")
+    public Result<SysUser> getCurrentUser() {
+        Long userId = UserContext.getUserId();
+        SysUser user = sysUserService.getById(userId);
+        if (user != null) {
+            user.setPassword(null);
+            user.setOpenid(null);
+        }
+        return Result.success(user);
+    }
 
     @Operation(summary = "根据ID获取用户信息")
     @GetMapping("/{id}")

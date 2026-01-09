@@ -7,7 +7,7 @@ import request from './request';
  * 获取钱包信息
  */
 export function getWalletInfo() {
-  return request.get('/wallet/');
+  return request.get('/wallet');
 }
 
 /**
