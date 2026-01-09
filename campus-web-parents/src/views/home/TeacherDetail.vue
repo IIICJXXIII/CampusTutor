@@ -159,14 +159,49 @@ const loadTutor = async () => {
   try {
     const res = await getPublicTutorProfile(route.params.id)
     if (res.code === 200) {
-      tutor.value = res.data
-      reviews.value = res.data?.reviews || []
+      const data = res.data || {}
+      // 后端字段 -> 前端展示字段映射与 JSON 解析
+      const subjects = typeof data.teachSubjects === 'string'
+        ? safeParseJson(data.teachSubjects, [])
+        : (data.teachSubjects || [])
+      const grades = typeof data.teachGrades === 'string'
+        ? safeParseJson(data.teachGrades, [])
+        : (data.teachGrades || [])
+      tutor.value = {
+        id: data.id,
+        userId: data.userId,
+        name: data.realName || data.name,
+        avatar: data.avatarUrl,
+        university: data.universityName,
+        major: data.major,
+        subjects,
+        grades,
+        minPrice: data.expectPrice,
+        maxPrice: data.expectPrice,
+        rating: data.rating,
+        totalHours: data.totalHours,
+        studentCount: data.studentCount,
+        introduction: data.introduction,
+        experience: data.experience,
+        schedules: data.scheduleConfig || [],
+        verified: data.certStatus === 2
+      }
+      reviews.value = data.reviews || []
     }
   } catch (error) {
     console.error('加载教师信息失败:', error)
     ElMessage.error('加载失败')
   } finally {
     loading.value = false
+  }
+}
+
+// 安全解析 JSON 字符串
+const safeParseJson = (str, fallback) => {
+  try {
+    return JSON.parse(str)
+  } catch (e) {
+    return fallback
   }
 }
 

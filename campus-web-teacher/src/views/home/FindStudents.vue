@@ -207,7 +207,21 @@ const loadNearbyDemands = async () => {
     })
     
     if (res.code === 200) {
-      const list = res.data.records || res.data || []
+      const rawList = res.data?.records ?? res.data ?? []
+      // 后端字段 -> 前端展示字段映射
+      const list = rawList.map(item => ({
+        id: item.id,
+        title: item.title,
+        subject: item.subject,
+        grade: item.grade,
+        salary: item.expectPrice,
+        distance: item.distance || item.km || null,
+        description: item.detail || item.description,
+        frequency: item.scheduleRequire ? parseSchedule(item.scheduleRequire) : '',
+        address: item.address,
+        status: item.status,
+        teachMode: item.teachMode
+      }))
       if (page.value === 1) {
         demands.value = list
       } else {
@@ -224,6 +238,20 @@ const loadNearbyDemands = async () => {
     console.error('加载需求失败:', error)
   } finally {
     loading.value = false
+  }
+}
+
+// 将后端保存的 scheduleRequire JSON 字符串转成简短文本
+const parseSchedule = (value) => {
+  if (!value) return ''
+  try {
+    const arr = typeof value === 'string' ? JSON.parse(value) : value
+    if (Array.isArray(arr)) {
+      return arr.join('，')
+    }
+    return ''
+  } catch (e) {
+    return ''
   }
 }
 

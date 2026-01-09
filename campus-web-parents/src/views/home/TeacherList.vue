@@ -108,8 +108,19 @@ const loadTutors = async () => {
     }
     const res = await getTutorList(params)
     if (res.code === 200) {
-      tutors.value = res.data?.records || []
-      total.value = res.data?.total || 0
+      const records = res.data?.records ?? res.data ?? []
+      tutors.value = records.map(item => ({
+        id: item.id,
+        userId: item.userId,
+        name: item.realName || item.name,
+        avatar: item.avatarUrl,
+        university: item.universityName,
+        subjects: item.teachSubjects || [],
+        minPrice: item.expectPrice,
+        rating: item.rating,
+        orderCount: item.orderCount
+      }))
+      total.value = res.data?.total ?? records.length ?? 0
     }
   } catch (error) {
     console.error('加载教师列表失败:', error)
