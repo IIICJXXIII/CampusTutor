@@ -51,4 +51,12 @@ public class OcrController {
         String text = ocrService.recognizeGeneral(imageUrl);
         return text != null ? Result.success(text) : Result.fail("识别失败");
     }
+
+    @Operation(summary = "识别学生证(Base64)", description = "使用Base64编码图片识别学生证，支持本地开发环境")
+    @PostMapping("/student-card-base64")
+    public Result<OcrResultDTO> recognizeStudentCardByBase64(
+            @Parameter(description = "学生证图片Base64编码") @RequestBody String imageBase64) {
+        OcrResultDTO result = ocrService.recognizeStudentCardByBase64(imageBase64);
+        return result.getSuccess() ? Result.success(result) : Result.fail(result.getErrorMsg());
+    }
 }
