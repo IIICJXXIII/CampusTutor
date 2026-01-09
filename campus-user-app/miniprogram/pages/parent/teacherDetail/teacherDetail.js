@@ -61,11 +61,15 @@ Page({
   // 加载教师课表
   async loadTutorSchedule(tutorId) {
     try {
-      // 使用教师公开详情中的schedule字段，或单独API
-      const result = await request.get(`${api.host}/api/tutor/${tutorId}/schedule`);
-      if (result && Array.isArray(result)) {
-        this.parseScheduleFromServer(result);
-      }
+      // 暂时注释掉不存在的API调用
+      // const result = await request.get(`${api.host}/api/tutor/${tutorId}/schedule`);
+      // if (result && Array.isArray(result)) {
+      //   this.parseScheduleFromServer(result);
+      // }
+      console.log('课表API暂时不可用，使用模拟数据');
+      // 使用模拟数据
+      const mockData = [];
+      this.parseScheduleFromServer(mockData);
     } catch (err) {
       console.error('加载课表失败:', err);
     }
@@ -199,6 +203,18 @@ Page({
       wx.previewImage({ current, urls });
     }
   },
+  
+  // 处理图片加载错误
+  handleImageError(e) {
+    const { index } = e.currentTarget.dataset;
+    const urls = [...this.data.tutor.certificateUrlsList];
+    urls[index] = '/static/images/default-cert.png';
+    
+    const tutor = { ...this.data.tutor };
+    tutor.certificateUrlsList = urls;
+    
+    this.setData({ tutor });
+  },
 
   // 立即预约
   handleBook() {
@@ -212,11 +228,11 @@ Page({
       return;
     }
 
-    // 传递必要信息到下单页
+    // 传递必要信息到下单页，确保价格不为undefined
     const orderData = {
       tutorId: tutor.id,
       realName: tutor.realName,
-      price: tutor.expectPrice,
+      price: tutor.expectPrice || 0,
       // 默认选中第一个科目，如果没有则留空
       subject: tutor.teachSubjectsList && tutor.teachSubjectsList.length > 0 ? tutor.teachSubjectsList[0] : ''
     };

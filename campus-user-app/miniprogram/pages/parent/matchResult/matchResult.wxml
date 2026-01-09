@@ -17,6 +17,16 @@
 
   <view class="header-placeholder"></view>
 
+  <!-- 排序选择器 -->
+  <view class="sort-container">
+    <picker bindchange="onSortChange" value="{{activeSort}}" range="{{sortOptions}}" range-key="label">
+      <view class="sort-picker">
+        <text>排序：{{sortOptions[activeSort].label}}</text>
+        <image class="sort-arrow" src="/static/images/arrow-down.png" mode="aspectFit"></image>
+      </view>
+    </picker>
+  </view>
+
   <view class="list-container">
     <block wx:for="{{tutorList}}" wx:key="id">
       <view class="tutor-card" bindtap="goToDetail" data-id="{{item.id}}">
@@ -80,17 +90,6 @@
             <text class="mode-tag" wx:if="{{item.canOnline}}">💻 可网课</text>
           </view>
         </view>
-      </view>
-    </block>
-
-    <block wx:if="{{!loading && tutorList.length === 0}}">
-      <view class="empty-state" wx:if="{{!fallbackMessage}}">
-        <image class="empty-img" src="/static/images/empty.png" wx:if="{{false}}"></image>
-        <text>暂无符合条件的老师，换个条件试试？</text>
-      </view>
-      <view class="empty-state" wx:elif="{{fallbackMessage}}">
-        <text>{{fallbackMessage}}</text>
-        <button class="btn refresh" bindtap="refreshList">重新加载</button>
       </view>
     </block>
 
