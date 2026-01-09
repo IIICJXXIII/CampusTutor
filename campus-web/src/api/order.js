@@ -60,3 +60,19 @@ export function cancelOrder(id, reason) {
 export function completeOrder(id) {
   return request.post(`/order/${id}/complete`);
 }
+
+/**
+ * 教师接单
+ * @param {Object} data - { demandId: number, totalHours?: number, remark?: string }
+ */
+export function acceptDemand(data) {
+  return request.post('/order/accept', data);
+}
+
+/**
+ * 家长确认订单
+ * @param {number} id - 订单ID
+ */
+export function confirmOrder(id) {
+  return request.post(`/order/${id}/confirm`);
+}

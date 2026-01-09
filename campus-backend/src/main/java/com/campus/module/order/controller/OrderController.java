@@ -3,6 +3,7 @@ package com.campus.module.order.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.campus.common.context.UserContext;
 import com.campus.common.result.Result;
+import com.campus.module.order.dto.AcceptDemandRequest;
 import com.campus.module.order.dto.CreateOrderRequest;
 import com.campus.module.order.dto.PayOrderRequest;
 import com.campus.module.order.entity.CourseOrder;
@@ -30,6 +31,22 @@ public class OrderController {
         Long parentId = UserContext.getUserId();
         Long orderId = orderService.createOrder(parentId, request);
         return Result.success(orderId);
+    }
+
+    @Operation(summary = "教师接单", description = "教师基于需求帖接单，创建待确认订单")
+    @PostMapping("/accept")
+    public Result<Long> accept(@Valid @RequestBody AcceptDemandRequest request) {
+        Long tutorId = UserContext.getUserId();
+        Long orderId = orderService.acceptDemand(tutorId, request);
+        return Result.success(orderId);
+    }
+
+    @Operation(summary = "家长确认订单", description = "家长确认教师接单，订单变为待支付状态")
+    @PostMapping("/{id}/confirm")
+    public Result<Void> confirm(@PathVariable Long id) {
+        Long parentId = UserContext.getUserId();
+        orderService.confirmOrder(parentId, id);
+        return Result.success();
     }
 
     @Operation(summary = "支付订单")

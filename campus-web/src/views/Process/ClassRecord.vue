@@ -10,85 +10,93 @@ const userStore = useUserStore()
 const loading = ref(false)
 
 // 用户角色
-const userRole = computed(() => userStore.userRole || 'parent')
+const isTeacher = computed(() => userStore.isTutor)
+const isParent = computed(() => userStore.isParent)
 
 // 当前月份
 const now = new Date()
-const currentMonth = ref(`${now.getFullYear()}年${now.getMonth() + 1}月`)
+const currentYear = ref(now.getFullYear())
+const currentMonthIndex = ref(now.getMonth())
+const currentMonth = computed(() => `${currentYear.value}年${currentMonthIndex.value + 1}月`)
 
 // 课时记录列表
 const teachingRecords = ref([])
 
-// 日历数据 - 根据真实数据生成
+// 获取当月的日历数据（完整一个月）
 const calendarDays = computed(() => {
-  const days = []
+  const year = currentYear.value
+  const month = currentMonthIndex.value
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const firstDayWeek = new Date(year, month, 1).getDay() // 0-6, 0=周日
   const today = now.getDate()
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
   
   // 获取本月有课的日期
-  const lessonDays = new Set()
-  const confirmedDays = new Set()
+  const lessonDays = new Map() // day => status (0=待确认, 1=已确认)
   teachingRecords.value.forEach(record => {
     if (record.startTime) {
       const recordDate = new Date(record.startTime)
-      if (recordDate.getMonth() === now.getMonth()) {
+      if (recordDate.getFullYear() === year && recordDate.getMonth() === month) {
         const day = recordDate.getDate()
-        if (record.status === 1) {
-          confirmedDays.add(day)
-        } else {
-          lessonDays.add(day)
+        // 保留最高优先级状态
+        const existing = lessonDays.get(day)
+        if (existing === undefined || record.status === 0) {
+          lessonDays.set(day, record.status)
         }
       }
     }
   })
   
-  for (let i = 1; i <= Math.min(daysInMonth, 7); i++) {
+  const days = []
+  
+  // 填充月初空白
+  for (let i = 0; i < firstDayWeek; i++) {
+    days.push({ day: '', status: 'empty' })
+  }
+  
+  // 填充日期
+  for (let i = 1; i <= daysInMonth; i++) {
     let status = 'none'
-    if (i === today) {
+    if (isCurrentMonth && i === today) {
       status = 'today'
-    } else if (confirmedDays.has(i)) {
-      status = 'done'
-    } else if (lessonDays.has(i)) {
-      status = 'pending'
+    }
+    if (lessonDays.has(i)) {
+      status = lessonDays.get(i) === 1 ? 'done' : 'pending'
     }
     days.push({ day: i, status })
   }
+  
   return days
 })
 
-// 状态配置
-const statusConfig = {
-  done: { type: 'success', label: '已完成' },
-  pending: { type: 'primary', label: '待上课' },
-  cancel: { type: 'info', label: '已取消' },
-  today: { type: 'warning', label: '今日' },
-  none: { type: '', label: '' }
-}
-
-// 今日课程数据 - 从真实数据中获取最近的课程
-const todayClass = computed(() => {
-  if (teachingRecords.value.length === 0) {
-    return null
-  }
-  // 找到最近一条未确认的课时记录
-  const pendingRecord = teachingRecords.value.find(r => r.status === 0)
-  if (pendingRecord) {
-    return {
-      id: pendingRecord.id,
-      orderId: pendingRecord.orderId,
-      subject: `第${pendingRecord.lessonIndex}节课`,
-      time: pendingRecord.startTime ? new Date(pendingRecord.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '待开始',
-      location: '上课地点',
-      status: pendingRecord.endTime ? 'checkin' : 'ready',
-      checkinImg: pendingRecord.clockInImg,
-      checkinTime: pendingRecord.startTime ? new Date(pendingRecord.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : null,
-      checkinLocation: pendingRecord.clockInLat ? 'GPS已核验' : null,
-      contentSummary: pendingRecord.contentSummary,
-      homeworkAssigned: pendingRecord.homeworkAssigned
-    }
-  }
-  return null
+// 待处理课程列表（状态=0的课时）
+const pendingLessons = computed(() => {
+  return teachingRecords.value
+    .filter(r => r.status === 0)
+    .map(r => ({
+      id: r.id,
+      orderId: r.orderId,
+      subject: r.subject || '课程',
+      grade: r.grade || '',
+      lessonIndex: r.lessonIndex,
+      tutorName: r.tutorName || '教师',
+      studentName: r.studentName || '学生',
+      startTime: r.startTime ? formatDateTime(r.startTime) : '待开始',
+      endTime: r.endTime ? formatDateTime(r.endTime) : null,
+      hasCheckedIn: !!r.clockInImg,
+      clockInImg: r.clockInImg,
+      clockInTime: r.startTime ? formatDateTime(r.startTime) : null,
+      contentSummary: r.contentSummary,
+      homeworkAssigned: r.homeworkAssigned
+    }))
 })
+
+// 格式化日期时间
+const formatDateTime = (dt) => {
+  if (!dt) return ''
+  const d = new Date(dt)
+  return `${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`
+}
 
 // 获取我的课时记录
 const fetchRecords = async () => {
@@ -109,42 +117,51 @@ onMounted(() => {
   fetchRecords()
 })
 
-// 教师打卡
-const handleCheckIn = async () => {
-  ElMessage.info('正在获取位置信息...')
-  
-  // 获取GPS位置
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          // 这里需要orderId，暂时使用最近一个待上课的订单
-          // 实际场景应该从订单列表选择
-          ElMessage.warning('请从订单列表中选择要打卡的课程')
-        } catch (error) {
-          ElMessage.error('打卡失败：' + error.message)
-        }
-      },
-      () => {
-        ElMessage.error('无法获取位置信息，请检查GPS权限')
-      }
-    )
+// 切换月份
+const prevMonth = () => {
+  if (currentMonthIndex.value === 0) {
+    currentYear.value--
+    currentMonthIndex.value = 11
   } else {
-    ElMessage.error('浏览器不支持定位功能')
+    currentMonthIndex.value--
   }
 }
 
-// 家长确认
-const handleConfirm = async () => {
-  if (!todayClass.value?.id) {
-    ElMessage.warning('没有待确认的课时')
-    return
+const nextMonth = () => {
+  if (currentMonthIndex.value === 11) {
+    currentYear.value++
+    currentMonthIndex.value = 0
+  } else {
+    currentMonthIndex.value++
   }
-  
+}
+
+// 教师打卡
+const handleCheckIn = async (lesson) => {
   try {
-    await confirmLesson(todayClass.value.id)
-    ElMessage.success('确认成功！资金已释放给老师')
-    fetchRecords() // 刷新数据
+    // 开发阶段：不强制要求地理位置，使用默认坐标
+    const latitude = 39.9042
+    const longitude = 116.4074
+    
+    await checkIn({
+      orderId: lesson.orderId,
+      latitude,
+      longitude,
+      photoUrl: 'dev-auto-checkin'
+    })
+    ElMessage.success('打卡成功！')
+    fetchRecords()
+  } catch (error) {
+    ElMessage.error('打卡失败：' + (error.response?.data?.message || error.message))
+  }
+}
+
+// 家长确认课时
+const handleConfirm = async (lesson) => {
+  try {
+    await confirmLesson(lesson.id)
+    ElMessage.success('确认成功！资金已释放')
+    fetchRecords()
   } catch (error) {
     ElMessage.error('确认失败：' + error.message)
   }
@@ -155,47 +172,53 @@ const getDayClass = (status) => {
   const classMap = {
     done: 'day-done',
     pending: 'day-pending',
-    cancel: 'day-cancel',
     today: 'day-today',
-    none: 'day-none'
+    none: 'day-none',
+    empty: 'day-empty'
   }
   return classMap[status] || ''
 }
+
+const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 </script>
 
 <template>
   <div class="class-record-page" v-loading="loading">
     <!-- 页面头部 -->
     <div class="page-header">
-      <h1 class="page-title">我的课表</h1>
+      <h1 class="page-title">{{ isTeacher ? '我的课表' : '孩子课表' }}</h1>
+      <p class="page-subtitle">{{ isTeacher ? '管理您的教学安排' : '查看孩子的上课记录' }}</p>
     </div>
 
     <!-- 日历区域 -->
     <el-card class="calendar-card" shadow="never">
       <template #header>
         <div class="calendar-header">
+          <el-button text @click="prevMonth"><el-icon><ArrowLeft /></el-icon></el-button>
           <div class="month-title">
             <el-icon><Calendar /></el-icon>
             <span>{{ currentMonth }}</span>
           </div>
-          <div class="legend">
-            <span class="legend-item">
-              <span class="dot dot-success"></span>
-              完成
-            </span>
-            <span class="legend-item">
-              <span class="dot dot-primary"></span>
-              待上
-            </span>
-          </div>
+          <el-button text @click="nextMonth"><el-icon><ArrowRight /></el-icon></el-button>
+        </div>
+        <div class="legend">
+          <span class="legend-item"><span class="dot dot-success"></span>已完成</span>
+          <span class="legend-item"><span class="dot dot-primary"></span>待确认</span>
+          <span class="legend-item"><span class="dot dot-today"></span>今日</span>
         </div>
       </template>
 
-      <div class="calendar-days">
+      <!-- 星期标题 -->
+      <div class="calendar-week-header">
+        <div v-for="w in weekDays" :key="w" class="week-day">{{ w }}</div>
+      </div>
+      
+      <!-- 日期网格 -->
+      <div class="calendar-grid">
         <div 
-          v-for="d in calendarDays" 
-          :key="d.day" 
-          class="day-item"
+          v-for="(d, i) in calendarDays" 
+          :key="i" 
+          class="day-cell"
           :class="getDayClass(d.status)"
         >
           {{ d.day }}
@@ -203,104 +226,67 @@ const getDayClass = (status) => {
       </div>
     </el-card>
 
-    <!-- 今日课程 -->
-    <div class="today-section">
-      <h3 class="section-title">待处理课程</h3>
+    <!-- 待处理课程 -->
+    <div class="lessons-section">
+      <h3 class="section-title">待处理课程 ({{ pendingLessons.length }})</h3>
       
-      <!-- 无待处理课程 -->
-      <el-empty v-if="!todayClass" description="暂无待处理课程">
+      <el-empty v-if="pendingLessons.length === 0" description="暂无待处理课程">
         <el-button type="primary" @click="router.push('/mine/orders')">查看订单</el-button>
       </el-empty>
       
-      <el-card v-else class="lesson-card" shadow="hover">
-        <!-- 课程头部 -->
-        <div class="lesson-header">
-          <div class="lesson-info">
-            <h2 class="lesson-subject">{{ todayClass.subject }}</h2>
-            <p class="lesson-time">
-              <el-icon><Clock /></el-icon>
-              {{ todayClass.time }}
-            </p>
-          </div>
-          <el-tag :type="todayClass.status === 'confirmed' ? 'success' : 'primary'">
-            {{ todayClass.status === 'confirmed' ? '已结算' : '进行中' }}
-          </el-tag>
-        </div>
-
-        <!-- 课程详情 -->
-        <div class="lesson-detail">
-          <div class="detail-item">
-            <el-icon><Location /></el-icon>
-            <span>{{ todayClass.location }}</span>
+      <div v-else class="lesson-list">
+        <el-card v-for="lesson in pendingLessons" :key="lesson.id" class="lesson-card" shadow="hover">
+          <div class="lesson-header">
+            <div class="lesson-info">
+              <h3 class="lesson-subject">{{ lesson.grade }} {{ lesson.subject }} · 第{{ lesson.lessonIndex }}节</h3>
+              <p class="lesson-time"><el-icon><Clock /></el-icon> {{ lesson.startTime }}</p>
+            </div>
+            <el-tag :type="lesson.hasCheckedIn ? 'success' : 'warning'" size="small">
+              {{ lesson.hasCheckedIn ? '已打卡' : '待打卡' }}
+            </el-tag>
           </div>
           
-          <div class="detail-item">
-            <el-icon><User /></el-icon>
-            <span>{{ userRole === 'teacher' ? `学生: ${todayClass.student}` : `教师: ${todayClass.teacher}` }}</span>
+          <div class="lesson-detail">
+            <span v-if="isTeacher">学生：{{ lesson.studentName }}</span>
+            <span v-else>教师：{{ lesson.tutorName }}</span>
           </div>
-        </div>
 
-        <!-- 打卡信息 -->
-        <div v-if="todayClass.status !== 'ready'" class="checkin-info">
-          <div class="checkin-image">
-            <el-avatar :size="48" :src="todayClass.checkinImg" shape="square" />
+          <!-- 打卡信息 -->
+          <div v-if="lesson.hasCheckedIn" class="checkin-info">
+            <el-avatar :size="40" :src="lesson.clockInImg" shape="square" />
+            <div class="checkin-text">
+              <p class="checkin-title">教师已打卡</p>
+              <p class="checkin-desc">{{ lesson.clockInTime }}</p>
+            </div>
           </div>
-          <div class="checkin-text">
-            <p class="checkin-title">教师已打卡</p>
-            <p class="checkin-desc">
-              {{ todayClass.checkinTime }} 打卡于 {{ todayClass.checkinLocation }}
-            </p>
+
+          <div class="lesson-actions">
+            <!-- 教师操作 -->
+            <template v-if="isTeacher">
+              <el-button 
+                v-if="!lesson.hasCheckedIn"
+                type="primary" 
+                @click="handleCheckIn(lesson)"
+              >
+                <el-icon><Location /></el-icon> 打卡上课
+              </el-button>
+              <el-tag v-else type="info">等待家长确认</el-tag>
+            </template>
+            
+            <!-- 家长操作 -->
+            <template v-else>
+              <el-button 
+                v-if="lesson.hasCheckedIn"
+                type="warning" 
+                @click="handleConfirm(lesson)"
+              >
+                <el-icon><Check /></el-icon> 确认课时
+              </el-button>
+              <el-tag v-else type="info">等待老师打卡</el-tag>
+            </template>
           </div>
-        </div>
-
-        <!-- 操作按钮 -->
-        <div class="lesson-actions">
-          <!-- 教师视角 -->
-          <template v-if="userRole === 'teacher'">
-            <el-button 
-              v-if="todayClass.status === 'ready'"
-              type="primary" 
-              size="large"
-              class="action-btn"
-              @click="handleCheckIn"
-            >
-              <el-icon class="mr-1"><Location /></el-icon>
-              上课打卡
-            </el-button>
-            <el-button 
-              v-else 
-              disabled 
-              size="large"
-              class="action-btn"
-            >
-              已完成打卡
-            </el-button>
-          </template>
-
-          <!-- 家长视角 -->
-          <template v-else>
-            <el-button 
-              v-if="todayClass.status === 'checkin'"
-              type="warning" 
-              size="large"
-              class="action-btn"
-              @click="handleConfirm"
-            >
-              <el-icon class="mr-1"><CircleCheck /></el-icon>
-              确认课时 (支付结算)
-            </el-button>
-            <el-result 
-              v-else-if="todayClass.status === 'confirmed'"
-              icon="success"
-              title="已确认，资金已释放"
-              class="result-mini"
-            />
-            <el-text v-else type="info" class="waiting-text">
-              等待老师打卡...
-            </el-text>
-          </template>
-        </div>
-      </el-card>
+        </el-card>
+      </div>
     </div>
   </div>
 </template>
@@ -308,23 +294,29 @@ const getDayClass = (status) => {
 <style lang="scss" scoped>
 .class-record-page {
   min-height: 100vh;
-  background: $bg-light;
-  padding-bottom: $spacing-xl;
+  background: #f5f7fa;
+  padding-bottom: 80px;
 }
 
 .page-header {
-  background: linear-gradient(135deg, $primary-color 0%, #667eea 100%);
-  padding: $spacing-xl $spacing-lg;
+  background: linear-gradient(135deg, #409eff 0%, #667eea 100%);
+  padding: 24px 16px;
   color: #fff;
 
   .page-title {
     font-size: 24px;
     font-weight: 700;
+    margin-bottom: 4px;
+  }
+  
+  .page-subtitle {
+    font-size: 14px;
+    opacity: 0.9;
   }
 }
 
 .calendar-card {
-  margin: $spacing-lg;
+  margin: 16px;
   border-radius: 16px;
 
   .calendar-header {
@@ -335,191 +327,163 @@ const getDayClass = (status) => {
     .month-title {
       display: flex;
       align-items: center;
-      gap: $spacing-sm;
+      gap: 8px;
       font-size: 18px;
       font-weight: 600;
     }
-
-    .legend {
-      display: flex;
-      gap: $spacing-md;
-      font-size: 12px;
-      color: $text-muted;
-
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-
-      .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-
-        &.dot-success { background: $success-color; }
-        &.dot-primary { background: $primary-color; }
-      }
-    }
   }
 
-  .calendar-days {
+  .legend {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: #909399;
 
-    .day-item {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
+    .legend-item {
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      font-weight: 600;
-      border: 2px solid transparent;
-      transition: all 0.3s;
+      gap: 4px;
+    }
 
-      &.day-done {
-        background: rgba($success-color, 0.1);
-        color: $success-color;
-        border-color: rgba($success-color, 0.2);
-      }
-
-      &.day-pending {
-        background: rgba($primary-color, 0.1);
-        color: $primary-color;
-        border-color: rgba($primary-color, 0.2);
-      }
-
-      &.day-cancel {
-        background: $bg-light;
-        color: $text-muted;
-        border-color: $border-color;
-      }
-
-      &.day-today {
-        background: $warning-color;
-        color: #fff;
-        box-shadow: $shadow-md;
-      }
-
-      &.day-none {
-        color: #d1d5db;
-      }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      &.dot-success { background: #67c23a; }
+      &.dot-primary { background: #409eff; }
+      &.dot-today { background: #e6a23c; }
     }
   }
 }
 
-.today-section {
-  padding: 0 $spacing-lg;
+.calendar-week-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 12px;
+  color: #909399;
+  padding: 8px 0;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 8px 0;
+}
+
+.day-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.day-done {
+    background: rgba(103, 194, 58, 0.2);
+    color: #67c23a;
+    font-weight: 600;
+  }
+
+  &.day-pending {
+    background: rgba(64, 158, 255, 0.2);
+    color: #409eff;
+    font-weight: 600;
+  }
+
+  &.day-today {
+    background: #e6a23c;
+    color: #fff;
+    font-weight: 700;
+  }
+
+  &.day-none {
+    color: #c0c4cc;
+  }
+
+  &.day-empty {
+    visibility: hidden;
+  }
+}
+
+.lessons-section {
+  padding: 0 16px;
 
   .section-title {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 600;
-    color: $text-muted;
-    margin-bottom: $spacing-md;
+    color: #303133;
+    margin-bottom: 12px;
   }
+}
+
+.lesson-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .lesson-card {
-  border-radius: 16px;
+  border-radius: 12px;
 
   .lesson-header {
-    background: linear-gradient(135deg, $primary-color 0%, #667eea 100%);
-    margin: -20px -20px $spacing-lg -20px;
-    padding: $spacing-lg;
-    border-radius: 16px 16px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    color: #fff;
+    margin-bottom: 8px;
 
-    .lesson-info {
-      .lesson-subject {
-        font-size: 20px;
-        font-weight: 700;
-        margin-bottom: 4px;
-      }
-
-      .lesson-time {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 14px;
-        opacity: 0.9;
-      }
+    .lesson-subject {
+      font-size: 16px;
+      font-weight: 600;
+      color: #303133;
     }
 
-    :deep(.el-tag) {
-      background: rgba(255, 255, 255, 0.2);
-      border: none;
-      color: #fff;
+    .lesson-time {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      color: #909399;
+      margin-top: 4px;
     }
   }
 
   .lesson-detail {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-sm;
-    margin-bottom: $spacing-lg;
-
-    .detail-item {
-      display: flex;
-      align-items: center;
-      gap: $spacing-sm;
-      color: $text-secondary;
-      font-size: 14px;
-    }
+    font-size: 13px;
+    color: #606266;
+    margin-bottom: 12px;
   }
 
   .checkin-info {
     display: flex;
     align-items: center;
-    gap: $spacing-md;
-    padding: $spacing-md;
-    background: $bg-light;
-    border-radius: 12px;
-    border: 1px dashed $border-color;
-    margin-bottom: $spacing-lg;
+    gap: 12px;
+    padding: 12px;
+    background: #f5f7fa;
+    border-radius: 8px;
+    margin-bottom: 12px;
 
-    .checkin-text {
-      .checkin-title {
-        font-size: 14px;
-        font-weight: 600;
-        color: $text-primary;
-      }
+    .checkin-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #303133;
+    }
 
-      .checkin-desc {
-        font-size: 12px;
-        color: $text-muted;
-        margin-top: 2px;
-      }
+    .checkin-desc {
+      font-size: 12px;
+      color: #909399;
     }
   }
 
   .lesson-actions {
-    .action-btn {
-      width: 100%;
-      height: 48px;
-      font-size: 16px;
-      font-weight: 600;
-      border-radius: 12px;
-    }
-
-    .result-mini {
-      padding: $spacing-sm 0;
-
-      :deep(.el-result__title) {
-        font-size: 14px;
-        margin-top: $spacing-xs;
-      }
-    }
-
-    .waiting-text {
-      display: block;
-      text-align: center;
-      padding: $spacing-md;
-    }
+    display: flex;
+    gap: 8px;
   }
 }
 </style>
