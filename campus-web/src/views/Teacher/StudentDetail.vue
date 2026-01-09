@@ -1,14 +1,16 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getDemandDetail } from '@/api/demand'
+import { acceptDemand } from '@/api/order'
 import { useUserStore } from '@/stores/index'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const loading = ref(false)
+const accepting = ref(false)
 
 // 需求详情数据
 const demand = ref({
@@ -25,7 +27,8 @@ const demand = ref({
   publishTime: '',
   teachMode: '面授',
   gender: '不限',
-  studentAge: 0
+  studentAge: 0,
+  status: 1 // 需求状态
 })
 
 // 获取需求详情
@@ -45,7 +48,8 @@ const fetchDemandDetail = async () => {
         desc: data.detail || '',
         location: data.address || '',
         idVerified: true, // 假设能发布需求的都是验证过的
-        teachMode: data.teachMode === 1 ? '线下上门' : (data.teachMode === 2 ? '在线网课' : '不限')
+        teachMode: data.teachMode === 1 ? '线下上门' : (data.teachMode === 2 ? '在线网课' : '不限'),
+        status: data.status
       }
     }
   } catch (error) {
@@ -60,6 +64,14 @@ const isSelf = computed(() => {
   return userStore.userId && demand.value.publisherId === userStore.userId
 })
 
+// 判断是否是教师角色
+const isTutor = computed(() => userStore.isTutor)
+
+// 判断需求是否可接单（上架中且未被接单）
+const canAccept = computed(() => {
+  return demand.value.status === 1 && !isSelf.value && isTutor.value
+})
+
 // 联系家长
 const handleContact = () => {
   if (isSelf.value) {
@@ -71,6 +83,34 @@ const handleContact = () => {
     return
   }
   router.push(`/chat/${demand.value.publisherId}`)
+}
+
+// 立即接单
+const handleAccept = async () => {
+  try {
+    await ElMessageBox.confirm(
+      '确认接单后，将创建待确认订单，等待家长确认后可进行支付。',
+      '确认接单',
+      { confirmButtonText: '确认接单', cancelButtonText: '取消', type: 'info' }
+    )
+    
+    accepting.value = true
+    const res = await acceptDemand({ demandId: Number(route.params.id) })
+    if (res.code === 200) {
+      ElMessage.success('接单成功，等待家长确认')
+      // 刷新需求状态
+      fetchDemandDetail()
+    } else {
+      ElMessage.error(res.message || '接单失败')
+    }
+  } catch (err) {
+    if (err !== 'cancel') {
+      console.error('接单失败:', err)
+      ElMessage.error(err.message || '接单失败')
+    }
+  } finally {
+    accepting.value = false
+  }
 }
 
 // 返回
@@ -182,9 +222,22 @@ onMounted(() => {
 
     <!-- 底部操作栏 -->
     <div class="bottom-action">
-      <el-button type="primary" size="large" @click="handleContact" :disabled="isSelf">
-        <el-icon class="mr-1"><Promotion /></el-icon>
-        {{ isSelf ? '这是您发布的需求' : '立即沟通' }}
+      <el-button size="large" @click="handleContact" :disabled="isSelf">
+        <el-icon class="mr-1"><ChatDotRound /></el-icon>
+        联系家长
+      </el-button>
+      <el-button 
+        v-if="canAccept" 
+        type="primary" 
+        size="large" 
+        @click="handleAccept"
+        :loading="accepting"
+      >
+        <el-icon class="mr-1"><Check /></el-icon>
+        立即接单
+      </el-button>
+      <el-button v-else-if="demand.status === 2" type="info" size="large" disabled>
+        已被接单
       </el-button>
     </div>
   </div>
