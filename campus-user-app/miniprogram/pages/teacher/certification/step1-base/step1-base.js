@@ -22,6 +22,13 @@ Page({
     if (cachedData) {
       this.setData({ formData: cachedData });
     }
+    
+    // 设置当前年份和最大入学年份（当前年份-1）
+    const currentYear = new Date().getFullYear();
+    this.setData({
+      currentYear: currentYear,
+      maxEnrollYear: currentYear - 1
+    });
   },
 
   handleInput(e) {
@@ -39,8 +46,21 @@ Page({
   },
 
   handleYearChange(e) {
+    const selectedYear = e.detail.value;
+    const currentYear = new Date().getFullYear();
+    const maxYear = currentYear - 1;
+    
+    // 额外验证，确保不选择2026年及以后的年份
+    if (parseInt(selectedYear) > maxYear) {
+      wx.showToast({
+        title: '无效的入学年份',
+        icon: 'none'
+      });
+      return;
+    }
+    
     this.setData({
-      'formData.enrollYear': e.detail.value
+      'formData.enrollYear': selectedYear
     });
   },
 

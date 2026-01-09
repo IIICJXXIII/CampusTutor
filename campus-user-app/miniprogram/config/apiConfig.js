@@ -31,8 +31,7 @@ const api = {
     profile: `${API_HOST}/api/tutor/profile`,
     certification: `${API_HOST}/api/tutor/certification`,
     schedule: `${API_HOST}/api/tutor/schedule`,
-    // 教师公开详情 (后端为 /api/tutor/public/{id})
-    detail: (id) => `${API_HOST}/api/tutor/public/${id}`,
+    detail: (id) => `${API_HOST}/api/tutor/${id}`,
   },
   // 家长模块 (Parent)
   parent: {
@@ -46,7 +45,6 @@ const api = {
     my: `${API_HOST}/api/demand/my`,
     nearby: `${API_HOST}/api/demand/nearby`,
     detail: (id) => `${API_HOST}/api/demand/${id}`,
-    match: (id) => `${API_HOST}/api/demand/${id}/match`,
   },
   // 匹配模块 (Match)
   match: {
@@ -77,14 +75,6 @@ const api = {
     orderRecords: (orderId) => `${API_HOST}/api/teaching/records/${orderId}`,
     detail: (recordId) => `${API_HOST}/api/teaching/record/${recordId}`,
   },
-  // OCR识别模块
-  ocr: {
-    studentCard: `${API_HOST}/api/ocr/student-card`,
-    studentCardBase64: `${API_HOST}/api/ocr/student-card-base64`,
-    idCardFront: `${API_HOST}/api/ocr/id-card/front`,
-    idCardBack: `${API_HOST}/api/ocr/id-card/back`,
-    general: `${API_HOST}/api/ocr/general`
-  },
   // 学习辅助模块（错题本）
   study: {
     wrongbook: {
@@ -92,6 +82,13 @@ const api = {
       detail: (id) => `${API_HOST}/api/study/wrongbook/${id}`,
       resolve: (id) => `${API_HOST}/api/study/wrongbook/${id}/resolve`
     }
+  },
+  // 地图模块 (Map)
+  map: {
+    distance: `${API_HOST}/api/map/distance`,
+    direction: `${API_HOST}/api/map/direction`,
+    geocode: `${API_HOST}/api/map/geocoder`,
+    reverseGeocode: `${API_HOST}/api/map/geocoder/reverse`
   }
 };
 

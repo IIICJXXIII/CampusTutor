@@ -2,6 +2,7 @@
   <map 
     id="myMap" 
     class="map" 
+    provider="amap"
     latitude="{{latitude}}" 
     longitude="{{longitude}}" 
     markers="{{markers}}"
