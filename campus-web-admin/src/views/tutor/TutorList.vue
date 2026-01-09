@@ -158,6 +158,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { tutorApi } from '@/api'
 
 const loading = ref(false)
 const dialogVisible = ref(false)
@@ -176,31 +177,7 @@ const pagination = reactive({
   total: 0
 })
 
-// 模拟数据
-const tableData = ref([
-  { 
-    id: 1, realName: '张明', universityName: '北京大学', major: '计算机科学', 
-    education: 2, enrollYear: 2022, certStatus: 2, rating: 4.8, orderCount: 25,
-    teachSubjects: ['数学', '物理'], teachGrades: ['高一', '高二'],
-    expectPrice: 200, canVisit: true, canOnline: true,
-    introduction: '北大计算机专业在读，擅长数理化教学',
-    idCard: '110***********1234',
-    idCardFrontUrl: 'https://via.placeholder.com/200x120',
-    idCardBackUrl: 'https://via.placeholder.com/200x120',
-    studentCardUrl: 'https://via.placeholder.com/200x120'
-  },
-  { 
-    id: 2, realName: '李华', universityName: '清华大学', major: '软件工程', 
-    education: 3, enrollYear: 2021, certStatus: 2, rating: 4.9, orderCount: 32,
-    teachSubjects: ['编程', '数学'], teachGrades: ['初三', '高一'],
-    expectPrice: 250, canVisit: false, canOnline: true
-  },
-  { 
-    id: 3, realName: '王芳', universityName: '复旦大学', major: '英语', 
-    education: 2, enrollYear: 2023, certStatus: 1, rating: 5.0, orderCount: 0,
-    teachSubjects: ['英语'], teachGrades: ['小学', '初一']
-  }
-])
+const tableData = ref([])
 
 const getEducationText = (education) => {
   const texts = { 1: '专科', 2: '本科', 3: '硕士', 4: '博士' }
@@ -223,10 +200,21 @@ onMounted(() => {
 
 const fetchData = async () => {
   loading.value = true
-  setTimeout(() => {
-    pagination.total = 30
+  try {
+    const res = await tutorApi.getList({
+      page: pagination.page,
+      size: pagination.size,
+      keyword: searchForm.keyword || undefined,
+      certStatus: searchForm.certStatus ?? undefined,
+      education: searchForm.education ?? undefined
+    })
+    tableData.value = res.data.records || []
+    pagination.total = res.data.total || 0
+  } catch (error) {
+    console.error('获取教师列表失败:', error)
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 const handleSearch = () => {

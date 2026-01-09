@@ -34,11 +34,11 @@ const fillDemoAccount = (type) => {
   if (type === 'tutor') {
     // 教员账号：data.sql 中 id=101 的教员 张学霸
     form.account = '13800138101'
-    form.password = '123456'
+    form.password = 'test123456'
   } else if (type === 'parent') {
     // 家长账号：data.sql 中 id=201 的家长 子涵妈妈
     form.account = '13900139201'
-    form.password = '123456'
+    form.password = 'test123456'
   }
 }
 
@@ -178,7 +178,7 @@ const handleLogin = async () => {
             家长: 13900139201
           </el-tag>
         </div>
-        <p class="demo-password">密码均为: 123456</p>
+        <p class="demo-password">密码均为: test123456</p>
       </div>
 
       <!-- 底部链接 -->

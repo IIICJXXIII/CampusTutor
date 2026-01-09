@@ -131,6 +131,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { userApi } from '@/api'
 
 const loading = ref(false)
 const dialogVisible = ref(false)
@@ -149,14 +150,7 @@ const pagination = reactive({
   total: 0
 })
 
-// 模拟数据
-const tableData = ref([
-  { id: 1, username: '13800138001', nickname: '张老师', avatar: '', role: 1, status: 1, createTime: '2026-01-05 10:30:00' },
-  { id: 2, username: '13800138002', nickname: '李家长', avatar: '', role: 2, status: 1, createTime: '2026-01-05 11:20:00' },
-  { id: 3, username: '13800138003', nickname: '王老师', avatar: '', role: 1, status: 1, createTime: '2026-01-04 09:15:00' },
-  { id: 4, username: '13800138004', nickname: '刘家长', avatar: '', role: 2, status: 0, createTime: '2026-01-04 14:30:00' },
-  { id: 5, username: '13800138005', nickname: '陈老师', avatar: '', role: 1, status: 1, createTime: '2026-01-03 16:45:00' }
-])
+const tableData = ref([])
 
 onMounted(() => {
   fetchData()
@@ -164,11 +158,21 @@ onMounted(() => {
 
 const fetchData = async () => {
   loading.value = true
-  // TODO: 调用真实API
-  setTimeout(() => {
-    pagination.total = 50
+  try {
+    const res = await userApi.getList({
+      page: pagination.page,
+      size: pagination.size,
+      keyword: searchForm.keyword || undefined,
+      role: searchForm.role ?? undefined,
+      status: searchForm.status ?? undefined
+    })
+    tableData.value = res.data.records || []
+    pagination.total = res.data.total || 0
+  } catch (error) {
+    console.error('获取用户列表失败:', error)
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 const handleSearch = () => {
@@ -196,21 +200,34 @@ const handleEdit = (row) => {
 }
 
 const handleSave = async () => {
-  // TODO: 调用保存API
-  ElMessage.success('保存成功')
-  dialogVisible.value = false
-  fetchData()
+  try {
+    await userApi.update(currentUser.value.id, currentUser.value)
+    ElMessage.success('保存成功')
+    dialogVisible.value = false
+    fetchData()
+  } catch (error) {
+    console.error('保存失败:', error)
+  }
 }
 
 const handleStatusChange = async (row) => {
-  // TODO: 调用更新状态API
-  ElMessage.success(`用户已${row.status === 1 ? '启用' : '禁用'}`)
+  try {
+    await userApi.updateStatus(row.id, row.status)
+    ElMessage.success(`用户已${row.status === 1 ? '启用' : '禁用'}`)
+  } catch (error) {
+    console.error('更新状态失败:', error)
+    row.status = row.status === 1 ? 0 : 1 // 回滚状态
+  }
 }
 
 const handleDelete = async (row) => {
-  // TODO: 调用删除API
-  ElMessage.success('删除成功')
-  fetchData()
+  try {
+    await userApi.delete(row.id)
+    ElMessage.success('删除成功')
+    fetchData()
+  } catch (error) {
+    console.error('删除失败:', error)
+  }
 }
 
 const handleExport = () => {
