@@ -64,7 +64,8 @@ public class MatchService {
 
         // 科目筛选(模糊匹配JSON数组)
         if (StringUtils.hasText(request.getSubject())) {
-            wrapper.like(TutorProfile::getTeachSubjects, request.getSubject());
+            wrapper.and(w -> w.like(TutorProfile::getTeachSubjects, request.getSubject())
+                    .or().isNull(TutorProfile::getTeachSubjects));
         }
 
         // 年级筛选 - 使用GradeUtils进行智能匹配，同时匹配具体年级和对应的"全科"选项
@@ -72,14 +73,24 @@ public class MatchService {
             String normalizedGrade = GradeUtils.normalize(request.getGrade());
             List<String> keywords = GradeUtils.getSearchKeywords(normalizedGrade);
             
-            // 构建OR条件：匹配具体年级或对应的全科
+            // 构建OR条件：匹配具体年级或对应的全科或年级为NULL
             wrapper.and(w -> {
-                for (int i = 0; i < keywords.size(); i++) {
-                    if (i == 0) {
-                        w.like(TutorProfile::getTeachGrades, keywords.get(i));
+                boolean first = true;
+                for (String keyword : keywords) {
+                    if (first) {
+                        w.like(TutorProfile::getTeachGrades, keyword);
+                        first = false;
                     } else {
-                        w.or().like(TutorProfile::getTeachGrades, keywords.get(i));
+                        w.or().like(TutorProfile::getTeachGrades, keyword);
                     }
+                }
+                // 添加年级为NULL的情况
+                if (first) {
+                    // 如果没有关键字，直接添加NULL条件
+                    w.isNull(TutorProfile::getTeachGrades);
+                } else {
+                    // 否则添加OR NULL条件
+                    w.or().isNull(TutorProfile::getTeachGrades);
                 }
             });
         }
@@ -160,8 +171,17 @@ public class MatchService {
             }
         }
 
+        // 5. 如果有距离过滤，只保留在distanceMap中的教师
+        List<TutorProfile> filteredProfiles = profilePage.getRecords();
+        Map<Long, Double> finalDistanceMapForFilter = distanceMap;
+        if (!distanceMap.isEmpty()) {
+            filteredProfiles = profilePage.getRecords().stream()
+                    .filter(profile -> finalDistanceMapForFilter.containsKey(profile.getId()))
+                    .collect(Collectors.toList());
+        }
+
         // 5. 转换结果
-        List<Long> userIds = profilePage.getRecords().stream()
+        List<Long> userIds = filteredProfiles.stream()
                 .map(TutorProfile::getUserId)
                 .collect(Collectors.toList());
         
@@ -174,7 +194,7 @@ public class MatchService {
         Map<Long, SysUser> finalUserMap = userMap;
         Map<Long, Double> finalDistanceMap = distanceMap;
         
-        List<TutorSearchResult> results = profilePage.getRecords().stream().map(profile -> {
+        List<TutorSearchResult> results = filteredProfiles.stream().map(profile -> {
             // 计算匹配评分
             MatchScoreResult scoreResult = scoreCalculator.calculateScoreByCondition(
                     profile,
@@ -252,7 +272,12 @@ public class MatchService {
         // 5. 构建返回分页
         Page<TutorSearchResult> resultPage = new Page<>(request.getPage(), request.getSize());
         resultPage.setRecords(results);
-        resultPage.setTotal(profilePage.getTotal());
+        // 如果有距离过滤，需要调整总记录数
+        if (!distanceMap.isEmpty()) {
+            resultPage.setTotal(filteredProfiles.size());
+        } else {
+            resultPage.setTotal(profilePage.getTotal());
+        }
         return resultPage;
     }
 }

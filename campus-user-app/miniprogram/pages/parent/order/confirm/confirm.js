@@ -38,7 +38,7 @@ Page({
         this.setData({
           tutorId: data.tutorId,
           tutorName: data.realName,
-          unitPrice: data.price,
+          unitPrice: data.price || 0, // 确保单价不为undefined
           subject: data.subject
         });
         this.calcTotal();
