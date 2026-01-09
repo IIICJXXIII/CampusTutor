@@ -82,7 +82,14 @@
     <view class="section-title">资质证明</view>
     <scroll-view class="cert-scroll" scroll-x enable-flex>
       <block wx:for="{{tutor.certificateUrlsList}}" wx:key="*this">
-        <image class="cert-img" src="{{item}}" mode="heightFix" bindtap="previewImage" data-src="{{item}}"></image>
+        <image class="cert-img" 
+               src="{{item ? item : '/static/images/default-cert.png'}}" 
+               mode="heightFix" 
+               bindtap="previewImage" 
+               data-src="{{item}}"
+               binderror="handleImageError"
+               data-index="{{index}}">
+        </image>
       </block>
     </scroll-view>
   </view>
