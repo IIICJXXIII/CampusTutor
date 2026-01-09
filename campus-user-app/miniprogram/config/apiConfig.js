@@ -80,6 +80,7 @@ const api = {
   // OCR识别模块
   ocr: {
     studentCard: `${API_HOST}/api/ocr/student-card`,
+    studentCardBase64: `${API_HOST}/api/ocr/student-card-base64`,
     idCardFront: `${API_HOST}/api/ocr/id-card/front`,
     idCardBack: `${API_HOST}/api/ocr/id-card/back`,
     general: `${API_HOST}/api/ocr/general`

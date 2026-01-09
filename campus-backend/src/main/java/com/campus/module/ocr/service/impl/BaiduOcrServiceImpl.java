@@ -6,8 +6,10 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.campus.module.ocr.dto.OcrResultDTO;
+import com.campus.module.ocr.service.DoubaoVisionService;
 import com.campus.module.ocr.service.OcrService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +30,9 @@ import java.util.regex.Pattern;
 @Slf4j
 @Service
 public class BaiduOcrServiceImpl implements OcrService {
+
+    @Autowired
+    private DoubaoVisionService doubaoVisionService;
 
     @Value("${baidu.ocr.api-key:}")
     private String apiKey;
@@ -50,7 +55,7 @@ public class BaiduOcrServiceImpl implements OcrService {
     @Override
     public OcrResultDTO recognizeStudentCard(String imageUrl) {
         OcrResultDTO result = new OcrResultDTO();
-        
+
         if (!enabled) {
             // 模拟模式：返回模拟数据
             return mockStudentCardResult();
@@ -79,7 +84,7 @@ public class BaiduOcrServiceImpl implements OcrService {
     @Override
     public OcrResultDTO recognizeIdCardFront(String imageUrl) {
         OcrResultDTO result = new OcrResultDTO();
-        
+
         if (!enabled) {
             // 模拟模式
             return mockIdCardFrontResult();
@@ -168,6 +173,96 @@ public class BaiduOcrServiceImpl implements OcrService {
         }
     }
 
+    @Override
+    public OcrResultDTO recognizeStudentCardByBase64(String imageBase64) {
+        OcrResultDTO result = new OcrResultDTO();
+
+        if (!enabled) {
+            // 模拟模式：返回模拟数据
+            return mockStudentCardResult();
+        }
+
+        try {
+            // 使用Base64进行通用文字识别
+            String text = recognizeGeneralByBase64(imageBase64);
+
+            log.info("【OCR Base64识别】识别结果文本: \n{}", text);
+
+            if (StrUtil.isBlank(text)) {
+                result.setSuccess(false);
+                result.setErrorMsg("无法识别图片内容");
+                return result;
+            }
+
+            // 使用豆包大模型智能解析学生证信息
+            result = doubaoVisionService.parseStudentCardWithLLM(text);
+
+        } catch (Exception e) {
+            log.error("学生证Base64 OCR识别失败", e);
+            result.setSuccess(false);
+            result.setErrorMsg("OCR识别失败: " + e.getMessage());
+        }
+
+        return result;
+    }
+
+    /**
+     * 通用文字识别（Base64模式）
+     */
+    private String recognizeGeneralByBase64(String imageBase64) {
+        if (!enabled) {
+            return "模拟识别结果\n姓名：张三\n学校：北京大学\n专业：计算机科学与技术\n学号：2022001234\n入学日期：2022年9月";
+        }
+
+        try {
+            String token = getAccessToken();
+            String url = GENERAL_URL + "?access_token=" + token;
+
+            // 移除可能的data:image前缀和引号
+            String base64Data = imageBase64.trim();
+            if (base64Data.startsWith("\"")) {
+                base64Data = base64Data.substring(1);
+            }
+            if (base64Data.endsWith("\"")) {
+                base64Data = base64Data.substring(0, base64Data.length() - 1);
+            }
+            if (base64Data.contains(",")) {
+                base64Data = base64Data.substring(base64Data.indexOf(",") + 1);
+            }
+
+            log.info("【OCR调试】Base64长度: {}, 前20字符: {}",
+                    base64Data.length(),
+                    base64Data.length() > 20 ? base64Data.substring(0, 20) : base64Data);
+
+            // 直接使用Base64数据，hutool的form()方法会自动处理编码
+            HttpResponse response = HttpRequest.post(url)
+                    .form("image", base64Data)
+                    .execute();
+
+            String responseBody = response.body();
+            log.debug("【OCR调试】百度返回: {}", responseBody);
+
+            JSONObject json = JSONUtil.parseObj(responseBody);
+            if (json.containsKey("error_code")) {
+                log.error("OCR Base64识别失败: error_code={}, error_msg={}",
+                        json.getStr("error_code"), json.getStr("error_msg"));
+                return null;
+            }
+
+            // 拼接所有识别出的文字
+            StringBuilder sb = new StringBuilder();
+            json.getJSONArray("words_result").forEach(item -> {
+                JSONObject obj = (JSONObject) item;
+                sb.append(obj.getStr("words")).append("\n");
+            });
+
+            return sb.toString();
+        } catch (Exception e) {
+            log.error("通用OCR Base64识别失败", e);
+            return null;
+        }
+    }
+
     /**
      * 获取百度 Access Token
      */
@@ -178,7 +273,7 @@ public class BaiduOcrServiceImpl implements OcrService {
         }
 
         String url = TOKEN_URL + "?grant_type=client_credentials&client_id=" + apiKey + "&client_secret=" + secretKey;
-        
+
         HttpResponse response = HttpRequest.post(url).execute();
         JSONObject json = JSONUtil.parseObj(response.body());
 
