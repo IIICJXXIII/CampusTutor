@@ -225,10 +225,12 @@ const getLocation = () => {
 const handleCheckIn = async () => {
   submitting.value = true
   try {
-    const res = await checkIn(lesson.value.id, {
-      location: currentLocation.value?.address,
+    // 后端API需要 { orderId, longitude, latitude, address, photoUrl }
+    const res = await checkIn({
+      orderId: lesson.value.orderId || lesson.value.id,
       longitude: currentLocation.value?.lng,
-      latitude: currentLocation.value?.lat
+      latitude: currentLocation.value?.lat,
+      address: currentLocation.value?.address
     })
     
     if (res.code === 200) {
@@ -249,9 +251,10 @@ const handleCheckOut = () => {
 const submitCheckout = async () => {
   submitting.value = true
   try {
-    const res = await checkOut(lesson.value.id, {
-      content: checkoutForm.content,
-      rating: checkoutForm.rating
+    // 后端API参数为 { contentSummary, homeworkAssigned }
+    const res = await checkOut(lesson.value.recordId || lesson.value.id, {
+      contentSummary: checkoutForm.content,
+      homeworkAssigned: ''
     })
     
     if (res.code === 200) {

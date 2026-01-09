@@ -8,14 +8,12 @@ import request from './request';
  * @param {string} text - 需求文本
  */
 export function parseDemand(text) {
-  return request.post('/llm/parse-demand', null, {
-    params: { text }
-  });
+  return request.post('/llm/demand/parse', { text });
 }
 
 /**
  * AI对话
- * @param {Object} data - { message, context }
+ * @param {Object} data - { messages, scene }
  */
 export function chat(data) {
   return request.post('/llm/chat', data);
@@ -26,7 +24,7 @@ export function chat(data) {
  * @param {string} question - 问题
  */
 export function quickAsk(question) {
-  return request.get('/llm/ask', {
+  return request.get('/llm/quick-answer', {
     params: { question }
   });
 }

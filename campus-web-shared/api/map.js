@@ -5,12 +5,12 @@ import request from './request';
 
 /**
  * 逆地址解析 (坐标转地址)
- * @param {number} longitude - 经度
  * @param {number} latitude - 纬度
+ * @param {number} longitude - 经度
  */
-export function reverseGeocode(longitude, latitude) {
+export function reverseGeocode(latitude, longitude) {
   return request.get('/map/geocoder/reverse', {
-    params: { longitude, latitude }
+    params: { latitude, longitude }
   });
 }
 
@@ -26,15 +26,15 @@ export function geocode(address) {
 
 /**
  * 路径规划
- * @param {Object} data - { origin, destination, waypoints }
+ * @param {Object} data - { fromLatitude, fromLongitude, toLatitude, toLongitude, mode }
  */
 export function planRoute(data) {
-  return request.post('/map/route', data);
+  return request.post('/map/direction', data);
 }
 
 /**
  * 距离计算
- * @param {Object} params - { origins, destination, type }
+ * @param {Object} params - { fromLatitude, fromLongitude, toLatitude, toLongitude, mode }
  */
 export function calculateDistance(params) {
   return request.get('/map/distance', { params });

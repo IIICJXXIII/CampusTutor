@@ -344,7 +344,8 @@ const aiParseDemand = async () => {
   
   aiParsing.value = true
   try {
-    const res = await parseDemand({ content: description })
+    // 后端API参数为 text 字符串
+    const res = await parseDemand(description)
     if (res.code === 200 && res.data) {
       const parsed = res.data
       if (parsed.subject) form.subject = parsed.subject

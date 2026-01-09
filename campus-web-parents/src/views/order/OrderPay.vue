@@ -210,7 +210,12 @@ const handlePay = async () => {
     )
     
     paying.value = true
-    const res = await payOrder(route.params.id)
+    // 根据后端API，payType: 1钱包 2微信 3支付宝
+    const payTypeMap = { balance: 1, wechat: 2, alipay: 3 }
+    const res = await payOrder({
+      orderId: route.params.id,
+      payType: payTypeMap[paymentMethod.value]
+    })
     
     if (res.code === 200) {
       ElMessage.success('支付成功')

@@ -283,7 +283,12 @@ const handleAccept = async (demand) => {
       }
     )
     
-    const res = await acceptOrder(demand.orderId || demand.id)
+    // 后端API需要传入 { demandId, totalHours, remark }
+    const res = await acceptOrder({
+      demandId: demand.id,
+      totalHours: 10,
+      remark: ''
+    })
     if (res.code === 200) {
       ElMessage.success('接单成功！等待家长确认')
       // 刷新列表

@@ -24,7 +24,7 @@ export function getUserByUsername(username) {
  * @param {Object} data - 用户信息
  */
 export function updateUser(data) {
-  return request.put('/user/', data);
+  return request.put('/user', data);
 }
 
 /**
