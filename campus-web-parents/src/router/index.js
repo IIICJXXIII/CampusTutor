@@ -191,8 +191,14 @@ const routes = [
       {
         path: 'settings',
         name: 'Settings',
-        component: () => import('@/views/mine/Settings.vue'),
+        component: () => import('@/views/settings/Settings.vue'),
         meta: { title: '设置' }
+      },
+      {
+        path: 'settings/profile',
+        name: 'EditProfile',
+        component: () => import('@/views/settings/EditProfile.vue'),
+        meta: { title: '编辑资料' }
       }
     ]
   },
