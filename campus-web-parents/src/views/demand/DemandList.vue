@@ -158,8 +158,13 @@ const loadDemands = async () => {
     
     const res = await getMyDemands(params)
     if (res.code === 200) {
-      demands.value = res.data?.records || []
-      total.value = res.data?.total || 0
+      // 兼容后端未分页的返回结构(list)以及分页结构(records/total)
+      const records = res.data?.records ?? res.data ?? []
+      const filtered = statusFilter.value === 'all'
+        ? records
+        : records.filter(item => String(item.status) === String(statusFilter.value))
+      demands.value = filtered
+      total.value = res.data?.total ?? filtered.length ?? 0
     }
   } catch (error) {
     console.error('加载需求列表失败:', error)
