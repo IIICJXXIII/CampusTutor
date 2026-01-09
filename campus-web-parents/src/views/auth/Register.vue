@@ -159,7 +159,7 @@ const handleRegister = async () => {
     
     if (res.code === 200) {
       userStore.setToken(res.data.token)
-      userStore.setUserInfo(res.data.user)
+      userStore.setUserInfo(res.data)
       ElMessage.success('注册成功')
       router.push('/')
     }
