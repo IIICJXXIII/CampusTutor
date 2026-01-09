@@ -182,17 +182,18 @@
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
+import { statsApi, userApi, orderApi } from '@/api'
 
-// 统计数据 (模拟)
+// 统计数据
 const stats = reactive({
-  totalUsers: 1256,
-  totalTutors: 328,
-  totalOrders: 892,
-  totalRevenue: '156,800',
-  pendingAudit: 12,
-  pendingOrders: 8,
-  pendingLessons: 5,
-  pendingRefunds: 2
+  totalUsers: 0,
+  totalTutors: 0,
+  totalOrders: 0,
+  totalRevenue: '0',
+  pendingAudit: 0,
+  pendingOrders: 0,
+  pendingLessons: 0,
+  pendingRefunds: 0
 })
 
 // 最新用户 (模拟)
@@ -336,9 +337,62 @@ watch(orderChartType, () => {
   initOrderChart()
 })
 
+// 获取仪表盘数据
+const fetchDashboardData = async () => {
+  try {
+    const res = await statsApi.getDashboard()
+    const data = res.data
+    
+    stats.totalUsers = data.totalUsers || 0
+    stats.totalTutors = data.totalTutors || 0
+    stats.totalOrders = data.totalOrders || 0
+    stats.totalRevenue = data.totalRevenue ? Number(data.totalRevenue).toLocaleString() : '0'
+    stats.pendingAudit = data.pendingAudit || 0
+    stats.pendingOrders = data.pendingOrders || 0
+    stats.pendingLessons = data.pendingLessons || 0
+    stats.pendingRefunds = data.pendingRefunds || 0
+    
+    // 更新最新用户
+    if (data.recentUsers?.length) {
+      recentUsers.value = data.recentUsers.map(u => ({
+        id: u.id,
+        nickname: u.nickname || u.username,
+        role: u.role,
+        createTime: u.createTime?.replace('T', ' ')?.substring(0, 16)
+      }))
+    }
+    
+    // 更新最新订单
+    if (data.recentOrders?.length) {
+      recentOrders.value = data.recentOrders.map(o => ({
+        id: o.id,
+        orderNo: o.orderNo,
+        subject: o.subject,
+        amount: o.amount,
+        status: o.status
+      }))
+    }
+    
+    // 更新饼图数据
+    if (userChart) {
+      userChart.setOption({
+        series: [{
+          data: [
+            { value: data.tutorCount || stats.totalTutors, name: '教师', itemStyle: { color: '#409EFF' } },
+            { value: data.parentCount || stats.totalParents || (stats.totalUsers - stats.totalTutors), name: '家长', itemStyle: { color: '#67C23A' } }
+          ]
+        }]
+      })
+    }
+  } catch (error) {
+    console.error('获取仪表盘数据失败:', error)
+  }
+}
+
 onMounted(() => {
   initOrderChart()
   initUserChart()
+  fetchDashboardData()
   
   window.addEventListener('resize', () => {
     orderChart?.resize()

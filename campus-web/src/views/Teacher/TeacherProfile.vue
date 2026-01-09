@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { ChatDotRound } from '@element-plus/icons-vue'
 import { getTutorProfile } from '@/api/tutor'
 
 const route = useRoute()
@@ -103,6 +104,15 @@ const handleBook = () => {
   })
 }
 
+// 发起聊天
+const startChat = () => {
+  if (!teacher.value.userId) {
+    ElMessage.warning('无法获取教员信息')
+    return
+  }
+  router.push(`/chat/${teacher.value.userId}`)
+}
+
 onMounted(() => {
   fetchTeacherDetail()
 })
@@ -188,9 +198,15 @@ onMounted(() => {
         <span class="price-value">¥{{ teacher.price }}</span>
         <span class="price-unit">/小时</span>
       </div>
-      <el-button type="primary" size="large" @click="showBookingDialog = true">
-        立即预约试听
-      </el-button>
+      <div class="action-buttons">
+        <el-button size="large" @click="startChat" class="chat-btn">
+          <el-icon><ChatDotRound /></el-icon>
+          私聊
+        </el-button>
+        <el-button type="primary" size="large" @click="showBookingDialog = true">
+          立即预约试听
+        </el-button>
+      </div>
     </div>
 
     <!-- 预约弹窗 -->
@@ -349,7 +365,18 @@ onMounted(() => {
     }
   }
 
-  .el-button {
+  .action-buttons {
+    display: flex;
+    gap: 12px;
+  }
+
+  .chat-btn {
+    height: 48px;
+    padding: 0 20px;
+    font-size: 16px;
+  }
+
+  .el-button--primary {
     height: 48px;
     padding: 0 32px;
     font-size: 16px;

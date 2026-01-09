@@ -1,11 +1,52 @@
 # CampusTutor 项目待办清单
 
-> 更新日期: 2026-01-07 
+> 更新日期: 2026-01-08  
 > 本清单基于全端代码详细评估生成，包含后端、Web前端、管理后台、小程序
 
 ---
 
-## 一、当前完成度总览
+## 一、项目代码统计
+
+### 代码量汇总
+
+| 项目 | 主要语言 | 核心文件数 | 模块数 | 代码规模 |
+| :--- | :--- | :---: | :---: | :---: |
+| **campus-backend** | Java (Spring Boot) | 102 文件 | 14 模块 | ~15,000+ 行 |
+| **campus-web** | Vue 3 (Vite) | 37 文件 | 15 API模块 | ~8,000+ 行 |
+| **campus-web-admin** | Vue 3 (Vite) | 16 文件 | 12 页面 | ~3,000+ 行 |
+| **campus-user-app** | 微信小程序 | 140+ 文件 | 25 页面 | ~10,000+ 行 |
+| **总计** | - | **300+ 文件** | - | **~36,000+ 行** |
+
+### 后端模块明细 (campus-backend - 14模块)
+
+| 模块 | 文件数 | 功能说明 | 状态 |
+| :--- | :---: | :--- | :---: |
+| `auth` | 6 | JWT认证、登录注册 | ✅ |
+| `user` | 6 | 用户管理 CRUD | ✅ |
+| `tutor` | 10 | 教员档案、认证、排课 | ✅ |
+| `parent` | 6 | 家长学生管理 | ✅ |
+| `demand` | 7 | 需求发布、LBS搜索 | ✅ |
+| `match` | 6 | 智能匹配算法 | ✅ |
+| `order` | 7 | 订单全流程管理 | ✅ |
+| `teaching` | 7 | 课时打卡、确认 | ✅ |
+| `wallet` | 14 | 钱包、交易、提现 | ✅ |
+| `file` | 3 | 文件上传服务 | ✅ |
+| `ocr` | 4 | 百度OCR集成 | ✅ |
+| `map` | 9 | 高德地图API | ✅ |
+| `llm` | 10 | DeepSeek LLM服务 | ✅ |
+| `chat` | 12 | **WebSocket私聊** ⭐新增 | ✅ |
+
+### 前端页面统计
+
+| 项目 | 页面/组件 | API模块 | 主要功能 |
+| :--- | :---: | :---: | :--- |
+| **campus-web** | 22 Vue文件 | 15 API | 用户端Web应用 |
+| **campus-web-admin** | 12 页面 | 11 API | 管理后台 |
+| **campus-user-app** | 25 页面 | 10 API配置 | 微信小程序 |
+
+---
+
+## 二、当前完成度总览
 
 | 业务节点 | 后端 | campus-web | campus-web-admin | 小程序 | 状态 |
 | :--- | :---: | :---: | :---: | :---: | :--- |
@@ -19,14 +60,16 @@
 | **钱包与结算** | ✅ 余额+提现 | ✅ 已对接 | ⚠️ Mock数据 | ✅ 已对接 | 🟢 就绪 |
 | **地图服务** | ✅ 高德API | ✅ 已集成 | N/A | ⚠️ 待完整集成 | 🟡 进行中 |
 | **LLM智能服务** | ✅ DeepSeek | ✅ API封装 | N/A | ❌ 未对接 | 🟡 进行中 |
+| **私聊功能** ⭐新增 | ✅ WebSocket | ✅ 已对接 | N/A | ❌ 未对接 | 🟢 Web端就绪 |
 
 **图例**: ✅ 已完成 | ⚠️ 部分完成 | ❌ 未实现 | 🟢 就绪 | 🟡 进行中 | 🔴 阻塞
 
 ---
 
-## 二、后端模块评估 (campus-backend)
+## 三、后端模块详细评估 (campus-backend)
 
-### ✅ 已完成模块 (13个)
+### ✅ 已完成模块 (14个)
+
 | 模块 | 说明 | API数量 |
 | :--- | :--- | :---: |
 | `auth` | JWT 登录/注册/验证码(Mock) | 3 |
@@ -42,6 +85,31 @@
 | `ocr` | 百度OCR集成 (学生证/身份证/通用) | 4 |
 | `map` | 高德地图 (逆地址解析/路径规划/距离计算) | 4 |
 | `llm` | DeepSeek LLM (需求解析/对话/问答) | 3 |
+| `chat` ⭐ | **WebSocket私聊 (会话/历史/已读/未读)** | 5 |
+
+### ✅ 新增：聊天模块 (chat)
+
+**模块结构**:
+```
+module/chat/
+├── config/          # WebSocket配置、握手拦截器
+├── controller/      # REST API (会话列表、聊天历史、标记已读)
+├── dto/             # ChatMessageDTO, ChatMessageVO, ChatSessionVO
+├── entity/          # ChatMessage 实体
+├── handler/         # WebSocket消息处理器、会话管理
+├── mapper/          # MyBatis映射
+└── service/         # 业务逻辑实现
+```
+
+**API列表**:
+| 方法 | 路径 | 功能 |
+| :--- | :--- | :--- |
+| GET | `/api/chat/sessions` | 获取会话列表 |
+| GET | `/api/chat/history/{targetUserId}` | 获取聊天历史 |
+| POST | `/api/chat/read/{targetUserId}` | 标记消息已读 |
+| GET | `/api/chat/unread-count` | 获取未读消息数 |
+| GET | `/api/chat/user-info/{userId}` | 获取用户信息 |
+| WebSocket | `/ws/chat` | 实时消息推送 |
 
 ### ✅ 单元测试全部通过 (40/40)
 - CampusApplicationTests ✅
@@ -55,6 +123,7 @@
 - LlmClientServiceTest (3) ✅
 
 ### ⚠️ 待完善/修复
+
 | 问题 | 描述 | 优先级 |
 | :--- | :--- | :---: |
 | **微信登录接口缺失** | 后端无 `/api/auth/wx-login` 接口，小程序无法使用微信一键登录 | 🔴 **高** |
@@ -64,43 +133,11 @@
 | 申诉通知缺失 | `TeachingRecordServiceImpl` 中申诉后未通知管理员 | 🟢 低 |
 | **Admin API 缺失** | 后端无 `/admin/*` 管理接口，导致管理后台无法对接 | 🔴 高 |
 
-### 🔴 后端需新增：微信登录接口
-**问题**: 小程序调用 `/api/auth/wx-login` 返回 404，后端未实现该接口。
-
-**需要的修改**:
-1. **新增配置** (`application.properties`):
-```properties
-# 微信小程序配置
-wechat.miniapp.appId=YOUR_APPID
-wechat.miniapp.secret=YOUR_SECRET
-```
-
-2. **新增DTO** (`WxLoginRequest.java`):
-```java
-public class WxLoginRequest {
-    private String code;  // wx.login 返回的 code
-}
-```
-
-3. **新增接口** (`AuthController.java`):
-```java
-@PostMapping("/wx-login")
-public Result<LoginResponse> wxLogin(@RequestBody WxLoginRequest request)
-```
-
-4. **实现逻辑** (`AuthServiceImpl.java`):
-   - 根据 code 调用微信 `jscode2session` 获取 openid
-   - 若 openid 已绑定用户 → 生成 JWT → 返回 `LoginResponse`
-   - 若未绑定 → 返回 `{ needBind: true, openid: 'xxx' }`
-
-5. **响应格式**:
-   - 成功: `{ code:200, msg:'登录成功', data: LoginResponse }`
-   - 需绑定: `{ code:200, msg:'需要绑定', data:{ needBind:true, openid:'xxx' } }`
-
 ### ⚠️ 数据库表已定义但后端未实现
+
 | 表名 | 说明 | 优先级 |
 | :--- | :--- | :---: |
-| `sys_chat_msg` | IM聊天记录表 | 🟢 低 |
+| ~~`sys_chat_msg`~~ | ~~IM聊天记录表~~ ✅ **已实现** | ✅ 完成 |
 | `sys_comment` | 订单评价表 | 🟡 中 |
 | `community_post/reply` | 社区帖子/评论表 | 🟢 低 |
 | `mistake_notebook` | 在线错题本 | 🟡 中 |
@@ -109,7 +146,7 @@ public Result<LoginResponse> wxLogin(@RequestBody WxLoginRequest request)
 
 ---
 
-## 三、Web 用户端评估 (campus-web)
+## 四、Web 用户端评估 (campus-web)
 
 ### ✅ 基础设施 (已完成)
 - [x] Vite + Vue 3.4.21 配置
@@ -118,7 +155,8 @@ public Result<LoginResponse> wxLogin(@RequestBody WxLoginRequest request)
 - [x] Axios 请求封装 + API 代理
 - [x] 路由配置 + 权限守卫 (Token验证、白名单)
 
-### ✅ API模块封装 (12个)
+### ✅ API模块封装 (15个)
+
 | 文件 | 封装接口 | 状态 |
 | :--- | :--- | :---: |
 | `auth.js` | login, register, sendCode, getUserInfo | ✅ |
@@ -132,8 +170,10 @@ public Result<LoginResponse> wxLogin(@RequestBody WxLoginRequest request)
 | `ocr.js` | recognizeStudentCard, recognizeIdCardFront, recognizeIdCardBack, recognizeGeneral | ✅ |
 | `map.js` | reverseGeocode, geocode, getDirection, getDistance | ✅ |
 | `llm.js` | parseDemand, chat, quickAnswer | ✅ |
+| `user.js` | getUserById, updateUser | ✅ |
+| `chat.js` ⭐ | getSessionList, getChatHistory, markAsRead, getUnreadCount, getChatUserInfo | ✅ **新增** |
 
-### ✅ 已完成页面 (18个)
+### ✅ 已完成页面 (22个)
 
 #### 公共页面
 | 页面 | 文件 | API对接 | 表单验证 | 状态 |
@@ -169,20 +209,23 @@ public Result<LoginResponse> wxLogin(@RequestBody WxLoginRequest request)
 | 钱包 | `Wallet.vue` | ✅ wallet API | ✅ |
 | 提现 | `Withdraw.vue` | ✅ wallet.withdraw | ✅ |
 | 课时记录 | `ClassRecord.vue` | ✅ teaching API | ✅ |
+| 设置页面 | `Settings.vue` | ✅ user API | ✅ |
+
+#### 聊天模块 ⭐新增
+| 页面 | 文件 | API对接 | 状态 |
+| :--- | :--- | :---: | :---: |
+| 私聊页面 | `Chat.vue` (15KB) | ✅ chat API + WebSocket | ✅ **新增** |
 
 ### ⚠️ 待修复问题
+
 | 问题 | 位置 | 说明 | 优先级 |
 | :--- | :--- | :--- | :---: |
-| API路径重复 | `wallet.js` | `/api/wallet` 应改为 `/wallet` (request已有baseURL) | 🔴 高 |
-| API路径重复 | `llm.js` | `/api/llm/*` 应改为 `/llm/*` | 🔴 高 |
-| API未导出 | `api/index.js` | wallet, llm, map 未统一导出 | 🟡 中 |
 | 错题本Mock | `WrongBook.vue` | 使用 Mock 数据，后端暂无错题本API | 🟡 中 |
-| 设置页面404 | 路由 | `/settings` 路由未配置 | 🟢 低 |
 | 地图Key硬编码 | `FindStudents.vue` | 高德地图Key应改为环境变量 | 🟢 低 |
 
 ---
 
-## 四、Web 管理后台评估 (campus-web-admin)
+## 五、Web 管理后台评估 (campus-web-admin)
 
 ### ✅ 基础设施 (已完成)
 - [x] Vite + Vue 3.4.21 配置
@@ -191,47 +234,65 @@ public Result<LoginResponse> wxLogin(@RequestBody WxLoginRequest request)
 - [x] 路由配置 + Token守卫
 
 ### ✅ API模块封装 (11个)
+
 | 模块 | 封装方法 | 后端对接 |
 | :--- | :--- | :---: |
-| `authApi` | login, logout, getProfile | ❌ 缺后端Admin接口 |
-| `userApi` | getList, getById, update, updateStatus, delete | ❌ 缺后端Admin接口 |
-| `tutorApi` | getList, getById, update, getPendingList, approve, reject | ❌ 缺后端Admin接口 |
-| `parentApi` | getList, getById, update | ❌ 缺后端Admin接口 |
-| `demandApi` | getList, getById, update, updateStatus, delete | ❌ 缺后端Admin接口 |
-| `orderApi` | getList, getById, updateStatus, releaseEscrow, refund | ❌ 缺后端Admin接口 |
-| `lessonApi` | getList, getById, confirm, reject | ❌ 缺后端Admin接口 |
-| `matchApi` | getList, getById | ❌ 缺后端Admin接口 |
-| `walletApi` | getList, getById, getTransactions, adjust | ❌ 缺后端Admin接口 |
-| `statsApi` | getDashboard, getUserStats, getOrderStats, getRevenueStats | ❌ 缺后端Admin接口 |
-| `settingsApi` | getSettings, updateSettings | ❌ 缺后端Admin接口 |
+| `authApi` | login, logout, getProfile | ✅ **已实现** |
+| `userApi` | getList, getById, update, updateStatus, delete | ✅ **已实现** |
+| `tutorApi` | getList, getById, update, getPendingList, approve, reject | ✅ **已实现** |
+| `parentApi` | getList, getById, update | ✅ **已实现** |
+| `demandApi` | getList, getById, update, updateStatus, delete | ✅ **已实现** |
+| `orderApi` | getList, getById, updateStatus, releaseEscrow, refund | ✅ **已实现** |
+| `lessonApi` | getList, getById, confirm, reject | ✅ **已实现** |
+| `matchApi` | getList, getById | ⚠️ 待实现 |
+| `walletApi` | getList, getById, getTransactions, adjust | ✅ **已实现** |
+| `statsApi` | getDashboard, getUserStats, getOrderStats, getRevenueStats | ✅ **已实现** |
+| `settingsApi` | getSettings, updateSettings | ✅ **已实现** |
 
-### ✅ 已完成页面 (12个) - UI已完成，API未对接
+### ✅ 已完成页面 (12个) - UI+Backend已完成
+
 | 页面 | 路由 | UI完成 | API对接 | 状态 |
 | :--- | :--- | :---: | :---: | :---: |
-| 登录 | `/login` | ✅ | ⚠️ 仅演示模式 | ⚠️ |
-| 仪表盘 | `/dashboard` | ✅ | ❌ 硬编码数据 | ⚠️ |
-| 用户管理 | `/users` | ✅ | ❌ Mock数据 | ⚠️ |
-| 教员列表 | `/tutors` | ✅ | ❌ Mock数据 | ⚠️ |
-| 教员审核 | `/tutor-audit` | ✅ | ❌ Mock数据 | ⚠️ |
-| 家长列表 | `/parents` | ✅ | ❌ Mock数据 | ⚠️ |
-| 需求管理 | `/demands` | ✅ | ❌ Mock数据 | ⚠️ |
-| 订单管理 | `/orders` | ✅ | ❌ Mock数据 | ⚠️ |
-| 课时管理 | `/lessons` | ✅ | ❌ Mock数据 | ⚠️ |
-| 匹配记录 | `/matches` | ✅ | ❌ Mock数据 | ⚠️ |
-| 钱包管理 | `/wallets` | ✅ | ❌ Mock数据 | ⚠️ |
-| 系统设置 | `/settings` | ✅ | ❌ Mock数据 | ⚠️ |
+| 登录 | `/login` | ✅ | ✅ **真实API+演示回退** | ✅ |
+| 仪表盘 | `/dashboard` | ✅ | ✅ **真实统计数据** | ✅ |
+| 用户管理 | `/users` | ✅ | ✅ **真实CRUD** | ✅ |
+| 教员列表 | `/tutors` | ✅ | ✅ **真实API** | ✅ |
+| 教员审核 | `/tutor-audit` | ✅ | ✅ **真实审核API** | ✅ |
+| 家长列表 | `/parents` | ✅ | ⚠️ 需更新前端 | 🟡 |
+| 需求管理 | `/demands` | ✅ | ⚠️ 需更新前端 | 🟡 |
+| 订单管理 | `/orders` | ✅ | ⚠️ 需更新前端 | 🟡 |
+| 课时管理 | `/lessons` | ✅ | ⚠️ 需更新前端 | 🟡 |
+| 匹配记录 | `/matches` | ✅ | ⚠️ 需更新前端 | 🟡 |
+| 钱包管理 | `/wallets` | ✅ | ⚠️ 需更新前端 | 🟡 |
+| 系统设置 | `/settings` | ✅ | ⚠️ 需更新前端 | 🟡 |
 
-### 🔴 阻塞问题：后端缺少 Admin API
-**问题描述**: 当前后端没有 `/admin/*` 管理接口，导致管理后台所有页面无法对接真实API。
+### ✅ Admin后端模块 (新增)
 
-**需要新建的后端接口**:
+**模块结构** (`campus-backend/src/main/java/com/campus/module/admin/`):
 ```
-POST   /api/admin/auth/login              # 管理员登录
-GET    /api/admin/stats/dashboard         # 仪表盘统计
+module/admin/
+├── controller/
+│   ├── AdminController.java      # 30+ 管理端点
+│   └── AdminAuthController.java  # 登录/登出/profile
+├── dto/
+│   ├── DashboardVO.java          # 仪表盘统计
+│   ├── UserVO.java               # 用户列表VO
+│   ├── TutorVO.java              # 教师列表VO
+│   ├── OrderVO.java              # 订单列表VO
+│   └── PageVO.java               # 通用分页
+└── service/
+    ├── AdminService.java         # 服务接口
+    └── impl/AdminServiceImpl.java # 服务实现
+```
 
-GET    /api/admin/users                   # 用户列表（分页）
-PUT    /api/admin/users/:id               # 更新用户
-PUT    /api/admin/users/:id/status        # 禁用/启用用户
+**API端点** (已实现):
+```
+POST   /api/admin/auth/login              ✅ 管理员登录
+GET    /api/admin/stats/dashboard         ✅ 仪表盘统计
+
+GET    /api/admin/users                   ✅ 用户列表（分页）
+PUT    /api/admin/users/:id               ✅ 更新用户
+PUT    /api/admin/users/:id/status        ✅ 禁用/启用用户
 
 GET    /api/admin/tutors                  # 教师列表
 GET    /api/admin/tutors/pending          # 待审核列表
@@ -248,7 +309,7 @@ POST   /api/admin/wallets/:id/adjust      # 余额调整
 
 ---
 
-## 五、微信小程序评估 (campus-user-app)
+## 六、微信小程序评估 (campus-user-app)
 
 ### ✅ 基础设施 (已完成)
 - [x] 原生小程序项目结构
@@ -259,6 +320,7 @@ POST   /api/admin/wallets/:id/adjust      # 余额调整
 - [x] 日期格式化工具 (`dateUtil.js`)
 
 ### ✅ API配置模块 (10个)
+
 | 模块 | 配置接口 | 状态 |
 | :--- | :--- | :---: |
 | 认证模块 | login, register, sendCode | ✅ |
@@ -317,6 +379,7 @@ POST   /api/admin/wallets/:id/adjust      # 余额调整
 | `teacherCard` | 教师卡片（头像、学校、价格、评分、标签） | ✅ |
 
 ### ⚠️ 待修复问题
+
 | 问题 | 位置 | 说明 | 优先级 |
 | :--- | :--- | :--- | :---: |
 | **微信登录404** | 登录页 | 后端未实现 `/api/auth/wx-login`，前端已就绪 | 🔴 **高** |
@@ -324,27 +387,32 @@ POST   /api/admin/wallets/:id/adjust      # 余额调整
 | 页面冗余 | `teacher/index`, `parent/index` | 未在app.json注册，与common/index重复 | 🟢 低 |
 | 认证状态查询 | `step3-result` | 缺少调用认证状态API | 🟢 低 |
 | 接单功能未实现 | `mapFindStudent` | "立即接单"按钮仅提示"开发中" | 🟡 中 |
+| **聊天功能** | 全局 | 后端已支持WebSocket，小程序未对接 | 🟡 中 |
 
 ### ❌ 待开发模块
+
 | 模块 | 需要页面 | 优先级 | 说明 |
 | :--- | :--- | :---: | :--- |
+| 私聊功能 | 聊天列表、聊天详情 | 🟡 P1 | 后端WebSocket已就绪 |
 | 课程表 | 教师课表、家长课表 | 🟡 P1 | 可视化排课展示 |
 | 错题本 | 错题列表、拍照识题、题目详情 | 🟢 P2 | OCR识别功能 |
 | 消息通知 | 消息列表、消息详情 | 🟢 P2 | 订单状态推送 |
 
 ---
 
-## 六、完成度统计
+## 七、完成度统计
 
 ### 各端完成度
+
 | 项目 | 完成度 | 说明 |
 | :--- | :---: | :--- |
-| **campus-backend** | **90%** | 13模块完成，缺Admin接口、微信登录接口 |
-| **campus-web** | **90%** | 18页面完成，API基本对接，少量路径问题 |
+| **campus-backend** | **92%** | 14模块完成，缺Admin接口、微信登录接口 |
+| **campus-web** | **92%** | 22页面完成（含聊天），API基本对接 |
 | **campus-web-admin** | **40%** | 12页面UI完成，全部使用Mock数据，缺后端Admin接口 |
 | **campus-user-app** | **88%** | 25页面完成，API已对接，微信登录待后端支持 |
 
 ### 功能模块完成度
+
 | 功能模块 | 后端 | Web端 | 管理后台 | 小程序 |
 | :--- | :---: | :---: | :---: | :---: |
 | 账号密码登录 | 100% | 100% | 30% | 100% |
@@ -357,40 +425,45 @@ POST   /api/admin/wallets/:id/adjust      # 余额调整
 | 钱包结算 | 100% | 100% | 30% | 100% |
 | 地图服务 | 100% | 100% | N/A | 80% |
 | LLM智能 | 100% | 100% | N/A | 0% |
+| **私聊功能** ⭐ | **100%** | **100%** | N/A | **0%** |
 
 ---
 
-## 七、优先级任务清单
+## 八、优先级任务清单
 
-### 🔴 P0 - 阻塞性任务 (本周内)
+### ✅ 已完成任务
 1. [x] ~~执行数据库同步~~ - 已完成
-2. [x] ~~campus-web API 对接~~ - 已完成 (90%)
+2. [x] ~~campus-web API 对接~~ - 已完成 (92%)
 3. [x] ~~小程序订单流程~~ - 已完成 (订单列表+详情+签约+支付)
 4. [x] ~~小程序课时打卡与确认~~ - 已完成
-5. [ ] **🔴 后端新增微信登录接口** - `/api/auth/wx-login` (小程序依赖)
-6. [ ] **后端新增 Admin API** - 管理后台依赖此接口
-7. [ ] **campus-web-admin 对接真实API** - 当前全部Mock数据
+5. [x] ~~**后端WebSocket私聊模块**~~ - ✅ 已完成 (2026-01-08)
+6. [x] ~~**campus-web 私聊页面**~~ - ✅ 已完成 (2026-01-08)
+
+### 🔴 P0 - 阻塞性任务 (本周内)
+7. [ ] **🔴 后端新增微信登录接口** - `/api/auth/wx-login` (小程序依赖)
+8. [ ] **后端新增 Admin API** - 管理后台依赖此接口
+9. [ ] **campus-web-admin 对接真实API** - 当前全部Mock数据
 
 ### 🟡 P1 - 重要任务 (下周)
-8. [ ] **高德地图完整集成** - 小程序地图标记点交互
-9. [ ] **修复 campus-web API路径问题** - wallet.js, llm.js 路径重复
-10. [ ] **小程序接单功能** - mapFindStudent "立即接单"
-11. [ ] **课程表页面** - 教师/家长可视化排课
-12. [ ] **后端错题本模块** - 实现 mistake_notebook 相关API
-13. [ ] **后端评价模块** - 实现 sys_comment 相关API
+10. [ ] **小程序私聊功能** - 对接后端WebSocket，创建聊天页面
+11. [ ] **高德地图完整集成** - 小程序地图标记点交互
+12. [ ] **小程序接单功能** - mapFindStudent "立即接单"
+13. [ ] **课程表页面** - 教师/家长可视化排课
+14. [ ] **后端错题本模块** - 实现 mistake_notebook 相关API
+15. [ ] **后端评价模块** - 实现 sys_comment 相关API
 
 ### 🟢 P2 - 优化任务 (后续)
-14. [ ] **密码加密升级** - MD5 → BCrypt
-15. [ ] **权限拦截完善** - 基于角色的 API 访问控制
-16. [ ] **短信服务接入** - 替换 Mock 验证码
-17. [ ] **Dashboard 图表** - 对接真实统计数据
-18. [ ] **小程序LLM集成** - AI智能需求解析
-19. [ ] **消息通知推送** - 订单状态变更通知
-20. [ ] **错题本功能** - 小程序拍照识题
+16. [ ] **密码加密升级** - MD5 → BCrypt
+17. [ ] **权限拦截完善** - 基于角色的 API 访问控制
+18. [ ] **短信服务接入** - 替换 Mock 验证码
+19. [ ] **Dashboard 图表** - 对接真实统计数据
+20. [ ] **小程序LLM集成** - AI智能需求解析
+21. [ ] **消息通知推送** - 订单状态变更通知
+22. [ ] **错题本功能** - 小程序拍照识题
 
 ---
 
-## 八、后端 API 接口清单
+## 九、后端 API 接口清单
 
 ### 认证模块 `/api/auth`
 | 方法 | 路径 | 功能 | 状态 |
@@ -477,6 +550,16 @@ POST   /api/admin/wallets/:id/adjust      # 余额调整
 | POST | `/withdraw` | 申请提现 |
 | GET | `/withdrawals` | 提现记录 |
 
+### 聊天模块 `/api/chat` ⭐新增
+| 方法 | 路径 | 功能 |
+| :--- | :--- | :--- |
+| GET | `/sessions` | 获取会话列表 |
+| GET | `/history/{targetUserId}` | 获取聊天历史 |
+| POST | `/read/{targetUserId}` | 标记消息已读 |
+| GET | `/unread-count` | 获取未读消息数 |
+| GET | `/user-info/{userId}` | 获取用户信息 |
+| WebSocket | `/ws/chat` | 实时消息推送 |
+
 ### 地图模块 `/api/map`
 | 方法 | 路径 | 功能 |
 | :--- | :--- | :--- |
@@ -508,7 +591,7 @@ POST   /api/admin/wallets/:id/adjust      # 余额调整
 
 ---
 
-## 九、测试账号
+## 十、测试账号
 
 | 角色 | 账号 | 密码 | 说明 |
 | :--- | :--- | :--- | :--- |
@@ -518,7 +601,7 @@ POST   /api/admin/wallets/:id/adjust      # 余额调整
 
 ---
 
-## 十、启动命令速查
+## 十一、启动命令速查
 
 ```bash
 # 后端 (端口 8080)
@@ -536,9 +619,9 @@ cd campus-web-admin && npm run dev
 
 ---
 
-## 十一、数据库信息
+## 十二、数据库信息
 
-### 数据库表 (17张)
+### 数据库表 (18张)
 | 分类 | 表名 | 说明 |
 | :--- | :--- | :--- |
 | 用户权限 | `sys_user` | 系统用户表 |
@@ -555,7 +638,7 @@ cd campus-web-admin && npm run dev
 | 教学过程 | `teaching_record` | 课时打卡记录表 |
 | | `student_report` | 学生阶段报告表 |
 | | `mistake_notebook` | 在线错题本 |
-| 系统交互 | `sys_chat_msg` | IM聊天记录表 |
+| 系统交互 | `sys_chat_msg` | IM聊天记录表 ✅ 已实现 |
 | | `sys_comment` | 订单评价表 |
 | | `sys_dict` | 数据字典表 |
 | 社区功能 | `community_post` | 社区帖子表 |
@@ -569,3 +652,17 @@ mysql -u root -p < campus-backend/sql/schema.sql
 # 2. 导入测试数据
 mysql -u root -p campus_tutor_db < campus-backend/sql/data.sql
 ```
+
+---
+
+## 十三、最近更新记录
+
+### 2026-01-08 更新
+- ⭐ **新增 WebSocket 私聊模块** (后端 + Web前端)
+  - 后端: `module/chat/` 包含完整的 WebSocket + REST API
+  - Web端: `Chat.vue` + `chat.js` 完整实现
+  - 功能: 会话列表、聊天历史、实时消息推送、已读未读
+- 数据库表 `sys_chat_msg` 已实现
+- 后端模块从 13 个增加到 **14 个**
+- campus-web 完成度从 90% 提升到 **92%**
+- campus-backend 完成度从 90% 提升到 **92%**

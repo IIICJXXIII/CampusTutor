@@ -98,38 +98,37 @@ const handleLogin = async () => {
   loading.value = true
   
   try {
-    // 演示模式：直接使用模拟登录
+    // 尝试真实 API 登录
+    const res = await authApi.login({
+      account: form.username,
+      password: form.password
+    })
+    
+    localStorage.setItem('admin_token', res.data.token)
+    
+    if (form.remember) {
+      localStorage.setItem('admin_username', form.username)
+    } else {
+      localStorage.removeItem('admin_username')
+    }
+    
+    ElMessage.success('登录成功')
+    router.push('/dashboard')
+  } catch (error) {
+    console.error('登录失败:', error)
+    
+    // 演示模式回退：如果后端未启动，使用模拟登录
     if (form.username === 'admin' && form.password === 'admin123') {
-      // 模拟 Token
       const mockToken = 'admin_mock_token_' + Date.now()
       localStorage.setItem('admin_token', mockToken)
       
       if (form.remember) {
         localStorage.setItem('admin_username', form.username)
-      } else {
-        localStorage.removeItem('admin_username')
       }
       
-      ElMessage.success('登录成功')
-      router.push('/dashboard')
-    } else {
-      // 尝试真实 API 登录
-      const res = await authApi.login({
-        username: form.username,
-        password: form.password
-      })
-      
-      localStorage.setItem('admin_token', res.data.token)
-      
-      if (form.remember) {
-        localStorage.setItem('admin_username', form.username)
-      }
-      
-      ElMessage.success('登录成功')
+      ElMessage.success('登录成功（演示模式）')
       router.push('/dashboard')
     }
-  } catch (error) {
-    console.error('登录失败:', error)
   } finally {
     loading.value = false
   }

@@ -26,6 +26,19 @@
       </div>
       
       <div class="header-right">
+        <!-- 消息通知图标 -->
+        <div class="icon-btn" @click="goToChat">
+          <el-badge :value="unreadCount" :max="99" :hidden="unreadCount === 0" class="item">
+            <el-icon :size="20"><ChatDotRound /></el-icon>
+          </el-badge>
+        </div>
+        
+        <div class="icon-btn" @click="showNotifications">
+          <el-badge is-dot :hidden="true" class="item">
+            <el-icon :size="20"><Bell /></el-icon>
+          </el-badge>
+        </div>
+
         <el-dropdown class="role-switch" @command="handleRoleSwitch">
           <span class="role-label">
             <el-icon><User /></el-icon>
@@ -95,7 +108,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/index'
 // 补充图标引入，防止报错
 import { 
-  User, ArrowDown, Reading, UserFilled, Medal, SwitchButton 
+  User, ArrowDown, Reading, UserFilled, Medal, SwitchButton,
+  Bell, ChatDotRound
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -105,6 +119,7 @@ const userStore = useUserStore()
 const isParent = computed(() => userStore.isParent)
 const isTutor = computed(() => userStore.isTutor)
 const activeMenu = computed(() => route.path)
+const unreadCount = ref(0) // 未读消息数
 
 const goHome = () => {
   if (isParent.value) {
@@ -160,6 +175,42 @@ const handleUserCommand = async (command) => {
 const goToAiChat = () => {
   router.push('/service/chat')
 }
+
+// === 【新增】获取未读消息数 ===
+import { getUnreadCount } from '@/api/chat'
+import { onMounted, onUnmounted } from 'vue'
+
+let pollTimer = null
+
+const fetchUnreadCount = async () => {
+  if (!userStore.token) return
+  try {
+    const res = await getUnreadCount()
+    if (res.code === 200) {
+      unreadCount.value = res.data || 0
+    }
+  } catch (error) {
+    console.error('获取未读数失败', error)
+  }
+}
+
+const goToChat = () => {
+  router.push('/chat')
+}
+
+const showNotifications = () => {
+  ElMessage.info('暂无新通知')
+}
+
+onMounted(() => {
+  fetchUnreadCount()
+  // 简单的轮询，每30秒更新一次
+  pollTimer = setInterval(fetchUnreadCount, 30000)
+})
+
+onUnmounted(() => {
+  if (pollTimer) clearInterval(pollTimer)
+})
 </script>
 
 <style lang="scss" scoped>
@@ -241,6 +292,18 @@ $breakpoint-md: 768px;
     display: flex;
     align-items: center;
     gap: $spacing-lg;
+
+    .icon-btn {
+      cursor: pointer;
+      color: $text-secondary;
+      display: flex;
+      align-items: center;
+      transition: color 0.3s;
+      
+      &:hover {
+        color: $primary-color;
+      }
+    }
     
     .role-switch {
       .role-label {
