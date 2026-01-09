@@ -77,6 +77,13 @@ const api = {
     orderRecords: (orderId) => `${API_HOST}/api/teaching/records/${orderId}`,
     detail: (recordId) => `${API_HOST}/api/teaching/record/${recordId}`,
   },
+  // OCR识别模块
+  ocr: {
+    studentCard: `${API_HOST}/api/ocr/student-card`,
+    idCardFront: `${API_HOST}/api/ocr/id-card/front`,
+    idCardBack: `${API_HOST}/api/ocr/id-card/back`,
+    general: `${API_HOST}/api/ocr/general`
+  },
   // 学习辅助模块（错题本）
   study: {
     wrongbook: {

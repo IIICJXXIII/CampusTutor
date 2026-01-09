@@ -32,11 +32,9 @@ Page({
     }
 
     try {
-      // 模拟调用发送验证码接口
       await request.post(`${api.auth.sendCode}?phone=${this.data.phone}`);
       wx.showToast({ title: '验证码已发送', icon: 'none' });
-      
-      // 倒计时逻辑
+
       this.setData({ countDown: 60 });
       const timer = setInterval(() => {
         if (this.data.countDown <= 0) {
@@ -47,16 +45,13 @@ Page({
       }, 1000);
     } catch (err) {
       console.error(err);
-      // 开发测试阶段，即使接口失败也允许倒计时，方便调试UI
-      // this.setData({ countDown: 60 }); 
     }
   },
 
-  // 提交注册 (核心修复部分)
+  // 提交注册
   async handleRegister() {
     const { phone, password, code, nickname, role } = this.data;
 
-    // 1. 表单校验
     if (!phone || !password || !code) {
       return wx.showToast({ title: '请填写完整信息', icon: 'none' });
     }
@@ -64,7 +59,6 @@ Page({
     this.setData({ isSubmitting: true });
 
     try {
-      // 2. 调用注册接口
       const res = await request.post(api.auth.register, {
         phone,
         password,
@@ -73,49 +67,38 @@ Page({
         role
       });
 
-      console.log('【调试】注册接口原始返回:', res); 
+      console.log('【调试】注册接口返回:', res);
 
-      // 3. 健壮的 Token 提取逻辑
-      // 解释：request.js 可能直接返回 data，也可能返回 {code, msg, data}
-      // 我们这里做兼容处理，确保一定能拿到内部的 token
       let token = null;
       let userInfo = null;
 
       if (res && res.token) {
-        // 情况A: res 就是 payload (最常见)
         token = res.token;
         userInfo = res;
       } else if (res && res.data && res.data.token) {
-        // 情况B: res 是外层包装
         token = res.data.token;
         userInfo = res.data;
       }
 
       if (token) {
-        // 4. 注册成功且拿到Token -> 存缓存
-        console.log('【调试】成功获取并存储 Token:', token);
         wx.setStorageSync('token', token);
         wx.setStorageSync('userInfo', userInfo);
-        
+
         wx.showToast({ title: '注册成功', icon: 'success' });
 
-        // 5. 根据角色跳转
         setTimeout(() => {
           if (role === 1) {
             // 教员 -> 跳转到认证第一步
             wx.reLaunch({ url: '/pages/teacher/certification/step1-base/step1-base' });
           } else {
-            // 家长 -> 跳转到发布需求页
-            wx.reLaunch({ url: '/pages/parent/publishDemand/step1-student/step1-student' });
+            // 家长 -> 跳转到首页
+            wx.switchTab({ url: '/pages/common/index/index' });
           }
         }, 1500);
 
       } else {
-        // 异常情况：注册成功了但没给Token
-        console.error('【严重警告】注册响应中缺失Token字段，响应内容:', res);
+        console.error('注册响应中缺失Token字段:', res);
         wx.showToast({ title: '注册成功，请登录', icon: 'none' });
-        
-        // 兜底方案：跳回登录页让用户手动登录
         setTimeout(() => {
           wx.reLaunch({ url: '/pages/common/login/login' });
         }, 1500);
@@ -123,7 +106,6 @@ Page({
 
     } catch (err) {
       console.error('注册请求失败:', err);
-      // request.js 应该已经弹窗提示了错误信息
     } finally {
       this.setData({ isSubmitting: false });
     }

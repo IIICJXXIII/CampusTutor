@@ -3,7 +3,7 @@ const api = require('../../../../config/apiConfig.js');
 
 Page({
   data: {
-    certImgs: [], // 预览用的数组
+    certImgs: [],
     videoUrl: '',
     isSubmitting: false
   },
@@ -14,13 +14,13 @@ Page({
       count: 9 - this.data.certImgs.length,
       success: async (res) => {
         const tempPaths = res.tempFilePaths;
-        // 循环上传（实际开发建议并发上传）
         for (let path of tempPaths) {
           try {
-             const url = await request.upload(api.file.upload, path, { folder: 'cert' });
-             this.setData({
-               certImgs: [...this.data.certImgs, url]
-             });
+            const uploadRes = await request.upload(api.file.upload, path, { folder: 'cert' });
+            const url = typeof uploadRes === 'string' ? uploadRes : uploadRes.url;
+            this.setData({
+              certImgs: [...this.data.certImgs, url]
+            });
           } catch (e) {
             console.error('上传失败', e);
           }
@@ -36,7 +36,6 @@ Page({
     this.setData({ certImgs: list });
   },
 
-  // 选择视频 (暂不支持上传大文件，仅演示)
   chooseVideo() {
     wx.chooseMedia({
       count: 1,
@@ -44,11 +43,6 @@ Page({
       success: async (res) => {
         const path = res.tempFiles[0].tempFilePath;
         wx.showLoading({ title: '视频处理中...' });
-        // 视频上传逻辑同图片
-        // const url = await request.upload(api.file.upload, path, { folder: 'video' });
-        // this.setData({ videoUrl: url });
-        
-        // 演示：直接使用本地路径
         this.setData({ videoUrl: path });
         wx.hideLoading();
       }
@@ -61,15 +55,13 @@ Page({
     try {
       // 1. 获取 Step 1 的数据
       const step1Data = wx.getStorageSync('cert_step1') || {};
-      
+
       // 2. 组装最终数据
       const postData = {
         ...step1Data,
-        // 补充 Step 1 中没填但接口需要的字段 (mock)
-        idCardFrontUrl: step1Data.studentCardUrl, // 暂用学生证代替
+        idCardFrontUrl: step1Data.studentCardUrl,
         idCardBackUrl: step1Data.studentCardUrl,
-        certificateUrls: this.data.certImgs // 数组
-        // videoUrl: this.data.videoUrl (接口如果没定义视频字段，暂时忽略)
+        certificateUrls: this.data.certImgs
       };
 
       console.log('提交认证数据:', postData);
@@ -78,8 +70,11 @@ Page({
       await request.post(api.tutor.certification, postData);
 
       wx.showToast({ title: '提交成功' });
-      
-      // 4. 清除缓存并跳转
+
+      // 4. 标记认证已提交
+      wx.setStorageSync('certificationSubmitted', true);
+
+      // 5. 清除缓存并跳转
       wx.removeStorageSync('cert_step1');
       wx.redirectTo({
         url: '../step3-result/step3-result'
