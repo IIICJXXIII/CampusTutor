@@ -37,3 +37,33 @@ export function updateUserStatus(id, status) {
     params: { status }
   });
 }
+
+/**
+ * 修改密码
+ * @param {Object} data - 密码信息 { oldPassword, newPassword }
+ */
+export function updatePassword(data) {
+  return request.put('/user/password', data);
+}
+
+/**
+ * 获取当前用户信息
+ */
+export function getCurrentUser() {
+  return request.get('/user/current');
+}
+
+/**
+ * 获取当前用户信息 (别名)
+ */
+export function getUserInfo() {
+  return request.get('/user/current');
+}
+
+/**
+ * 更新个人信息
+ * @param {Object} data - 用户信息
+ */
+export function updateUserInfo(data) {
+  return request.put('/user/info', data);
+}

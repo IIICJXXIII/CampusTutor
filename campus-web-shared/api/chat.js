@@ -43,6 +43,23 @@ export function getChatUserInfo(userId) {
 }
 
 /**
+ * 获取聊天消息列表
+ * @param {number} conversationId - 会话ID
+ * @param {Object} params - 分页参数
+ */
+export function getMessages(conversationId, params) {
+  return request.get(`/chat/messages/${conversationId}`, { params });
+}
+
+/**
+ * 发送消息
+ * @param {Object} data - 消息内容
+ */
+export function sendMessage(data) {
+  return request.post('/chat/send', data);
+}
+
+/**
  * WebSocket 连接配置
  */
 export const WS_CHAT_URL = '/ws/chat';
