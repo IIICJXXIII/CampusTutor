@@ -1,0 +1,163 @@
+// =====================================
+// 响应式 Mixins (共享模块)
+// =====================================
+
+@use './variables.scss' as *;
+
+// 响应式断点 Mixins
+@mixin xs {
+  @media (max-width: #{$breakpoint-xs - 1}) {
+    @content;
+  }
+}
+
+@mixin sm {
+  @media (max-width: #{$breakpoint-sm - 1}) {
+    @content;
+  }
+}
+
+@mixin md {
+  @media (max-width: #{$breakpoint-md - 1}) {
+    @content;
+  }
+}
+
+@mixin lg {
+  @media (max-width: #{$breakpoint-lg - 1}) {
+    @content;
+  }
+}
+
+@mixin xl {
+  @media (max-width: #{$breakpoint-xl - 1}) {
+    @content;
+  }
+}
+
+// 最小宽度
+@mixin sm-up {
+  @media (min-width: #{$breakpoint-sm}) {
+    @content;
+  }
+}
+
+@mixin md-up {
+  @media (min-width: #{$breakpoint-md}) {
+    @content;
+  }
+}
+
+@mixin lg-up {
+  @media (min-width: #{$breakpoint-lg}) {
+    @content;
+  }
+}
+
+@mixin xl-up {
+  @media (min-width: #{$breakpoint-xl}) {
+    @content;
+  }
+}
+
+// 范围
+@mixin between($min, $max) {
+  @media (min-width: $min) and (max-width: #{$max - 1}) {
+    @content;
+  }
+}
+
+// 移动端优先
+@mixin mobile {
+  @media (max-width: #{$breakpoint-md - 1}) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (min-width: #{$breakpoint-md}) and (max-width: #{$breakpoint-lg - 1}) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: #{$breakpoint-lg}) {
+    @content;
+  }
+}
+
+// 通用卡片样式
+@mixin card {
+  background: $bg-white;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+  transition: box-shadow $transition-normal;
+  
+  &:hover {
+    box-shadow: $shadow-md;
+  }
+}
+
+// 渐变背景
+@mixin gradient-bg($start, $end, $direction: to right) {
+  background: linear-gradient($direction, $start, $end);
+}
+
+// 文本省略
+@mixin text-ellipsis($lines: 1) {
+  @if $lines == 1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// Flex 居中
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Flex 两端对齐
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// 清除浮动
+@mixin clearfix {
+  &::after {
+    content: '';
+    display: table;
+    clear: both;
+  }
+}
+
+// 隐藏滚动条
+@mixin hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// 安全区域适配 (移动端刘海屏)
+@mixin safe-area-inset($property, $direction) {
+  #{$property}: env(safe-area-inset-#{$direction});
+}
+
+// 触摸设备优化
+@mixin touch-action {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}

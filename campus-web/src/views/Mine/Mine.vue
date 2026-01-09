@@ -45,13 +45,15 @@ const menuList = computed(() => {
     return [
       ...common,
       { icon: 'Document', title: '简历与资质', path: '/teacher/resume', color: 'success' },
-      { icon: 'Wallet', title: '收益提现', path: '/teacher/wallet', color: 'info' }
+      { icon: 'Wallet', title: '收益提现', path: '/wallet', color: 'info' }
     ]
   } else {
     return [
       ...common,
+      { icon: 'List', title: '需求管理', path: '/parent/demands', color: 'warning' },
+      { icon: 'UserFilled', title: '我的孩子', path: '/students', color: 'primary' },
       { icon: 'Notebook', title: '智能错题本', path: '/parent/wrong-book', color: 'danger' },
-      { icon: 'CreditCard', title: '托管资金', path: '/parent/wallet', color: 'info' }
+      { icon: 'CreditCard', title: '托管资金', path: '/wallet', color: 'info' }
     ]
   }
 })
