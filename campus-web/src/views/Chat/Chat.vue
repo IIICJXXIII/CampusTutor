@@ -146,9 +146,9 @@ const totalUnread = computed(() => {
 onMounted(async () => {
   // 获取当前用户信息
   const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-  currentUserId.value = userInfo.id;
+  currentUserId.value = Number(userInfo.id); // 确保是数字类型
   currentUserName.value = userInfo.nickname || userInfo.username;
-  currentUserAvatar.value = userInfo.avatar;
+  currentUserAvatar.value = userInfo.avatar || userInfo.avatarUrl;
 
   // 加载会话列表
   await loadSessions();
@@ -321,7 +321,7 @@ function updateSessionList(msgData, isSelf) {
     session.lastMessage = msgData.content;
     session.lastTime = msgData.createTime;
     
-    // 如果不是当前会话的消息，增加未读数
+    // 如果不是当前会话的消息，且不是自己发送的，增加未读数
     if (!isSelf && targetId !== activeUserId.value) {
       session.unreadCount = (session.unreadCount || 0) + 1;
     }
@@ -329,8 +329,9 @@ function updateSessionList(msgData, isSelf) {
     // 将会话移到顶部
     sessions.value.splice(sessionIndex, 1);
     sessions.value.unshift(session);
-  } else {
-    // 新会话，需要获取用户信息
+  } else if (!isSelf) {
+    // 仅当收到别人的消息时才创建新会话
+    // 自己发送的消息不需要在这里创建会话（会话应该已经存在于 openChatWithUser 中创建）
     getChatUserInfo(targetId).then(res => {
       sessions.value.unshift({
         targetUserId: targetId,
@@ -339,10 +340,11 @@ function updateSessionList(msgData, isSelf) {
         targetRole: res.data.role,
         lastMessage: msgData.content,
         lastTime: msgData.createTime,
-        unreadCount: isSelf ? 0 : 1
+        unreadCount: 1
       });
     });
   }
+  // 如果是自己发送且会话不存在，不做任何操作（会话会在 selectSession 或 openChatWithUser 中创建）
 }
 
 // 滚动到底部
