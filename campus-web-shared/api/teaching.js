@@ -17,7 +17,12 @@ export function checkIn(data) {
  * @param {Object} data - { contentSummary, homeworkAssigned }
  */
 export function checkOut(recordId, data) {
-  return request.post(`/teaching/check-out/${recordId}`, data);
+  return request.post(`/teaching/check-out/${recordId}`, null, {
+    params: {
+      contentSummary: data?.contentSummary,
+      homeworkAssigned: data?.homeworkAssigned
+    }
+  });
 }
 
 /**

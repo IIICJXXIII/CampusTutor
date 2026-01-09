@@ -366,9 +366,21 @@ const aiParseDemand = async () => {
 const handleSubmit = async () => {
   submitting.value = true
   try {
+    // 转换 teachingMode 为后端需要的 teachMode 整数
+    const teachModeMap = { '线下': 1, '线上': 2, '都可以': 3 }
+    
     const res = await createDemand({
-      ...form,
-      availableTime: form.availableTime.join(',')
+      studentId: form.studentId,
+      title: form.title,
+      subject: form.subject,
+      grade: form.grade,
+      expectPrice: form.salary,                              // 后端字段名是 expectPrice
+      scheduleRequire: form.availableTime,                   // 后端字段名是 scheduleRequire (数组)
+      teachMode: teachModeMap[form.teachingMode] || 1,       // 后端字段名是 teachMode (Integer)
+      longitude: form.longitude,
+      latitude: form.latitude,
+      address: `${form.district || ''} ${form.address || ''}`.trim(),
+      detail: form.requirements                               // 后端字段名是 detail
     })
     
     if (res.code === 200) {

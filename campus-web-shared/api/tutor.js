@@ -55,5 +55,5 @@ export function getScheduleConfig() {
  * @param {Array} schedules - 排课配置列表
  */
 export function saveScheduleConfig(schedules) {
-  return request.post('/tutor/schedule', schedules);
+  return request.post('/tutor/schedule', { schedules });
 }

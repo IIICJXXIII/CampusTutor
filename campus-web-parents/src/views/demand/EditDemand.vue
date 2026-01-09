@@ -206,7 +206,23 @@ const loadData = async () => {
     ])
     
     if (demandRes.code === 200 && demandRes.data) {
-      Object.assign(form, demandRes.data)
+      const data = demandRes.data
+      // 后端字段名与前端表单字段名的映射
+      form.id = data.id
+      form.studentId = data.studentId
+      form.title = data.title || ''
+      form.subject = data.subject || ''
+      form.grade = data.grade || ''
+      form.salary = data.expectPrice || data.salary || 80
+      form.frequency = data.frequency || ''
+      form.duration = data.duration || 2
+      // teachMode: 1=上门, 2=网课, 3=均可 -> 前端字符串
+      const teachModeMap = { 1: '线下', 2: '线上', 3: '均可' }
+      form.teachingMode = teachModeMap[data.teachMode] || data.teachingMode || '线下'
+      form.address = data.address || ''
+      form.district = data.district || ''
+      form.genderRequirement = data.genderRequirement || '不限'
+      form.requirements = data.detail || data.requirements || ''
     }
     
     if (studentsRes.code === 200) {
@@ -230,7 +246,22 @@ const handleSubmit = async () => {
   
   submitting.value = true
   try {
-    const res = await updateDemand(form)
+    // 将前端表单字段转换为后端期望的字段名
+    const teachModeMap = { '线下': 1, '线上': 2, '均可': 3 }
+    const submitData = {
+      id: form.id,
+      studentId: form.studentId,
+      title: form.title,
+      subject: form.subject,
+      grade: form.grade,
+      expectPrice: form.salary,
+      teachMode: teachModeMap[form.teachingMode] || 1,
+      address: form.address,
+      detail: form.requirements,
+      genderRequirement: form.genderRequirement
+    }
+    
+    const res = await updateDemand(submitData)
     if (res.code === 200) {
       ElMessage.success('修改成功')
       router.back()

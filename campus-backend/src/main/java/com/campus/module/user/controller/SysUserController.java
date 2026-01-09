@@ -70,4 +70,27 @@ public class SysUserController {
         boolean result = sysUserService.updateStatus(id, status);
         return Result.success(result);
     }
+
+    @Operation(summary = "更新当前用户个人信息")
+    @PutMapping("/info")
+    public Result<Boolean> updateUserInfo(@RequestBody SysUser user) {
+        Long userId = UserContext.getUserId();
+        user.setId(userId);
+        user.setPassword(null);  // 不允许通过此接口修改密码
+        user.setOpenid(null);
+        user.setRole(null);      // 不允许修改角色
+        user.setStatus(null);    // 不允许修改状态
+        boolean result = sysUserService.updateById(user);
+        return Result.success(result);
+    }
+
+    @Operation(summary = "修改密码")
+    @PutMapping("/password")
+    public Result<Void> updatePassword(@RequestBody java.util.Map<String, String> params) {
+        Long userId = UserContext.getUserId();
+        String oldPassword = params.get("oldPassword");
+        String newPassword = params.get("newPassword");
+        sysUserService.updatePassword(userId, oldPassword, newPassword);
+        return Result.success("密码修改成功");
+    }
 }
