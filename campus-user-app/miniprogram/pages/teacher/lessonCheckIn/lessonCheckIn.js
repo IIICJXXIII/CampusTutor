@@ -107,9 +107,11 @@ Page({
                 const tempFilePath = res.tempFiles[0].tempFilePath;
                 wx.showLoading({ title: '上传中...' });
                 try {
-                    // 上传到服务器
+                    // 上传到服务器 - 后端返回的是字符串URL
                     const uploadRes = await this.uploadFile(tempFilePath);
-                    this.setData({ photoUrl: uploadRes.url || tempFilePath });
+                    // 兼容处理：可能是字符串URL或对象{url:...}
+                    const photoUrl = typeof uploadRes === 'string' ? uploadRes : (uploadRes.url || tempFilePath);
+                    this.setData({ photoUrl });
                     wx.hideLoading();
                 } catch (err) {
                     wx.hideLoading();

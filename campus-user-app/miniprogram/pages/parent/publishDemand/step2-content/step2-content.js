@@ -17,7 +17,7 @@ Page({
       detail: '',
       scheduleRequire: [] // 暂时留空
     },
-    
+
     subjects: ['语文', '数学', '英语', '物理', '化学', '全科作业'],
     isSubmitting: false
   },
@@ -46,7 +46,7 @@ Page({
   handleSubjectChange(e) {
     const idx = e.detail.value;
     const subject = this.data.subjects[idx];
-    this.setData({ 
+    this.setData({
       'form.subject': subject,
       // 优化标题体验
       'form.title': `急寻${this.data.form.grade}${subject}老师`
@@ -77,7 +77,7 @@ Page({
 
   async submitDemand() {
     const { title, subject, expectPrice, address, longitude } = this.data.form;
-    
+
     if (!title || !subject || !expectPrice) {
       return wx.showToast({ title: '请完善核心信息', icon: 'none' });
     }
