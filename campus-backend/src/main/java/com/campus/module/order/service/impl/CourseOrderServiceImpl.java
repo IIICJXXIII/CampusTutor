@@ -7,8 +7,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.campus.common.exception.BusinessException;
 import com.campus.common.result.ResultCode;
+import com.campus.module.order.dto.AcceptDemandRequest;
 import com.campus.module.order.dto.CreateOrderRequest;
 import com.campus.module.order.dto.PayOrderRequest;
+import com.campus.module.demand.entity.DemandPost;
+import com.campus.module.demand.mapper.DemandPostMapper;
 import com.campus.module.order.entity.CourseOrder;
 import com.campus.module.order.mapper.CourseOrderMapper;
 import com.campus.module.order.service.CourseOrderService;
@@ -32,12 +35,13 @@ import java.util.regex.Pattern;
  */
 @Service
 @RequiredArgsConstructor
-public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, CourseOrder> 
+public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, CourseOrder>
         implements CourseOrderService {
 
     private final TutorProfileMapper tutorProfileMapper;
     private final SysWalletService walletService;
     private final TeachingRecordMapper teachingRecordMapper;
+    private final DemandPostMapper demandPostMapper;
 
     /**
      * 平台服务费比例(10%)
@@ -117,11 +121,11 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         order.setPayTime(LocalDateTime.now());
         order.setPayType(request.getPayType());
         updateById(order);
-        
+
         // 支付成功后生成课程记录（课表）
         generateTeachingRecords(order);
     }
-    
+
     /**
      * 根据订单生成课程记录(课表)
      */
@@ -131,9 +135,9 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         if (firstLessonStart == null) {
             firstLessonStart = LocalDateTime.now().plusDays(1).withHour(14).withMinute(0).withSecond(0).withNano(0);
         }
-        
+
         int totalHours = order.getTotalHours();
-        
+
         for (int i = 1; i <= totalHours; i++) {
             TeachingRecord record = new TeachingRecord();
             record.setOrderId(order.getId());
@@ -147,7 +151,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
             teachingRecordMapper.insert(record);
         }
     }
-    
+
     /**
      * 解析首课时间
      * 格式: "首课时间: 01-09 14:00 - 15:00"
@@ -165,7 +169,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
                 int day = Integer.parseInt(matcher.group(2));
                 int hour = Integer.parseInt(matcher.group(3));
                 int minute = Integer.parseInt(matcher.group(4));
-                
+
                 // 使用当前年份
                 int year = LocalDateTime.now().getYear();
                 return LocalDateTime.of(year, month, day, hour, minute);
@@ -277,5 +281,84 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
      */
     private String generateOrderNo() {
         return "CT" + System.currentTimeMillis() + IdUtil.simpleUUID().substring(0, 6).toUpperCase();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long acceptDemand(Long tutorId, AcceptDemandRequest request) {
+        // 1. 查询需求帖
+        DemandPost demand = demandPostMapper.selectById(request.getDemandId());
+        if (demand == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "需求不存在");
+        }
+        if (demand.getStatus() != 1) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "需求已下架或已被接单");
+        }
+        if (demand.getMatchedTutorId() != null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "该需求已被其他教员接单");
+        }
+
+        // 2. 查询教员档案
+        LambdaQueryWrapper<TutorProfile> profileWrapper = new LambdaQueryWrapper<TutorProfile>()
+                .eq(TutorProfile::getUserId, tutorId)
+                .eq(TutorProfile::getCertStatus, 2); // 已认证
+        TutorProfile tutorProfile = tutorProfileMapper.selectOne(profileWrapper);
+        if (tutorProfile == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "教员未认证或档案不存在");
+        }
+
+        // 3. 计算金额
+        BigDecimal unitPrice = demand.getExpectPrice();
+        int totalHours = request.getTotalHours() != null ? request.getTotalHours() : 10; // 默认10课时
+        BigDecimal totalAmount = unitPrice.multiply(new BigDecimal(totalHours));
+        BigDecimal serviceFee = totalAmount.multiply(SERVICE_FEE_RATE).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal tutorAmount = totalAmount.subtract(serviceFee);
+
+        // 4. 创建订单
+        CourseOrder order = new CourseOrder();
+        order.setOrderNo(generateOrderNo());
+        order.setParentId(demand.getPublisherId());
+        order.setStudentId(demand.getStudentId());
+        order.setTutorId(tutorId);
+        order.setTutorProfileId(tutorProfile.getId());
+        order.setDemandId(demand.getId());
+        order.setSubject(demand.getSubject());
+        order.setGrade(demand.getGrade());
+        order.setTeachMode(demand.getTeachMode() == 3 ? 1 : demand.getTeachMode()); // 均可时默认上门
+        order.setUnitPrice(unitPrice);
+        order.setTotalHours(totalHours);
+        order.setTotalAmount(totalAmount);
+        order.setServiceFee(serviceFee);
+        order.setTutorAmount(tutorAmount);
+        order.setUsedHours(0);
+        order.setStatus(-1); // 待确认（需家长确认后才能支付）
+        order.setRemark(request.getRemark());
+        save(order);
+
+        // 5. 更新需求帖状态
+        demand.setStatus(2); // 已匹配
+        demand.setMatchedTutorId(tutorId);
+        demandPostMapper.updateById(demand);
+
+        return order.getId();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void confirmOrder(Long parentId, Long orderId) {
+        CourseOrder order = getById(orderId);
+        if (order == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "订单不存在");
+        }
+        if (!order.getParentId().equals(parentId)) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "无权操作此订单");
+        }
+        if (order.getStatus() != -1) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "订单状态不正确，仅待确认订单可确认");
+        }
+
+        // 确认后状态变为待支付
+        order.setStatus(0);
+        updateById(order);
     }
 }

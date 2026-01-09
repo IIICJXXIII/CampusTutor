@@ -1,9 +1,9 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores'
-import { getParentOrders, getTutorOrders } from '@/api/order'
+import { getParentOrders, getTutorOrders, confirmOrder } from '@/api/order'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -24,11 +24,12 @@ const fetchOrders = async () => {
       id: order.orderNo || `ORD-${order.id}`,
       orderId: order.id,
       teacher: order.tutorName || '待分配',
-      subject: `${order.subject || '课程'} · ${order.totalLessons || 10}课时包`,
+      subject: `${order.subject || '课程'} · ${order.totalHours || 10}课时包`,
       amount: order.totalPrice || order.totalAmount,
+      rawStatus: order.status, // 保留原始状态用于操作判断
       status: mapOrderStatus(order.status),
       statusText: getStatusTag(order.status),
-      progress: order.remainLessons != null ? `${(order.totalLessons || 10) - order.remainLessons}/${order.totalLessons || 10} 课时` : null,
+      progress: order.usedHours != null ? `${order.usedHours}/${order.totalHours || 10} 课时` : null,
       date: order.createTime
     }))
   } catch (error) {
@@ -41,6 +42,7 @@ const fetchOrders = async () => {
 
 const mapOrderStatus = (status) => {
   switch (status) {
+    case -1: return 'confirm' // 待确认
     case 0: return 'pending'
     case 1: case 2: return 'active'
     case 3: return 'done'
@@ -51,6 +53,7 @@ const mapOrderStatus = (status) => {
 
 const getStatusTag = (status) => {
   switch (status) {
+    case -1: return '待确认'
     case 0: return '待支付'
     case 1: return '托管中'
     case 2: return '授课中'
@@ -63,6 +66,7 @@ const getStatusTag = (status) => {
 
 const getStatusType = (status) => {
   switch (status) {
+    case 'confirm': return 'info'
     case 'pending': return 'warning'
     case 'active': return 'primary'
     case 'done': return 'success'
@@ -78,30 +82,10 @@ const getMockOrders = () => [
     teacher: '张老师',
     subject: '初中数学 · 20课时包',
     amount: 3800,
+    rawStatus: 0,
     status: 'pending',
     statusText: '待支付',
     date: '2025-03-01 14:30'
-  },
-  {
-    id: 'ORD-20250215-09',
-    orderId: 2,
-    teacher: '李同学',
-    subject: '小学奥数 · 10课时包',
-    amount: 1500,
-    status: 'active',
-    statusText: '托管中',
-    progress: '6/10 课时',
-    date: '2025-02-15 09:00'
-  },
-  {
-    id: 'ORD-20241210-33',
-    orderId: 3,
-    teacher: '王老师',
-    subject: '高中物理 · 考前冲刺',
-    amount: 2000,
-    status: 'done',
-    statusText: '已完成',
-    date: '2024-12-10'
   }
 ]
 
@@ -111,6 +95,7 @@ onMounted(() => {
 
 const tabs = [
   { value: 'all', label: '全部' },
+  { value: 'confirm', label: '待确认' },
   { value: 'pending', label: '待支付' },
   { value: 'active', label: '进行中' },
   { value: 'done', label: '已完成' }
@@ -121,6 +106,29 @@ const filteredOrders = computed(() => {
   return orders.value.filter(o => o.status === activeTab.value)
 })
 
+// 家长确认订单
+const handleConfirm = async (order) => {
+  try {
+    await ElMessageBox.confirm(
+      '确认后订单将变为待支付状态，您需要支付后才能开始授课。',
+      '确认接单',
+      { confirmButtonText: '确认', cancelButtonText: '取消', type: 'info' }
+    )
+    
+    const res = await confirmOrder(order.orderId)
+    if (res.code === 200) {
+      ElMessage.success('已确认，请支付订单')
+      fetchOrders() // 刷新列表
+    } else {
+      ElMessage.error(res.message || '确认失败')
+    }
+  } catch (err) {
+    if (err !== 'cancel') {
+      ElMessage.error(err.message || '操作失败')
+    }
+  }
+}
+
 const handleAction = (order) => {
   if (order.status === 'pending') {
     router.push({ path: '/payment', query: { orderId: order.orderId } })
@@ -128,6 +136,7 @@ const handleAction = (order) => {
     router.push({ path: '/process/record', query: { orderId: order.orderId } })
   }
 }
+
 </script>
 
 <template>
@@ -195,14 +204,32 @@ const handleAction = (order) => {
         <!-- 订单操作 -->
         <div class="order-actions">
           <el-button size="small">查看合同</el-button>
+          <!-- 家长专属：确认接单 -->
           <el-button 
-            v-if="item.status === 'pending'" 
+            v-if="item.status === 'confirm' && userStore.isParent" 
+            type="primary" 
+            size="small"
+            @click="handleConfirm(item)"
+          >
+            确认接单
+          </el-button>
+          <!-- 教师看到的待确认状态提示 -->
+          <el-tag v-if="item.status === 'confirm' && !userStore.isParent" type="info" size="small">
+            等待家长确认
+          </el-tag>
+          <!-- 家长专属：去支付 -->
+          <el-button 
+            v-if="item.status === 'pending' && userStore.isParent" 
             type="warning" 
             size="small"
             @click="handleAction(item)"
           >
             去支付
           </el-button>
+          <!-- 教师看到的待支付状态提示 -->
+          <el-tag v-if="item.status === 'pending' && !userStore.isParent" type="warning" size="small">
+            等待家长支付
+          </el-tag>
           <el-button 
             v-if="item.status === 'active'" 
             type="primary" 
