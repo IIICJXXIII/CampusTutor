@@ -105,8 +105,7 @@ const handleLogin = async () => {
     const res = await login({
       account: form.phone,
       password: form.password,
-      loginType: 'password',
-      role: 'parent'
+      loginType: 'password'
     })
     
     if (res.code === 200) {

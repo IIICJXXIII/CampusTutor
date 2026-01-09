@@ -10,7 +10,20 @@ import { ref, computed } from 'vue'
 export const useUserStore = defineStore('user', () => {
   // 状态
   const token = ref(localStorage.getItem('token') || '')
-  const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || 'null'))
+  
+  // 安全读取 userInfo
+  let initialUserInfo = null;
+  try {
+    const stored = localStorage.getItem('userInfo');
+    if (stored && stored !== 'undefined') {
+      initialUserInfo = JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error('Failed to parse userInfo:', e);
+    localStorage.removeItem('userInfo');
+  }
+  const userInfo = ref(initialUserInfo);
+
   const userRole = ref(localStorage.getItem('userRole') || '') // 'parent' | 'tutor'
 
   // 计算属性
@@ -29,6 +42,11 @@ export const useUserStore = defineStore('user', () => {
   }
 
   function setUserInfo(info) {
+    if (!info) {
+      userInfo.value = null;
+      localStorage.removeItem('userInfo');
+      return;
+    }
     userInfo.value = info
     localStorage.setItem('userInfo', JSON.stringify(info))
     
