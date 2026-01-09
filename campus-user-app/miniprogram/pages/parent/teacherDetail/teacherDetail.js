@@ -32,7 +32,10 @@ Page({
       { label: '20:40', startTime: '20:40', endTime: '21:20' }
     ],
     scheduleData: [], // 教师可用时段 [slotIndex][dayIndex] = true/false
-    bookingData: []   // 家长选择的预约时段
+    bookingData: [],   // 家长选择的预约时段
+    // 联系功能相关
+    showContactModal: false, // 联系模态窗口显示状态
+    tutorPhone: '' // 教师手机号
   },
 
   onLoad(options) {

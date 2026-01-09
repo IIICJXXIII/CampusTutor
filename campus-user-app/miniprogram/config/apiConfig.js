@@ -31,7 +31,8 @@ const api = {
     profile: `${API_HOST}/api/tutor/profile`,
     certification: `${API_HOST}/api/tutor/certification`,
     schedule: `${API_HOST}/api/tutor/schedule`,
-    detail: (id) => `${API_HOST}/api/tutor/${id}`,
+    // 教师公开详情 (后端为 /api/tutor/public/{id})
+    detail: (id) => `${API_HOST}/api/tutor/public/${id}`,
   },
   // 家长模块 (Parent)
   parent: {
@@ -45,6 +46,7 @@ const api = {
     my: `${API_HOST}/api/demand/my`,
     nearby: `${API_HOST}/api/demand/nearby`,
     detail: (id) => `${API_HOST}/api/demand/${id}`,
+    match: (id) => `${API_HOST}/api/demand/${id}/match`,
   },
   // 匹配模块 (Match)
   match: {
