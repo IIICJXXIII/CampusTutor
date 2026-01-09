@@ -131,7 +131,7 @@ const sendCode = async () => {
   }
   
   try {
-    const res = await sendCodeApi({ phone: form.phone })
+    const res = await sendCodeApi(form.phone)
     if (res.code === 200) {
       ElMessage.success('验证码已发送')
       countdown.value = 60
@@ -154,7 +154,7 @@ const handleRegister = async () => {
     loading.value = true
     const res = await register({
       ...form,
-      role: 'parent'
+      role: 2
     })
     
     if (res.code === 200) {

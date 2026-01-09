@@ -5,7 +5,7 @@ import request from './request';
 
 /**
  * 上课打卡 (教师)
- * @param {Object} data - { orderId, longitude, latitude }
+ * @param {Object} data - { orderId, longitude, latitude, address, photoUrl }
  */
 export function checkIn(data) {
   return request.post('/teaching/check-in', data);
@@ -13,11 +13,11 @@ export function checkIn(data) {
 
 /**
  * 下课打卡 (教师)
- * @param {number} id - 课时记录ID
- * @param {Object} data - { longitude, latitude }
+ * @param {number} recordId - 课时记录ID
+ * @param {Object} data - { contentSummary, homeworkAssigned }
  */
-export function checkOut(id, data) {
-  return request.post(`/teaching/check-out/${id}`, data);
+export function checkOut(recordId, data) {
+  return request.post(`/teaching/check-out/${recordId}`, data);
 }
 
 /**
@@ -52,13 +52,13 @@ export function getMyLessons(params) {
  * @param {number} orderId - 订单ID
  */
 export function getOrderLessons(orderId) {
-  return request.get(`/teaching/order/${orderId}`);
+  return request.get(`/teaching/records/${orderId}`);
 }
 
 /**
  * 获取课时详情
- * @param {number} id - 课时记录ID
+ * @param {number} recordId - 课时记录ID
  */
-export function getLessonDetail(id) {
-  return request.get(`/teaching/${id}`);
+export function getLessonDetail(recordId) {
+  return request.get(`/teaching/record/${recordId}`);
 }

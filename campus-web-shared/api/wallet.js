@@ -20,7 +20,7 @@ export function getTransactions(params) {
 
 /**
  * 申请提现 (教师)
- * @param {Object} data - { amount, bankCard, bankName, realName }
+ * @param {Object} data - { amount, channel, accountNo, accountName }
  */
 export function applyWithdraw(data) {
   return request.post('/wallet/withdraw', data);

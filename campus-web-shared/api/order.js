@@ -8,15 +8,15 @@ import request from './request';
  * @param {Object} data - 订单信息
  */
 export function createOrder(data) {
-  return request.post('/order', data);
+  return request.post('/order/create', data);
 }
 
 /**
  * 教师接单
- * @param {number} id - 订单ID
+ * @param {Object} data - { demandId, totalHours, remark }
  */
-export function acceptOrder(id) {
-  return request.post(`/order/${id}/accept`);
+export function acceptOrder(data) {
+  return request.post('/order/accept', data);
 }
 
 /**
@@ -29,10 +29,10 @@ export function confirmOrder(id) {
 
 /**
  * 支付订单 (家长)
- * @param {number} id - 订单ID
+ * @param {Object} data - { orderId, payType }
  */
-export function payOrder(id) {
-  return request.post(`/order/${id}/pay`);
+export function payOrder(data) {
+  return request.post('/order/pay', data);
 }
 
 /**
@@ -51,7 +51,7 @@ export function cancelOrder(id, reason) {
  * @param {number} id - 订单ID
  */
 export function confirmStartOrder(id) {
-  return request.post(`/order/${id}/confirm-start`);
+  return request.post(`/order/${id}/start`);
 }
 
 /**

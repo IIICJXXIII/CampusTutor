@@ -8,7 +8,7 @@ import request from './request';
  * @param {Object} data - 需求信息
  */
 export function createDemand(data) {
-  return request.post('/demand', data);
+  return request.post('/demand/publish', data);
 }
 
 /**
@@ -16,7 +16,7 @@ export function createDemand(data) {
  * @param {Object} data - 需求信息
  */
 export function updateDemand(data) {
-  return request.put('/demand', data);
+  return request.put('/demand/update', data);
 }
 
 /**
@@ -24,7 +24,7 @@ export function updateDemand(data) {
  * @param {number} id - 需求ID
  */
 export function publishDemand(id) {
-  return request.post(`/demand/${id}/publish`);
+  return request.post(`/demand/${id}/online`);
 }
 
 /**
@@ -32,7 +32,7 @@ export function publishDemand(id) {
  * @param {number} id - 需求ID
  */
 export function withdrawDemand(id) {
-  return request.post(`/demand/${id}/withdraw`);
+  return request.post(`/demand/${id}/offline`);
 }
 
 /**

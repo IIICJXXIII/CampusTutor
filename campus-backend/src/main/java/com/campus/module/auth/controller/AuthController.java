@@ -1,6 +1,6 @@
 package com.campus.module.auth.controller;
 
-import com.campus.common.result .Result;
+import com.campus.common.result.Result;
 import com.campus.module.auth.dto.LoginRequest;
 import com.campus.module.auth.dto.LoginResponse;
 import com.campus.module.auth.dto.RegisterRequest;

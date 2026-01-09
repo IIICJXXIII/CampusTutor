@@ -213,12 +213,12 @@ const handleSubmit = async () => {
     }
     
     submitting.value = true
+    // 后端API参数为 { amount, channel, accountNo, accountName }
     const res = await applyWithdraw({
       amount,
-      method: form.method,
-      bankCard: form.bankCard,
-      bankName: form.bankName,
-      cardHolder: form.cardHolder
+      channel: form.method,
+      accountNo: form.bankCard,
+      accountName: form.cardHolder
     })
     
     if (res.code === 200) {
