@@ -104,11 +104,24 @@ Page({
     this.setData({ loading: true });
 
     try {
-      // 处理特殊排序值
+      // 处理排序参数
       const q = { ...this.data.query };
-      if (this.data.sortOptions[this.data.activeSort].value === 'price_asc') {
+      const sortValue = this.data.sortOptions[this.data.activeSort].value;
+      
+      if (sortValue === 'price_asc') {
         q.sortBy = 'price';
         q.sortOrder = 'asc';
+      } else if (sortValue === 'score') {
+        // 智能推荐使用score排序，默认降序
+        q.sortBy = 'score';
+        q.sortOrder = 'desc';
+      } else if (sortValue) {
+        q.sortBy = sortValue;
+        q.sortOrder = 'desc';
+      } else {
+        // 默认排序
+        delete q.sortBy;
+        delete q.sortOrder;
       }
 
       // 调用接口: POST /api/match/tutors
@@ -125,13 +138,18 @@ Page({
         matchScore: item.matchScore || null,
         matchTags: item.matchTags || [],
         // 距离格式化
-        distText: item.distance ? (item.distance < 1 ? Math.round(item.distance * 1000) + 'm' : item.distance.toFixed(1) + 'km') : ''
+        distText: item.distance ? (item.distance < 1 ? Math.round(item.distance * 1000) + 'm' : item.distance.toFixed(1) + 'km') : '',
+        // 计算匹配等级（用于UI展示）
+        matchLevel: item.matchScore ? (item.matchScore >= 90 ? 'excellent' : item.matchScore >= 75 ? 'good' : item.matchScore >= 60 ? 'fair' : 'poor') : 'unknown'
       }));
 
       // 如果结果为空且我们是基于位置搜索的，尝试降级：清除位置并再次获取系统推荐
       if (list.length === 0 && this.data.query.longitude && this.data.query.latitude) {
         this.setData({ fallbackMessage: '未检索到附近老师，显示系统推荐（不含距离）' });
+        // 确保降级查询时也正确处理排序参数
         const q2 = { ...this.data.query, longitude: null, latitude: null, page: 1 };
+        delete q2.longitude;
+        delete q2.latitude;
         try {
           const res2 = await request.post(api.match.search, q2);
           const rec2 = res2.records || [];
@@ -141,7 +159,8 @@ Page({
             teachGrades: item.teachGrades || [],
             matchScore: item.matchScore || null,
             matchTags: item.matchTags || [],
-            distText: ''
+            distText: '',
+            matchLevel: item.matchScore ? (item.matchScore >= 90 ? 'excellent' : item.matchScore >= 75 ? 'good' : item.matchScore >= 60 ? 'fair' : 'poor') : 'unknown'
           }));
         } catch (err) {
           console.error('降级获取教师推荐失败', err);
@@ -208,10 +227,24 @@ Page({
   onSortChange(e) {
     const idx = e.detail.value;
     const val = this.data.sortOptions[idx].value;
-    this.setData({ 
-      activeSort: idx,
-      'query.sortBy': val 
-    }, () => this.refreshList());
+    const queryUpdate = { activeSort: idx };
+    
+    // 根据选择的排序值设置正确的参数
+    if (val === 'price_asc') {
+      queryUpdate['query.sortBy'] = 'price';
+      queryUpdate['query.sortOrder'] = 'asc';
+    } else if (val === 'score') {
+      queryUpdate['query.sortBy'] = 'score';
+      queryUpdate['query.sortOrder'] = 'desc';
+    } else if (val) {
+      queryUpdate['query.sortBy'] = val;
+      queryUpdate['query.sortOrder'] = 'desc';
+    } else {
+      queryUpdate['query.sortBy'] = '';
+      queryUpdate['query.sortOrder'] = 'desc';
+    }
+    
+    this.setData(queryUpdate, () => this.refreshList());
   },
 
   // 用户主动选择显示系统推荐（清除位置后检索）
