@@ -30,3 +30,13 @@ export function quickAsk(question) {
     params: { question }
   });
 }
+
+/**
+ * 流式AI对话
+ * @param {Object} data - { message, context }
+ */
+export function streamChat(data) {
+  return request.post('/llm/chat/stream', data, {
+    responseType: 'stream'
+  });
+}

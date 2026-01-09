@@ -22,7 +22,11 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, 'src'),
       '@shared': path.resolve(__dirname, '../campus-web-shared')
-    }
+    },
+    dedupe: ['vue', 'axios', 'pinia', 'vue-router']
+  },
+  optimizeDeps: {
+    include: ['axios', 'dayjs', 'element-plus', 'pinia', 'vue-router']
   },
   server: {
     port: 5175,

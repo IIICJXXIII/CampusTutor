@@ -34,6 +34,16 @@ export function recognizeIdCardBack(imageUrl) {
 }
 
 /**
+ * 通用文字识别
+ * @param {string} imageUrl - 图片URL
+ */
+export function generalOcr(imageUrl) {
+  return request.post('/ocr/general', null, {
+    params: { imageUrl }
+  });
+}
+
+/**
  * 通用文字识别 (错题本)
  * @param {string} imageUrl - 图片URL
  */

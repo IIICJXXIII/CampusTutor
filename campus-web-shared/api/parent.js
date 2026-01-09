@@ -28,6 +28,13 @@ export function deleteStudent(id) {
 }
 
 /**
+ * 获取家长端统计数据
+ */
+export function getParentStats() {
+  return request.get('/parent/stats');
+}
+
+/**
  * 获取学生列表
  */
 export function getStudentList() {
