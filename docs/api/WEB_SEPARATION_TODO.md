@@ -160,90 +160,109 @@
 - [x] `Register.vue` - 注册页面
   - [x] 调用 `/api/auth/register` 注册接口
 
-### 3.2 学生管理模块 ⏳
+### 3.2 学生管理模块 ✅
 
-- [ ] `StudentList.vue` - 学生列表页
-  - [ ] 获取学生列表 `/api/parent/students`
-- [ ] `StudentEdit.vue` - 学生编辑页
-  - [ ] 添加学生 `POST /api/parent/student`
-  - [ ] 编辑学生 `PUT /api/parent/student`
-  - [ ] 删除学生 `DELETE /api/parent/student`
-  - [ ] 学生详情 `/api/parent/student/{id}`
+- [x] `StudentList.vue` - 学生列表页
+  - [x] 获取学生列表 `/api/parent/students`
+- [x] `AddStudent.vue` - 学生编辑页
+  - [x] 添加学生 `POST /api/parent/student`
+  - [x] 编辑学生 `PUT /api/parent/student`
+  - [x] 删除学生 `DELETE /api/parent/student`
+- [x] `StudentDetail.vue` - 学生详情页
+  - [x] 学生详情 `/api/parent/student/{id}`
 
-### 3.3 需求发布模块 ⏳
+### 3.3 需求发布模块 ✅
 
-- [ ] `CreateDemand.vue` - 需求发布页（3步骤）
-  - [ ] 步骤1：基本信息
-  - [ ] 步骤2：详细要求
-  - [ ] 步骤3：确认发布
-  - [ ] 创建需求 `POST /api/demand`
-  - [ ] 编辑需求 `PUT /api/demand`
-  - [ ] 发布需求 `/api/demand/{id}/publish`
-  - [ ] 撤回需求 `/api/demand/{id}/withdraw`
-  - [ ] AI解析需求 `/api/llm/parse-demand`
+- [x] `CreateDemand.vue` - 需求发布页（3步骤）
+  - [x] 步骤1：基本信息
+  - [x] 步骤2：详细要求
+  - [x] 步骤3：确认发布
+  - [x] 创建需求 `POST /api/demand`
+  - [x] AI解析需求 `/api/llm/parse-demand`
+- [x] `EditDemand.vue` - 需求编辑页
+  - [x] 编辑需求 `PUT /api/demand`
+  - [x] 发布需求 `/api/demand/{id}/publish`
+  - [x] 撤回需求 `/api/demand/{id}/withdraw`
 
-### 3.4 我的需求模块 ⏳
+### 3.4 我的需求模块 ✅
 
-- [ ] `MyDemands.vue` - 需求管理列表页
-  - [ ] 我的需求 `/api/demand/my`
-- [ ] `DemandDetail.vue` - 需求详情页
-  - [ ] 需求详情 `/api/demand/{id}`
+- [x] `DemandList.vue` - 需求管理列表页
+  - [x] 我的需求 `/api/demand/my`
+- [x] `DemandDetail.vue` - 需求详情页
+  - [x] 需求详情 `/api/demand/{id}`
+- [x] `ApplicantList.vue` - 申请人列表页
+  - [x] 获取申请列表 `/api/demand/{id}/applicants`
 
-### 3.5 找老师模块 ⏳
+### 3.5 找老师模块 ✅
 
-- [ ] `FindTutors.vue` - 教师筛选匹配页
-  - [ ] 匹配教师 `GET /api/match/tutors`
-  - [ ] 智能匹配 `POST /api/match/tutors`
-- [ ] `TutorDetail.vue` - 教师公开档案页
-  - [ ] 教师档案 `/api/tutor/public/{userId}`
+- [x] `FindTeachers.vue` - 教师筛选匹配页
+  - [x] 匹配教师 `GET /api/match/tutors`
+  - [x] 智能匹配 `POST /api/match/tutors`
+- [x] `TeacherList.vue` - 教师列表页
+- [x] `TeacherDetail.vue` - 教师公开档案页
+  - [x] 教师档案 `/api/tutor/public/{userId}`
+  - [x] 教师评价 `/api/review/tutor/{tutorId}`
 
-### 3.6 预约签约模块 ⏳
+### 3.6 预约签约模块 ✅
 
-- [ ] `TutorDetail.vue` - 预约功能（复用教师详情页）
-- [ ] `BookTutor.vue` - 预约页面
-  - [ ] 创建订单 `POST /api/order`
-- [ ] `SignContract.vue` - 签约页面
-  - [ ] 确认订单 `/api/order/{id}/confirm`
+- [x] `TeacherDetail.vue` - 预约功能（复用教师详情页）
+  - [x] 创建订单 `POST /api/order`
 
-### 3.7 支付模块 ⏳
+### 3.7 支付模块 ✅
 
-- [ ] `Payment.vue` - 订单支付页面
-  - [ ] 支付订单 `/api/order/{id}/pay`
+- [x] `OrderPay.vue` - 订单支付页面
+  - [x] 支付订单 `/api/order/{id}/pay`
+  - [x] 余额支付 `/api/wallet/pay`
 
-### 3.8 订单管理模块 ⏳
+### 3.8 订单管理模块 ✅
 
-- [ ] `OrderList.vue` - 家长订单列表
-  - [ ] 获取订单列表 `/api/order/parent/list`
-- [ ] `OrderDetail.vue` - 订单详情页
-  - [ ] 获取订单详情 `/api/order/{id}`
-  - [ ] 取消订单 `/api/order/{id}/cancel`
-  - [ ] 完成订单 `/api/order/{id}/complete`
+- [x] `OrderList.vue` - 家长订单列表
+  - [x] 获取订单列表 `/api/order/parent/list`
+- [x] `OrderDetail.vue` - 订单详情页
+  - [x] 获取订单详情 `/api/order/{id}`
+  - [x] 取消订单 `/api/order/{id}/cancel`
+  - [x] 完成订单 `/api/order/{id}/complete`
+- [x] `OrderReview.vue` - 订单评价页
+  - [x] 提交评价 `POST /api/review`
 
-### 3.9 课时确认模块 ⏳
+### 3.9 课时确认模块 ✅
 
-- [ ] `LessonList.vue` - 课时记录列表
-  - [ ] 我的课时 `/api/teaching/my`
-- [ ] `LessonDetail.vue` - 课时详情（确认/申诉）
-  - [ ] 确认课时 `/api/teaching/{id}/confirm`
-  - [ ] 申诉课时 `/api/teaching/{id}/dispute`
+- [x] `LessonList.vue` - 课时记录列表
+  - [x] 我的课时 `/api/teaching/my`
+  - [x] 订单课时 `/api/teaching/order/{orderId}`
+- [x] `LessonDetail.vue` - 课时详情（确认/申诉）
+  - [x] 确认课时 `/api/teaching/{id}/confirm`
+  - [x] 申诉课时 `/api/teaching/{id}/dispute`
 
 ### 3.10 错题本模块 ⏳
 
 - [ ] `WrongBook.vue` - 错题本列表页
-- [ ] `AddWrongQuestion.vue` - OCR错题识别页
+- [ ] `AddQuestion.vue` - OCR错题识别页
   - [ ] 通用OCR `/api/ocr/general`
   - [ ] ⚠️ **需后端补充**：错题存储API
+- [ ] `QuestionDetail.vue` - 错题详情页
 
-### 3.11 通用模块 ⏳
+### 3.11 通用模块 ✅
 
-- [ ] `ChatList.vue` - 聊天列表页
-- [ ] `ChatRoom.vue` - 聊天室页面
-- [ ] `AiChat.vue` - AI助手页面
-- [ ] `Wallet.vue` - 钱包页面（只读）
-  - [ ] 获取余额 `/api/wallet/`
-  - [ ] 交易记录 `/api/wallet/transactions`
-- [ ] `Mine.vue` - 个人中心页面
-- [ ] `Settings.vue` - 设置页面
+- [x] `ChatList.vue` - 聊天列表页
+  - [x] 会话列表 `/api/chat/conversations`
+- [x] `ChatRoom.vue` - 聊天室页面
+  - [x] 聊天记录 `/api/chat/history`
+  - [x] 发送消息 `/api/chat/send`
+  - [x] WebSocket连接 `/ws/chat`
+- [x] `AiChat.vue` - AI助手页面
+  - [x] AI对话 `/api/llm/chat`
+  - [x] 流式响应 `/api/llm/stream`
+- [x] `Wallet.vue` - 钱包页面
+  - [x] 获取余额 `/api/wallet/`
+  - [x] 交易记录 `/api/wallet/transactions`
+  - [x] 充值功能 `/api/wallet/recharge`
+- [x] `Mine.vue` - 个人中心页面
+  - [x] 获取统计 `/api/parent/stats`
+- [x] `Settings.vue` - 设置页面
+- [x] `EditProfile.vue` - 编辑资料页
+  - [x] 获取用户信息 `/api/user/info`
+  - [x] 更新用户信息 `/api/user/info`
 
 ---
 
