@@ -9,6 +9,7 @@
     "pages/teacher/certification/step3-result/step3-result",
     "pages/teacher/incomeDetail/incomeDetail",
     "pages/teacher/mapFindStudent/mapFindStudent",
+    "pages/teacher/findStudentList/findStudentList",
     "pages/teacher/lessonCheckIn/lessonCheckIn",
     "pages/teacher/lessonList/lessonList",
     "pages/parent/publishDemand/step1-student/step1-student",

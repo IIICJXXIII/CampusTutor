@@ -25,7 +25,9 @@ Page({
     // 状态
     isSubmitting: false,
     showPayModal: false,
-    createdOrderId: null
+    createdOrderId: null,
+    walletBalance: 0,
+    isPaying: false
   },
 
   onLoad(options) {
@@ -150,6 +152,13 @@ Page({
         isSubmitting: false
       });
 
+      // 拉取钱包余额信息以便支付决策
+      try {
+        await this.fetchWallet();
+      } catch (e) {
+        console.warn('获取钱包信息失败', e);
+      }
+
     } catch (err) {
       console.error(err);
       this.setData({ isSubmitting: false });
@@ -162,10 +171,40 @@ Page({
     wx.redirectTo({ url: '/pages/parent/order/list/list?status=0' });
   },
 
+  // 拉取钱包信息
+  async fetchWallet() {
+    try {
+      const wallet = await request.get(api.wallet.info);
+      this.setData({ walletBalance: wallet && wallet.balance ? Number(wallet.balance) : 0 });
+    } catch (err) {
+      console.error('fetchWallet error', err);
+      this.setData({ walletBalance: 0 });
+    }
+  },
+
   // 确认支付
   async confirmPay(e) {
     const payType = parseInt(e.currentTarget.dataset.type);
-    
+    if (!this.data.createdOrderId) return wx.showToast({ title: '订单未创建', icon: 'none' });
+
+    // 钱包支付余额校验
+    if (payType === 1 && (this.data.walletBalance || 0) < Number(this.data.totalAmount)) {
+      wx.showModal({
+        title: '余额不足',
+        content: '钱包余额不足，是否去充值？',
+        confirmText: '去充值',
+        cancelText: '取消',
+        success(res) {
+          if (res.confirm) {
+            wx.showToast({ title: '充值页面未实现，请在后台充值', icon: 'none' });
+          }
+        }
+      });
+      return;
+    }
+
+    if (this.data.isPaying) return;
+    this.setData({ isPaying: true });
     wx.showLoading({ title: '支付处理中...' });
 
     try {
@@ -181,6 +220,7 @@ Page({
 
       wx.hideLoading();
       wx.showToast({ title: '支付成功', icon: 'success' });
+      this.setData({ isPaying: false });
 
       // 跳转到订单列表（已支付 Tab）
       setTimeout(() => {
@@ -189,7 +229,9 @@ Page({
 
     } catch (err) {
       wx.hideLoading();
+      this.setData({ isPaying: false });
       console.error(err);
+      wx.showToast({ title: err.msg || '支付失败', icon: 'none' });
     }
   }
 });

@@ -88,15 +88,17 @@ page {
 
 .btn-group {
   display: flex;
+  flex-wrap: wrap; /* 按钮换行，防止溢出 */
 }
 
 .btn {
-  margin: 0 0 0 16rpx;
+  margin: 0 0 0 12rpx;
   font-size: 26rpx;
-  padding: 0 24rpx;
+  padding: 0 18rpx;
   height: 56rpx;
   line-height: 54rpx;
   border-radius: 28rpx;
+  min-width: 84rpx;
 }
 
 .btn.delete {

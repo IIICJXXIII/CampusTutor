@@ -38,8 +38,25 @@
 
         <view class="btn-row">
           <button class="btn detail" bindtap="handleViewDetail">查看详情</button>
-          <button class="btn chat">联系家长</button>
-          <button class="btn accept" bindtap="handleAccept">立即接单</button>
+          <button class="btn chat" bindtap="handleContactFromMap">联系家长</button>
+          <block wx:if="{{currentDemand.status === 1}}">
+            <button class="btn accept" bindtap="handleInviteToOrder">联系并邀约下单</button>
+          </block>
+          <block wx:elif="{{currentDemand.status === 2}}">
+            <button class="btn accept disabled">已被接单</button>
+          </block>
+          <block wx:else>
+            <button class="btn accept disabled">不可接单</button>
+          </block>
+        </view>
+
+        <view class="list-entry">
+          <button class="btn view-list" bindtap="handleOpenList">查看列表</button>
+        </view>
+
+        <view style="margin-top:8rpx;font-size:24rpx;color:#999">
+          <text>注：接单需后端开放接口，若接单失败请复制需求ID并反馈。</text>
+          <button class="btn copy-id" bindtap="copyCurrentDemandId" wx:if="{{currentDemand}}" style="margin-left:12rpx;padding:8rpx 12rpx;border-radius:8rpx;">复制ID</button>
         </view>
       </view>
     </block>
@@ -47,11 +64,27 @@
     <block wx:else>
       <view class="empty-card">
         <image class="empty-img" src="/static/images/empty.png" mode="aspectFit" wx:if="{{false}}"></image>
-        <view class="empty-text">
-          <text class="main-tip">附近暂无家教需求</text>
-          <text class="sub-tip">您可以尝试拖动地图或稍后再来</text>
-        </view>
-        <button class="btn refresh" bindtap="fetchNearbyDemands">刷新试试</button>
+
+        <block wx:if="{{isFallback}}">
+          <view class="fallback-title">{{fallbackMessage}}</view>
+          <block wx:for="{{demandList}}" wx:key="id">
+            <view class="fallback-item" bindtap="handleFallbackViewDetail" data-id="{{item.id}}">
+              <text class="subject">{{item.subject}} {{item.grade}}</text>
+              <text class="price">¥{{item.expectPrice}}/小时</text>
+              <text class="distance" wx:if="{{item.distance}}">{{item.distance}} km</text>
+            </view>
+          </block>
+          <button class="btn refresh" bindtap="fetchNearbyDemands">刷新</button>
+          <button class="btn view-list small" bindtap="handleOpenList">查看列表</button>
+        </block>
+
+        <block wx:elif="{{!isFallback}}">
+          <view class="empty-text">
+            <text class="main-tip">附近暂无家教需求</text>
+            <text class="sub-tip">您可以尝试拖动地图或稍后再来</text>
+          </view>
+          <button class="btn refresh" bindtap="fetchNearbyDemands">刷新试试</button>
+        </block>
       </view>
     </block>
 

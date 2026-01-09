@@ -66,10 +66,14 @@
       <view class="pay-amount">¥ {{totalAmount}}</view>
       
       <view class="pay-options">
+        <view class="pay-item" bindtap="confirmPay" data-type="1">
+          <text class="icon wallet">👜</text> 钱包支付
+          <text class="wallet-balance">余额: ¥{{walletBalance || 0}}</text>
+        </view>
         <view class="pay-item" bindtap="confirmPay" data-type="2">
           <text class="icon wx">💚</text> 微信支付
         </view>
-        </view>
+      </view>
     </view>
   </view>
 </view>

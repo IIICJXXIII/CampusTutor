@@ -122,5 +122,18 @@ Page({
   // 跳转去发布
   goPublish() {
     wx.navigateTo({ url: '/pages/parent/publishDemand/step1-student/step1-student' });
+  },
+
+  // 查看匹配老师
+  viewMatches(e) {
+    const { id, subject, grade, longitude, latitude } = e.currentTarget.dataset;
+    const params = [];
+    if (subject) params.push(`subject=${encodeURIComponent(subject)}`);
+    if (grade) params.push(`grade=${encodeURIComponent(grade)}`);
+    if (longitude) params.push(`longitude=${longitude}`);
+    if (latitude) params.push(`latitude=${latitude}`);
+    if (id) params.push(`demandId=${id}`);
+    const url = `/pages/parent/matchResult/matchResult?${params.join('&')}`;
+    wx.navigateTo({ url });
   }
 });
