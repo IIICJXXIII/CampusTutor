@@ -101,17 +101,17 @@ const handleLogin = async () => {
     })
     
     if (res.code === 200) {
-      const { token, user } = res.data
+      const userInfo = res.data
       
       // 检查用户角色
-      if (user.role !== 1) {
+      if (userInfo.role !== 1) {
         ElMessage.warning('该账号不是教师账号，请使用家长端登录')
         loading.value = false
         return
       }
       
-      userStore.setToken(token)
-      userStore.setUserInfo(user)
+      userStore.setToken(userInfo.token)
+      userStore.setUserInfo(userInfo)
       userStore.setRole('tutor')
       
       ElMessage.success('登录成功')

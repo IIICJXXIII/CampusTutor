@@ -7,7 +7,7 @@ import request from './request';
  * 获取会话列表
  */
 export function getConversations() {
-  return request.get('/chat/conversations');
+  return request.get('/chat/sessions');
 }
 
 /**
@@ -31,7 +31,7 @@ export function markAsRead(targetUserId) {
  * 获取未读消息数量
  */
 export function getUnreadCount() {
-  return request.get('/chat/unread');
+  return request.get('/chat/unread-count');
 }
 
 /**
@@ -39,7 +39,7 @@ export function getUnreadCount() {
  * @param {number} userId - 用户ID
  */
 export function getChatUserInfo(userId) {
-  return request.get(`/chat/user/${userId}`);
+  return request.get(`/chat/user-info/${userId}`);
 }
 
 /**
