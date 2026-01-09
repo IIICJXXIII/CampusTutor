@@ -17,4 +17,9 @@ public interface SysUserService extends IService<SysUser> {
     boolean register(SysUser user);
 
     boolean updateStatus(Long userId, Integer status);
+
+    /**
+     * 修改密码
+     */
+    void updatePassword(Long userId, String oldPassword, String newPassword);
 }

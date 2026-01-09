@@ -8,7 +8,9 @@ import request from './request';
  * @param {string} imageUrl - 图片URL
  */
 export function recognizeStudentCard(imageUrl) {
-  return request.post('/ocr/student-card', { imageUrl });
+  return request.post('/ocr/student-card', null, {
+    params: { imageUrl }
+  });
 }
 
 /**
@@ -16,7 +18,9 @@ export function recognizeStudentCard(imageUrl) {
  * @param {string} imageUrl - 图片URL
  */
 export function recognizeIdCardFront(imageUrl) {
-  return request.post('/ocr/id-card/front', { imageUrl });
+  return request.post('/ocr/id-card/front', null, {
+    params: { imageUrl }
+  });
 }
 
 /**
@@ -24,7 +28,9 @@ export function recognizeIdCardFront(imageUrl) {
  * @param {string} imageUrl - 图片URL
  */
 export function recognizeIdCardBack(imageUrl) {
-  return request.post('/ocr/id-card/back', { imageUrl });
+  return request.post('/ocr/id-card/back', null, {
+    params: { imageUrl }
+  });
 }
 
 /**
@@ -32,7 +38,9 @@ export function recognizeIdCardBack(imageUrl) {
  * @param {string} imageUrl - 图片URL
  */
 export function generalOcr(imageUrl) {
-  return request.post('/ocr/general', { imageUrl });
+  return request.post('/ocr/general', null, {
+    params: { imageUrl }
+  });
 }
 
 /**
@@ -40,5 +48,7 @@ export function generalOcr(imageUrl) {
  * @param {string} imageUrl - 图片URL
  */
 export function recognizeGeneral(imageUrl) {
-  return request.post('/ocr/general', { imageUrl });
+  return request.post('/ocr/general', null, {
+    params: { imageUrl }
+  });
 }

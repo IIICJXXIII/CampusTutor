@@ -159,6 +159,13 @@
             <el-form-item label="专业" required>
               <el-input v-model="form.major" placeholder="请输入专业" />
             </el-form-item>
+            <el-form-item label="学历" required>
+              <el-select v-model="form.education" placeholder="请选择学历">
+                <el-option label="本科" :value="1" />
+                <el-option label="硕士" :value="2" />
+                <el-option label="博士" :value="3" />
+              </el-select>
+            </el-form-item>
             <el-form-item label="入学年份" required>
               <el-date-picker
                 v-model="form.enrollYear"
@@ -220,7 +227,9 @@ const form = reactive({
   school: '',
   major: '',
   enrollYear: '',
-  idNumber: ''
+  idNumber: '',
+  education: 1,           // 学历：1本科 2硕士 3博士
+  certificateUrls: []     // 资质证书URLs
 })
 
 const studentCardInfo = reactive({
@@ -344,16 +353,18 @@ const handleSubmit = async () => {
   
   submitting.value = true
   try {
+    // 按照后端 TutorCertRequest 的字段名发送数据
     const res = await submitCertification({
       realName: form.realName,
-      gender: form.gender,
-      school: form.school,
-      major: form.major,
-      enrollYear: form.enrollYear,
-      idNumber: form.idNumber,
-      studentCardUrl: form.studentCardUrl,
+      idCard: form.idNumber,                    // 后端字段名是 idCard
       idCardFrontUrl: form.idCardFrontUrl,
-      idCardBackUrl: form.idCardBackUrl
+      idCardBackUrl: form.idCardBackUrl,
+      universityName: form.school,              // 后端字段名是 universityName
+      major: form.major,
+      education: form.education || 1,           // 后端必填字段：学历(1本科 2硕士 3博士)
+      enrollYear: parseInt(form.enrollYear) || new Date().getFullYear(),  // 后端需要Integer类型
+      studentCardUrl: form.studentCardUrl,
+      certificateUrls: form.certificateUrls || []  // 可选的资质证书
     })
     
     if (res.code === 200) {
@@ -385,7 +396,19 @@ const loadCertStatus = async () => {
       tutorStore.setCertStatus(certStatus.value)
       
       if (res.data.realName) {
-        Object.assign(form, res.data)
+        // 后端字段名映射到前端表单字段名
+        const data = res.data
+        form.studentCardUrl = data.studentCardUrl || ''
+        form.idCardFrontUrl = data.idCardFrontUrl || ''
+        form.idCardBackUrl = data.idCardBackUrl || ''
+        form.realName = data.realName || ''
+        form.gender = data.gender || 1
+        form.school = data.universityName || data.school || ''
+        form.major = data.major || ''
+        form.enrollYear = data.enrollYear ? String(data.enrollYear) : ''
+        form.idNumber = data.idCard || data.idNumber || ''
+        form.education = data.education || 1
+        form.certificateUrls = data.certificateUrls || []
       }
     }
   } catch (error) {

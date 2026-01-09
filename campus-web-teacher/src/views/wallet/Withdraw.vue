@@ -213,12 +213,14 @@ const handleSubmit = async () => {
     }
     
     submitting.value = true
-    // 后端API参数为 { amount, channel, accountNo, accountName }
+    // 后端API参数为 { amount, channel(Integer), accountNo, accountName, payPassword }
+    // channel: 1-微信, 2-支付宝, 3-银行卡
+    const channelMap = { wechat: 1, alipay: 2, bank: 3 }
     const res = await applyWithdraw({
       amount,
-      channel: form.method,
-      accountNo: form.bankCard,
-      accountName: form.cardHolder
+      channel: channelMap[form.method],        // 转换为Integer
+      accountNo: form.method === 'bank' ? form.bankCard : form.method,  // 银行卡号或微信/支付宝标识
+      accountName: form.cardHolder || ''       // 后端字段名是 accountName (非 accountHolder)
     })
     
     if (res.code === 200) {

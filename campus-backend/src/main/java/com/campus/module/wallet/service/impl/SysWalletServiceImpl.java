@@ -92,4 +92,17 @@ public class SysWalletServiceImpl extends ServiceImpl<SysWalletMapper, SysWallet
         wallet.setBalance(wallet.getBalance().add(amount));
         return updateById(wallet);
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long recharge(Long userId, BigDecimal amount, String paymentMethod) {
+        // 执行充值
+        boolean success = recharge(userId, amount);
+        if (!success) {
+            throw new BusinessException("充值失败");
+        }
+        // TODO: 创建交易流水并返回流水ID
+        // 暂时返回0，表示成功但无流水ID
+        return 0L;
+    }
 }

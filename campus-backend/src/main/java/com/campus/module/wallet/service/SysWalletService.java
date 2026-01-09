@@ -39,5 +39,10 @@ public interface SysWalletService extends IService<SysWallet> {
      * 充值/增加余额
      */
     boolean recharge(Long userId, BigDecimal amount);
+
+    /**
+     * 充值/增加余额(带支付方式，返回流水ID)
+     */
+    Long recharge(Long userId, BigDecimal amount, String paymentMethod);
 }
 

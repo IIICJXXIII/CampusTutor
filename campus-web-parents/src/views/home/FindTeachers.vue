@@ -155,6 +155,28 @@ const filters = reactive({
 const loadTutors = async () => {
   loading.value = true
   try {
+    // 处理排序参数
+    let sortBy = undefined
+    let sortOrder = undefined
+    if (filters.sort) {
+      if (filters.sort === 'rating') {
+        sortBy = 'rating'
+        sortOrder = 'desc'
+      } else if (filters.sort === 'hours') {
+        sortBy = 'orderCount' // 暂时用订单数代替课时数
+        sortOrder = 'desc'
+      } else if (filters.sort === 'price_asc') {
+        sortBy = 'price'
+        sortOrder = 'asc'
+      } else if (filters.sort === 'price_desc') {
+        sortBy = 'price'
+        sortOrder = 'desc'
+      } else {
+        sortBy = 'score'
+        sortOrder = 'desc'
+      }
+    }
+
     const params = {
       page: page.value,
       size: pageSize.value,
@@ -162,7 +184,8 @@ const loadTutors = async () => {
       subject: filters.subject || undefined,
       grade: filters.grade || undefined,
       gender: filters.gender || undefined,
-      sort: filters.sort
+      sortBy: sortBy,
+      sortOrder: sortOrder
     }
     
     const res = await getTutorList(params)

@@ -163,7 +163,16 @@ const loadStudent = async () => {
   try {
     const res = await getStudentDetail(route.params.id)
     if (res.code === 200 && res.data) {
-      Object.assign(form, res.data)
+      // 后端返回的字段名与前端表单字段名的映射
+      const data = res.data
+      form.name = data.studentName || data.name || ''
+      form.gender = data.gender
+      form.birthday = data.birthday || ''
+      form.school = data.schoolName || data.school || ''
+      form.grade = data.grade
+      form.subjects = data.weakSubjects || data.subjects || []
+      form.description = data.studyDesc || data.description || ''
+      form.character = data.character || ''
     }
   } catch (error) {
     console.error('加载学生信息失败:', error)
@@ -182,9 +191,17 @@ const handleSubmit = async () => {
   submitting.value = true
   try {
     const api = isEdit.value ? updateStudent : addStudent
-    const data = { ...form }
+    // 转换为后端 StudentRequest 需要的字段名
+    const data = {
+      studentName: form.name,                    // 后端字段名是 studentName
+      gender: form.gender,
+      grade: form.grade,
+      schoolName: form.school,                   // 后端字段名是 schoolName
+      weakSubjects: form.subjects,               // 后端字段名是 weakSubjects
+      studyDesc: form.description                // 后端字段名是 studyDesc
+    }
     if (isEdit.value) {
-      data.id = route.params.id
+      data.id = parseInt(route.params.id)
     }
     
     const res = await api(data)
