@@ -62,19 +62,14 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updatePassword(Long userId, String oldPassword, String newPassword) {
-        SysUser user = getById(userId);
+    public void resetPassword(String username, String newPassword) {
+        SysUser user = getByUsername(username);
         if (user == null) {
             throw new BusinessException(ResultCode.USER_NOT_EXIST);
         }
-        // 验证旧密码
-        String encryptOldPassword = SecureUtil.md5(oldPassword);
-        if (!encryptOldPassword.equals(user.getPassword())) {
-            throw new BusinessException("原密码错误");
-        }
-        // 设置新密码
-        String encryptNewPassword = SecureUtil.md5(newPassword);
-        user.setPassword(encryptNewPassword);
+        // 密码加密
+        String encryptedPassword = SecureUtil.md5(newPassword);
+        user.setPassword(encryptedPassword);
         updateById(user);
     }
 }

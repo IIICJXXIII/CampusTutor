@@ -1,0 +1,53 @@
+<view class="container">
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-left" bindtap="navigateBack">
+      <text class="back-icon">←</text>
+    </view>
+    <view class="header-center">
+      <text class="title">提现记录</text>
+    </view>
+    <view class="header-right"></view>
+  </view>
+
+  <!-- 状态筛选 -->
+  <view class="filter-section">
+    <scroll-view scroll-x="true" class="filter-scroll">
+      <view 
+        wx:for="{{statuses}}" 
+        wx:key="id"
+        class="filter-item {{selectedStatus === item.id ? 'active' : ''}}"
+        bindtap="selectStatus"
+        data-id="{{item.id}}"
+      >
+        {{item.name}}
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 提现记录列表 -->
+  <view class="list-section">
+    <view wx:if="{{withdrawals.length === 0 && !isLoading}}" class="empty-state">
+      <text class="empty-text">暂无提现记录</text>
+    </view>
+
+    <view wx:for="{{withdrawals}}" wx:key="id" class="withdraw-item" bindtap="goToWithdrawDetail" data-id="{{item.id}}">
+      <view class="withdraw-header">
+        <text class="withdraw-amount">¥{{item.amount}}</text>
+        <text class="withdraw-status {{getStatusClass(item.status)}}">{{getStatusText(item.status)}}</text>
+      </view>
+      <view class="withdraw-info">
+        <text class="info-item">提现渠道：{{getChannelText(item.channel)}}</text>
+        <text class="info-item">申请时间：{{formatTime(item.createTime)}}</text>
+      </view>
+      <view class="withdraw-footer">
+        <text class="withdraw-id">提现单号：{{item.withdrawNo}}</text>
+      </view>
+    </view>
+
+    <!-- 加载状态 -->
+    <view wx:if="{{isLoading}}" class="loading-state">
+      <text class="loading-text">加载中...</text>
+    </view>
+  </view>
+</view>

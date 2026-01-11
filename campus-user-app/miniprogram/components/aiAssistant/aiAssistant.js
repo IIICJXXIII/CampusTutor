@@ -112,24 +112,49 @@ Component({
           'token': wx.getStorageSync('token') || ''
         },
         success: (res) => {
-          if (res.statusCode === 200 && res.data.code === 200) {
-            const aiResponseData = res.data.data || {};
-            const aiResponse = aiResponseData.content || '';
-            
-            // 添加AI消息
-            const aiMessage = {
-              id: Date.now() + Math.random(),
-              sender: 'ai',
-              content: aiResponse,
-              timestamp: new Date().toLocaleTimeString()
-            };
+          try {
+            if (res.statusCode === 200 && res.data.code === 200) {
+              const aiResponseData = res.data.data || {};
+              // 添加数据类型验证
+              let aiResponse = '';
+              
+              if (typeof aiResponseData === 'string') {
+                aiResponse = aiResponseData;
+              } else if (typeof aiResponseData === 'object' && aiResponseData !== null) {
+                if (aiResponseData.content !== undefined) {
+                  if (typeof aiResponseData.content === 'string') {
+                    aiResponse = aiResponseData.content;
+                  } else {
+                    // 处理非字符串类型的content
+                    aiResponse = JSON.stringify(aiResponseData.content);
+                  }
+                } else {
+                  // 处理没有content字段的情况
+                  aiResponse = JSON.stringify(aiResponseData);
+                }
+              } else {
+                // 处理其他数据类型
+                aiResponse = String(aiResponseData);
+              }
+              
+              // 添加AI消息
+              const aiMessage = {
+                id: Date.now() + Math.random(),
+                sender: 'ai',
+                content: aiResponse,
+                timestamp: new Date().toLocaleTimeString()
+              };
 
-            this.setData({
-              messages: [...this.data.messages, aiMessage],
-              isLoading: false,
-              scrollToView: `message-${aiMessage.id}`
-            });
-          } else {
+              this.setData({
+                messages: [...this.data.messages, aiMessage],
+                isLoading: false,
+                scrollToView: `message-${aiMessage.id}`
+              });
+            } else {
+              this.handleApiError();
+            }
+          } catch (error) {
+            console.error('处理AI响应失败:', error);
             this.handleApiError();
           }
         },

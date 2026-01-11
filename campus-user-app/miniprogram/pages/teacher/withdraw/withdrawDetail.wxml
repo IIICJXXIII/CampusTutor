@@ -1,0 +1,80 @@
+<view class="container">
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-left" bindtap="navigateBack">
+      <text class="back-icon">←</text>
+    </view>
+    <view class="header-center">
+      <text class="title">提现详情</text>
+    </view>
+    <view class="header-right"></view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view wx:if="{{isLoading}}" class="loading-state">
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 提现详情 -->
+  <view wx:else class="detail-section">
+    <!-- 提现金额 -->
+    <view class="detail-card">
+      <view class="detail-item">
+        <text class="detail-label">提现金额</text>
+        <text class="detail-value amount">¥{{withdrawal.amount}}</text>
+      </view>
+      <view class="detail-item">
+        <text class="detail-label">手续费</text>
+        <text class="detail-value">¥{{withdrawal.fee || 0}}</text>
+      </view>
+      <view class="detail-item">
+        <text class="detail-label">实际到账</text>
+        <text class="detail-value">¥{{withdrawal.actualAmount || withdrawal.amount}}</text>
+      </view>
+    </view>
+
+    <!-- 提现信息 -->
+    <view class="detail-card">
+      <view class="detail-item">
+        <text class="detail-label">提现状态</text>
+        <text class="detail-value status {{getStatusClass(withdrawal.status)}}">{{getStatusText(withdrawal.status)}}</text>
+      </view>
+      <view class="detail-item">
+        <text class="detail-label">提现渠道</text>
+        <text class="detail-value">{{getChannelText(withdrawal.channel)}}</text>
+      </view>
+      <view class="detail-item">
+        <text class="detail-label">收款账号</text>
+        <text class="detail-value">{{withdrawal.accountNo}}</text>
+      </view>
+      <view class="detail-item">
+        <text class="detail-label">提现单号</text>
+        <text class="detail-value">{{withdrawal.withdrawNo}}</text>
+      </view>
+    </view>
+
+    <!-- 时间信息 -->
+    <view class="detail-card">
+      <view class="detail-item">
+        <text class="detail-label">申请时间</text>
+        <text class="detail-value">{{formatTime(withdrawal.createTime)}}</text>
+      </view>
+      <view wx:if="{{withdrawal.auditTime}}" class="detail-item">
+        <text class="detail-label">审核时间</text>
+        <text class="detail-value">{{formatTime(withdrawal.auditTime)}}</text>
+      </view>
+      <view wx:if="{{withdrawal.completeTime}}" class="detail-item">
+        <text class="detail-label">到账时间</text>
+        <text class="detail-value">{{formatTime(withdrawal.completeTime)}}</text>
+      </view>
+    </view>
+
+    <!-- 审核备注 -->
+    <view wx:if="{{withdrawal.remark}}" class="detail-card">
+      <view class="detail-item">
+        <text class="detail-label">审核备注</text>
+        <text class="detail-value remark">{{withdrawal.remark}}</text>
+      </view>
+    </view>
+  </view>
+</view>
