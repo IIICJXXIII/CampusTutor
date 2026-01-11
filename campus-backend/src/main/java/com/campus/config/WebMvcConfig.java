@@ -33,6 +33,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                                                 "/api/match/tutors",
                                                 "/api/demand/list",
                                                 "/api/demand/nearby",
+                                                "/api/demand/list-with-match",
+                                                "/api/llm/**",
                                                 "/api/tutor/public/**");
         }
 
