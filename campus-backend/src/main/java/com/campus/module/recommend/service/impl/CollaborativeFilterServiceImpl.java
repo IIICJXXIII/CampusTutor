@@ -203,7 +203,7 @@ public class CollaborativeFilterServiceImpl implements CollaborativeFilterServic
                 dto.setRealName(name);
             }
 
-            dto.setAvatarUrl(profile.getAvatarUrl());
+            dto.setAvatarUrl(null); // 头像在 SysUser 表中，此处暂不查询
             dto.setUniversityName(profile.getUniversityName());
             dto.setMajor(profile.getMajor());
             dto.setExpectPrice(profile.getExpectPrice());
