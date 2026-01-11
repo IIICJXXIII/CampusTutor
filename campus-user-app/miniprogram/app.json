@@ -4,6 +4,8 @@
     "pages/common/login/login",
     "pages/common/register/register",
     "pages/common/personalCenter/personalCenter",
+    "pages/common/messageList/messageList",
+    "pages/common/chatDetail/chatDetail",
     "pages/teacher/certification/step1-base/step1-base",
     "pages/teacher/certification/step2-ability/step2-ability",
     "pages/teacher/certification/step3-result/step3-result",
@@ -29,7 +31,8 @@
     "pages/teacher/demandDetail/demandDetail",
     "pages/teacher/teacherSchedule/teacherSchedule",
     "pages/common/wrongBook/wrongBook",
-    "pages/common/wrongBookDetail/wrongBookDetail"
+    "pages/common/wrongBookDetail/wrongBookDetail",
+    "pages/common/userInfoView/userInfoView"
   ],
   "permission": {
     "scope.userLocation": {
@@ -60,6 +63,12 @@
         "text": "首页",
         "iconPath": "static/icons/home.png",
         "selectedIconPath": "static/icons/home-active.png"
+      },
+      {
+        "pagePath": "pages/common/messageList/messageList",
+        "text": "消息",
+        "iconPath": "static/icons/message.png",
+        "selectedIconPath": "static/icons/message-active.png"
       },
       {
         "pagePath": "pages/common/personalCenter/personalCenter",

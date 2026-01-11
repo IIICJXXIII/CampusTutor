@@ -1,0 +1,65 @@
+<view class="message-list-page">
+  <!-- 系统通知 -->
+  <view class="notice-section" wx:if="{{systemNotice}}" bindtap="goToNotice">
+    <view class="notice-icon">
+      <image src="/static/icons/customer-service.svg" mode="aspectFit"></image>
+    </view>
+    <view class="notice-content">
+      <view class="notice-title">{{systemNotice.title}}</view>
+      <view class="notice-desc">{{systemNotice.content}}</view>
+    </view>
+    <view class="notice-meta">
+      <text class="notice-time">{{systemNotice.time}}</text>
+      <view class="badge" wx:if="{{systemNotice.unread > 0}}">{{systemNotice.unread}}</view>
+    </view>
+  </view>
+
+  <!-- 分割线 -->
+  <view class="divider" wx:if="{{sessions.length > 0}}">
+    <text>聊天消息</text>
+  </view>
+
+  <!-- 聊天会话列表 -->
+  <view class="session-list">
+    <view 
+      class="session-item" 
+      wx:for="{{sessions}}" 
+      wx:key="targetUserId"
+      bindtap="goToChat"
+      data-user-id="{{item.targetUserId}}"
+      data-nickname="{{item.targetNickname}}"
+      data-avatar="{{item.targetAvatar}}"
+    >
+      <view class="avatar-wrap">
+        <image 
+          class="avatar" 
+          src="{{item.targetAvatar || '/static/icons/avatar.png'}}" 
+          mode="aspectFill"
+        ></image>
+        <view class="unread-badge" wx:if="{{item.unreadCount > 0}}">
+          {{item.unreadCount > 99 ? '99+' : item.unreadCount}}
+        </view>
+      </view>
+      
+      <view class="session-content">
+        <view class="session-header">
+          <text class="nickname">{{item.targetNickname || '用户'}}</text>
+          <text class="time">{{item.lastMessageTime}}</text>
+        </view>
+        <view class="last-message">{{item.lastMessage || '暂无消息'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && sessions.length === 0}}">
+    <image src="/static/icons/customer-service.svg" mode="aspectFit"></image>
+    <text>暂无聊天消息</text>
+    <text class="empty-tip">联系家长或教师开始聊天吧</text>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view>

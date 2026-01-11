@@ -14,6 +14,7 @@ import com.campus.module.wallet.service.SysTransactionFlowService;
 import com.campus.module.wallet.service.SysWalletService;
 import com.campus.module.wallet.service.SysWithdrawalService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import java.time.LocalDateTime;
  * 提现申请 Service 实现类
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class SysWithdrawalServiceImpl extends ServiceImpl<SysWithdrawalMapper, SysWithdrawal> implements SysWithdrawalService {
 
@@ -101,6 +103,15 @@ public class SysWithdrawalServiceImpl extends ServiceImpl<SysWithdrawalMapper, S
             // 审核通过：解冻金额，记录流水
             walletService.unfreeze(userId, withdrawal.getAmount());
             withdrawal.setStatus(SysWithdrawal.STATUS_APPROVED);
+
+            // 调用微信支付提现
+            if (withdrawal.getChannel() == SysWithdrawal.CHANNEL_WECHAT) {
+                // 这里需要调用微信支付的企业付款功能
+                // 实际项目中需要集成微信支付的企业付款API
+                // 暂时模拟提现成功
+                log.info("微信提现处理: userId={}, amount={}, accountNo={}", 
+                        userId, withdrawal.getAmount(), withdrawal.getAccountNo());
+            }
 
             // 记录提现流水
             transactionFlowService.recordFlow(

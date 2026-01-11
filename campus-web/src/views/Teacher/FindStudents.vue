@@ -126,7 +126,7 @@ const initMap = async () => {
 
   try {
     const AMap = await AMapLoader.load({
-      key: MY_AMAP_KEY, // 使用上面定义的常量
+      key:'60486ea8e5b0ac4d166a78e68fdeaba1', // 使用上面定义的常量
       version: "2.0",
       plugins: ['AMap.Geolocation', 'AMap.ToolBar', 'AMap.Scale']
     })

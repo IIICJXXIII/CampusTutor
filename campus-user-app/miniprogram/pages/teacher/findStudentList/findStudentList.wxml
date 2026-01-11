@@ -1,36 +1,123 @@
 <view class="container">
-  <view class="filters">
-    <picker mode="selector" range="{{subjects}}" value="{{subjectIndex}}" bindchange="handleSubjectChange">
-      <view class="filter-item">科目：{{subjects[subjectIndex]}}</view>
-    </picker>
-    <picker mode="selector" range="{{grades}}" value="{{gradeIndex}}" bindchange="handleGradeChange">
-      <view class="filter-item">年级：{{grades[gradeIndex]}}</view>
-    </picker>
-    <picker mode="selector" range="{{sortOptions}}" value="{{sortIndex}}" bindchange="handleSortChange">
-      <view class="filter-item">排序：{{sortOptions[sortIndex]}}</view>
+  <!-- 页面头部 -->
+  <view class="page-header">
+    <view class="header-left" bindtap="navigateBack">
+      <text class="back-icon">←</text>
+    </view>
+    <view class="header-center">
+      <text class="title">学生列表</text>
+    </view>
+    <view class="header-right"></view>
+  </view>
+
+  <!-- 科目筛选栏 -->
+  <scroll-view class="subject-scroll" scroll-x="true" enable-flex="true">
+    <view class="subject-container">
+      <view 
+        wx:for="{{subjects}}" 
+        wx:key="id"
+        class="subject-item {{selectedSubject === item.id ? 'active' : ''}}" 
+        bindtap="onSubjectChange" 
+        data-subject="{{item.id}}"
+      >
+        <text>{{item.name}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 排序选择器 -->
+  <view class="sort-container">
+    <picker bindchange="onSortChange" value="{{activeSort}}" range="{{sortOptions}}" range-key="label">
+      <view class="sort-picker">
+        <text>排序：{{sortOptions[activeSort].label}}</text>
+        <text class="sort-arrow">▼</text>
+      </view>
     </picker>
   </view>
 
-  <view class="list">
-    <block wx:for="{{list}}" wx:key="id">
-      <view class="item">
-        <view class="left">
-          <view class="title">{{item.subject}} {{item.grade}}</view>
-          <view class="meta">{{item.address || '未显示地址'}} <text wx:if="{{item.distance}}"> • {{item.distance}} km</text></view>
+  <!-- 学生需求列表 -->
+  <view class="demand-list">
+    <block wx:for="{{demands}}" wx:key="id">
+      <view class="demand-card" bindtap="goToDemandDetail" data-demand-id="{{item.id}}">
+        <view class="card-header">
+          <view class="title-row">
+            <text class="subject">{{item.subject}}</text>
+            <text class="grade-tag">{{item.grade}}</text>
+            <!-- 匹配等级徽章 -->
+            <view class="match-badge {{item.matchLevel}}" wx:if="{{item.matchLevel && item.matchLevel !== 'unknown'}}">
+              <text wx:if="{{item.matchLevel === 'excellent'}}">✨ 极佳匹配</text>
+              <text wx:elif="{{item.matchLevel === 'good'}}">👍 优质匹配</text>
+              <text wx:elif="{{item.matchLevel === 'fair'}}">🙂 一般匹配</text>
+              <text wx:else>🤔 基础匹配</text>
+            </view>
+          </view>
+          <view class="price-area">
+            <text class="price">¥{{item.expectPrice}}/小时</text>
+            <!-- 匹配分数 -->
+            <view class="score-badge" wx:if="{{item.matchScore}}">
+              <text class="score-icon">🎯</text>
+              <text class="score-value">{{item.matchScore}}</text>
+              <text class="score-unit">分</text>
+            </view>
+          </view>
         </view>
-        <view class="right">
-          <view class="price">¥{{item.expectPrice}}/小时</view>
-          <view class="actions">
-            <button class="btn small" data-id="{{item.id}}" bindtap="viewDetail">查看详情</button>
-            <button class="btn small" data-id="{{item.id}}" bindtap="contactParent">联系家长</button>
-            <button class="btn small ghost" data-id="{{item.id}}" bindtap="copyId">复制ID</button>
+        
+        <view class="card-body">
+          <view class="info-item">
+            <text class="label">距离：</text>
+            <text class="value">{{item.distanceText || '未知'}}</text>
+          </view>
+          <view class="info-item">
+            <text class="label">地址：</text>
+            <text class="value address">{{item.address || '未显示详细地址'}}</text>
+          </view>
+          <view class="info-item">
+            <text class="label">描述：</text>
+            <text class="value description">{{item.detail || '暂无详细描述'}}</text>
+          </view>
+        </view>
+        
+        <!-- 匹配标签 -->
+        <view class="match-tags" wx:if="{{item.matchTags && item.matchTags.length > 0}}">
+          <block wx:for="{{item.matchTags}}" wx:for-item="tag" wx:key="*this">
+            <text class="tag">{{tag}}</text>
+          </block>
+        </view>
+        
+        <view class="card-footer">
+          <view class="status-tag {{item.status === 1 ? 'active' : 'inactive'}}">
+            {{item.status === 1 ? '可接单' : '已被接单'}}
+          </view>
+          <view class="action-buttons">
+            <button class="btn detail" catchtap="goToDemandDetail" data-demand-id="{{item.id}}">详情</button>
+            <button class="btn contact" catchtap="contactParent" data-id="{{item.id}}" data-item="{{item}}">联系家长</button>
           </view>
         </view>
       </view>
     </block>
+  </view>
 
-    <view wx:if="{{list.length === 0 && !loading}}" class="empty">暂无匹配的学生/需求</view>
-    <view wx:if="{{loading}}" class="loading">加载中…</view>
-    <button wx:if="{{!noMore && !loading}}" bindtap="loadMore" class="btn load-more">加载更多</button>
+  <!-- 加载更多 -->
+  <view class="load-more" wx:if="{{hasMore && !loading && demands.length > 0}}" bindtap="loadMore">
+    <text>加载更多</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{demands.length === 0 && !loading && !error}}">
+    <text class="empty-icon">🎒</text>
+    <text class="empty-text">暂无学生需求</text>
+    <text class="empty-hint">请稍后再试或调整搜索条件</text>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 错误状态 -->
+  <view class="error-state" wx:if="{{error}}">
+    <text class="error-icon">⚠️</text>
+    <text class="error-text">{{errorMessage}}</text>
+    <button class="retry-btn" bindtap="refreshPage">重新加载</button>
   </view>
 </view>

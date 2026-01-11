@@ -216,16 +216,23 @@ Page({
       };
 
       // 调用 /api/order/pay
-      await request.post(api.order.pay, payload);
+      const payResult = await request.post(api.order.pay, payload);
 
-      wx.hideLoading();
-      wx.showToast({ title: '支付成功', icon: 'success' });
-      this.setData({ isPaying: false });
+      // 微信支付处理
+      if (payType === 2 && payResult.prepayId) {
+        // 调用微信支付SDK
+        await this.callWechatPay(payResult);
+      } else {
+        // 钱包支付直接成功
+        wx.hideLoading();
+        wx.showToast({ title: '支付成功', icon: 'success' });
+        this.setData({ isPaying: false });
 
-      // 跳转到订单列表（已支付 Tab）
-      setTimeout(() => {
-        wx.reLaunch({ url: '/pages/parent/order/list/list?status=1' });
-      }, 1500);
+        // 跳转到订单列表（已支付 Tab）
+        setTimeout(() => {
+          wx.reLaunch({ url: '/pages/parent/order/list/list?status=1' });
+        }, 1500);
+      }
 
     } catch (err) {
       wx.hideLoading();
@@ -233,5 +240,36 @@ Page({
       console.error(err);
       wx.showToast({ title: err.msg || '支付失败', icon: 'none' });
     }
+  },
+
+  // 调用微信支付
+  callWechatPay(payResult) {
+    return new Promise((resolve, reject) => {
+      wx.requestPayment({
+        timeStamp: payResult.timeStamp,
+        nonceStr: payResult.nonceStr,
+        package: payResult.package,
+        signType: payResult.signType,
+        paySign: payResult.paySign,
+        success: (res) => {
+          wx.showToast({ title: '支付成功', icon: 'success' });
+          this.setData({ isPaying: false });
+          
+          // 跳转到订单列表（已支付 Tab）
+          setTimeout(() => {
+            wx.reLaunch({ url: '/pages/parent/order/list/list?status=1' });
+          }, 1500);
+          resolve(res);
+        },
+        fail: (err) => {
+          this.setData({ isPaying: false });
+          wx.showToast({ title: '支付失败', icon: 'none' });
+          reject(err);
+        },
+        complete: () => {
+          this.setData({ isPaying: false });
+        }
+      });
+    });
   }
 });

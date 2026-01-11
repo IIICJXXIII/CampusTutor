@@ -203,17 +203,37 @@ Page({
       wx.previewImage({ current, urls });
     }
   },
-  
+
   // 处理图片加载错误
   handleImageError(e) {
     const { index } = e.currentTarget.dataset;
     const urls = [...this.data.tutor.certificateUrlsList];
     urls[index] = '/static/images/default-cert.png';
-    
+
     const tutor = { ...this.data.tutor };
     tutor.certificateUrlsList = urls;
-    
+
     this.setData({ tutor });
+  },
+
+  // 联系教师：跳转到聊天页面
+  async handleContactTeacher() {
+    const { tutor } = this.data;
+    if (!tutor || !tutor.userId) {
+      wx.showToast({ title: '无法获取教师信息', icon: 'none' });
+      return;
+    }
+
+    // 检查登录
+    const token = wx.getStorageSync('token');
+    if (!token) {
+      wx.navigateTo({ url: '/pages/common/login/login' });
+      return;
+    }
+
+    wx.navigateTo({
+      url: `/pages/common/chatDetail/chatDetail?userId=${tutor.userId}&nickname=${encodeURIComponent(tutor.realName || '教师')}&avatar=${encodeURIComponent(tutor.avatarUrl || '')}`
+    });
   },
 
   // 立即预约
