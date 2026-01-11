@@ -137,6 +137,7 @@
       <text class="amount">{{tutor.expectPrice}}</text>
       <text class="unit">/小时起</text>
     </view>
+    <button class="contact-btn" bindtap="handleContactTeacher">联系教师</button>
     <button class="book-btn" bindtap="handleBook">立即预约</button>
   </view>
 </view>

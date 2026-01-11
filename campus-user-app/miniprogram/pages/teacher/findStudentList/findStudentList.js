@@ -1,5 +1,6 @@
 // findStudentList.js
 // 教师端学生需求列表页面
+const request = require('../../../utils/request.js');
 const api = require('../../../config/apiConfig.js');
 
 Page({
@@ -130,6 +131,7 @@ Page({
     });
 
     // 使用新的API获取带有匹配度的需求列表
+    const token = wx.getStorageSync('token') || '';
     wx.request({
       url: api.demand.listWithMatch,
       method: 'GET',
@@ -144,7 +146,8 @@ Page({
       },
       header: {
         'Content-Type': 'application/json',
-        'token': wx.getStorageSync('token') || ''
+        'token': token,
+        'Authorization': 'Bearer ' + token
       },
       success: (res) => {
         console.log('API请求成功，响应数据:', res);
@@ -153,7 +156,7 @@ Page({
           console.log('分页数据:', pageData);
           const newDemands = pageData.records || [];
           console.log('需求列表:', newDemands);
-          
+
           // 处理匹配度数据
           const demandsWithMatch = newDemands.map(demand => ({
             ...demand,
@@ -172,7 +175,7 @@ Page({
             loading: false,
             error: false
           });
-          
+
           console.log('加载完成，共', this.data.demands.length, '条数据');
         } else {
           console.error('API请求失败，响应数据:', res);
@@ -220,6 +223,31 @@ Page({
     this.loadUserLocation();
   },
 
+  // 联系家长（跳转到聊天页面）
+  async contactParent(e) {
+    const item = e.currentTarget.dataset.item;
+    if (!item) return;
+
+    const publisherId = item.publisherId || item.parentId;
+    if (!publisherId) {
+      wx.showToast({ title: '无法获取家长信息', icon: 'none' });
+      return;
+    }
+
+    // 获取家长信息用于聊天
+    try {
+      const userInfo = await request.get(api.chat.userInfo(publisherId));
+      wx.navigateTo({
+        url: `/pages/common/chatDetail/chatDetail?userId=${publisherId}&nickname=${encodeURIComponent(userInfo.nickname || '家长')}&avatar=${encodeURIComponent(userInfo.avatar || '')}`
+      });
+    } catch (err) {
+      // 即使获取失败也跳转，使用默认信息
+      wx.navigateTo({
+        url: `/pages/common/chatDetail/chatDetail?userId=${publisherId}&nickname=${encodeURIComponent('家长')}&avatar=`
+      });
+    }
+  },
+
   // 跳转到需求详情页
   goToDemandDetail: function (e) {
     const demandId = e.currentTarget.dataset.demandId;
@@ -234,14 +262,14 @@ Page({
     const idx = e.detail.value;
     const sortOption = this.data.sortOptions[idx];
     console.log('切换排序:', sortOption);
-    
+
     let sortBy = sortOption.value;
     let sortOrder = 'desc';
-    
+
     if (sortBy === 'distance') {
       sortOrder = 'asc'; // 距离越近越靠前
     }
-    
+
     this.setData({
       activeSort: idx,
       sortBy: sortBy,

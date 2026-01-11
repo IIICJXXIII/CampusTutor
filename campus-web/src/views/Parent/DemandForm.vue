@@ -1,16 +1,21 @@
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { reactive, ref, onMounted, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { createDemand, addStudent } from '@/api/demand'
+import { createDemand, addStudent, getDemandDetail, updateDemand } from '@/api/demand'
 
 const router = useRouter()
+const route = useRoute()
 const step = ref(1) // 1:学生信息, 2:教学需求, 3:授课偏好 
 const isSubmitting = ref(false)
+
+const demandId = computed(() => route.query.id)
+const isEdit = computed(() => !!demandId.value)
 
 const form = reactive({
   // Step 1: 学生信息
   studentName: '',
+  studentId: null,
   grade: '小学三年级',
   weakSubjects: [],
   character: '内向',
@@ -98,6 +103,47 @@ const getUserLocation = () => {
   }
 }
 
+// 加载现有数据
+const loadDemandData = async () => {
+  if (!isEdit.value) {
+    getUserLocation()
+    return
+  }
+  
+  try {
+    const res = await getDemandDetail(demandId.value)
+    if (res.code === 200 && res.data) {
+      const data = res.data
+      form.studentId = data.studentId
+      form.studentName = data.studentName || '学生'
+      form.grade = data.grade
+      form.weakSubjects = data.subject ? [data.subject] : []
+      form.budgetRange = [Math.max(0, (data.expectPrice || 100) - 50), data.expectPrice || 200]
+      form.address = data.address
+      form.latitude = data.latitude
+      form.longitude = data.longitude
+      form.remark = data.detail
+      
+      // 解析 remark 中的其他字段
+      if (data.detail && data.detail.includes('性格:')) {
+        const charMatch = data.detail.match(/性格: ([^,]+)/)
+        if (charMatch) form.character = charMatch[1]
+        
+        const styleMatch = data.detail.match(/偏好风格: ([^,]+)/)
+        if (styleMatch) form.style = styleMatch[1]
+        
+        const targetMatch = data.detail.match(/学习目标: ([^,]+)/)
+        if (targetMatch) form.target = targetMatch[1]
+        
+        const freqMatch = data.detail.match(/频次: ([^,]+)/)
+        if (freqMatch) form.frequency = freqMatch[1]
+      }
+    }
+  } catch (error) {
+    console.error('加载需求详情失败:', error)
+  }
+}
+
 // 验证当前步骤
 const validateStep = () => {
   if (step.value === 1) {
@@ -127,68 +173,66 @@ const handleSubmit = async () => {
   isSubmitting.value = true
 
   try {
-    // 1. 首先添加学生信息
-    let studentId
-    try {
-      const studentData = {
-        studentName: form.studentName,
-        gender: 0, // 默认女，后续可扩展表单
-        grade: form.grade,
-        schoolName: '',
-        weakSubjects: form.weakSubjects, // 直接传数组，不要stringify
-        studyDesc: form.character
+    // 1. 获取学生ID
+    let studentId = form.studentId
+    if (!studentId) {
+      try {
+        const studentData = {
+          studentName: form.studentName,
+          gender: 0, 
+          grade: form.grade,
+          schoolName: '',
+          weakSubjects: form.weakSubjects,
+          studyDesc: form.character
+        }
+        const studentRes = await addStudent(studentData)
+        studentId = studentRes.data
+      } catch (e) {
+        studentId = 1
       }
-      const studentRes = await addStudent(studentData)
-      studentId = studentRes.data
-    } catch (e) {
-      console.error('添加学生失败:', e)
-      studentId = 1 // 使用默认学生ID
     }
 
-    // 2. 创建需求
+    // 2. 创建或更新需求
     const demandData = {
       studentId: studentId,
-      title: `${form.grade}${form.weakSubjects[0]}辅导`, // 必填：需求标题
-      subject: form.weakSubjects[0], // 必填：科目
-      grade: form.grade, // 必填：年级
-      teachMode: 1, // 必填：授课方式 1-上门 2-网课
-      expectPrice: form.budgetRange[1], // 期望价格取上限
+      title: `${form.grade}${form.weakSubjects[0]}辅导`,
+      subject: form.weakSubjects[0],
+      grade: form.grade,
+      teachMode: 1,
+      expectPrice: form.budgetRange[1],
       latitude: form.latitude,
       longitude: form.longitude,
       address: form.address,
       detail: form.remark || `学习目标: ${form.target}, 频次: ${form.frequency}, 科目: ${form.weakSubjects.join(',')}, 性格: ${form.character}, 偏好风格: ${form.style}`
     }
 
-    await createDemand(demandData)
-    
-    ElMessage.success('需求发布成功！系统正在为您匹配老师...')
-    // 跳转到老师列表，并传递科目、年级和学生ID进行智能匹配
-    router.push({
-      path: '/teacher/list',
-      query: {
-        subject: form.weakSubjects[0],
-        grade: form.grade,
-        studentId: studentId
-      }
-    })
+    if (isEdit.value) {
+      await updateDemand(demandId.value, demandData)
+      ElMessage.success('需求更新成功！')
+      router.push('/parent/demands')
+    } else {
+      await createDemand(demandData)
+      ElMessage.success('需求发布成功！系统正在为您匹配老师...')
+      router.push({
+        path: '/teacher/list',
+        query: {
+          subject: form.weakSubjects[0],
+          grade: form.grade,
+          studentId: studentId
+        }
+      })
+    }
     
   } catch (error) {
     console.error('提交失败:', error)
-    ElMessage.success('需求发布成功！系统正在为您匹配老师...')
-    router.push({
-      path: '/teacher/list',
-      query: {
-        subject: form.weakSubjects[0],
-        grade: form.grade
-      }
-    })
+    ElMessage.error(isEdit.value ? '更新失败' : '发布失败')
   } finally {
     isSubmitting.value = false
   }
 }
 
 onMounted(() => {
-  getUserLocation()
+  loadDemandData()
 })
 </script>
 

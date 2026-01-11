@@ -33,6 +33,14 @@ public class TutorController {
         return Result.success();
     }
 
+    @Operation(summary = "获取教员认证状态")
+    @GetMapping("/certification")
+    public Result<TutorProfile> getCertification() {
+        Long userId = UserContext.getUserId();
+        TutorProfile profile = tutorProfileService.getByUserId(userId);
+        return Result.success(profile);
+    }
+
     @Operation(summary = "获取当前教员档案")
     @GetMapping("/profile")
     public Result<TutorProfile> getProfile() {

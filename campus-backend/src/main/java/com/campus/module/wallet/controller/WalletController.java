@@ -84,4 +84,18 @@ public class WalletController {
         IPage<SysWithdrawal> result = withdrawalService.pageByUserId(userId, page, size);
         return Result.success(result);
     }
+
+    /**
+     * 充值 (Mock - 实际生产环境需要对接支付网关)
+     */
+    @Operation(summary = "充值", description = "模拟充值接口，实际需要对接支付网关")
+    @PostMapping("/recharge")
+    public Result<Long> recharge(
+            @Parameter(description = "充值金额") @RequestParam java.math.BigDecimal amount,
+            @Parameter(description = "支付方式: wechat/alipay") @RequestParam(defaultValue = "wechat") String paymentMethod) {
+        Long userId = UserContext.getUserId();
+        // Mock: 直接增加余额
+        Long flowId = walletService.recharge(userId, amount, paymentMethod);
+        return Result.success("充值成功", flowId);
+    }
 }

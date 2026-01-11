@@ -36,6 +36,8 @@ public class MatchController {
             @RequestParam(required = false) Double longitude,
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double radius,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortOrder,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
         
@@ -45,6 +47,8 @@ public class MatchController {
         request.setLongitude(longitude);
         request.setLatitude(latitude);
         request.setRadius(radius);
+        request.setSortBy(sortBy);
+        request.setSortOrder(sortOrder);
         request.setPage(page);
         request.setSize(size);
         

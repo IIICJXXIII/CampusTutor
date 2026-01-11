@@ -40,7 +40,8 @@ export function getDemandDetail(id) {
  * @param {Object} data - 更新数据
  */
 export function updateDemand(id, data) {
-  return request.put(`/demand/${id}`, data);
+  // 后端实际接口为 PUT /demand/update，参数体携带 id
+  return request.put('/demand/update', { id, ...data });
 }
 
 /**
@@ -48,7 +49,8 @@ export function updateDemand(id, data) {
  * @param {number} id - 需求ID
  */
 export function closeDemand(id) {
-  return request.put(`/demand/${id}/close`);
+  // 后端只有上下架接口，这里使用下架
+  return request.post(`/demand/${id}/offline`);
 }
 
 /**

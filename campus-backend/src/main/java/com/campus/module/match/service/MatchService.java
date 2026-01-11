@@ -145,6 +145,8 @@ public class MatchService {
             wrapper.orderBy(true, isAsc, TutorProfile::getRating);
         } else if ("price".equals(sortBy)) {
             wrapper.orderBy(true, isAsc, TutorProfile::getExpectPrice);
+        } else if ("orderCount".equals(sortBy)) {
+            wrapper.orderBy(true, isAsc, TutorProfile::getOrderCount);
         } else if (!"distance".equals(sortBy) && !"score".equals(sortBy)) {
             // 默认按评分降序（distance和score排序在后面处理）
             wrapper.orderByDesc(TutorProfile::getRating);
