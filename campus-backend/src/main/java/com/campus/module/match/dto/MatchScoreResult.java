@@ -41,6 +41,21 @@ public class MatchScoreResult extends TutorSearchResult {
     private Double ratingScore;
 
     /**
+     * 教学经验分数
+     */
+    private Double experienceScore;
+
+    /**
+     * 学历背景分数
+     */
+    private Double educationScore;
+
+    /**
+     * 教学特长分数
+     */
+    private Double specialtyScore;
+
+    /**
      * 匹配标签（如：科目匹配、距离近、评分高等）
      */
     private List<String> matchTags;

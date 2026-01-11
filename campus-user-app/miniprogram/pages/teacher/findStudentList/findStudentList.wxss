@@ -17,12 +17,14 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  border-bottom: 1rpx solid #e9ecef;
 }
 
 .header-left {
   width: 80rpx;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
 }
 
 .back-icon {
@@ -39,6 +41,7 @@
 .header-center {
   flex: 1;
   text-align: center;
+  padding: 0 20rpx;
 }
 
 .title {
@@ -49,6 +52,9 @@
 
 .header-right {
   width: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 /* 科目滚动栏 */
@@ -98,6 +104,7 @@
   height: 80rpx;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   position: sticky;
   top: 188rpx;
   z-index: 80;
@@ -106,6 +113,7 @@
 .sort-picker {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8rpx;
   font-size: 26rpx;
   color: var(--text-main);
@@ -148,7 +156,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 24rpx;
+  margin-bottom: 28rpx;
 }
 
 .title-row {
@@ -194,6 +202,10 @@
   font-size: 22rpx;
   font-weight: 600;
   white-space: nowrap;
+  margin-left: 8rpx;
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
 }
 
 .match-badge.excellent { background: rgba(0, 191, 165, 0.1); color: var(--success); }
@@ -245,6 +257,7 @@
   display: flex;
   margin-bottom: 12rpx;
   align-items: flex-start;
+  gap: 16rpx;
 }
 
 .info-item:last-child {
@@ -256,6 +269,8 @@
   font-size: 26rpx;
   color: var(--text-placeholder);
   flex-shrink: 0;
+  line-height: 1.4;
+  font-weight: 500;
 }
 
 .value {
@@ -350,6 +365,11 @@
   height: 600rpx;
   text-align: center;
   padding: 0 32rpx;
+  background-color: #fff;
+  margin: 32rpx;
+  border-radius: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  border: 1rpx dashed #dee2e6;
 }
 
 .empty-icon {
@@ -359,7 +379,7 @@
 }
 
 .empty-text {
-  font-size: 32rpx;
+  font-size: 34rpx;
   font-weight: 600;
   color: var(--text-main);
   margin-bottom: 16rpx;
