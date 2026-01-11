@@ -102,6 +102,13 @@ Page({
     });
   },
 
+  // 跳转到用户信息查看页面
+  goToUserInfoView() {
+    wx.navigateTo({
+      url: '/pages/common/userInfoView/userInfoView'
+    });
+  },
+
   // 退出登录
   handleLogout() {
     wx.showModal({

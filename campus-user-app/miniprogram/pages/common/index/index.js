@@ -128,6 +128,11 @@ Page({
     goToMap() {
         wx.navigateTo({ url: '/pages/teacher/mapFindStudent/mapFindStudent' });
     },
+    
+    // 跳转到学生列表
+    goToStudentList() {
+        wx.navigateTo({ url: '/pages/teacher/findStudentList/findStudentList' });
+    },
 
     goToCertification() {
         wx.navigateTo({ url: '/pages/teacher/certification/step3-result/step3-result' });
