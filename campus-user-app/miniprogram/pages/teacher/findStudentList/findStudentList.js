@@ -220,6 +220,29 @@ Page({
     this.loadUserLocation();
   },
 
+  // 联系家长（跳转到聊天页面）
+  async contactParent(e) {
+    const item = e.currentTarget.dataset.item;
+    if (!item) return;
+
+    const publisherId = item.publisherId || item.parentId;
+    if (!publisherId) {
+      wx.showToast({ title: '无法获取家长信息', icon: 'none' });
+      return;
+    }
+
+    // 获取家长信息用于聊天
+    try {
+      const userInfo = await request.get(api.chat.userInfo(publisherId));
+      wx.navigateTo({
+        url: `/pages/common/chatDetail/chatDetail?userId=${publisherId}&nickname=${encodeURIComponent(userInfo.nickname || '家长')}&avatar=${encodeURIComponent(userInfo.avatar || '')}`
+      });
+    } catch (err) {
+      // 即使获取失败也跳转，使用默认信息
+      wx.navigateTo({
+        url: `/pages/common/chatDetail/chatDetail?userId=${publisherId}&nickname=${encodeURIComponent('家长')}&avatar=`
+      });
+    }
   // 跳转到需求详情页
   goToDemandDetail: function (e) {
     const demandId = e.currentTarget.dataset.demandId;

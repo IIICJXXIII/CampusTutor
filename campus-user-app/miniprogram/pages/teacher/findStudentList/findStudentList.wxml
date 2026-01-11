@@ -83,6 +83,11 @@
             <text class="tag">{{item}}</text>
           </block>
         </view>
+        <view class="right">
+          <view class="price">¥{{item.expectPrice}}/小时</view>
+          <view class="actions">
+            <button class="btn small" data-id="{{item.id}}" bindtap="viewDetail">查看详情</button>
+            <button class="btn small" data-id="{{item.id}}" data-item="{{item}}" bindtap="contactParent">联系家长</button>
         
         <view class="card-footer">
           <view class="status-tag {{item.status === 1 ? 'active' : 'inactive'}}">
