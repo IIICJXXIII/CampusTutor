@@ -1,49 +1,45 @@
-/**app.wxss**/
-@import "style/iconfont.wxss";
-
-/* Global Design System */
+/* Global Design System - Warm & Friendly Theme */
 page {
-  /* Brand Colors - Modern Violet/Blue Theme */
-  --primary: #6C63FF;
-  --primary-light: #8F88FF;
-  --primary-dark: #5046e5;
-  --primary-fade: rgba(108, 99, 255, 0.1);
+  /* Brand Colors - Warm/Family Theme */
+  --primary: #8B5A2B; /* Caramel Brown - Emphasis/Buttons */
+  --primary-light: #A67B5B;
+  --secondary: #F8C8B4; /* Soft Orange Pink - Decorative/Secondary */
+  --secondary-light: #FFF0E6;
   
-  /* Secondary Colors */
-  --secondary: #F50057;
-  --success: #00BFA5;
-  --warning: #FFAB00;
-  --danger: #FF3D00;
-  --info: #2979FF;
-
+  /* Functional Colors */
+  --success: #66BB6A; /* Softer Green */
+  --warning: #FFB74D; /* Softer Orange */
+  --danger: #EF5350; /* Softer Red */
+  --info: #42A5F5;
+  
   /* Neutral Colors */
-  --bg-body: #F4F7F9; /* Cool Gray Background */
-  --bg-card: #FFFFFF;
-  --text-main: #2D3748; /* Dark Blue-Gray */
-  --text-secondary: #718096;
-  --text-placeholder: #A0AEC0;
-  --border: #E2E8F0;
+  --bg-body: #FFFBF7; /* Very Light Warm White */
+  --bg-card: #F9F2E8; /* Warm Beige */
+  --text-main: #4A4036; /* Dark Warm Grey/Brown */
+  --text-secondary: #8C8177; /* Warm Grey */
+  --text-placeholder: #BDB6B0;
+  --border: #E8E0D9;
   
-  /* Shadows - Soft & Modern */
-  --shadow-sm: 0 2rpx 4rpx rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4rpx 6rpx rgba(0, 0, 0, 0.07);
-  --shadow-lg: 0 10rpx 15rpx rgba(0, 0, 0, 0.1);
-  --shadow-primary: 0 8rpx 20rpx rgba(108, 99, 255, 0.3);
+  /* Shadows - Soft & Warm */
+  --shadow-sm: 0 4rpx 8rpx rgba(139, 90, 43, 0.05); /* Caramel tint */
+  --shadow-md: 0 6rpx 16rpx rgba(139, 90, 43, 0.08);
+  --shadow-lg: 0 12rpx 24rpx rgba(139, 90, 43, 0.12);
+  --shadow-primary: 0 8rpx 20rpx rgba(139, 90, 43, 0.25);
+  --shadow-hover: 0 8rpx 24rpx rgba(248, 200, 180, 0.4); /* Pink-orange shadow */
 
   /* Spacing & Radius */
-  --radius-sm: 8rpx;
-  --radius-md: 16rpx;
-  --radius-lg: 24rpx;
-  --radius-xl: 32rpx;
+  --radius-sm: 12rpx;
+  --radius-md: 24rpx; /* ~12px */
+  --radius-lg: 32rpx; /* ~16px */
+  --radius-xl: 40rpx;
   
   /* Apply global font */
-  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica,
-    Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei',
-    sans-serif;
+  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft Yahei', -apple-system, sans-serif;
   background-color: var(--bg-body);
   color: var(--text-main);
   box-sizing: border-box;
-  font-size: 28rpx;
+  font-size: 30rpx; /* Slightly larger body text per spec (15px) */
+  line-height: 1.5;
 }
 
 .container {
@@ -69,11 +65,12 @@ button::after{
 /* 1. Cards */
 .card-box {
   background: var(--bg-card);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  padding: 24rpx;
+  padding: 32rpx;
   margin-bottom: 24rpx;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.3s ease;
+  border: 1rpx solid rgba(255, 255, 255, 0.5); /* Subtle highlight */
 }
 
 .card-box:active {
@@ -82,20 +79,33 @@ button::after{
 
 /* 2. Buttons */
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  background: var(--primary);
   color: #fff;
   font-weight: 600;
   border-radius: var(--radius-md);
-  padding: 20rpx 0;
+  padding: 24rpx 0;
   text-align: center;
-  box-shadow: var(--shadow-primary);
-  transition: all 0.3s;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Frosted glass effect overlay */
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0));
+  pointer-events: none;
 }
 
 .btn-primary:active {
-  box-shadow: none;
   transform: translateY(2rpx);
-  opacity: 0.9;
+  box-shadow: var(--shadow-hover);
 }
 
 .btn-outline {
@@ -104,16 +114,16 @@ button::after{
   border: 2rpx solid var(--primary);
   font-weight: 600;
   border-radius: var(--radius-md);
-  padding: 18rpx 0;
+  padding: 22rpx 0;
   text-align: center;
 }
 
 /* 3. Typography Helpers */
-.text-h1 { font-size: 40rpx; font-weight: 700; color: var(--text-main); line-height: 1.2; }
-.text-h2 { font-size: 32rpx; font-weight: 700; color: var(--text-main); line-height: 1.3; }
-.text-h3 { font-size: 28rpx; font-weight: 600; color: var(--text-main); }
-.text-body { font-size: 28rpx; color: var(--text-main); }
-.text-desc { font-size: 24rpx; color: var(--text-secondary); }
+.text-h1 { font-size: 44rpx; font-weight: 600; color: var(--text-main); line-height: 1.4; } /* ~22px */
+.text-h2 { font-size: 36rpx; font-weight: 600; color: var(--text-main); line-height: 1.5; } /* ~18px */
+.text-h3 { font-size: 32rpx; font-weight: 600; color: var(--text-main); }
+.text-body { font-size: 30rpx; color: var(--text-main); }
+.text-desc { font-size: 26rpx; color: var(--text-secondary); }
 
 /* 4. Layout Helpers */
 .flex-row { display: flex; flex-direction: row; align-items: center; }
@@ -122,5 +132,5 @@ button::after{
 .justify-between { justify-content: space-between; }
 .justify-center { justify-content: center; }
 .align-center { align-items: center; }
-.gap-sm { gap: 12rpx; }
-.gap-md { gap: 24rpx; }
+.gap-sm { gap: 16rpx; }
+.gap-md { gap: 32rpx; }
