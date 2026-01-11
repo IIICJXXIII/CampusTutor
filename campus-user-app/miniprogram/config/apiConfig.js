@@ -9,6 +9,7 @@ const BASE_URL = {
 const API_HOST = BASE_URL[ENV];
 
 const api = {
+  BASE_URL: API_HOST,
   host: API_HOST,
   // 认证模块
   auth: {
@@ -91,6 +92,15 @@ const api = {
     idCardFront: `${API_HOST}/api/ocr/id-card/front`,
     idCardBack: `${API_HOST}/api/ocr/id-card/back`,
     general: `${API_HOST}/api/ocr/general`
+  },
+  // 聊天模块
+  chat: {
+    sessions: `${API_HOST}/api/chat/sessions`,
+    history: (targetUserId) => `${API_HOST}/api/chat/history/${targetUserId}`,
+    send: `${API_HOST}/api/chat/send`,
+    unreadCount: `${API_HOST}/api/chat/unread-count`,
+    markRead: (targetUserId) => `${API_HOST}/api/chat/read/${targetUserId}`,
+    userInfo: (userId) => `${API_HOST}/api/chat/user-info/${userId}`
   },
   // 学习辅助模块（错题本）
   study: {
