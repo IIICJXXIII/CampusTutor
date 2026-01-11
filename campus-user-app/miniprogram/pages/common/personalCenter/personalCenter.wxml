@@ -13,6 +13,85 @@
           </view>
         </view>
         <text class="phone">{{userInfo.username || ''}}</text>
+        <!-- 个人资料按钮 -->
+        <view class="profile-btn" bindtap="showProfileModal">
+          <text class="profile-btn-text">查看个人资料</text>
+          <text class="profile-btn-arrow">></text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 个人资料模态窗口 -->
+  <view class="modal-overlay" wx:if="{{showProfileModal}}" bindtap="hideProfileModal"></view>
+  <view class="profile-modal" wx:if="{{showProfileModal}}">
+    <view class="modal-header">
+      <text class="modal-title">个人资料</text>
+      <view class="modal-close" bindtap="hideProfileModal">×</view>
+    </view>
+    <view class="modal-content">
+      <!-- 加载状态 -->
+      <view wx:if="{{profileLoading}}" class="loading-container">
+        <view class="loading-spinner"></view>
+        <text class="loading-text">加载中...</text>
+      </view>
+      
+      <!-- 加载失败状态 -->
+      <view wx:elif="{{profileError}}" class="error-container">
+        <text class="error-text">{{profileError}}</text>
+        <button class="retry-btn" bindtap="loadProfileData">重试</button>
+      </view>
+      
+      <!-- 空数据状态 -->
+      <view wx:elif="{{!profileData || (!profileData.name && !profileData.phone && !profileData.email)}}" class="empty-container">
+        <text class="empty-text">暂无个人资料信息</text>
+      </view>
+      
+      <!-- 正常数据展示 -->
+      <view wx:else class="profile-info">
+        <view class="info-section">
+          <text class="section-title">基本信息</text>
+          <view class="info-item">
+            <text class="info-label">姓名</text>
+            <text class="info-value">{{profileData.name || '-'}}</text>
+          </view>
+          <view class="info-item">
+            <text class="info-label">性别</text>
+            <text class="info-value">{{profileData.gender === 1 ? '男' : profileData.gender === 2 ? '女' : '-'}}</text>
+          </view>
+          <view class="info-item">
+            <text class="info-label">出生日期</text>
+            <text class="info-value">{{profileData.birthDate || '-'}}</text>
+          </view>
+        </view>
+        
+        <view class="info-section">
+          <text class="section-title">联系方式</text>
+          <view class="info-item">
+            <text class="info-label">联系电话</text>
+            <text class="info-value">{{profileData.desensitizedPhone || '-'}}</text>
+          </view>
+          <view class="info-item">
+            <text class="info-label">电子邮箱</text>
+            <text class="info-value">{{profileData.desensitizedEmail || '-'}}</text>
+          </view>
+        </view>
+        
+        <view class="info-section">
+          <text class="section-title">身份信息</text>
+          <view class="info-item">
+            <text class="info-label">身份证号</text>
+            <text class="info-value">{{profileData.desensitizedIdCard || '-'}}</text>
+          </view>
+        </view>
+        
+        <view class="info-section">
+          <text class="section-title">注册信息</text>
+          <view class="info-item">
+            <text class="info-label">注册时间</text>
+            <text class="info-value">{{profileData.registerTime || '-'}}</text>
+          </view>
+        </view>
       </view>
     </view>
   </view>
