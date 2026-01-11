@@ -6,11 +6,11 @@ Page({
     latitude: null,
     longitude: null,
     // 过滤项
-    subjects: ['全部','数学','语文','英语','物理','化学'],
-    grades: ['全部','小学一年级','小学二年级','小学三年级','小学四年级','小学五年级','小学六年级','初中一年级','初中二年级','初中三年级','高中一年级','高中二年级','高中三年级'],
+    subjects: ['全部', '数学', '语文', '英语', '物理', '化学'],
+    grades: ['全部', '小学一年级', '小学二年级', '小学三年级', '小学四年级', '小学五年级', '小学六年级', '初中一年级', '初中二年级', '初中三年级', '高中一年级', '高中二年级', '高中三年级'],
     subjectIndex: 0,
     gradeIndex: 0,
-    sortOptions: ['综合排序','距离优先','发布时间','价格-高到低','价格-低到高'],
+    sortOptions: ['综合排序', '距离优先', '发布时间', '价格-高到低', '价格-低到高'],
     sortIndex: 0,
 
     list: [],
@@ -40,13 +40,15 @@ Page({
   // 获取位置并加载列表
   initLocationAndLoad() {
     const that = this;
-    wx.getLocation({ type: 'gcj02', success(res) {
-      that.setData({ latitude: res.latitude, longitude: res.longitude });
-      that.refreshList();
-    }, fail() {
-      // 仍然尝试加载（会降级到公开列表）
-      that.refreshList();
-    }});
+    wx.getLocation({
+      type: 'gcj02', success(res) {
+        that.setData({ latitude: res.latitude, longitude: res.longitude });
+        that.refreshList();
+      }, fail() {
+        // 仍然尝试加载（会降级到公开列表）
+        that.refreshList();
+      }
+    });
   },
 
   // 下拉刷新
@@ -175,16 +177,29 @@ Page({
     wx.navigateTo({ url: `/pages/teacher/demandDetail/demandDetail?id=${id}` });
   },
 
-  // 联系家长
-  contactParent(e) {
-    const id = e.currentTarget.dataset.id;
-    const item = this.data.list.find(i => i.id === id) || {};
-    const phone = item.parentPhone || item.phone || item.mobile || null;
-    if (phone) {
-      wx.setClipboardData({ data: String(phone), success() { wx.showToast({ title: '已复制家长手机号', icon: 'none' }); } });
+  // 联系家长（跳转到聊天页面）
+  async contactParent(e) {
+    const item = e.currentTarget.dataset.item;
+    if (!item) return;
+
+    const publisherId = item.publisherId || item.parentId;
+    if (!publisherId) {
+      wx.showToast({ title: '无法获取家长信息', icon: 'none' });
       return;
     }
-    wx.showModal({ title: '联系方式不可见', content: '家长未公开联系方式，建议复制ID并反馈或等待平台开放沟通接口', showCancel: false });
+
+    // 获取家长信息用于聊天
+    try {
+      const userInfo = await request.get(api.chat.userInfo(publisherId));
+      wx.navigateTo({
+        url: `/pages/common/chatDetail/chatDetail?userId=${publisherId}&nickname=${encodeURIComponent(userInfo.nickname || '家长')}&avatar=${encodeURIComponent(userInfo.avatar || '')}`
+      });
+    } catch (err) {
+      // 即使获取失败也跳转，使用默认信息
+      wx.navigateTo({
+        url: `/pages/common/chatDetail/chatDetail?userId=${publisherId}&nickname=${encodeURIComponent('家长')}&avatar=`
+      });
+    }
   },
 
   // 复制需求ID

@@ -22,8 +22,7 @@
           <view class="price">¥{{item.expectPrice}}/小时</view>
           <view class="actions">
             <button class="btn small" data-id="{{item.id}}" bindtap="viewDetail">查看详情</button>
-            <button class="btn small" data-id="{{item.id}}" bindtap="contactParent">联系家长</button>
-            <button class="btn small ghost" data-id="{{item.id}}" bindtap="copyId">复制ID</button>
+            <button class="btn small" data-id="{{item.id}}" data-item="{{item}}" bindtap="contactParent">联系家长</button>
           </view>
         </view>
       </view>
