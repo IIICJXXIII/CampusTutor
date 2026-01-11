@@ -12,6 +12,9 @@ import com.campus.module.demand.entity.DemandPost;
 import com.campus.module.demand.mapper.DemandPostMapper;
 import com.campus.module.demand.service.DemandPostService;
 import com.campus.module.demand.service.GeoService;
+import com.campus.module.match.service.MatchScoreCalculator;
+import com.campus.module.tutor.entity.TutorProfile;
+import com.campus.module.tutor.mapper.TutorProfileMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +32,8 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
         implements DemandPostService {
 
     private final GeoService geoService;
+    private final TutorProfileMapper tutorProfileMapper;
+    private final MatchScoreCalculator matchScoreCalculator;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -170,5 +175,121 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
         }
 
         return demands;
+    }
+
+    @Override
+    public IPage<DemandPost> pageListWithMatchScore(Long tutorId, String subject, String grade, Double longitude, Double latitude, Integer page, Integer size, String sortBy, String sortOrder) {
+        // 1. 获取教师档案
+        TutorProfile tutorProfile = null;
+        if (tutorId != null) {
+            tutorProfile = tutorProfileMapper.selectOne(
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<TutorProfile>()
+                            .eq(TutorProfile::getUserId, tutorId)
+            );
+        }
+
+        // 2. 构建查询条件
+        Page<DemandPost> pageParam = new Page<>(page, size);
+        LambdaQueryWrapper<DemandPost> wrapper = new LambdaQueryWrapper<DemandPost>()
+                .eq(DemandPost::getStatus, 1); // 只查上架的
+
+        if (StringUtils.hasText(subject)) {
+            wrapper.eq(DemandPost::getSubject, subject);
+        }
+        if (StringUtils.hasText(grade)) {
+            wrapper.eq(DemandPost::getGrade, grade);
+        }
+
+        // 3. 分页查询
+        IPage<DemandPost> demandPage = page(pageParam, wrapper);
+        List<DemandPost> demands = demandPage.getRecords();
+
+        // 4. 计算每个需求的匹配度
+        List<DemandPost> demandsWithMatchScore = new ArrayList<>();
+        for (DemandPost demand : demands) {
+            // 计算距离
+            Double distance = null;
+            if (longitude != null && latitude != null && demand.getLongitude() != null && demand.getLatitude() != null) {
+                distance = geoService.calculateDistance(
+                        longitude, latitude,
+                        demand.getLongitude().doubleValue(), demand.getLatitude().doubleValue()
+                );
+            }
+
+            // 创建带有匹配度的需求对象
+            com.campus.module.demand.dto.DemandWithMatchScore demandWithScore = new com.campus.module.demand.dto.DemandWithMatchScore();
+            // 复制基本信息
+            demandWithScore.setId(demand.getId());
+            demandWithScore.setPublisherId(demand.getPublisherId());
+            demandWithScore.setStudentId(demand.getStudentId());
+            demandWithScore.setTitle(demand.getTitle());
+            demandWithScore.setSubject(demand.getSubject());
+            demandWithScore.setGrade(demand.getGrade());
+            demandWithScore.setExpectPrice(demand.getExpectPrice());
+            demandWithScore.setScheduleRequire(demand.getScheduleRequire());
+            demandWithScore.setTeachMode(demand.getTeachMode());
+            demandWithScore.setLongitude(demand.getLongitude());
+            demandWithScore.setLatitude(demand.getLatitude());
+            demandWithScore.setAddress(demand.getAddress());
+            demandWithScore.setDetail(demand.getDetail());
+            demandWithScore.setStatus(demand.getStatus());
+            demandWithScore.setCreateTime(demand.getCreateTime());
+            demandWithScore.setUpdateTime(demand.getUpdateTime());
+
+            // 计算匹配分数（如果教师档案存在）
+            if (tutorProfile != null) {
+                com.campus.module.match.dto.MatchScoreResult scoreResult = matchScoreCalculator.calculateScoreByDemand(
+                        tutorProfile,
+                        demand.getSubject(),
+                        demand.getGrade(),
+                        distance,
+                        demand.getExpectPrice()
+                );
+
+                // 设置匹配度信息
+                demandWithScore.setMatchScore(scoreResult.getMatchScore());
+                demandWithScore.setSubjectScore(scoreResult.getSubjectScore());
+                demandWithScore.setGradeScore(scoreResult.getGradeScore());
+                demandWithScore.setDistanceScore(scoreResult.getDistanceScore());
+                demandWithScore.setPriceScore(scoreResult.getPriceScore());
+                demandWithScore.setMatchTags(scoreResult.getMatchTags());
+
+                // 计算匹配等级
+                if (scoreResult.getMatchScore() != null) {
+                    if (scoreResult.getMatchScore() >= 90) {
+                        demandWithScore.setMatchLevel("excellent");
+                    } else if (scoreResult.getMatchScore() >= 75) {
+                        demandWithScore.setMatchLevel("good");
+                    } else if (scoreResult.getMatchScore() >= 60) {
+                        demandWithScore.setMatchLevel("fair");
+                    } else {
+                        demandWithScore.setMatchLevel("poor");
+                    }
+                }
+            }
+
+            demandsWithMatchScore.add(demandWithScore);
+        }
+
+        // 5. 排序处理
+        if ("score".equals(sortBy) && !demandsWithMatchScore.isEmpty()) {
+            boolean isAsc = "asc".equalsIgnoreCase(sortOrder);
+            demandsWithMatchScore.sort((a, b) -> {
+                if (a instanceof com.campus.module.demand.dto.DemandWithMatchScore && b instanceof com.campus.module.demand.dto.DemandWithMatchScore) {
+                    Double sa = ((com.campus.module.demand.dto.DemandWithMatchScore) a).getMatchScore();
+                    Double sb = ((com.campus.module.demand.dto.DemandWithMatchScore) b).getMatchScore();
+                    sa = sa != null ? sa : 0.0;
+                    sb = sb != null ? sb : 0.0;
+                    return isAsc ? sa.compareTo(sb) : sb.compareTo(sa);
+                }
+                return 0;
+            });
+        }
+
+        // 6. 构建返回结果
+        Page<DemandPost> resultPage = new Page<>(page, size);
+        resultPage.setRecords(demandsWithMatchScore);
+        resultPage.setTotal(demandPage.getTotal());
+        return resultPage;
     }
 }

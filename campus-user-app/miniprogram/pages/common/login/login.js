@@ -84,9 +84,16 @@ Page({
       if (res && res.token) {
         wx.setStorageSync('token', res.token);
         wx.setStorageSync('userInfo', res);
+        
+        // 4. 对于教师角色，自动设置认证已提交标志
+        // 因为后端在开发阶段会直接通过认证
+        if (res.role === 1) {
+          wx.setStorageSync('certificationSubmitted', true);
+        }
+        
         wx.showToast({ title: '登录成功', icon: 'success' });
 
-        // 4. 登录成功后跳转到首页
+        // 5. 登录成功后跳转到首页
         setTimeout(() => {
           wx.switchTab({ url: '/pages/common/index/index' });
         }, 1000);
@@ -121,6 +128,12 @@ Page({
           if (r && r.token) {
             wx.setStorageSync('token', r.token);
             wx.setStorageSync('userInfo', r);
+            
+            // 对于教师角色，自动设置认证已提交标志
+            if (r.role === 1) {
+              wx.setStorageSync('certificationSubmitted', true);
+            }
+            
             wx.showToast({ title: '登录成功', icon: 'success' });
             setTimeout(() => wx.switchTab({ url: '/pages/common/index/index' }), 800);
           } else if (r && r.needBind) {

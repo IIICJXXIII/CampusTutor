@@ -244,4 +244,23 @@ public class MatchScoreCalculator {
         double r = rating.doubleValue();
         return WEIGHT_RATING * (r / 5.0);
     }
+
+    /**
+     * 基于需求信息计算教员匹配分数（教师端使用）
+     *
+     * @param tutor        教员档案
+     * @param subject      需求科目
+     * @param grade        需求年级
+     * @param distance     距离
+     * @param budgetPrice  需求预算价格
+     * @return 匹配评分结果
+     */
+    public MatchScoreResult calculateScoreByDemand(
+            TutorProfile tutor,
+            String subject,
+            String grade,
+            Double distance,
+            BigDecimal budgetPrice) {
+        return calculateScoreByCondition(tutor, subject, grade, distance, budgetPrice);
+    }
 }
