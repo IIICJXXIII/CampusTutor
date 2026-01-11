@@ -22,6 +22,7 @@ const api = {
   user: {
     info: `${API_HOST}/api/user`,
     byId: (id) => `${API_HOST}/api/user/${id}`,
+    updateInfo: `${API_HOST}/api/user/info`,
   },
   // 文件上传
   file: {
