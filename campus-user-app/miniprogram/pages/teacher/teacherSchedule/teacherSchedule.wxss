@@ -1,6 +1,11 @@
-/* 教师课表页面样式 - 细化时间段版本 */
+/* 教师课表页面样式 - 简约专业风 */
 page {
-  background: #f8f9fc;
+  background: #F8F9FA;
+  --prof-primary: #1E6F9F;
+  --prof-primary-dark: #165b85;
+  --prof-secondary: #E8F8F5;
+  --prof-selected-bg: #1E6F9F;
+  --prof-border: #E2E8F0;
 }
 
 .container {
@@ -14,21 +19,22 @@ page {
 .info-card {
   display: flex;
   align-items: center;
-  background: linear-gradient(135deg, #e8f4fd 0%, #d6e8f5 100%);
-  border-radius: 20rpx;
-  padding: 20rpx 28rpx;
-  margin: 24rpx;
+  background: var(--prof-secondary); /* Mint Green BG */
+  border-radius: 8rpx;
+  padding: 16rpx 24rpx;
+  margin: 16rpx 24rpx;
   flex-shrink: 0;
+  border: 1rpx solid #B0E0D8;
 }
 
 .info-icon {
-  font-size: 36rpx;
+  font-size: 32rpx;
   margin-right: 12rpx;
 }
 
 .info-text {
   font-size: 24rpx;
-  color: #4a7c9b;
+  color: var(--prof-primary); /* Deep Blue Text */
   flex: 1;
 }
 
@@ -37,9 +43,10 @@ page {
   flex: 1;
   margin: 0 24rpx;
   background: #fff;
-  border-radius: 24rpx;
-  padding: 20rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.03);
+  border-radius: 8rpx;
+  padding: 24rpx;
+  box-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.05);
+  border: 1rpx solid var(--prof-border);
 }
 
 .schedule-grid {
@@ -52,8 +59,8 @@ page {
   top: 0;
   background: #fff;
   z-index: 10;
-  padding-bottom: 12rpx;
-  border-bottom: 1rpx solid #f0f0f0;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid var(--prof-border);
 }
 
 .header-cell {
@@ -63,7 +70,7 @@ page {
   font-size: 24rpx;
   font-weight: 600;
   color: #333;
-  padding: 12rpx 0;
+  padding: 8rpx 0;
 }
 
 .header-cell.corner {
@@ -77,16 +84,17 @@ page {
 .period-title {
   font-size: 24rpx;
   font-weight: 600;
-  color: #667eea;
-  padding: 16rpx 8rpx 8rpx;
-  background: #f8f9fc;
-  margin: 8rpx 0;
-  border-radius: 8rpx;
+  color: var(--prof-primary);
+  padding: 12rpx 8rpx 4rpx;
+  background: transparent;
+  margin: 4rpx 0;
+  border-radius: 0;
+  border-bottom: 1rpx dashed var(--prof-border);
 }
 
 .grid-row {
   display: flex;
-  margin-bottom: 8rpx;
+  margin-bottom: 4rpx;
 }
 
 .time-cell {
@@ -102,90 +110,98 @@ page {
   font-size: 22rpx;
   color: #333;
   font-weight: 500;
+  font-family: monospace;
 }
 
 .time-end {
   font-size: 18rpx;
   color: #999;
+  font-family: monospace;
 }
 
 .schedule-cell {
   flex: 1;
   min-width: 70rpx;
-  height: 56rpx;
+  height: 48rpx;
   margin: 2rpx;
-  border-radius: 10rpx;
-  background: #f5f5f5;
+  border-radius: 4rpx; /* Sharper */
+  background: #F8F9FA;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  font-size: 24rpx;
-  color: #999;
+  transition: all 0.1s;
+  font-size: 22rpx;
+  color: #ccc;
+  border: 1rpx solid transparent;
 }
 
 .schedule-cell.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--prof-selected-bg);
   color: #fff;
   font-weight: bold;
-  box-shadow: 0 2rpx 8rpx rgba(102, 126, 234, 0.3);
+  border-color: var(--prof-primary-dark);
 }
 
 .schedule-cell:active {
-  transform: scale(0.95);
+  opacity: 0.8;
 }
 
 /* 图例 */
 .legend {
   display: flex;
   justify-content: center;
-  gap: 48rpx;
-  padding: 20rpx 0;
+  gap: 32rpx;
+  padding: 16rpx 0;
   flex-shrink: 0;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: #666;
 }
 
 .legend-dot {
-  width: 24rpx;
-  height: 24rpx;
-  border-radius: 6rpx;
-  background: #f5f5f5;
-  margin-right: 12rpx;
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 4rpx;
+  background: #F8F9FA;
+  margin-right: 8rpx;
   border: 1rpx solid #ddd;
 }
 
 .legend-dot.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--prof-primary);
   border: none;
 }
 
 /* 保存按钮 */
 .action-area {
-  padding: 20rpx 32rpx;
-  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  padding: 16rpx 24rpx;
+  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
   background: #fff;
-  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 -2rpx 8rpx rgba(0, 0, 0, 0.05);
   flex-shrink: 0;
+  border-top: 1rpx solid var(--prof-border);
 }
 
 .btn-save {
   width: 100%;
-  height: 88rpx;
-  line-height: 88rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  height: 80rpx;
+  line-height: 80rpx;
+  background: var(--prof-primary);
   color: #fff;
-  font-size: 32rpx;
+  font-size: 28rpx;
   font-weight: 600;
-  border-radius: 44rpx;
+  border-radius: 8rpx; /* 4px */
   border: none;
 }
 
+.btn-save:active {
+  background: var(--prof-primary-dark);
+}
+
 .btn-save[disabled] {
-  background: #ccc;
+  background: #CFD8DC;
 }
