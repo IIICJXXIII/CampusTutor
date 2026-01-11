@@ -21,9 +21,14 @@ public interface SysWalletService extends IService<SysWallet> {
     void createWallet(Long userId);
 
     /**
-     * 冻结金额 (用于订单支付托管)
+     * 冻结金额 (用于订单支付托管，直接增加冻结金额)
      */
     boolean freeze(Long userId, BigDecimal amount);
+    
+    /**
+     * 从余额中冻结金额 (用于其他冻结场景)
+     */
+    boolean freezeFromBalance(Long userId, BigDecimal amount);
 
     /**
      * 解冻金额

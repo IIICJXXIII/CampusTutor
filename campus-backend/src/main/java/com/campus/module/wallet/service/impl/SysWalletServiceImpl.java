@@ -39,6 +39,24 @@ public class SysWalletServiceImpl extends ServiceImpl<SysWalletMapper, SysWallet
     public boolean freeze(Long userId, BigDecimal amount) {
         SysWallet wallet = getByUserId(userId);
         if (wallet == null) {
+            // 如果钱包不存在，自动创建
+            createWallet(userId);
+            wallet = getByUserId(userId);
+        }
+        // 直接增加冻结金额（支付成功时的收入）
+        wallet.setFrozenAmount(wallet.getFrozenAmount().add(amount));
+        boolean success = updateById(wallet);
+        if (!success) {
+            throw new BusinessException("更新钱包失败");
+        }
+        return success;
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean freezeFromBalance(Long userId, BigDecimal amount) {
+        SysWallet wallet = getByUserId(userId);
+        if (wallet == null) {
             throw new BusinessException("钱包不存在");
         }
         if (wallet.getBalance().compareTo(amount) < 0) {
@@ -55,7 +73,9 @@ public class SysWalletServiceImpl extends ServiceImpl<SysWalletMapper, SysWallet
     public boolean unfreeze(Long userId, BigDecimal amount) {
         SysWallet wallet = getByUserId(userId);
         if (wallet == null) {
-            throw new BusinessException("钱包不存在");
+            // 如果钱包不存在，自动创建
+            createWallet(userId);
+            wallet = getByUserId(userId);
         }
         if (wallet.getFrozenAmount().compareTo(amount) < 0) {
             throw new BusinessException("冻结金额不足");
@@ -63,7 +83,11 @@ public class SysWalletServiceImpl extends ServiceImpl<SysWalletMapper, SysWallet
         // 减少冻结金额，增加回余额
         wallet.setFrozenAmount(wallet.getFrozenAmount().subtract(amount));
         wallet.setBalance(wallet.getBalance().add(amount));
-        return updateById(wallet);
+        boolean success = updateById(wallet);
+        if (!success) {
+            throw new BusinessException("更新钱包失败");
+        }
+        return success;
     }
 
     @Override
@@ -71,13 +95,19 @@ public class SysWalletServiceImpl extends ServiceImpl<SysWalletMapper, SysWallet
     public boolean deduct(Long userId, BigDecimal amount) {
         SysWallet wallet = getByUserId(userId);
         if (wallet == null) {
-            throw new BusinessException("钱包不存在");
+            // 如果钱包不存在，自动创建
+            createWallet(userId);
+            wallet = getByUserId(userId);
         }
         if (wallet.getBalance().compareTo(amount) < 0) {
             return false; // 余额不足
         }
         wallet.setBalance(wallet.getBalance().subtract(amount));
-        return updateById(wallet);
+        boolean success = updateById(wallet);
+        if (!success) {
+            throw new BusinessException("更新钱包失败");
+        }
+        return success;
     }
 
     @Override
@@ -90,7 +120,11 @@ public class SysWalletServiceImpl extends ServiceImpl<SysWalletMapper, SysWallet
             wallet = getByUserId(userId);
         }
         wallet.setBalance(wallet.getBalance().add(amount));
-        return updateById(wallet);
+        boolean success = updateById(wallet);
+        if (!success) {
+            throw new BusinessException("更新钱包失败");
+        }
+        return success;
     }
 
     @Override

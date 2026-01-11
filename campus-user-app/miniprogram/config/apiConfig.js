@@ -63,6 +63,7 @@ const api = {
   // 订单模块 (Order)
   order: {
     create: `${API_HOST}/api/order/create`,
+    accept: `${API_HOST}/api/order/accept`,
     listParent: `${API_HOST}/api/order/parent/list`,
     listTutor: `${API_HOST}/api/order/tutor/list`,
     pay: `${API_HOST}/api/order/pay`,

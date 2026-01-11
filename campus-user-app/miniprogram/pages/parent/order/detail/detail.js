@@ -21,11 +21,14 @@ Page({
       const order = await request.get(api.order.detail(this.data.orderId));
       let statusText = '未知';
       switch (order.status) {
+        case -1: statusText = '待确认'; break;
         case 0: statusText = '待支付'; break;
         case 1: statusText = '已支付，待开课'; break;
         case 2: statusText = '进行中'; break;
         case 3: statusText = '已完成'; break;
         case 4: statusText = '已取消'; break;
+        case 5: statusText = '退款中'; break;
+        case 6: statusText = '已退款'; break;
       }
       this.setData({ order, statusText, loading: false });
     } catch (err) {
@@ -64,13 +67,40 @@ Page({
   async doPay(payType, payPassword) {
     wx.showLoading({ title: '支付中...' });
     try {
-      await request.post(api.order.pay, { orderId: this.data.orderId, payType, payPassword });
+      // 获取openid
+      let openid = wx.getStorageSync('openid') || '';
+      // 开发环境模拟openid
+      if (!openid) {
+        openid = 'o123456789abcdefghijklmnopqrstuvwxyz';
+        wx.setStorageSync('openid', openid);
+        console.log('使用模拟openid:', openid);
+      }
+      
+      await request.post(api.order.pay, { 
+        orderId: this.data.orderId, 
+        payType, 
+        payPassword,
+        openid: openid // 添加微信openid
+      });
       wx.hideLoading();
       wx.showToast({ title: '支付成功', icon: 'success' });
       this.fetchDetail();
     } catch (err) {
       wx.hideLoading();
       console.error(err);
+      if (err.msg === '缺少微信用户标识') {
+        wx.showModal({
+          title: '登录过期',
+          content: '微信用户标识已过期，请重新进行微信登录',
+          confirmText: '去登录',
+          cancelText: '取消',
+          success: (res) => {
+            if (res.confirm) {
+              wx.navigateTo({ url: '/pages/common/login/login' });
+            }
+          }
+        });
+      }
     }
   },
 
