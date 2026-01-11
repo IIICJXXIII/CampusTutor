@@ -18,9 +18,12 @@ public interface SysUserService extends IService<SysUser> {
 
     boolean updateStatus(Long userId, Integer status);
 
+    void updatePassword(Long userId, String oldPassword, String newPassword);
+
     /**
      * 重置密码
-     * @param username 用户名
+     * 
+     * @param username    用户名
      * @param newPassword 新密码
      */
     void resetPassword(String username, String newPassword);

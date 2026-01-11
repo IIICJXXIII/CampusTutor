@@ -56,6 +56,11 @@ public class MatchScoreResult extends TutorSearchResult {
     private Double specialtyScore;
 
     /**
+     * 热度分数（新增）
+     */
+    private Double hotnessScore;
+
+    /**
      * 匹配标签（如：科目匹配、距离近、评分高等）
      */
     private List<String> matchTags;
