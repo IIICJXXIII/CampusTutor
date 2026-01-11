@@ -6,13 +6,12 @@ const request = (url, method = 'GET', data = {}, header = {}) => {
     // 1. 获取本地存储的 Token
     const token = wx.getStorageSync('token');
     
-    // 【调试日志】(发布时可注释) 
-    // 观察这里打印的是什么，如果是 undefined/null，说明注册/登录时没存对
-    if (url.includes('certification')) {
-        console.log('==== 请求调试 ====');
-        console.log('URL:', url);
-        console.log('本地Token:', token);
-    }
+    // 【调试日志】
+    console.log('==== 请求调试 ====');
+    console.log('URL:', url);
+    console.log('Method:', method);
+    console.log('Data:', data);
+    console.log('本地Token:', token);
 
     // 2. 组装 Header
     const defaultHeader = {
@@ -40,14 +39,20 @@ const request = (url, method = 'GET', data = {}, header = {}) => {
       header: defaultHeader,
       timeout: 10000,
       success: (res) => {
+        console.log('==== 响应调试 ====');
+        console.log('Status Code:', res.statusCode);
+        console.log('Response:', res);
+        
         const { statusCode, data: resData } = res;
         
         // HTTP 状态码判断
         if (statusCode >= 200 && statusCode < 300) {
           // 兼容 code=200 和 code=0
           if (resData.code === 200 || resData.code === 0) {
+            console.log('请求成功，返回数据:', resData.data);
             resolve(resData.data);
           } else {
+            console.log('请求失败，错误信息:', resData);
             // 401 未授权处理
             if (resData.code === 401) {
               wx.showToast({ title: '登录状态已失效', icon: 'none' });
