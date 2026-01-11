@@ -11,6 +11,11 @@ import java.util.List;
 public class TutorSearchRequest {
 
     /**
+     * 当前用户ID（用于动态权重计算）
+     */
+    private Long userId;
+
+    /**
      * 科目筛选
      */
     private String subject;

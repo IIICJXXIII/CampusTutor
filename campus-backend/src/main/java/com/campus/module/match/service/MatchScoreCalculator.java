@@ -21,17 +21,17 @@ import java.util.List;
 public class MatchScoreCalculator {
 
     // 各维度权重配置
-    private static final double WEIGHT_SUBJECT = 25.0;    // 科目匹配 25%
-    private static final double WEIGHT_GRADE = 15.0;      // 年级匹配 15%
-    private static final double WEIGHT_DISTANCE = 20.0;   // 距离评分 20%
-    private static final double WEIGHT_PRICE = 10.0;      // 价格匹配 10%
-    private static final double WEIGHT_RATING = 10.0;     // 教员评分 10%
+    private static final double WEIGHT_SUBJECT = 25.0; // 科目匹配 25%
+    private static final double WEIGHT_GRADE = 15.0; // 年级匹配 15%
+    private static final double WEIGHT_DISTANCE = 20.0; // 距离评分 20%
+    private static final double WEIGHT_PRICE = 10.0; // 价格匹配 10%
+    private static final double WEIGHT_RATING = 10.0; // 教员评分 10%
     private static final double WEIGHT_EXPERIENCE = 10.0; // 教学经验 10%
-    private static final double WEIGHT_EDUCATION = 5.0;   // 学历背景 5%
-    private static final double WEIGHT_SPECIALTY = 5.0;   // 教学特长 5%
+    private static final double WEIGHT_EDUCATION = 5.0; // 学历背景 5%
+    private static final double WEIGHT_SPECIALTY = 5.0; // 教学特长 5%
 
     // 距离评分参数
-    private static final double MAX_DISTANCE_KM = 10.0;   // 最大考虑距离(公里)
+    private static final double MAX_DISTANCE_KM = 10.0; // 最大考虑距离(公里)
 
     /**
      * 计算教员与需求的匹配分数
@@ -102,8 +102,8 @@ public class MatchScoreCalculator {
         }
 
         // 9. 计算综合匹配分数
-        double totalScore = subjectScore + gradeScore + distanceScore + priceScore + ratingScore + 
-                           experienceScore + educationScore + specialtyScore;
+        double totalScore = subjectScore + gradeScore + distanceScore + priceScore + ratingScore +
+                experienceScore + educationScore + specialtyScore;
         result.setMatchScore(Math.min(100.0, totalScore));
         result.setMatchTags(matchTags);
 
@@ -113,11 +113,11 @@ public class MatchScoreCalculator {
     /**
      * 基于搜索条件计算教员匹配分数（无需求对象时使用）
      *
-     * @param tutor        教员档案
-     * @param subject      科目
-     * @param grade        年级
-     * @param distance     距离
-     * @param budgetPrice  预算价格
+     * @param tutor       教员档案
+     * @param subject     科目
+     * @param grade       年级
+     * @param distance    距离
+     * @param budgetPrice 预算价格
      * @return 匹配评分结果
      */
     public MatchScoreResult calculateScoreByCondition(
@@ -187,8 +187,8 @@ public class MatchScoreCalculator {
         }
 
         // 9. 计算综合匹配分数
-        double totalScore = subjectScore + gradeScore + distanceScore + priceScore + ratingScore + 
-                           experienceScore + educationScore + specialtyScore;
+        double totalScore = subjectScore + gradeScore + distanceScore + priceScore + ratingScore +
+                experienceScore + educationScore + specialtyScore;
         result.setMatchScore(Math.min(100.0, totalScore));
         result.setMatchTags(matchTags);
 
@@ -298,7 +298,7 @@ public class MatchScoreCalculator {
      */
     private double calculateExperienceScore(TutorProfile tutor) {
         int orderCount = tutor.getOrderCount() != null ? tutor.getOrderCount() : 0;
-        
+
         // 订单数量评分
         if (orderCount >= 50) {
             return WEIGHT_EXPERIENCE; // 丰富经验
@@ -321,7 +321,7 @@ public class MatchScoreCalculator {
         if (education == null) {
             return WEIGHT_EDUCATION * 0.5; // 无学历信息
         }
-        
+
         // 学历等级评分
         switch (education) {
             case 5: // 博士
@@ -345,17 +345,17 @@ public class MatchScoreCalculator {
         if (!StringUtils.hasText(teachStyle)) {
             return WEIGHT_SPECIALTY * 0.5; // 无教学风格信息
         }
-        
+
         if (!StringUtils.hasText(learningGoal)) {
             return WEIGHT_SPECIALTY * 0.7; // 无学习目标
         }
-        
+
         // 关键词匹配
         String style = teachStyle.toLowerCase();
         String goal = learningGoal.toLowerCase();
-        
+
         int matchCount = 0;
-        
+
         // 常见学习目标与教学风格的匹配
         if (goal.contains("提高") && style.contains("提升")) {
             matchCount++;
@@ -372,7 +372,7 @@ public class MatchScoreCalculator {
         if (goal.contains("竞赛") && style.contains("竞赛")) {
             matchCount++;
         }
-        
+
         if (matchCount >= 2) {
             return WEIGHT_SPECIALTY; // 高度匹配
         } else if (matchCount >= 1) {
@@ -385,11 +385,11 @@ public class MatchScoreCalculator {
     /**
      * 基于需求信息计算教员匹配分数（教师端使用）
      *
-     * @param tutor        教员档案
-     * @param subject      需求科目
-     * @param grade        需求年级
-     * @param distance     距离
-     * @param budgetPrice  需求预算价格
+     * @param tutor       教员档案
+     * @param subject     需求科目
+     * @param grade       需求年级
+     * @param distance    距离
+     * @param budgetPrice 需求预算价格
      * @return 匹配评分结果
      */
     public MatchScoreResult calculateScoreByDemand(
@@ -399,5 +399,260 @@ public class MatchScoreCalculator {
             Double distance,
             BigDecimal budgetPrice) {
         return calculateScoreByCondition(tutor, subject, grade, distance, budgetPrice);
+    }
+
+    /**
+     * 带行为信号和动态权重的匹配分数计算（升级版）
+     *
+     * @param tutor            教员档案
+     * @param subject          科目
+     * @param grade            年级
+     * @param distance         距离
+     * @param budgetPrice      预算价格
+     * @param hotnessScore     教员热度分(0-100)，从BehaviorService获取
+     * @param weightSubject    科目权重
+     * @param weightGrade      年级权重
+     * @param weightDistance   距离权重
+     * @param weightPrice      价格权重
+     * @param weightRating     评分权重
+     * @param weightExperience 经验权重
+     * @param weightEducation  学历权重
+     * @param weightSpecialty  特长权重
+     * @param weightHotness    热度权重
+     * @return 匹配评分结果
+     */
+    public MatchScoreResult calculateScoreWithBehavior(
+            TutorProfile tutor,
+            String subject,
+            String grade,
+            Double distance,
+            BigDecimal budgetPrice,
+            Double hotnessScore,
+            double weightSubject,
+            double weightGrade,
+            double weightDistance,
+            double weightPrice,
+            double weightRating,
+            double weightExperience,
+            double weightEducation,
+            double weightSpecialty,
+            double weightHotness) {
+
+        MatchScoreResult result = new MatchScoreResult();
+        List<String> matchTags = new ArrayList<>();
+
+        // 1. 科目匹配分数（使用动态权重）
+        double subjectScore = calculateSubjectScoreWithWeight(tutor.getTeachSubjects(), subject, weightSubject);
+        result.setSubjectScore(subjectScore);
+        if (subjectScore >= weightSubject * 0.8) {
+            matchTags.add("科目匹配");
+        }
+
+        // 2. 年级匹配分数
+        double gradeScore = calculateGradeScoreWithWeight(tutor.getTeachGrades(), grade, weightGrade);
+        result.setGradeScore(gradeScore);
+        if (gradeScore >= weightGrade * 0.8) {
+            matchTags.add("年级匹配");
+        }
+
+        // 3. 距离评分
+        double distanceScore = calculateDistanceScoreWithWeight(distance, weightDistance);
+        result.setDistanceScore(distanceScore);
+        if (distance != null && distance <= 3.0) {
+            matchTags.add("距离近");
+        }
+
+        // 4. 价格匹配分数
+        double priceScore = calculatePriceScoreWithWeight(tutor.getExpectPrice(), budgetPrice, weightPrice);
+        result.setPriceScore(priceScore);
+        if (priceScore >= weightPrice * 0.8) {
+            matchTags.add("价格合适");
+        }
+
+        // 5. 教员评分权重
+        double ratingScore = calculateRatingScoreWithWeight(tutor.getRating(), weightRating);
+        result.setRatingScore(ratingScore);
+        if (tutor.getRating() != null && tutor.getRating().doubleValue() >= 4.5) {
+            matchTags.add("高评分");
+        }
+
+        // 6. 教学经验评分
+        double experienceScore = calculateExperienceScoreWithWeight(tutor, weightExperience);
+        result.setExperienceScore(experienceScore);
+        if (experienceScore >= weightExperience * 0.8) {
+            matchTags.add("经验丰富");
+        }
+
+        // 7. 学历背景评分
+        double educationScore = calculateEducationScoreWithWeight(tutor.getEducation(), weightEducation);
+        result.setEducationScore(educationScore);
+        if (educationScore >= weightEducation * 0.8) {
+            matchTags.add("学历优秀");
+        }
+
+        // 8. 教学特长评分
+        double specialtyScore = calculateSpecialtyScoreWithWeight(tutor.getTeachStyle(), null, weightSpecialty);
+        result.setSpecialtyScore(specialtyScore);
+        if (specialtyScore >= weightSpecialty * 0.8) {
+            matchTags.add("教学特长");
+        }
+
+        // 9. 热度评分（新增维度）
+        double hotnessScoreWeighted = 0;
+        if (hotnessScore != null && hotnessScore > 0) {
+            // 热度分0-100，转换为权重分
+            hotnessScoreWeighted = (hotnessScore / 100.0) * weightHotness;
+            if (hotnessScore >= 60) {
+                matchTags.add("热门教员");
+            }
+        }
+        result.setHotnessScore(hotnessScoreWeighted);
+
+        // 10. 计算综合匹配分数
+        double totalScore = subjectScore + gradeScore + distanceScore + priceScore +
+                ratingScore + experienceScore + educationScore +
+                specialtyScore + hotnessScoreWeighted;
+        result.setMatchScore(Math.min(100.0, totalScore));
+        result.setMatchTags(matchTags);
+
+        return result;
+    }
+
+    // ============ 带动态权重的各维度计算方法 ============
+
+    private double calculateSubjectScoreWithWeight(String teachSubjectsJson, String targetSubject, double weight) {
+        if (!StringUtils.hasText(targetSubject) || !StringUtils.hasText(teachSubjectsJson)) {
+            return weight * 0.5;
+        }
+        try {
+            List<String> subjects = JSONUtil.toList(teachSubjectsJson, String.class);
+            for (String subject : subjects) {
+                if (subject.contains(targetSubject) || targetSubject.contains(subject)) {
+                    return weight;
+                }
+            }
+            return 0;
+        } catch (Exception e) {
+            log.warn("解析科目JSON失败: {}", e.getMessage());
+            return 0;
+        }
+    }
+
+    private double calculateGradeScoreWithWeight(String teachGradesJson, String targetGrade, double weight) {
+        if (!StringUtils.hasText(targetGrade) || !StringUtils.hasText(teachGradesJson)) {
+            return weight * 0.5;
+        }
+        try {
+            List<String> grades = JSONUtil.toList(teachGradesJson, String.class);
+            for (String grade : grades) {
+                if (grade.contains(targetGrade) || targetGrade.contains(grade)) {
+                    return weight;
+                }
+            }
+            return 0;
+        } catch (Exception e) {
+            log.warn("解析年级JSON失败: {}", e.getMessage());
+            return 0;
+        }
+    }
+
+    private double calculateDistanceScoreWithWeight(Double distance, double weight) {
+        if (distance == null) {
+            return weight * 0.5;
+        }
+        if (distance <= 0) {
+            return weight;
+        }
+        if (distance >= MAX_DISTANCE_KM) {
+            return 0;
+        }
+        return weight * (1 - distance / MAX_DISTANCE_KM);
+    }
+
+    private double calculatePriceScoreWithWeight(BigDecimal tutorPrice, BigDecimal budgetPrice, double weight) {
+        if (tutorPrice == null || budgetPrice == null) {
+            return weight * 0.5;
+        }
+        double tutor = tutorPrice.doubleValue();
+        double budget = budgetPrice.doubleValue();
+        if (tutor <= budget) {
+            return weight;
+        }
+        double overRatio = (tutor - budget) / budget;
+        if (overRatio >= 0.5) {
+            return 0;
+        }
+        return weight * (1 - overRatio * 2);
+    }
+
+    private double calculateRatingScoreWithWeight(BigDecimal rating, double weight) {
+        if (rating == null) {
+            return weight * 0.6;
+        }
+        double r = rating.doubleValue();
+        return weight * (r / 5.0);
+    }
+
+    private double calculateExperienceScoreWithWeight(TutorProfile tutor, double weight) {
+        int orderCount = tutor.getOrderCount() != null ? tutor.getOrderCount() : 0;
+        if (orderCount >= 50) {
+            return weight;
+        } else if (orderCount >= 20) {
+            return weight * 0.8;
+        } else if (orderCount >= 10) {
+            return weight * 0.6;
+        } else if (orderCount >= 5) {
+            return weight * 0.4;
+        } else {
+            return weight * 0.2;
+        }
+    }
+
+    private double calculateEducationScoreWithWeight(Integer education, double weight) {
+        if (education == null) {
+            return weight * 0.5;
+        }
+        switch (education) {
+            case 5:
+                return weight;
+            case 4:
+                return weight * 0.8;
+            case 3:
+                return weight * 0.6;
+            case 2:
+                return weight * 0.4;
+            default:
+                return weight * 0.2;
+        }
+    }
+
+    private double calculateSpecialtyScoreWithWeight(String teachStyle, String learningGoal, double weight) {
+        if (!StringUtils.hasText(teachStyle)) {
+            return weight * 0.5;
+        }
+        if (!StringUtils.hasText(learningGoal)) {
+            return weight * 0.7;
+        }
+        String style = teachStyle.toLowerCase();
+        String goal = learningGoal.toLowerCase();
+        int matchCount = 0;
+        if (goal.contains("提高") && style.contains("提升"))
+            matchCount++;
+        if (goal.contains("基础") && style.contains("基础"))
+            matchCount++;
+        if (goal.contains("考试") && style.contains("应试"))
+            matchCount++;
+        if (goal.contains("兴趣") && style.contains("兴趣"))
+            matchCount++;
+        if (goal.contains("竞赛") && style.contains("竞赛"))
+            matchCount++;
+
+        if (matchCount >= 2) {
+            return weight;
+        } else if (matchCount >= 1) {
+            return weight * 0.6;
+        } else {
+            return weight * 0.3;
+        }
     }
 }
