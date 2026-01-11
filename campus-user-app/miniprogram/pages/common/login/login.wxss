@@ -1,4 +1,4 @@
-/* 登录页面样式 - login.wxss */
+/* 登录页面样式 - login.wxss - 温馨亲和风 */
 .container {
   padding: 0 48rpx;
   background-color: #fff;
@@ -16,7 +16,7 @@
   right: -200rpx;
   width: 600rpx;
   height: 600rpx;
-  background: linear-gradient(135deg, rgba(108, 99, 255, 0.1), rgba(118, 75, 162, 0.1));
+  background: linear-gradient(135deg, rgba(255, 240, 230, 0.8), rgba(248, 200, 180, 0.3)); /* Warm Peach */
   border-radius: 50%;
   z-index: 1;
 }
@@ -63,7 +63,7 @@
 .input-group:focus-within {
   background: #fff;
   border-color: var(--primary);
-  box-shadow: 0 4rpx 20rpx rgba(108, 99, 255, 0.1);
+  box-shadow: var(--shadow-sm); /* Warm shadow */
 }
 
 .icon-wrap {
@@ -86,11 +86,11 @@
 
 .code-btn {
   font-size: 26rpx;
-  color: var(--primary);
+  color: var(--primary); /* Caramel Text */
   padding: 12rpx 24rpx;
   flex-shrink: 0;
   font-weight: 600;
-  background: rgba(108, 99, 255, 0.1);
+  background: rgba(139, 90, 43, 0.1); /* Light Caramel bg */
   border-radius: 30rpx;
 }
 
@@ -114,7 +114,7 @@
 }
 
 .submit-btn {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  background: var(--primary); /* Solid Caramel Brown */
   color: #fff;
   border-radius: 50rpx;
   font-size: 32rpx;
@@ -123,6 +123,7 @@
   line-height: 96rpx;
   box-shadow: var(--shadow-primary);
   letter-spacing: 4rpx;
+  border: none;
 }
 
 .submit-btn:active {
