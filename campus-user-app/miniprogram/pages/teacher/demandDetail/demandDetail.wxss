@@ -1,140 +1,234 @@
+/* 教师详情页样式 - 简约专业风 */
+page {
+  background-color: #F8F9FA;
+  --prof-primary: #1E6F9F;
+  --prof-primary-dark: #165b85;
+  --prof-secondary: #E8F8F5;
+  --prof-accent: #0D9488; /* Teal accent for icons */
+  --prof-border: #E2E8F0;
+  --prof-card-bg: #FFFFFF;
+  --text-main: #1A202C;
+  --text-sub: #718096;
+  --danger: #E53E3E;
+}
+
 .container {
-  position: relative;
-  min-height: 100vh;
-  background-color: #f5f5f5;
-}
-
-/* 避免横向溢出 */
-.container, .detail-card, .map-preview { max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
-
-/* 加载状态 */
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   height: 100vh;
-}
-
-.loading-text {
-  font-size: 14px;
-  color: #909399;
-}
-
-/* 错误状态 */
-.error-container {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
 }
 
-.error-text {
-  font-size: 14px;
-  color: #f56c6c;
-  margin-bottom: 20px;
+/* Loading & Error */
+.loading-container, .error-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24rpx;
+}
+
+.loading-spinner {
+  width: 48rpx;
+  height: 48rpx;
+  border: 4rpx solid var(--prof-border);
+  border-top-color: var(--prof-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.loading-text, .error-text {
+  font-size: 28rpx;
+  color: var(--text-sub);
 }
 
 .btn-reload {
-  padding: 8px 20px;
-  background-color: #409eff;
-  color: white;
-  border-radius: 4px;
-  font-size: 14px;
+  margin-top: 20rpx;
+  font-size: 28rpx;
+  color: var(--prof-primary);
+  background: var(--prof-secondary);
+  border: none;
+  border-radius: 30rpx;
+  padding: 10rpx 40rpx;
 }
 
-/* 滚动容器 */
+/* 滚动区域 */
 .detail-scroll {
-  min-height: 100vh;
-  padding: 0 20px 160px; /* 为底部固定按钮预留更多空间 */
+  flex: 1;
   box-sizing: border-box;
 }
 
-/* 详情卡片 */
-.detail-card {
-  margin-top: 20px;
-  background-color: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+/* 顶部概览卡片 */
+.header-card {
+  background: linear-gradient(135deg, #1E6F9F 0%, #2B6CB0 100%);
+  padding: 40rpx 32rpx;
+  padding-bottom: 60rpx;
+  color: white;
+  border-bottom-left-radius: 32rpx;
+  border-bottom-right-radius: 32rpx;
+  margin-bottom: -40rpx; /* Creates overlap effect */
+  position: relative;
+  z-index: 1;
 }
 
-/* 卡片头部 */
-.card-header {
-  margin-bottom: 20px;
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16rpx;
 }
 
-.title-row {
+.subject-row {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  gap: 16rpx;
 }
 
 .subject {
-  font-size: 20px;
-  font-weight: bold;
-  color: #303133;
-  margin-right: 10px;
+  font-size: 44rpx;
+  font-weight: 800;
+  letter-spacing: 1rpx;
 }
 
 .grade-tag {
-  padding: 4px 10px;
-  background-color: #ecf5ff;
-  color: #409eff;
-  border-radius: 12px;
-  font-size: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  backdrop-filter: blur(4px);
+}
+
+.price-row {
+  display: flex;
+  align-items: baseline;
+  background: rgba(0, 0, 0, 0.1);
+  padding: 8rpx 20rpx;
+  border-radius: 12rpx;
+}
+
+.currency {
+  font-size: 28rpx;
+  font-weight: 600;
+  margin-right: 4rpx;
 }
 
 .price {
-  font-size: 24px;
-  font-weight: bold;
-  color: #f56c6c;
+  font-size: 40rpx;
+  font-weight: 800;
 }
 
 .unit {
-  font-size: 14px;
-  font-weight: normal;
-  color: #909399;
+  font-size: 24rpx;
+  opacity: 0.8;
+  margin-left: 4rpx;
 }
 
-/* 卡片内容 */
-.card-content {
+.publish-time {
+  font-size: 24rpx;
+  opacity: 0.8;
 }
 
-/* 信息区块 */
-.info-section {
-  margin-bottom: 24px;
+/* 内容区域 */
+.content-section {
+  padding: 0 24rpx;
+  position: relative;
+  z-index: 2;
+}
+
+/* 通用信息卡片 */
+.info-card {
+  background: var(--prof-card-bg);
+  border-radius: 20rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  border: 1rpx solid var(--prof-border);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid #F0F4F8;
+}
+
+.section-icon-box {
+  width: 56rpx;
+  height: 56rpx;
+  background: var(--prof-secondary);
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16rpx;
+}
+
+.icon-text {
+  font-size: 32rpx;
 }
 
 .section-title {
-  display: block;
-  font-size: 16px;
-  font-weight: bold;
-  color: #303133;
-  margin-bottom: 12px;
-  padding-left: 4px;
-  border-left: 4px solid #409eff;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--text-main);
 }
 
-/* 文本样式 */
-.detail-text,
-.address-text,
-.schedule-text,
-.other-text,
-.time-text {
-  font-size: 14px;
-  color: #606266;
-  line-height: 1.8;
-  white-space: pre-wrap;
+/* 详情文本 */
+.detail-text {
+  font-size: 28rpx;
+  color: #4A5568;
+  line-height: 1.7;
+  text-align: justify;
 }
 
-/* 地图预览 */
-.map-preview {
-  margin-top: 12px;
-  border-radius: 8px;
+/* 要求列表 */
+.requirement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.req-item {
+  display: flex;
+  font-size: 28rpx;
+}
+
+.req-label {
+  color: var(--text-sub);
+  width: 140rpx;
+  flex-shrink: 0;
+}
+
+.req-value {
+  color: var(--text-main);
+  font-weight: 500;
+  flex: 1;
+}
+
+/* 地址与地图 */
+.address-box {
+  margin-bottom: 20rpx;
+}
+
+.address-text {
+  font-size: 28rpx;
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+.map-container {
+  width: 100%;
+  height: 240rpx;
+  border-radius: 16rpx;
   overflow: hidden;
-  height: 200px;
-  border: 1px solid #ebeef5;
+  border: 1rpx solid var(--prof-border);
 }
 
 .mini-map {
@@ -142,95 +236,75 @@
   height: 100%;
 }
 
-/* 学生信息 */
-.student-info {
-  background-color: #f5f7fa;
-  padding: 12px;
-  border-radius: 8px;
+.bottom-spacer {
+  height: 160rpx;
 }
 
-.info-item {
-  display: flex;
-  margin-bottom: 8px;
-}
-
-.info-item:last-child {
-  margin-bottom: 0;
-}
-
-.label {
-  font-size: 14px;
-  color: #909399;
-  width: 80px;
-}
-
-.value {
-  font-size: 14px;
-  color: #606266;
-  flex: 1;
-}
-
-/* 操作按钮 */
-.action-buttons {
+/* 底部操作栏 */
+.bottom-action-bar {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: white;
-  padding: 20px;
-  box-shadow: 0 -2px 12px 0 rgba(0, 0, 0, 0.05);
-  display: flex;
-  gap: 12px;
-}
-
-.btn-contact,
-.btn-accept {
-  flex: 1;
-  height: 48px;
-  border-radius: 24px;
-  font-size: 16px;
-  font-weight: bold;
-}
-
-.btn-contact {
-  background-color: #f56c6c;
-  color: white;
-  border: none;
-}
-
-.btn-accept {
-  background-color: #409eff;
-  color: white;
-  border: none;
-}
-
-.btn-accept.disabled {
-  background-color: #e9eef7;
-  color: #bfcbdc;
-  border: none;
-}
-
-/* 返回按钮 */
-.back-button {
-  position: absolute;
-  top: 10px;
-  left: 10px;
+  background: #FFFFFF;
+  padding: 24rpx 32rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  gap: 24rpx;
   z-index: 100;
 }
 
-.back-icon {
-  font-size: 20px;
-  color: #606266;
+.action-btn-group {
+  flex: 1;
+  display: flex;
+  gap: 20rpx;
 }
 
-.back-text {
-  display: none;
+.btn-secondary {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  background: var(--prof-secondary);
+  color: var(--prof-primary);
+  font-size: 28rpx;
+  font-weight: 600;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-secondary:active {
+  background: #D1EAE7;
+}
+
+.btn-primary {
+  flex: 1.5;
+  height: 88rpx;
+  line-height: 88rpx;
+  background: var(--prof-primary);
+  color: white;
+  font-size: 28rpx;
+  font-weight: 600;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary:active {
+  transform: translateY(2rpx);
+  background: var(--prof-primary-dark);
+}
+
+.btn-disabled {
+  flex: 1.5;
+  height: 88rpx;
+  line-height: 88rpx;
+  background: #EDF2F7;
+  color: #A0AEC0;
+  font-size: 28rpx;
+  font-weight: 600;
 }
