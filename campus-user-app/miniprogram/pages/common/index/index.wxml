@@ -6,8 +6,8 @@
     <!-- 顶部欢迎区域 -->
     <view class="header">
       <view class="welcome">
-        <text class="greeting">您好，{{userInfo.nickname || '老师'}} 👋</text>
-        <text class="subtitle">今天也要加油哦</text>
+        <text class="greeting">Hello, {{userInfo.nickname || '老师'}} <text style="font-size:48rpx">👋</text></text>
+        <text class="subtitle">新的机会正在等着你</text>
       </view>
     </view>
 
@@ -30,36 +30,38 @@
     </view>
 
     <!-- 快捷功能区 -->
-    <view class="quick-actions five">
-      <view class="action-item" bindtap="goToStudentList">
-          <view class="action-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
-            <text class="icon-text">🎒</text>
+    <view class="section">
+      <view class="quick-actions five">
+        <view class="action-item" bindtap="goToStudentList">
+            <view class="action-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
+              <text class="icon-text">🎒</text>
+            </view>
+            <text class="action-title">招学生</text>
           </view>
-          <text class="action-title">招学生</text>
+        <view class="action-item" bindtap="goToTeacherOrders">
+          <view class="action-icon" style="background: linear-gradient(135deg, #fa8c16 0%, #ffc53d 100%)">
+            <text class="icon-text">📚</text>
+          </view>
+          <text class="action-title">我的订单</text>
         </view>
-      <view class="action-item" bindtap="goToTeacherOrders">
-        <view class="action-icon" style="background: linear-gradient(135deg, #fa8c16 0%, #ffc53d 100%)">
-          <text class="icon-text">📚</text>
+        <view class="action-item" bindtap="goToTeacherLessons">
+          <view class="action-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)">
+            <text class="icon-text">📖</text>
+          </view>
+          <text class="action-title">课时记录</text>
         </view>
-        <text class="action-title">我的订单</text>
-      </view>
-      <view class="action-item" bindtap="goToTeacherLessons">
-        <view class="action-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)">
-          <text class="icon-text">📖</text>
+        <view class="action-item" bindtap="goToCertification">
+          <view class="action-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)">
+            <text class="icon-text">📜</text>
+          </view>
+          <text class="action-title">我的认证</text>
         </view>
-        <text class="action-title">课时记录</text>
-      </view>
-      <view class="action-item" bindtap="goToCertification">
-        <view class="action-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)">
-          <text class="icon-text">📜</text>
+        <view class="action-item" bindtap="goToIncome">
+          <view class="action-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)">
+            <text class="icon-text">💰</text>
+          </view>
+          <text class="action-title">收入明细</text>
         </view>
-        <text class="action-title">我的认证</text>
-      </view>
-      <view class="action-item" bindtap="goToIncome">
-        <view class="action-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)">
-          <text class="icon-text">💰</text>
-        </view>
-        <text class="action-title">收入明细</text>
       </view>
     </view>
 
@@ -96,36 +98,40 @@
     <!-- 顶部欢迎区域 -->
     <view class="header">
       <view class="welcome">
-        <text class="greeting">您好，{{userInfo.nickname || '家长'}} 👋</text>
+        <text class="greeting">Hello, {{userInfo.nickname || '家长'}} <text style="font-size:48rpx">👋</text></text>
         <text class="subtitle">为孩子找到最适合的家教</text>
       </view>
     </view>
 
     <!-- 快捷功能区 -->
-    <view class="quick-actions four">
-      <view class="action-item" bindtap="goToPublish">
-        <view class="action-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
-          <text class="icon-text">📝</text>
+    <view class="section">
+      <view class="quick-actions">
+        <view class="grid-row">
+          <view class="action-item" bindtap="goToPublish">
+            <view class="action-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
+              <text class="icon-text">📝</text>
+            </view>
+            <text class="action-title">发布需求</text>
+          </view>
+          <view class="action-item" bindtap="goToParentOrders">
+            <view class="action-icon" style="background: linear-gradient(135deg, #fa8c16 0%, #ffc53d 100%)">
+              <text class="icon-text">📚</text>
+            </view>
+            <text class="action-title">我的订单</text>
+          </view>
+          <view class="action-item" bindtap="goToParentLessons">
+            <view class="action-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)">
+              <text class="icon-text">📖</text>
+            </view>
+            <text class="action-title">课时记录</text>
+          </view>
+          <view class="action-item" bindtap="goToMyDemands">
+            <view class="action-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)">
+              <text class="icon-text">📋</text>
+            </view>
+            <text class="action-title">我的需求</text>
+          </view>
         </view>
-        <text class="action-title">发布需求</text>
-      </view>
-      <view class="action-item" bindtap="goToParentOrders">
-        <view class="action-icon" style="background: linear-gradient(135deg, #fa8c16 0%, #ffc53d 100%)">
-          <text class="icon-text">📚</text>
-        </view>
-        <text class="action-title">我的订单</text>
-      </view>
-      <view class="action-item" bindtap="goToParentLessons">
-        <view class="action-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)">
-          <text class="icon-text">📖</text>
-        </view>
-        <text class="action-title">课时记录</text>
-      </view>
-      <view class="action-item" bindtap="goToMyDemands">
-        <view class="action-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)">
-          <text class="icon-text">📋</text>
-        </view>
-        <text class="action-title">我的需求</text>
       </view>
     </view>
 
@@ -167,7 +173,7 @@
               <text class="order-progress">已上 {{item.usedHours}}/{{item.totalHours}} 课时</text>
             </view>
             <view class="order-action">
-              <text class="order-btn">查看详情</text>
+              <text class="order-btn">查看</text>
             </view>
           </view>
         </block>
@@ -181,3 +187,4 @@
 
 <!-- AI智能助手 -->
 <ai-assistant></ai-assistant>
+

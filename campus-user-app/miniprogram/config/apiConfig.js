@@ -46,9 +46,9 @@ const api = {
     list: `${API_HOST}/api/demand/list`,
     my: `${API_HOST}/api/demand/my`,
     nearby: `${API_HOST}/api/demand/nearby`,
-        detail: (id) => `${API_HOST}/api/demand/${id}`,
-        match: (id) => `${API_HOST}/api/demand/${id}/match`,
-        listWithMatch: `${API_HOST}/api/demand/list-with-match`,
+    detail: (id) => `${API_HOST}/api/demand/detail/${id}`,
+    match: (id) => `${API_HOST}/api/demand/${id}/match`,
+    listWithMatch: `${API_HOST}/api/demand/list-with-match`,
   },
   // LLM模块 (DeepSeek)
   llm: {
@@ -66,6 +66,7 @@ const api = {
     listParent: `${API_HOST}/api/order/parent/list`,
     listTutor: `${API_HOST}/api/order/tutor/list`,
     pay: `${API_HOST}/api/order/pay`,
+    refund: `${API_HOST}/api/order/refund`,
     detail: (id) => `${API_HOST}/api/order/${id}`,
   },
   // 钱包模块 (Wallet)
