@@ -1,98 +1,172 @@
+/* 登录页面样式 - login.wxss */
 .container {
-  padding: 40rpx;
+  padding: 0 48rpx;
   background-color: #fff;
   height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 装饰背景圆 */
+.bg-circle {
+  position: absolute;
+  top: -200rpx;
+  right: -200rpx;
+  width: 600rpx;
+  height: 600rpx;
+  background: linear-gradient(135deg, rgba(108, 99, 255, 0.1), rgba(118, 75, 162, 0.1));
+  border-radius: 50%;
+  z-index: 1;
 }
 
 .header {
-  margin-top: 100rpx;
+  margin-top: 160rpx;
   margin-bottom: 80rpx;
+  position: relative;
+  z-index: 2;
 }
 
 .title {
-  font-size: 48rpx;
-  font-weight: bold;
-  color: #333;
+  font-size: 56rpx;
+  font-weight: 800;
+  color: var(--text-main);
   display: block;
   margin-bottom: 16rpx;
+  letter-spacing: 2rpx;
 }
 
 .subtitle {
   font-size: 28rpx;
-  color: #999;
+  color: var(--text-secondary);
+  font-weight: 400;
 }
 
 .form-box {
   width: 100%;
+  position: relative;
+  z-index: 2;
 }
 
 .input-group {
   margin-bottom: 40rpx;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10rpx;
+  background: var(--bg-body);
+  border-radius: 20rpx;
+  padding: 10rpx 24rpx;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s;
+  border: 2rpx solid transparent;
 }
 
-.input-group.row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.input-group:focus-within {
+  background: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 4rpx 20rpx rgba(108, 99, 255, 0.1);
+}
+
+.icon-wrap {
+  width: 60rpx;
+  text-align: center;
+  font-size: 32rpx;
+  margin-right: 16rpx;
 }
 
 .input {
-  width: 100%;
-  height: 80rpx;
-  font-size: 32rpx;
+  flex: 1;
+  height: 88rpx;
+  font-size: 30rpx;
+  color: var(--text-main);
+}
+
+.placeholder {
+  color: var(--text-placeholder);
 }
 
 .code-btn {
-  font-size: 28rpx;
-  color: #409EFF;
-  padding: 10rpx 20rpx;
+  font-size: 26rpx;
+  color: var(--primary);
+  padding: 12rpx 24rpx;
   flex-shrink: 0;
+  font-weight: 600;
+  background: rgba(108, 99, 255, 0.1);
+  border-radius: 30rpx;
 }
 
 .eye-btn {
   font-size: 36rpx;
   padding: 10rpx 20rpx;
   flex-shrink: 0;
+  color: var(--text-secondary);
 }
 
-.submit-btn {
-  margin-top: 60rpx;
-  background-color: #409EFF;
-  color: #fff;
-  border-radius: 44rpx;
-  font-size: 32rpx;
-  height: 88rpx;
-  line-height: 88rpx;
-}
-
-.wx-login-btn {
-  margin-top: 24rpx;
-  background-color: #07C160;
-  color: #fff;
-  border-radius: 44rpx;
-  font-size: 30rpx;
-  height: 80rpx;
-  line-height: 80rpx;
-  text-align: center;
-}
-
-.footer-actions {
-  margin-top: 40rpx;
+.action-row {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 28rpx;
-  color: #666;
+  justify-content: space-between;
+  margin-bottom: 60rpx;
+  padding: 0 10rpx;
 }
 
 .link {
-  padding: 20rpx;
+  font-size: 26rpx;
+  color: var(--text-secondary);
 }
 
-.divider {
-  color: #ddd;
+.submit-btn {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  border-radius: 50rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  height: 96rpx;
+  line-height: 96rpx;
+  box-shadow: var(--shadow-primary);
+  letter-spacing: 4rpx;
+}
+
+.submit-btn:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.divider-row {
+  display: flex;
+  align-items: center;
+  margin: 60rpx 0 40rpx;
+}
+
+.divider-row .line {
+  flex: 1;
+  height: 1rpx;
+  background: #eee;
+}
+
+.divider-row .text {
+  padding: 0 24rpx;
+  font-size: 24rpx;
+  color: #ccc;
+}
+
+.wx-login-btn {
+  background-color: #f6f6f6;
+  color: #333;
+  border-radius: 50rpx;
+  font-size: 30rpx;
+  height: 96rpx;
+  line-height: 96rpx;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+}
+
+.wx-icon {
+  margin-right: 12rpx;
+  font-size: 32rpx;
+}
+
+.wx-login-btn:active {
+  background-color: #eee;
 }
