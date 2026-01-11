@@ -11,11 +11,7 @@
       <text>加载中...</text>
     </view>
 
-    <!-- 连接状态提示 -->
-    <view class="connection-tip {{wsConnected ? 'connected' : 'disconnected'}}" wx:if="{{!loading}}">
-      <text wx:if="{{wsConnected}}">● 实时连接中</text>
-      <text wx:else bindtap="connectWebSocket">○ 离线模式，点击重连</text>
-    </view>
+
 
     <!-- 消息列表 -->
     <view 

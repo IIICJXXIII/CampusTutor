@@ -1,388 +1,350 @@
+<template>
+  <div class="order-list-page">
+    <div class="page-header">
+      <h2 class="page-title">我的订单</h2>
+      <el-tabs v-model="activeTab">
+        <el-tab-pane label="全部" name="all" />
+        <el-tab-pane label="待支付" name="unpaid" />
+        <el-tab-pane label="进行中" name="active" />
+        <el-tab-pane label="已完成" name="completed" />
+      </el-tabs>
+    </div>
+
+    <div class="order-container" v-loading="loading">
+      <el-empty v-if="filteredOrders.length === 0 && !loading" description="暂无相关订单" />
+
+      <div v-for="order in filteredOrders" :key="order.id" class="order-card" @click="goDetail(order)">
+        <div class="card-header">
+          <span class="order-no">订单号：{{ order.orderNo }}</span>
+          <el-tag :type="order.statusTagType" effect="light" round>
+            {{ order.statusText }}
+          </el-tag>
+        </div>
+
+        <div class="card-body">
+          <div class="info-row">
+            <div class="info-item main">
+              <span class="label">{{ isParent ? '授课教师' : '学生家长' }}：</span>
+              <span class="value highlight">{{ isParent ? order.tutorName : order.parentName }}</span>
+            </div>
+            <div class="info-item price">
+              <span class="currency">¥</span>
+              <span class="amount">{{ order.totalAmount }}</span>
+            </div>
+          </div>
+          
+          <div class="info-grid">
+            <div class="grid-item">
+              <el-icon><Reading /></el-icon>
+              <span>{{ order.subject }} · {{ order.grade }}</span>
+            </div>
+            <div class="grid-item">
+              <el-icon><Timer /></el-icon>
+              <span>{{ order.totalHours }} 课时</span>
+            </div>
+            <div class="grid-item">
+              <el-icon><LocationInformation /></el-icon>
+              <span>{{ order.teachMode === 1 ? '上门授课' : '在线授课' }}</span>
+            </div>
+            <div class="grid-item progress" v-if="order.status >= 1 && order.status <= 3">
+              <el-icon><PieChart /></el-icon>
+              <span>进度：{{ order.usedHours || 0 }} / {{ order.totalHours }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-footer" @click.stop>
+          
+          <template v-if="isParent">
+            <div v-if="order.status === -1" class="btn-group">
+              <el-button @click="handleCancel(order)">拒绝</el-button>
+              <el-button type="primary" @click="handleConfirmContract(order)">确认并支付</el-button>
+            </div>
+            <div v-else-if="order.status === 0" class="btn-group">
+              <el-button @click="handleCancel(order)">取消</el-button>
+              <el-button type="danger" @click="handlePay(order)">去支付</el-button>
+            </div>
+
+            <div v-else-if="order.status === 1" class="btn-group">
+              <el-button @click="goChat(order.tutorId)">联系老师</el-button>
+              <el-tag type="warning">待老师确认开课</el-tag>
+            </div>
+            <div v-else-if="order.status === 2" class="btn-group">
+              <el-button @click="goChat(order.tutorId)">联系老师</el-button>
+              <el-button type="primary" plain @click="goRecord(order.id)">
+                确认课时
+              </el-button>
+            </div>
+
+            <div v-else class="btn-group">
+              <el-button @click="goRecord(order.id)">查看记录</el-button>
+            </div>
+          </template>
+
+          <template v-else>
+            <div v-if="order.status <= 0" class="btn-group">
+              <span class="status-tip">等待家长操作...</span>
+              <el-button type="text" @click="goChat(order.parentId)">催一下</el-button>
+            </div>
+
+            <div v-else-if="order.status === 1" class="btn-group">
+              <el-button @click="goChat(order.parentId)">联系家长</el-button>
+              <el-button type="primary" @click="handleStartClass(order)">确认开课/打卡</el-button>
+            </div>
+            <div v-else-if="order.status === 2" class="btn-group">
+              <el-button @click="goChat(order.parentId)">联系家长</el-button>
+              <el-button type="primary" @click="handleCheckIn(order)">立即打卡</el-button>
+            </div>
+
+            <div v-else class="btn-group">
+              <el-button @click="goRecord(order.id)">查看记录</el-button>
+            </div>
+          </template>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores'
-import { getParentOrders, getTutorOrders, confirmOrder } from '@/api/order'
+import { getParentOrders, getTutorOrders, cancelOrder } from '@/api/order'
 
 const router = useRouter()
 const userStore = useUserStore()
-const activeTab = ref('all')
+const activeTab = ref('all') // 默认显示全部
 const loading = ref(false)
-const orders = ref([])
+const allOrders = ref([]) // 存储所有订单
 
-// 根据用户角色获取订单
+const isParent = computed(() => userStore.isParent)
+
+// 状态字典
+const statusMap = {
+  '-1': { text: '待确认', type: 'info' },
+  '0':  { text: '待支付', type: 'danger' },
+  '1':  { text: '已支付/待开课', type: 'warning' }, // 关键修正：状态1
+  '2':  { text: '进行中', type: 'primary' },       // 关键修正：状态2
+  '3':  { text: '已完成', type: 'success' },
+  '4':  { text: '已取消', type: 'info' },
+  '5':  { text: '退款中', type: 'warning' },
+  '6':  { text: '已退款', type: 'info' }
+}
+
+// 核心修正：前端筛选逻辑
+const filteredOrders = computed(() => {
+  const list = allOrders.value
+  const tab = activeTab.value
+  
+  if (tab === 'all') return list
+  
+  return list.filter(order => {
+    const s = order.status
+    if (tab === 'unpaid') {
+      // 待支付栏：包含 -1(待确认) 和 0(待支付)
+      return s === -1 || s === 0
+    }
+    if (tab === 'active') {
+      // 进行中栏：包含 1(已支付) 和 2(进行中)
+      // 支付成功后的订单(状态1)会立即出现在这里
+      return s === 1 || s === 2
+    }
+    if (tab === 'completed') {
+      // 已完成栏：包含 3(完成) 和 取消/退款类
+      return s >= 3
+    }
+    return true
+  })
+})
+
 const fetchOrders = async () => {
   loading.value = true
   try {
-    const isParent = userStore.isParent
-    const res = isParent ? await getParentOrders() : await getTutorOrders()
+    // 获取全部订单，不做后端状态筛选，在前端处理
+    const params = { page: 1, size: 100 } 
+    const apiFunc = isParent.value ? getParentOrders : getTutorOrders
+    const res = await apiFunc(params)
     
-    const orderList = res.data?.records || res.data || []
-    
-    orders.value = orderList.map(order => ({
-      id: order.orderNo || `ORD-${order.id}`,
-      orderId: order.id,
-      teacher: order.tutorName || '待分配',
-      subject: `${order.subject || '课程'} · ${order.totalHours || 10}课时包`,
-      amount: order.totalPrice || order.totalAmount,
-      rawStatus: order.status, // 保留原始状态用于操作判断
-      status: mapOrderStatus(order.status),
-      statusText: getStatusTag(order.status),
-      progress: order.usedHours != null ? `${order.usedHours}/${order.totalHours || 10} 课时` : null,
-      date: order.createTime
-    }))
+    const list = res.data?.records || []
+    allOrders.value = list.map(item => {
+      const statusInfo = statusMap[item.status] || { text: '未知', type: 'info' }
+      return {
+        ...item,
+        statusText: statusInfo.text,
+        statusTagType: statusInfo.type
+      }
+    })
   } catch (error) {
-    console.error('获取订单失败:', error)
-    orders.value = getMockOrders()
+    console.error(error)
+    ElMessage.error('获取订单列表失败')
   } finally {
     loading.value = false
   }
 }
 
-const mapOrderStatus = (status) => {
-  switch (status) {
-    case -1: return 'confirm' // 待确认
-    case 0: return 'pending'
-    case 1: case 2: return 'active'
-    case 3: return 'done'
-    case 4: case 5: return 'refund'
-    default: return 'pending'
-  }
+// ========== 业务操作 ==========
+
+const handleConfirmContract = (order) => {
+  // 确认后跳转支付
+  router.push({ path: '/payment', query: { orderId: order.id } })
 }
 
-const getStatusTag = (status) => {
-  switch (status) {
-    case -1: return '待确认'
-    case 0: return '待支付'
-    case 1: return '托管中'
-    case 2: return '授课中'
-    case 3: return '已完成'
-    case 4: return '退款中'
-    case 5: return '已退款'
-    default: return '未知'
-  }
+const handlePay = (order) => {
+  router.push({ path: '/payment', query: { orderId: order.id } })
 }
 
-const getStatusType = (status) => {
-  switch (status) {
-    case 'confirm': return 'info'
-    case 'pending': return 'warning'
-    case 'active': return 'primary'
-    case 'done': return 'success'
-    case 'refund': return 'danger'
-    default: return 'info'
-  }
+// 教员：确认开课（实际上也是去打卡页，或者调用一个 start 接口）
+const handleStartClass = (order) => {
+  // 简单处理：直接引导去打卡，第一次打卡即视为正式开课
+  router.push({
+    path: '/process/record',
+    query: { orderId: order.id, action: 'checkin' }
+  })
 }
 
-const getMockOrders = () => [
-  {
-    id: 'ORD-20250301-01',
-    orderId: 1,
-    teacher: '张老师',
-    subject: '初中数学 · 20课时包',
-    amount: 3800,
-    rawStatus: 0,
-    status: 'pending',
-    statusText: '待支付',
-    date: '2025-03-01 14:30'
-  }
-]
+const handleCheckIn = (order) => {
+  router.push({
+    path: '/process/record',
+    query: { orderId: order.id, action: 'checkin' }
+  })
+}
+
+const goRecord = (orderId) => {
+  router.push({ path: '/process/record', query: { orderId } })
+}
+
+const goChat = (targetUserId) => {
+  router.push(`/chat/${targetUserId}`)
+}
+
+const handleCancel = (order) => {
+  ElMessageBox.prompt('请输入取消/拒绝原因', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+  }).then(async ({ value }) => {
+    try {
+      await cancelOrder(order.id, value)
+      ElMessage.success('操作成功')
+      fetchOrders() // 刷新列表
+    } catch (e) {}
+  })
+}
+
+const goDetail = (order) => {
+  // 可选：跳转详情页
+}
 
 onMounted(() => {
   fetchOrders()
 })
-
-const tabs = [
-  { value: 'all', label: '全部' },
-  { value: 'confirm', label: '待确认' },
-  { value: 'pending', label: '待支付' },
-  { value: 'active', label: '进行中' },
-  { value: 'done', label: '已完成' }
-]
-
-const filteredOrders = computed(() => {
-  if (activeTab.value === 'all') return orders.value
-  return orders.value.filter(o => o.status === activeTab.value)
-})
-
-// 家长确认订单
-const handleConfirm = async (order) => {
-  try {
-    await ElMessageBox.confirm(
-      '确认后订单将变为待支付状态，您需要支付后才能开始授课。',
-      '确认接单',
-      { confirmButtonText: '确认', cancelButtonText: '取消', type: 'info' }
-    )
-    
-    const res = await confirmOrder(order.orderId)
-    if (res.code === 200) {
-      ElMessage.success('已确认，请支付订单')
-      fetchOrders() // 刷新列表
-    } else {
-      ElMessage.error(res.message || '确认失败')
-    }
-  } catch (err) {
-    if (err !== 'cancel') {
-      ElMessage.error(err.message || '操作失败')
-    }
-  }
-}
-
-const handleAction = (order) => {
-  if (order.status === 'pending') {
-    router.push({ path: '/payment', query: { orderId: order.orderId } })
-  } else if (order.status === 'active') {
-    router.push({ path: '/process/record', query: { orderId: order.orderId } })
-  }
-}
-
 </script>
-
-<template>
-  <div class="order-list-page">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <h1 class="page-title">我的订单</h1>
-      <p class="page-subtitle">查看和管理所有家教订单</p>
-    </div>
-
-    <!-- 标签筛选 -->
-    <div class="tab-bar">
-      <el-radio-group v-model="activeTab" size="default">
-        <el-radio-button 
-          v-for="tab in tabs" 
-          :key="tab.value" 
-          :value="tab.value"
-        >
-          {{ tab.label }}
-        </el-radio-button>
-      </el-radio-group>
-    </div>
-
-    <!-- 订单列表 -->
-    <div class="order-list" v-loading="loading" element-loading-text="加载中...">
-      <el-empty 
-        v-if="!loading && filteredOrders.length === 0" 
-        description="暂无相关订单"
-      >
-        <el-button type="primary" @click="router.push('/parent/demand')">
-          发布需求
-        </el-button>
-      </el-empty>
-
-      <el-card 
-        v-for="item in filteredOrders" 
-        :key="item.id"
-        class="order-card"
-        shadow="hover"
-      >
-        <!-- 订单头部 -->
-        <div class="order-header">
-          <span class="order-id">{{ item.id }}</span>
-          <el-tag :type="getStatusType(item.status)" size="small">
-            {{ item.statusText }}
-          </el-tag>
-        </div>
-
-        <!-- 订单内容 -->
-        <div class="order-body">
-          <div class="order-icon">
-            <el-icon :size="28"><ShoppingCart /></el-icon>
-          </div>
-          <div class="order-info">
-            <h3 class="order-subject">{{ item.subject }}</h3>
-            <p class="order-teacher">教师：{{ item.teacher }}</p>
-            <p class="order-date">{{ item.date }}</p>
-          </div>
-          <div class="order-price">
-            <div class="price-value">¥{{ item.amount }}</div>
-            <div v-if="item.progress" class="price-progress">{{ item.progress }}</div>
-          </div>
-        </div>
-
-        <!-- 订单操作 -->
-        <div class="order-actions">
-          <el-button size="small">查看合同</el-button>
-          <!-- 家长专属：确认接单 -->
-          <el-button 
-            v-if="item.status === 'confirm' && userStore.isParent" 
-            type="primary" 
-            size="small"
-            @click="handleConfirm(item)"
-          >
-            确认接单
-          </el-button>
-          <!-- 教师看到的待确认状态提示 -->
-          <el-tag v-if="item.status === 'confirm' && !userStore.isParent" type="info" size="small">
-            等待家长确认
-          </el-tag>
-          <!-- 家长专属：去支付 -->
-          <el-button 
-            v-if="item.status === 'pending' && userStore.isParent" 
-            type="warning" 
-            size="small"
-            @click="handleAction(item)"
-          >
-            去支付
-          </el-button>
-          <!-- 教师看到的待支付状态提示 -->
-          <el-tag v-if="item.status === 'pending' && !userStore.isParent" type="warning" size="small">
-            等待家长支付
-          </el-tag>
-          <el-button 
-            v-if="item.status === 'active'" 
-            type="primary" 
-            size="small"
-            @click="handleAction(item)"
-          >
-            查看进度
-          </el-button>
-          <el-button 
-            v-if="item.status === 'done'" 
-            type="success" 
-            size="small" 
-            plain
-          >
-            评价
-          </el-button>
-        </div>
-      </el-card>
-    </div>
-  </div>
-</template>
 
 <style lang="scss" scoped>
 .order-list-page {
-  min-height: 100vh;
-  background: $bg-light;
-  padding-bottom: 80px;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
 .page-header {
-  background: linear-gradient(135deg, $warning-color 0%, #f97316 100%);
-  padding: $spacing-xl $spacing-lg;
-  color: #fff;
-
+  margin-bottom: 20px;
   .page-title {
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 4px;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 16px;
   }
-
-  .page-subtitle {
-    font-size: 14px;
-    opacity: 0.9;
-  }
-}
-
-.tab-bar {
-  background: #fff;
-  padding: $spacing-md $spacing-lg;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  box-shadow: $shadow-sm;
-
-  :deep(.el-radio-group) {
-    width: 100%;
-    display: flex;
-    
-    .el-radio-button {
-      flex: 1;
-      
-      .el-radio-button__inner {
-        width: 100%;
-      }
-    }
-  }
-}
-
-.order-list {
-  padding: $spacing-lg;
-  min-height: 300px;
 }
 
 .order-card {
-  margin-bottom: $spacing-md;
+  background: #fff;
   border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s;
+  border: 1px solid transparent;
+  cursor: pointer;
 
-  .order-header {
+  &:hover {
+    border-color: #409eff;
+    transform: translateY(-2px);
+  }
+
+  .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: $spacing-sm;
-    border-bottom: 1px solid $border-light;
-    margin-bottom: $spacing-md;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f2f5;
+    margin-bottom: 12px;
 
-    .order-id {
-      font-size: 12px;
-      color: $text-muted;
-      font-family: monospace;
+    .order-no {
+      font-size: 13px;
+      color: #909399;
     }
   }
 
-  .order-body {
-    display: flex;
-    gap: $spacing-md;
-    margin-bottom: $spacing-md;
-
-    .order-icon {
-      width: 56px;
-      height: 56px;
-      background: $bg-light;
-      border-radius: 12px;
+  .card-body {
+    .info-row {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: center;
-      color: $text-muted;
+      margin-bottom: 12px;
+
+      .label { color: #606266; font-size: 14px; }
+      .highlight { color: #303133; font-weight: 600; font-size: 15px; }
+      .price {
+        color: #f56c6c; font-weight: 700;
+        .currency { font-size: 14px; }
+        .amount { font-size: 20px; }
+      }
     }
 
-    .order-info {
-      flex: 1;
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      background: #f9fafc;
+      padding: 12px;
+      border-radius: 8px;
 
-      .order-subject {
-        font-size: 16px;
-        font-weight: 600;
-        color: $text-primary;
-        margin-bottom: 4px;
-      }
-
-      .order-teacher {
+      .grid-item {
+        display: flex;
+        align-items: center;
         font-size: 13px;
-        color: $text-secondary;
-        margin-bottom: 2px;
-      }
-
-      .order-date {
-        font-size: 12px;
-        color: $text-muted;
-      }
-    }
-
-    .order-price {
-      text-align: right;
-
-      .price-value {
-        font-size: 20px;
-        font-weight: 700;
-        color: $text-primary;
-      }
-
-      .price-progress {
-        font-size: 12px;
-        color: $primary-color;
-        margin-top: 4px;
+        color: #606266;
+        .el-icon { margin-right: 6px; font-size: 14px; color: #909399; }
+        
+        &.progress {
+          color: #409eff;
+          grid-column: span 2;
+        }
       }
     }
   }
 
-  .order-actions {
+  .card-footer {
     display: flex;
     justify-content: flex-end;
-    gap: $spacing-sm;
-    padding-top: $spacing-sm;
-    border-top: 1px solid $border-light;
+    align-items: center;
+    border-top: 1px dashed #e4e7ed;
+    padding-top: 12px;
+    margin-top: 12px;
+
+    .status-tip {
+      font-size: 13px;
+      color: #909399;
+      margin-right: 12px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
   }
 }
 </style>

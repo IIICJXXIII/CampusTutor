@@ -10,6 +10,7 @@ import com.campus.module.map.dto.DistanceResult;
 import com.campus.module.map.dto.GeocoderResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -21,11 +22,17 @@ import java.util.Map;
 /**
  * 高德地图服务
  * 提供逆地址解析、路径规划、距离计算等功能
+ * <p>
+ * 更新说明：
+ * 1. 实现了 MapService 接口，支持多地图切换
+ * 2. 增加了 @ConditionalOnProperty 注解，默认启用
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AmapService {
+// 当配置文件中 map.provider=amap 时生效，或者没有配置该项时也默认生效
+@ConditionalOnProperty(name = "map.provider", havingValue = "amap", matchIfMissing = true)
+public class AmapService implements MapService {
 
     private final AmapConfig config;
 
@@ -37,6 +44,7 @@ public class AmapService {
      * @param longitude 经度
      * @return 地址解析结果
      */
+    @Override
     public GeocoderResult reverseGeocode(double latitude, double longitude) {
         if (!isConfigured()) {
             log.warn("高德地图API未配置");
@@ -68,6 +76,7 @@ public class AmapService {
      * @param address 地址字符串
      * @return 地址解析结果(包含经纬度)
      */
+    @Override
     public GeocoderResult geocode(String address) {
         if (!isConfigured()) {
             log.warn("高德地图API未配置");
@@ -94,6 +103,7 @@ public class AmapService {
     /**
      * 路径规划 - 步行
      */
+    @Override
     public DirectionResult walkingDirection(double fromLat, double fromLng, double toLat, double toLng) {
         return direction(config.getWalkingUrl(), fromLat, fromLng, toLat, toLng, "walking");
     }
@@ -101,19 +111,21 @@ public class AmapService {
     /**
      * 路径规划 - 驾车
      */
+    @Override
     public DirectionResult drivingDirection(double fromLat, double fromLng, double toLat, double toLng) {
         return direction(config.getDrivingUrl(), fromLat, fromLng, toLat, toLng, "driving");
     }
 
     /**
-     * 路径规划 - 公交
+     * 路径规划 - 公交 (接口实现，默认城市北京)
      */
+    @Override
     public DirectionResult transitDirection(double fromLat, double fromLng, double toLat, double toLng) {
         return transitDirection(fromLat, fromLng, toLat, toLng, "北京");
     }
 
     /**
-     * 路径规划 - 公交（指定城市）
+     * 路径规划 - 公交（指定城市，高德特有方法，保留Public供特殊调用）
      */
     public DirectionResult transitDirection(double fromLat, double fromLng, double toLat, double toLng, String city) {
         if (!isConfigured()) {
@@ -183,6 +195,7 @@ public class AmapService {
     /**
      * 计算两点间距离
      */
+    @Override
     public DistanceResult calculateDistance(double fromLat, double fromLng, double toLat, double toLng, String mode) {
         if (!isConfigured()) {
             log.warn("高德地图API未配置");
@@ -217,7 +230,7 @@ public class AmapService {
     }
 
     /**
-     * 批量计算距离
+     * 批量计算距离 (保留原有方法，非接口强制要求)
      */
     public DistanceResult batchCalculateDistance(double fromLat, double fromLng, String toPoints, String mode) {
         if (!isConfigured()) {
