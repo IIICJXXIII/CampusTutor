@@ -1,9 +1,11 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ChatDotRound } from '@element-plus/icons-vue'
+import { ChatDotRound, Star, StarFilled, UserFilled } from '@element-plus/icons-vue'
 import { getTutorProfile } from '@/api/tutor'
+import { getSimilarTutors } from '@/api/recommend'
+import { recordView, recordFavorite } from '@/api/behavior'
 
 const route = useRoute()
 const router = useRouter()
@@ -25,6 +27,17 @@ const teacher = ref({
   schedule: ['周六上午 09:00-11:00', '周日晚上 19:00-21:00'],
   subjects: ['英语', '口语']
 })
+
+// 收藏状态
+const isFavorited = ref(false)
+const favoriteLoading = ref(false)
+
+// 相似教员推荐
+const similarTutors = ref([])
+const similarLoading = ref(false)
+
+// 页面停留时长记录
+let enterTime = 0
 
 // 预约表单
 const bookingForm = ref({
@@ -113,8 +126,51 @@ const startChat = () => {
   router.push(`/chat/${teacher.value.userId}`)
 }
 
+// 收藏/取消收藏
+const toggleFavorite = async () => {
+  if (favoriteLoading.value) return
+  favoriteLoading.value = true
+  try {
+    await recordFavorite(teacher.value.id)
+    isFavorited.value = !isFavorited.value
+    ElMessage.success(isFavorited.value ? '收藏成功' : '已取消收藏')
+  } catch (error) {
+    console.error('收藏失败:', error)
+  } finally {
+    favoriteLoading.value = false
+  }
+}
+
+// 获取相似教员推荐
+const fetchSimilarTutors = async () => {
+  similarLoading.value = true
+  try {
+    const res = await getSimilarTutors(route.params.id, 6)
+    if (res.data) {
+      similarTutors.value = res.data
+    }
+  } catch (error) {
+    console.log('获取相似教员失败:', error)
+  } finally {
+    similarLoading.value = false
+  }
+}
+
+// 跳转到其他教员详情
+const goToTeacher = (tutorId) => {
+  router.push(`/teacher/${tutorId}`)
+}
+
 onMounted(() => {
+  enterTime = Date.now()
   fetchTeacherDetail()
+  fetchSimilarTutors()
+})
+
+onBeforeUnmount(() => {
+  // 记录查看行为，带上停留时长
+  const duration = Math.floor((Date.now() - enterTime) / 1000)
+  recordView(route.params.id, duration).catch(err => console.log('记录查看行为失败', err))
 })
 </script>
 
@@ -192,6 +248,35 @@ onMounted(() => {
       </div>
     </el-card>
 
+    <!-- 相似教员推荐 -->
+    <el-card class="info-card similar-card" shadow="never" v-if="similarTutors.length > 0" v-loading="similarLoading">
+      <template #header>
+        <div class="card-header">
+          <el-icon><UserFilled /></el-icon>
+          <span>看过这个老师的用户还看过</span>
+        </div>
+      </template>
+      <div class="similar-list">
+        <div 
+          v-for="tutor in similarTutors" 
+          :key="tutor.tutorId" 
+          class="similar-item"
+          @click="goToTeacher(tutor.tutorId)"
+        >
+          <el-avatar :size="48" :src="tutor.avatarUrl || `https://api.dicebear.com/7.x/miniavs/svg?seed=${tutor.tutorId}`" />
+          <div class="similar-info">
+            <div class="similar-name">{{ tutor.realName }}</div>
+            <div class="similar-school">{{ tutor.universityName }}</div>
+            <div class="similar-price">¥{{ tutor.expectPrice }}/小时</div>
+          </div>
+          <div class="similar-score" v-if="tutor.similarityScore">
+            <span>{{ Math.round(tutor.similarityScore * 100) }}%</span>
+            <span class="score-label">相似</span>
+          </div>
+        </div>
+      </div>
+    </el-card>
+
     <!-- 底部操作栏 -->
     <div class="bottom-bar">
       <div class="price-info">
@@ -199,6 +284,16 @@ onMounted(() => {
         <span class="price-unit">/小时</span>
       </div>
       <div class="action-buttons">
+        <el-button 
+          size="large" 
+          @click="toggleFavorite" 
+          :loading="favoriteLoading"
+          class="fav-btn"
+          :class="{ 'is-favorited': isFavorited }"
+        >
+          <el-icon><StarFilled v-if="isFavorited" /><Star v-else /></el-icon>
+          {{ isFavorited ? '已收藏' : '收藏' }}
+        </el-button>
         <el-button size="large" @click="startChat" class="chat-btn">
           <el-icon><ChatDotRound /></el-icon>
           私聊
@@ -376,11 +471,91 @@ onMounted(() => {
     font-size: 16px;
   }
 
+  .fav-btn {
+    height: 48px;
+    padding: 0 16px;
+    font-size: 14px;
+    
+    &.is-favorited {
+      color: #f56c6c;
+      border-color: #f56c6c;
+    }
+  }
+
   .el-button--primary {
     height: 48px;
     padding: 0 32px;
     font-size: 16px;
     font-weight: 600;
+  }
+}
+
+/* 相似教员推荐 */
+.similar-card {
+  .similar-list {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  .similar-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-sm;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+      background: $bg-light;
+    }
+  }
+
+  .similar-info {
+    flex: 1;
+    min-width: 0;
+
+    .similar-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: $text-primary;
+      margin-bottom: 2px;
+    }
+
+    .similar-school {
+      font-size: 12px;
+      color: $text-muted;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .similar-price {
+      font-size: 13px;
+      color: $danger-color;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+  }
+
+  .similar-score {
+    text-align: center;
+    padding: 4px 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    color: #fff;
+
+    span {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .score-label {
+      font-size: 10px;
+      opacity: 0.8;
+    }
   }
 }
 </style>
