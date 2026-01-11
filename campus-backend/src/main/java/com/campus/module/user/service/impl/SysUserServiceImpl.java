@@ -59,4 +59,17 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         user.setStatus(status);
         return updateById(user);
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void resetPassword(String username, String newPassword) {
+        SysUser user = getByUsername(username);
+        if (user == null) {
+            throw new BusinessException(ResultCode.USER_NOT_EXIST);
+        }
+        // 密码加密
+        String encryptedPassword = SecureUtil.md5(newPassword);
+        user.setPassword(encryptedPassword);
+        updateById(user);
+    }
 }

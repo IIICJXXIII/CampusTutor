@@ -12,6 +12,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import com.campus.common.exception.BusinessException;
+import com.campus.common.result.ResultCode;
+import com.campus.module.user.service.SysUserService;
 
 /**
  * 认证控制器
@@ -24,6 +27,9 @@ public class AuthController {
 
     @Autowired  // <--- 1. 关键：加这个
     private AuthService authService;
+    
+    @Autowired
+    private SysUserService sysUserService;
 
     @Operation(summary = "用户登录", description = "支持密码登录和验证码登录")
     @PostMapping("/login")
@@ -45,5 +51,32 @@ public class AuthController {
             @Parameter(description = "手机号") @RequestParam String phone) {
         authService.sendCode(phone);
         return Result.success("验证码已发送");
+    }
+
+    @Operation(summary = "密码找回 - 发送验证码", description = "用于密码找回的验证码发送")
+    @PostMapping("/reset/send-code")
+    public Result<Void> sendResetCode(
+            @Parameter(description = "手机号") @RequestParam String phone) {
+        // 检查手机号是否已注册
+        if (!sysUserService.existsByUsername(phone)) {
+            throw new BusinessException(ResultCode.USER_NOT_EXIST);
+        }
+        authService.sendCode(phone);
+        return Result.success("验证码已发送");
+    }
+
+    @Operation(summary = "密码找回 - 重置密码", description = "使用验证码重置密码")
+    @PostMapping("/reset/password")
+    public Result<Void> resetPassword(
+            @Parameter(description = "手机号") @RequestParam String phone,
+            @Parameter(description = "验证码") @RequestParam String code,
+            @Parameter(description = "新密码") @RequestParam String newPassword) {
+        // 验证验证码
+        if (!authService.verifyCode(phone, code)) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "验证码错误或已过期");
+        }
+        // 重置密码
+        sysUserService.resetPassword(phone, newPassword);
+        return Result.success("密码重置成功");
     }
 }

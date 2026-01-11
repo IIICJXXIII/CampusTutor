@@ -31,7 +31,10 @@ public enum ResultCode {
 
     ORDER_NOT_FOUND(5201, "订单不存在"),
     ORDER_STATUS_ERROR(5202, "订单状态异常"),
-    BALANCE_NOT_ENOUGH(5203, "余额不足");
+    BALANCE_NOT_ENOUGH(5203, "余额不足"),
+    REFUND_FAILED(5204, "退款失败"),
+    REFUND_AMOUNT_INVALID(5205, "退款金额无效"),
+    PAYMENT_FAILED(5206, "支付失败");
 
     private final Integer code;
     private final String msg;

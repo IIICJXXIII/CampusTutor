@@ -21,11 +21,14 @@ import java.util.List;
 public class MatchScoreCalculator {
 
     // 各维度权重配置
-    private static final double WEIGHT_SUBJECT = 30.0;    // 科目匹配 30%
-    private static final double WEIGHT_GRADE = 20.0;      // 年级匹配 20%
-    private static final double WEIGHT_DISTANCE = 25.0;   // 距离评分 25%
-    private static final double WEIGHT_PRICE = 15.0;      // 价格匹配 15%
+    private static final double WEIGHT_SUBJECT = 25.0;    // 科目匹配 25%
+    private static final double WEIGHT_GRADE = 15.0;      // 年级匹配 15%
+    private static final double WEIGHT_DISTANCE = 20.0;   // 距离评分 20%
+    private static final double WEIGHT_PRICE = 10.0;      // 价格匹配 10%
     private static final double WEIGHT_RATING = 10.0;     // 教员评分 10%
+    private static final double WEIGHT_EXPERIENCE = 10.0; // 教学经验 10%
+    private static final double WEIGHT_EDUCATION = 5.0;   // 学历背景 5%
+    private static final double WEIGHT_SPECIALTY = 5.0;   // 教学特长 5%
 
     // 距离评分参数
     private static final double MAX_DISTANCE_KM = 10.0;   // 最大考虑距离(公里)
@@ -77,8 +80,30 @@ public class MatchScoreCalculator {
             matchTags.add("高评分");
         }
 
-        // 6. 计算综合匹配分数
-        double totalScore = subjectScore + gradeScore + distanceScore + priceScore + ratingScore;
+        // 6. 教学经验评分
+        double experienceScore = calculateExperienceScore(tutor);
+        result.setExperienceScore(experienceScore);
+        if (experienceScore >= WEIGHT_EXPERIENCE * 0.8) {
+            matchTags.add("经验丰富");
+        }
+
+        // 7. 学历背景评分
+        double educationScore = calculateEducationScore(tutor.getEducation());
+        result.setEducationScore(educationScore);
+        if (educationScore >= WEIGHT_EDUCATION * 0.8) {
+            matchTags.add("学历优秀");
+        }
+
+        // 8. 教学特长评分
+        double specialtyScore = calculateSpecialtyScore(tutor.getTeachStyle(), null);
+        result.setSpecialtyScore(specialtyScore);
+        if (specialtyScore >= WEIGHT_SPECIALTY * 0.8) {
+            matchTags.add("特长匹配");
+        }
+
+        // 9. 计算综合匹配分数
+        double totalScore = subjectScore + gradeScore + distanceScore + priceScore + ratingScore + 
+                           experienceScore + educationScore + specialtyScore;
         result.setMatchScore(Math.min(100.0, totalScore));
         result.setMatchTags(matchTags);
 
@@ -140,8 +165,30 @@ public class MatchScoreCalculator {
             matchTags.add("高评分");
         }
 
-        // 6. 计算综合匹配分数
-        double totalScore = subjectScore + gradeScore + distanceScore + priceScore + ratingScore;
+        // 6. 教学经验评分
+        double experienceScore = calculateExperienceScore(tutor);
+        result.setExperienceScore(experienceScore);
+        if (experienceScore >= WEIGHT_EXPERIENCE * 0.8) {
+            matchTags.add("经验丰富");
+        }
+
+        // 7. 学历背景评分
+        double educationScore = calculateEducationScore(tutor.getEducation());
+        result.setEducationScore(educationScore);
+        if (educationScore >= WEIGHT_EDUCATION * 0.8) {
+            matchTags.add("学历优秀");
+        }
+
+        // 8. 教学特长评分
+        double specialtyScore = calculateSpecialtyScore(tutor.getTeachStyle(), null);
+        result.setSpecialtyScore(specialtyScore);
+        if (specialtyScore >= WEIGHT_SPECIALTY * 0.8) {
+            matchTags.add("教学特长");
+        }
+
+        // 9. 计算综合匹配分数
+        double totalScore = subjectScore + gradeScore + distanceScore + priceScore + ratingScore + 
+                           experienceScore + educationScore + specialtyScore;
         result.setMatchScore(Math.min(100.0, totalScore));
         result.setMatchTags(matchTags);
 
@@ -243,6 +290,96 @@ public class MatchScoreCalculator {
         }
         double r = rating.doubleValue();
         return WEIGHT_RATING * (r / 5.0);
+    }
+
+    /**
+     * 计算教学经验评分
+     * 基于订单数量和从教年限
+     */
+    private double calculateExperienceScore(TutorProfile tutor) {
+        int orderCount = tutor.getOrderCount() != null ? tutor.getOrderCount() : 0;
+        
+        // 订单数量评分
+        if (orderCount >= 50) {
+            return WEIGHT_EXPERIENCE; // 丰富经验
+        } else if (orderCount >= 20) {
+            return WEIGHT_EXPERIENCE * 0.8; // 较多经验
+        } else if (orderCount >= 10) {
+            return WEIGHT_EXPERIENCE * 0.6; // 一般经验
+        } else if (orderCount >= 5) {
+            return WEIGHT_EXPERIENCE * 0.4; // 较少经验
+        } else {
+            return WEIGHT_EXPERIENCE * 0.2; // 新手
+        }
+    }
+
+    /**
+     * 计算学历背景评分
+     * 学历越高分数越高
+     */
+    private double calculateEducationScore(Integer education) {
+        if (education == null) {
+            return WEIGHT_EDUCATION * 0.5; // 无学历信息
+        }
+        
+        // 学历等级评分
+        switch (education) {
+            case 5: // 博士
+                return WEIGHT_EDUCATION;
+            case 4: // 硕士
+                return WEIGHT_EDUCATION * 0.8;
+            case 3: // 本科
+                return WEIGHT_EDUCATION * 0.6;
+            case 2: // 大专
+                return WEIGHT_EDUCATION * 0.4;
+            default: // 其他
+                return WEIGHT_EDUCATION * 0.2;
+        }
+    }
+
+    /**
+     * 计算教学特长评分
+     * 基于教学风格与学习目标的匹配度
+     */
+    private double calculateSpecialtyScore(String teachStyle, String learningGoal) {
+        if (!StringUtils.hasText(teachStyle)) {
+            return WEIGHT_SPECIALTY * 0.5; // 无教学风格信息
+        }
+        
+        if (!StringUtils.hasText(learningGoal)) {
+            return WEIGHT_SPECIALTY * 0.7; // 无学习目标
+        }
+        
+        // 关键词匹配
+        String style = teachStyle.toLowerCase();
+        String goal = learningGoal.toLowerCase();
+        
+        int matchCount = 0;
+        
+        // 常见学习目标与教学风格的匹配
+        if (goal.contains("提高") && style.contains("提升")) {
+            matchCount++;
+        }
+        if (goal.contains("基础") && style.contains("基础")) {
+            matchCount++;
+        }
+        if (goal.contains("考试") && style.contains("应试")) {
+            matchCount++;
+        }
+        if (goal.contains("兴趣") && style.contains("兴趣")) {
+            matchCount++;
+        }
+        if (goal.contains("竞赛") && style.contains("竞赛")) {
+            matchCount++;
+        }
+        
+        if (matchCount >= 2) {
+            return WEIGHT_SPECIALTY; // 高度匹配
+        } else if (matchCount >= 1) {
+            return WEIGHT_SPECIALTY * 0.6; // 部分匹配
+        } else {
+            return WEIGHT_SPECIALTY * 0.3; // 不匹配
+        }
     }
 
     /**
