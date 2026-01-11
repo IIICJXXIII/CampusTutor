@@ -101,6 +101,14 @@ public class DemandController {
         return Result.success(list);
     }
 
+    @Operation(summary = "教师接单匹配", description = "教师对需求进行匹配操作，创建待确认订单")
+    @PostMapping("/{id}/match")
+    public Result<Long> match(@PathVariable Long id) {
+        Long tutorId = UserContext.getUserId();
+        Long orderId = demandPostService.matchDemand(tutorId, id);
+        return Result.success(orderId);
+    }
+
     @Operation(summary = "获取带有匹配度的需求列表（教师端专用）")
     @GetMapping("/list-with-match")
     public Result<IPage<DemandPost>> listWithMatchScore(

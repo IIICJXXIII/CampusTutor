@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.campus.common.exception.BusinessException;
 import com.campus.module.order.entity.CourseOrder;
 import com.campus.module.order.mapper.CourseOrderMapper;
+import com.campus.module.order.service.CourseOrderService;
 import com.campus.module.teaching.dto.CheckInRequest;
 import com.campus.module.teaching.dto.TeachingRecordDTO;
 import com.campus.module.teaching.entity.TeachingRecord;
@@ -28,6 +29,7 @@ public class TeachingRecordServiceImpl implements TeachingRecordService {
 
     private final TeachingRecordMapper teachingRecordMapper;
     private final CourseOrderMapper courseOrderMapper;
+    private final CourseOrderService courseOrderService;
 
     @Override
     @Transactional
@@ -139,11 +141,12 @@ public class TeachingRecordServiceImpl implements TeachingRecordService {
         int confirmedCount = teachingRecordMapper.countConfirmedByOrderId(order.getId());
         order.setUsedHours(confirmedCount);
         
-        // 如果所有课时都已完成，更新订单状态
+        // 如果所有课时都已完成，调用订单完成方法（会解冻钱包金额）
         if (confirmedCount >= order.getTotalHours()) {
-            order.setStatus(3); // 已完成
+            courseOrderService.completeOrder(order.getId());
+        } else {
+            courseOrderMapper.updateById(order);
         }
-        courseOrderMapper.updateById(order);
 
         log.info("家长确认课时成功: recordId={}, usedHours={}", recordId, order.getUsedHours());
     }

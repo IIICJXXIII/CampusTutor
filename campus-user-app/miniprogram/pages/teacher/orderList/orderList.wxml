@@ -1,10 +1,13 @@
 <wxs module="tools">
   var statusMap = {
+    '-1': { text: '待确认', color: '#909399' },
     '0': { text: '待支付', color: '#ff9900' },
     '1': { text: '待开课', color: '#409EFF' },
     '2': { text: '进行中', color: '#67c23a' },
     '3': { text: '已完成', color: '#909399' },
-    '4': { text: '已取消', color: '#c0c4cc' }
+    '4': { text: '已取消', color: '#c0c4cc' },
+    '5': { text: '退款中', color: '#e6a23c' },
+    '6': { text: '已退款', color: '#909399' }
   };
   module.exports.getStatus = function(status) {
     return statusMap[status + ''] || { text: '未知', color: '#333' };
@@ -13,6 +16,7 @@
 
 <view class="tabs">
   <view class="tab-item {{status === null ? 'active' : ''}}" bindtap="filterAll" data-status="-1">全部</view>
+  <view class="tab-item {{status === -1 ? 'active' : ''}}" bindtap="filterStatus" data-status="-1">待确认</view>
   <view class="tab-item {{status === 0 ? 'active' : ''}}" bindtap="filterStatus" data-status="0">待支付</view>
   <view class="tab-item {{status === 1 ? 'active' : ''}}" bindtap="filterStatus" data-status="1">待开课</view>
   <view class="tab-item {{status === 2 ? 'active' : ''}}" bindtap="filterStatus" data-status="2">进行中</view>
@@ -47,8 +51,17 @@
           </view>
 
           <view class="btn-group">
+            <block wx:if="{{item.status === -1}}">
+              <button class="btn plain" catchtap="handleCancel" data-id="{{item.id}}" data-status="{{item.status}}">取消接单</button>
+            </block>
+            
             <block wx:if="{{item.status === 1}}">
-              <button class="btn primary" bindtap="startClass" data-id="{{item.id}}">确认开课</button>
+              <button class="btn plain" catchtap="handleCancel" data-id="{{item.id}}" data-status="{{item.status}}">取消订单</button>
+              <button class="btn primary" catchtap="startClass" data-id="{{item.id}}">确认开课</button>
+            </block>
+            
+            <block wx:if="{{item.status === 2}}">
+              <button class="btn primary" catchtap="handleComplete" data-id="{{item.id}}">确认结课</button>
             </block>
           </view>
         </view>
