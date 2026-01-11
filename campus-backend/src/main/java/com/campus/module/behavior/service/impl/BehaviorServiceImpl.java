@@ -4,6 +4,7 @@ import com.campus.module.behavior.dto.TutorBehaviorStats;
 import com.campus.module.behavior.entity.UserActionLog;
 import com.campus.module.behavior.mapper.UserActionLogMapper;
 import com.campus.module.behavior.service.BehaviorService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -24,6 +25,7 @@ public class BehaviorServiceImpl implements BehaviorService {
 
     private final UserActionLogMapper actionLogMapper;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper;
 
     // Redis 缓存 Key 前缀
     private static final String TUTOR_STATS_KEY = "behavior:tutor:stats:";
@@ -71,9 +73,14 @@ public class BehaviorServiceImpl implements BehaviorService {
 
         // 尝试从缓存获取
         String cacheKey = TUTOR_STATS_KEY + tutorId;
-        TutorBehaviorStats cached = (TutorBehaviorStats) redisTemplate.opsForValue().get(cacheKey);
-        if (cached != null) {
-            return cached;
+        Object cachedObj = redisTemplate.opsForValue().get(cacheKey);
+        if (cachedObj != null) {
+            try {
+                // 使用 ObjectMapper 进行类型转换
+                return objectMapper.convertValue(cachedObj, TutorBehaviorStats.class);
+            } catch (Exception e) {
+                log.warn("缓存反序列化失败: {}", e.getMessage());
+            }
         }
 
         // 从数据库统计
