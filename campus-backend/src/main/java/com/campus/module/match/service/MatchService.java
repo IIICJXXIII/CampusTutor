@@ -5,15 +5,19 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campus.common.utils.GradeUtils;
+import com.campus.module.behavior.dto.TutorBehaviorStats;
+import com.campus.module.behavior.service.BehaviorService;
 import com.campus.module.demand.service.GeoService;
 import com.campus.module.match.dto.MatchScoreResult;
 import com.campus.module.match.dto.TutorSearchRequest;
 import com.campus.module.match.dto.TutorSearchResult;
+import com.campus.module.match.dto.WeightConfig;
 import com.campus.module.tutor.entity.TutorProfile;
 import com.campus.module.tutor.mapper.TutorProfileMapper;
 import com.campus.module.user.entity.SysUser;
 import com.campus.module.user.mapper.SysUserMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -22,7 +26,9 @@ import java.util.stream.Collectors;
 
 /**
  * 匹配搜索服务
+ * 升级版：支持用户行为信号和动态权重
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MatchService {
@@ -31,9 +37,12 @@ public class MatchService {
     private final SysUserMapper sysUserMapper;
     private final GeoService geoService;
     private final MatchScoreCalculator scoreCalculator;
+    private final BehaviorService behaviorService;
+    private final DynamicWeightCalculator dynamicWeightCalculator;
 
     /**
      * 搜索教员
+     * 
      * @param request 搜索条件
      * @return 分页结果
      */
@@ -41,13 +50,13 @@ public class MatchService {
         // 1. 如果有位置信息，先从GEO获取附近的教员ID和真实距离
         Set<Long> nearbyTutorIds = null;
         Map<Long, Double> distanceMap = new HashMap<>();
-        
+
         if (request.getLongitude() != null && request.getLatitude() != null) {
             double radius = request.getRadius() != null ? request.getRadius() : 10.0;
             // 使用新方法获取带距离信息的结果
             Map<Long, Double> nearbyWithDistance = geoService.searchNearbyTutorsWithDistance(
                     request.getLongitude(), request.getLatitude(), radius);
-            
+
             // 如果Redis返回空（Redis不可用或无数据），则不限制ID，后续从数据库计算距离
             if (nearbyWithDistance.isEmpty()) {
                 // Redis无数据，查询所有已认证教员并在内存中计算距离
@@ -72,7 +81,7 @@ public class MatchService {
         if (StringUtils.hasText(request.getGrade())) {
             String normalizedGrade = GradeUtils.normalize(request.getGrade());
             List<String> keywords = GradeUtils.getSearchKeywords(normalizedGrade);
-            
+
             // 构建OR条件：匹配具体年级或对应的全科或年级为NULL
             wrapper.and(w -> {
                 boolean first = true;
@@ -116,9 +125,9 @@ public class MatchService {
         if (request.getGender() != null) {
             // 需要关联用户表查询性别
             List<Long> genderUserIds = sysUserMapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SysUser>()
-                    .eq(SysUser::getGender, request.getGender())
-            ).stream().map(SysUser::getId).collect(Collectors.toList());
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SysUser>()
+                            .eq(SysUser::getGender, request.getGender()))
+                    .stream().map(SysUser::getId).collect(Collectors.toList());
             if (!genderUserIds.isEmpty()) {
                 wrapper.in(TutorProfile::getUserId, genderUserIds);
             } else {
@@ -163,8 +172,7 @@ public class MatchService {
                 if (profile.getLongitude() != null && profile.getLatitude() != null) {
                     double distance = geoService.calculateDistance(
                             request.getLongitude(), request.getLatitude(),
-                            profile.getLongitude().doubleValue(), profile.getLatitude().doubleValue()
-                    );
+                            profile.getLongitude().doubleValue(), profile.getLatitude().doubleValue());
                     // 只保留在半径范围内的教员
                     if (distance <= radius) {
                         distanceMap.put(profile.getId(), distance);
@@ -186,7 +194,7 @@ public class MatchService {
         List<Long> userIds = filteredProfiles.stream()
                 .map(TutorProfile::getUserId)
                 .collect(Collectors.toList());
-        
+
         Map<Long, SysUser> userMap = new HashMap<>();
         if (!userIds.isEmpty()) {
             List<SysUser> users = sysUserMapper.selectBatchIds(userIds);
@@ -195,21 +203,37 @@ public class MatchService {
 
         Map<Long, SysUser> finalUserMap = userMap;
         Map<Long, Double> finalDistanceMap = distanceMap;
-        
+
         List<TutorSearchResult> results = filteredProfiles.stream().map(profile -> {
-            // 计算匹配评分
-            MatchScoreResult scoreResult = scoreCalculator.calculateScoreByCondition(
+            // 获取动态权重配置
+            WeightConfig weights = dynamicWeightCalculator.getWeightsForUser(request.getUserId());
+
+            // 获取教员行为统计（热度分）
+            TutorBehaviorStats stats = behaviorService.getTutorStats(profile.getId());
+            Double hotnessScore = stats != null ? stats.getHotnessScore() : 0.0;
+
+            // 使用带行为信号的评分方法
+            MatchScoreResult scoreResult = scoreCalculator.calculateScoreWithBehavior(
                     profile,
                     request.getSubject(),
                     request.getGrade(),
                     finalDistanceMap.get(profile.getId()),
-                    request.getMaxPrice()
-            );
+                    request.getMaxPrice(),
+                    hotnessScore,
+                    weights.getSubjectWeight(),
+                    weights.getGradeWeight(),
+                    weights.getDistanceWeight(),
+                    weights.getPriceWeight(),
+                    weights.getRatingWeight(),
+                    weights.getExperienceWeight(),
+                    weights.getEducationWeight(),
+                    weights.getSpecialtyWeight(),
+                    weights.getHotnessWeight());
 
             // 复制评分数据到结果
             scoreResult.setId(profile.getId());
             scoreResult.setUserId(profile.getUserId());
-            
+
             // 姓名脱敏
             String name = profile.getRealName();
             if (name != null && name.length() > 1) {
@@ -227,7 +251,7 @@ public class MatchService {
             scoreResult.setUniversityName(profile.getUniversityName());
             scoreResult.setMajor(profile.getMajor());
             scoreResult.setEducation(profile.getEducation());
-            
+
             // 解析JSON
             if (StringUtils.hasText(profile.getTeachSubjects())) {
                 scoreResult.setTeachSubjects(JSONUtil.toList(profile.getTeachSubjects(), String.class));
@@ -256,7 +280,7 @@ public class MatchService {
                 return isAsc ? da.compareTo(db) : db.compareTo(da);
             });
         }
-        
+
         // 如果按匹配分数排序（智能推荐）
         if ("score".equals(sortBy) && !results.isEmpty()) {
             results.sort((a, b) -> {
