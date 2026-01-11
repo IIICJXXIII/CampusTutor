@@ -107,4 +107,25 @@ public class ChatServiceImpl implements ChatService {
 
         return vo;
     }
+
+    @Override
+    public Long sendMessage(Long senderId, Long receiverId, String content, String type) {
+        // 将字符串类型转换为整数类型
+        Integer msgType = 1; // 默认文本
+        if ("image".equals(type)) {
+            msgType = 2;
+        } else if ("file".equals(type)) {
+            msgType = 3;
+        }
+        
+        ChatMessage message = sendMessage(senderId, receiverId, content, msgType);
+        return message != null ? message.getId() : null;
+    }
+
+    @Override
+    public List<ChatMessageVO> getMessagesByConversationId(Long conversationId, Long userId, Integer page, Integer size) {
+        // 简单实现：conversationId 可以是对方用户ID
+        // 实际生产中应该有会话表来管理
+        return getChatHistory(userId, conversationId, page, size);
+    }
 }

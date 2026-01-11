@@ -11,29 +11,29 @@
   </view>
 
   <!-- 科目筛选栏 -->
-<scroll-view class="subject-scroll" scroll-x="true" enable-flex="true">
-  <view class="subject-container">
-    <view 
-      wx:for="{{subjects}}" 
-      wx:key="id"
-      class="subject-item {{selectedSubject === item.id ? 'active' : ''}}" 
-      bindtap="onSubjectChange" 
-      data-subject="{{item.id}}"
-    >
-      <text>{{item.name}}</text>
+  <scroll-view class="subject-scroll" scroll-x="true" enable-flex="true">
+    <view class="subject-container">
+      <view 
+        wx:for="{{subjects}}" 
+        wx:key="id"
+        class="subject-item {{selectedSubject === item.id ? 'active' : ''}}" 
+        bindtap="onSubjectChange" 
+        data-subject="{{item.id}}"
+      >
+        <text>{{item.name}}</text>
+      </view>
     </view>
-  </view>
-</scroll-view>
+  </scroll-view>
 
-<!-- 排序选择器 -->
-<view class="sort-container">
-  <picker bindchange="onSortChange" value="{{activeSort}}" range="{{sortOptions}}" range-key="label">
-    <view class="sort-picker">
-      <text>排序：{{sortOptions[activeSort].label}}</text>
-      <image class="sort-arrow" src="/static/images/arrow.svg" mode="aspectFit"></image>
-    </view>
-  </picker>
-</view>
+  <!-- 排序选择器 -->
+  <view class="sort-container">
+    <picker bindchange="onSortChange" value="{{activeSort}}" range="{{sortOptions}}" range-key="label">
+      <view class="sort-picker">
+        <text>排序：{{sortOptions[activeSort].label}}</text>
+        <text class="sort-arrow">▼</text>
+      </view>
+    </picker>
+  </view>
 
   <!-- 学生需求列表 -->
   <view class="demand-list">
@@ -44,19 +44,19 @@
             <text class="subject">{{item.subject}}</text>
             <text class="grade-tag">{{item.grade}}</text>
             <!-- 匹配等级徽章 -->
-            <view class="match-badge {{item.matchLevel}}" wx:if="{{item.matchLevel !== 'unknown'}}">
+            <view class="match-badge {{item.matchLevel}}" wx:if="{{item.matchLevel && item.matchLevel !== 'unknown'}}">
               <text wx:if="{{item.matchLevel === 'excellent'}}">✨ 极佳匹配</text>
               <text wx:elif="{{item.matchLevel === 'good'}}">👍 优质匹配</text>
               <text wx:elif="{{item.matchLevel === 'fair'}}">🙂 一般匹配</text>
               <text wx:else>🤔 基础匹配</text>
             </view>
           </view>
-          <view class="header-right">
+          <view class="price-area">
             <text class="price">¥{{item.expectPrice}}/小时</text>
             <!-- 匹配分数 -->
             <view class="score-badge" wx:if="{{item.matchScore}}">
               <text class="score-icon">🎯</text>
-              <text class="score-value">{{item.matchScore.toFixed(0)}}</text>
+              <text class="score-value">{{item.matchScore}}</text>
               <text class="score-unit">分</text>
             </view>
           </view>
@@ -79,8 +79,8 @@
         
         <!-- 匹配标签 -->
         <view class="match-tags" wx:if="{{item.matchTags && item.matchTags.length > 0}}">
-          <block wx:for="{{item.matchTags}}" wx:key="*this">
-            <text class="tag">{{item}}</text>
+          <block wx:for="{{item.matchTags}}" wx:for-item="tag" wx:key="*this">
+            <text class="tag">{{tag}}</text>
           </block>
         </view>
         
@@ -89,15 +89,21 @@
             {{item.status === 1 ? '可接单' : '已被接单'}}
           </view>
           <view class="action-buttons">
-            <button class="btn detail" bindtap="goToDemandDetail" data-demand-id="{{item.id}}">详情</button>
+            <button class="btn detail" catchtap="goToDemandDetail" data-demand-id="{{item.id}}">详情</button>
+            <button class="btn contact" catchtap="contactParent" data-id="{{item.id}}" data-item="{{item}}">联系家长</button>
           </view>
         </view>
       </view>
     </block>
   </view>
 
+  <!-- 加载更多 -->
+  <view class="load-more" wx:if="{{hasMore && !loading && demands.length > 0}}" bindtap="loadMore">
+    <text>加载更多</text>
+  </view>
+
   <!-- 空状态 -->
-  <view class="empty-state" wx:if="{{demands.length === 0 && !loading}}">
+  <view class="empty-state" wx:if="{{demands.length === 0 && !loading && !error}}">
     <text class="empty-icon">🎒</text>
     <text class="empty-text">暂无学生需求</text>
     <text class="empty-hint">请稍后再试或调整搜索条件</text>

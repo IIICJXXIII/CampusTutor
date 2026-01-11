@@ -64,4 +64,26 @@ public interface ChatService {
      * @return 消息VO
      */
     ChatMessageVO convertToVO(ChatMessage message);
+
+    /**
+     * 发送消息 (字符串类型)
+     *
+     * @param senderId   发送者ID
+     * @param receiverId 接收者ID
+     * @param content    消息内容
+     * @param type       消息类型字符串 (text/image/file)
+     * @return 消息ID
+     */
+    Long sendMessage(Long senderId, Long receiverId, String content, String type);
+
+    /**
+     * 根据会话ID获取消息列表
+     *
+     * @param conversationId 会话ID
+     * @param userId         当前用户ID
+     * @param page           页码
+     * @param size           每页大小
+     * @return 消息列表
+     */
+    List<ChatMessageVO> getMessagesByConversationId(Long conversationId, Long userId, Integer page, Integer size);
 }

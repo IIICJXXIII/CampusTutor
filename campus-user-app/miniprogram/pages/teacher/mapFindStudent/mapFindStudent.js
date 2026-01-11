@@ -117,7 +117,7 @@ Page({
 
           const markers = list
             .filter(i => i.latitude && i.longitude)
-            .map(item => ({ id: item.id, latitude: item.latitude, longitude: item.longitude, width:30, height:30, callout: { content: `¥${item.expectPrice}\n${item.subject} ${item.grade}`, padding:8, borderRadius:4, display:'ALWAYS', textAlign:'center'} }));
+            .map(item => ({ id: item.id, latitude: item.latitude, longitude: item.longitude, width: 30, height: 30, callout: { content: `¥${item.expectPrice}\n${item.subject} ${item.grade}`, padding: 8, borderRadius: 4, display: 'ALWAYS', textAlign: 'center' } }));
 
           this.setData({ demandList: list, markers: markers, currentDemand: list[0] || null, isLoading: false });
         } catch (err) {
@@ -236,32 +236,29 @@ Page({
     wx.navigateTo({ url: `/pages/teacher/findStudentList/findStudentList?subject=${subject}&grade=${grade}` });
   },
 
-  // 从地图页联系家长（尝试复制手机号或弹提示）
+  // 从地图页联系家长（跳转到聊天页面）
   async handleContactFromMap() {
     if (!this.data.currentDemand) return;
     const demand = this.data.currentDemand;
-    const phone = demand.parentPhone || demand.phone || demand.mobile || null;
-    if (phone) {
-      wx.setClipboardData({ data: String(phone), success() { wx.showToast({ title: '已复制家长手机号', icon: 'none' }); } });
+    const publisherId = demand.publisherId || demand.parentId;
+
+    if (!publisherId) {
+      wx.showToast({ title: '无法获取家长信息', icon: 'none' });
       return;
     }
 
-    // 尝试按发布者ID获取用户信息（username通常是手机号）
-    const publisherId = demand.publisherId || demand.parentId || null;
-    if (publisherId) {
-      try {
-        const userRes = await request.get(api.user.byId(publisherId));
-        if (userRes && (userRes.username || userRes.nickname)) {
-          const contactValue = userRes.username || userRes.nickname;
-          wx.setClipboardData({ data: String(contactValue), success() { wx.showToast({ title: '已复制家长联系方式（用户名）', icon: 'none' }); } });
-          return;
-        }
-      } catch (err) {
-        console.warn('获取发布者信息失败', err);
-      }
+    // 获取家长信息用于聊天
+    try {
+      const userInfo = await request.get(api.chat.userInfo(publisherId));
+      wx.navigateTo({
+        url: `/pages/common/chatDetail/chatDetail?userId=${publisherId}&nickname=${encodeURIComponent(userInfo.nickname || '家长')}&avatar=${encodeURIComponent(userInfo.avatar || '')}`
+      });
+    } catch (err) {
+      // 即使获取失败也跳转，使用默认信息
+      wx.navigateTo({
+        url: `/pages/common/chatDetail/chatDetail?userId=${publisherId}&nickname=${encodeURIComponent('家长')}&avatar=`
+      });
     }
-
-    wx.showModal({ title: '联系方式不可见', content: '家长未公开联系方式，建议复制需求ID并反馈或等待平台开放沟通接口', showCancel: false });
   },
 
   // 复制当前需求ID

@@ -87,4 +87,27 @@ public class ChatController {
 
         return Result.success(userInfo);
     }
+
+    @PostMapping("/send")
+    @Operation(summary = "发送消息", description = "发送聊天消息给指定用户")
+    public Result<Long> sendMessage(@RequestBody Map<String, Object> message) {
+        Long userId = UserContext.getUserId();
+        Long targetUserId = Long.valueOf(message.get("targetUserId").toString());
+        String content = (String) message.get("content");
+        String type = (String) message.getOrDefault("type", "text");
+        
+        Long messageId = chatService.sendMessage(userId, targetUserId, content, type);
+        return Result.success(messageId);
+    }
+
+    @GetMapping("/messages/{conversationId}")
+    @Operation(summary = "获取会话消息", description = "获取指定会话的消息列表")
+    public Result<List<ChatMessageVO>> getMessages(
+            @PathVariable @Parameter(description = "会话ID") Long conversationId,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "50") Integer size) {
+        Long userId = UserContext.getUserId();
+        List<ChatMessageVO> messages = chatService.getMessagesByConversationId(conversationId, userId, page, size);
+        return Result.success(messages);
+    }
 }
