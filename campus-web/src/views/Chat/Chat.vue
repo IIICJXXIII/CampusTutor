@@ -115,6 +115,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { Bell } from '@element-plus/icons-vue';
 import { getSessionList, getChatHistory, markAsRead, getChatUserInfo } from '@/api/chat';
+import { recordChat } from '@/api/behavior';
 import websocket from '@/utils/websocket';
 
 const route = useRoute();
@@ -234,6 +235,9 @@ async function openChatWithUser(userId) {
       return;
     }
   }
+
+  // 记录聊天行为（异步，不影响主流程）
+  recordChat(userId).catch(err => console.log('记录聊天行为失败', err))
 
   await selectSession(session);
 }
