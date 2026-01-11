@@ -74,7 +74,7 @@ public class DemandController {
     }
 
     @Operation(summary = "需求详情")
-    @GetMapping("/{id}")
+    @GetMapping("/detail/{id}")
     public Result<DemandPost> detail(@PathVariable Long id) {
         DemandPost demand = demandPostService.getById(id);
         return Result.success(demand);
@@ -114,8 +114,7 @@ public class DemandController {
             @RequestParam(required = false) String sortOrder) {
         Long tutorId = UserContext.getUserId();
         IPage<DemandPost> result = demandPostService.pageListWithMatchScore(
-                tutorId, subject, grade, longitude, latitude, page, size, sortBy, sortOrder
-        );
+                tutorId, subject, grade, longitude, latitude, page, size, sortBy, sortOrder);
         return Result.success(result);
     }
 }
