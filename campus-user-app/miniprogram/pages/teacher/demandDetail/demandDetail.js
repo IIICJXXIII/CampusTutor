@@ -93,23 +93,52 @@ Page({
     });
   },
 
-  // 立即接单 -> 临时改为邀约下单引导
+  // 立即接单
   async handleInviteToOrder() {
     if (!this.data.demand) return;
-    // 先尝试联系家长（会复制联系方式或用户名）
-    await this.handleContact();
-    // 弹窗引导
-    const id = this.data.demand.id || this.data.demandId;
-    wx.showModal({
-      title: '邀约下单',
-      content: '请通过已复制的联系方式联系家长，确认时间与价格后邀请家长在家长端发起订单并支付；如需平台协助，可复制需求ID并反馈给管理员。是否复制需求ID？',
-      confirmText: '复制ID',
-      cancelText: '知道了',
-      success: (res) => {
-        if (res.confirm) {
-          wx.setClipboardData({ data: String(id), success() { wx.showToast({ title: '已复制ID', icon: 'none' }); } });
+    
+    try {
+      const demandId = this.data.demand.id || this.data.demandId;
+      
+      // 调用后端接单接口
+      const response = await request.get(api.demand.match(demandId));
+      
+      // 接单成功处理
+      wx.showToast({ title: '接单成功！', icon: 'success' });
+      
+      // 更新需求状态
+      this.setData({
+        'demand.status': 2 // 已匹配
+      });
+      
+      // 联系家长
+      await this.handleContact();
+      
+      // 弹窗引导
+      wx.showModal({
+        title: '接单成功',
+        content: '请通过已复制的联系方式联系家长，确认具体上课时间和相关细节。',
+        showCancel: false
+      });
+      
+    } catch (err) {
+      console.error('接单失败:', err);
+      
+      // 接单失败时，转为邀约引导
+      await this.handleContact();
+      
+      const id = this.data.demand.id || this.data.demandId;
+      wx.showModal({
+        title: '邀约下单',
+        content: '请通过已复制的联系方式联系家长，确认时间与价格后邀请家长在家长端发起订单并支付；如需平台协助，可复制需求ID并反馈给管理员。是否复制需求ID？',
+        confirmText: '复制ID',
+        cancelText: '知道了',
+        success: (res) => {
+          if (res.confirm) {
+            wx.setClipboardData({ data: String(id), success() { wx.showToast({ title: '已复制ID', icon: 'none' }); } });
+          }
         }
-      }
-    });
+      });
+    }
   }
 });
