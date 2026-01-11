@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import java.util.Map;
 
 /**
  * 教员模块控制器
@@ -80,5 +81,21 @@ public class TutorController {
     public Result<TutorProfile> getById(@PathVariable Long id) {
         TutorProfile profile = tutorProfileService.getById(id);
         return Result.success(profile);
+    }
+
+    @Operation(summary = "获取认证状态")
+    @GetMapping("/certification/status")
+    public Result<Map<String, Object>> getCertificationStatus() {
+        Long userId = UserContext.getUserId();
+        Map<String, Object> status = tutorProfileService.getCertificationStatus(userId);
+        return Result.success(status);
+    }
+
+    @Operation(summary = "获取认证进度")
+    @GetMapping("/certification/progress")
+    public Result<Map<String, Object>> getCertificationProgress() {
+        Long userId = UserContext.getUserId();
+        Map<String, Object> progress = tutorProfileService.getCertificationProgress(userId);
+        return Result.success(progress);
     }
 }
