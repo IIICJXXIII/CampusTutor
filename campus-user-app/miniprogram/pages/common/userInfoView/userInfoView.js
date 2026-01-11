@@ -5,7 +5,9 @@ const storageUtil = require('../../../utils/storageUtil');
 
 Page({
   data: {
-    userInfo: {}
+    userInfo: {},
+    isEditMode: false,
+    editUserInfo: {} // 用于编辑的临时数据
   },
 
   onLoad() {
@@ -61,8 +63,97 @@ Page({
     }
   },
 
-  // 返回上一页
-  navigateBack() {
-    wx.navigateBack();
+  // 切换到编辑模式
+  switchToEditMode() {
+    // 复制当前用户信息到编辑数据中
+    const editUserInfo = JSON.parse(JSON.stringify(this.data.userInfo));
+    
+    this.setData({
+      isEditMode: true,
+      editUserInfo
+    });
+  },
+
+  // 保存修改
+  async saveEdit() {
+    let loadingShown = false;
+    try {
+      wx.showLoading({ title: '保存中...' });
+      loadingShown = true;
+      
+      // 调用后端API保存用户信息 - 使用正确的PUT方法和接口地址
+      const response = await request.put(apiConfig.user.updateInfo, this.data.editUserInfo);
+      
+      // 无论response是否为空，都要更新用户信息
+      let updatedUserInfo;
+      const localUserInfo = storageUtil.getUserInfo();
+      
+      if (response) {
+        // 合并本地数据和后端返回数据
+        updatedUserInfo = { ...localUserInfo, ...response };
+        storageUtil.setUserInfo(updatedUserInfo);
+        
+        // 重新调用loadUserInfo确保获取完整的最新数据
+        await this.loadUserInfo();
+      } else {
+        // 如果后端没有返回数据，使用本地数据和编辑的数据合并
+        updatedUserInfo = { ...localUserInfo, ...this.data.editUserInfo };
+        storageUtil.setUserInfo(updatedUserInfo);
+        this.setData({ userInfo: updatedUserInfo });
+      }
+      
+      // 先隐藏loading，再显示toast
+      if (loadingShown) {
+        wx.hideLoading();
+        loadingShown = false;
+      }
+      
+      wx.showToast({ title: '保存成功', icon: 'success' });
+      
+      this.setData({ isEditMode: false });
+    } catch (err) {
+      console.error('保存用户信息失败:', err);
+      
+      // 先隐藏loading，再显示toast
+      if (loadingShown) {
+        wx.hideLoading();
+        loadingShown = false;
+      }
+      
+      wx.showToast({ title: '保存失败', icon: 'none' });
+    } finally {
+      // 确保如果loading还在显示，就隐藏它
+      if (loadingShown) {
+        wx.hideLoading();
+      }
+    }
+  },
+
+  // 取消编辑
+  cancelEdit() {
+    this.setData({
+      isEditMode: false,
+      editUserInfo: {} // 清空编辑数据
+    });
+  },
+
+  // 输入框值变化事件
+  onInputChange(e) {
+    const { field } = e.currentTarget.dataset;
+    const { value } = e.detail;
+    
+    this.setData({
+      [`editUserInfo.${field}`]: value
+    });
+  },
+
+  // Picker选择变化事件
+  onPickerChange(e) {
+    const { field } = e.currentTarget.dataset;
+    const { value } = e.detail;
+    
+    this.setData({
+      [`editUserInfo.${field}`]: value
+    });
   }
 });
