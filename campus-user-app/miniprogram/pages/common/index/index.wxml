@@ -31,12 +31,12 @@
 
     <!-- 快捷功能区 -->
     <view class="quick-actions five">
-      <view class="action-item" bindtap="goToMap">
-        <view class="action-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
-          <text class="icon-text">🗺️</text>
+      <view class="action-item" bindtap="goToStudentList">
+          <view class="action-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)">
+            <text class="icon-text">🎒</text>
+          </view>
+          <text class="action-title">招学生</text>
         </view>
-        <text class="action-title">找学生</text>
-      </view>
       <view class="action-item" bindtap="goToTeacherOrders">
         <view class="action-icon" style="background: linear-gradient(135deg, #fa8c16 0%, #ffc53d 100%)">
           <text class="icon-text">📚</text>
@@ -178,3 +178,6 @@
     </view>
   </view>
 </block>
+
+<!-- AI智能助手 -->
+<ai-assistant></ai-assistant>
