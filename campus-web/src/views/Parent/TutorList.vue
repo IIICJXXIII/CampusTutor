@@ -202,6 +202,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { searchTutors } from '@/api/match'
 import { getStudents } from '@/api/demand'
+import { recordSearch, recordView } from '@/api/behavior'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
@@ -319,6 +320,8 @@ const fetchList = async () => {
 // 事件处理
 const handleSearch = () => {
   filterForm.page = 1
+  // 记录搜索行为（异步，不影响主流程）
+  recordSearch().catch(err => console.log('记录搜索行为失败', err))
   fetchList()
 }
 
@@ -343,7 +346,9 @@ const handlePageChange = (page) => {
 }
 
 const goDetail = (id) => {
-  router.push(`/teacher/${id}`) // 假设详情页路由为 /teacher/:id
+  // 记录查看行为（异步，不影响主流程）
+  recordView(id).catch(err => console.log('记录查看行为失败', err))
+  router.push(`/teacher/${id}`)
 }
 
 // 工具函数
