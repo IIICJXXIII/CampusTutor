@@ -1,298 +1,151 @@
+<template>
+  <div class="student-list-page p-4">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-xl font-bold">我的孩子</h1>
+      <el-button type="primary" @click="addStudent">
+        <el-icon class="mr-1"><Plus /></el-icon>
+        添加孩子
+      </el-button>
+    </div>
+    
+    <!-- 学生列表 -->
+    <div v-if="loading" class="space-y-4">
+      <el-skeleton :rows="3" animated v-for="i in 2" :key="i" class="p-4 bg-white rounded-lg shadow-sm" />
+    </div>
+    
+    <div v-else-if="students.length === 0" class="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm">
+      <el-empty description="暂无孩子信息">
+        <el-button type="primary" @click="addStudent">立即添加</el-button>
+      </el-empty>
+    </div>
+    
+    <div v-else class="grid gap-4">
+      <el-card
+        v-for="student in students"
+        :key="student.id"
+        class="student-card cursor-pointer hover:shadow-md transition-shadow"
+        shadow="hover"
+        @click="editStudent(student.id)"
+      >
+        <div class="flex items-center">
+          <div class="mr-4">
+            <el-avatar :size="60" :src="`https://api.dicebear.com/7.x/adventurer/svg?seed=${student.id}`">
+              {{ student.name?.charAt(0) }}
+            </el-avatar>
+          </div>
+          <div class="flex-grow">
+            <div class="flex items-center mb-1">
+              <span class="text-lg font-bold mr-2">{{ student.name }}</span>
+              <el-tag size="small" :type="student.gender === 1 ? 'primary' : 'danger'" effect="plain">
+                {{ student.gender === 1 ? '男' : '女' }}
+              </el-tag>
+            </div>
+            <div class="text-gray-500 text-sm mb-2">
+              <span>{{ student.grade || '未设置年级' }}</span>
+              <span v-if="student.universityName" class="mx-1">·</span>
+              <span v-if="student.universityName">{{ student.universityName }}</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <el-tag 
+                v-for="subject in parseSubjects(student.subjects)" 
+                :key="subject"
+                size="small"
+                type="info"
+                class="opacity-80"
+              >
+                {{ subject }}
+              </el-tag>
+            </div>
+          </div>
+          <div class="flex flex-col gap-2">
+            <el-button link type="primary" @click.stop="editStudent(student.id)">
+              <el-icon :size="18"><Edit /></el-icon>
+            </el-button>
+            <el-button link type="danger" @click.stop="handleDelete(student)">
+              <el-icon :size="18"><Delete /></el-icon>
+            </el-button>
+          </div>
+        </div>
+      </el-card>
+    </div>
+  </div>
+</template>
+
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { getDemandList } from '@/api/demand'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { getStudentList, deleteStudent } from '@/api/parent'
 
 const router = useRouter()
 const loading = ref(false)
+const students = ref([])
 
-// 学生需求列表
-const students = ref([
-  {
-    id: 1,
-    grade: '小学三年级',
-    subject: '数学',
-    price: 150,
-    location: '阳光小区 (距您 1.5km)',
-    tags: ['基础薄弱', '需耐心'],
-    desc: '孩子数学基础较弱，计算容易出错，希望能找有耐心的老师辅导作业。',
-    time: '周六上午',
-    publishTime: '刚刚发布'
-  },
-  {
-    id: 2,
-    grade: '初中二年级',
-    subject: '物理',
-    price: 200,
-    location: '万达广场 (距您 3.0km)',
-    tags: ['目标提分', '严厉型'],
-    desc: '期中考试想提升20分，希望老师严格一点，主攻力学部分。',
-    time: '周日晚上',
-    publishTime: '1小时前'
-  },
-  {
-    id: 3,
-    grade: '高中一年级',
-    subject: '英语口语',
-    price: 250,
-    location: '线上教学',
-    tags: ['留学准备', '全英教学'],
-    desc: '准备出国，需要练习口语对话，希望老师有雅思教学经验。',
-    time: '工作日晚上',
-    publishTime: '2小时前'
-  },
-  {
-    id: 4,
-    grade: '小学六年级',
-    subject: '全科辅导',
-    price: 180,
-    location: '幸福家园 (距您 0.8km)',
-    tags: ['小升初', '作业辅导'],
-    desc: '针对小升初考试进行全科复习梳理，查漏补缺。',
-    time: '周末全天',
-    publishTime: '3小时前'
-  }
-])
-
-// 获取需求列表
-const fetchStudents = async () => {
+const loadStudents = async () => {
   loading.value = true
   try {
-    const res = await getDemandList({ page: 1, pageSize: 20, status: 1 })
-    if (res.data && res.data.records && res.data.records.length > 0) {
-      students.value = res.data.records.map((item, idx) => ({
-        id: item.id,
-        grade: `${item.gradeLevel || '小学'}${item.gradeName || '年级'}`,
-        subject: item.subjects || '数学',
-        price: item.maxPrice || 150,
-        location: item.teachLocation || '待定',
-        tags: buildTags(item),
-        desc: item.description || '暂无描述',
-        time: item.availableTime || '待定',
-        publishTime: formatTime(item.createTime)
-      }))
+    const res = await getStudentList()
+    if (res.code === 200) {
+      students.value = res.data || []
     }
   } catch (error) {
-    console.error('获取需求失败:', error)
+    console.error('加载学生列表失败:', error)
+    ElMessage.error('无法加载学生数据')
   } finally {
     loading.value = false
   }
 }
 
-const buildTags = (item) => {
-  const tags = []
-  if (item.urgency === 1) tags.push('急需')
-  if (item.teachMode === 'online') tags.push('线上')
-  if (item.targetScore) tags.push('目标提分')
-  return tags.length ? tags : ['新发布']
+const parseSubjects = (subjectsStr) => {
+  if (!subjectsStr) return []
+  if (Array.isArray(subjectsStr)) return subjectsStr
+  try {
+    return JSON.parse(subjectsStr)
+  } catch (e) {
+    return subjectsStr.split(',').filter(s => s)
+  }
 }
 
-const formatTime = (time) => {
-  if (!time) return '刚刚发布'
-  const diff = Date.now() - new Date(time).getTime()
-  const hours = Math.floor(diff / (1000 * 60 * 60))
-  if (hours < 1) return '刚刚发布'
-  if (hours < 24) return `${hours}小时前`
-  return `${Math.floor(hours / 24)}天前`
+const addStudent = () => {
+  router.push('/students/add')
 }
 
-// 跳转详情
-const goToDetail = (id) => {
-  router.push(`/student/${id}`)
+const editStudent = (id) => {
+  router.push(`/students/${id}/edit`)
+}
+
+const handleDelete = (student) => {
+  ElMessageBox.confirm(
+    `确定要删除学生 ${student.name} 的信息吗？`,
+    '确认删除',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  ).then(async () => {
+    try {
+      const res = await deleteStudent(student.id)
+      if (res.code === 200) {
+        ElMessage.success('已成功删除')
+        loadStudents()
+      } else {
+        ElMessage.error(res.message || '删除失败')
+      }
+    } catch (error) {
+      ElMessage.error('系统异常，删除失败')
+    }
+  }).catch(() => {})
 }
 
 onMounted(() => {
-  fetchStudents()
+  loadStudents()
 })
 </script>
 
-<template>
-  <div class="student-list-page" v-loading="loading">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <h1 class="page-title">最新家教需求</h1>
-      <p class="page-subtitle">为您匹配附近的学生需求</p>
-    </div>
-
-    <!-- 需求列表 -->
-    <div class="list-content">
-      <el-card 
-        v-for="item in students" 
-        :key="item.id"
-        class="demand-card"
-        shadow="hover"
-        @click="goToDetail(item.id)"
-      >
-        <!-- 头部信息 -->
-        <div class="card-header">
-          <h3 class="demand-title">{{ item.grade }} · {{ item.subject }}</h3>
-          <div class="demand-price">
-            <span class="price-value">¥{{ item.price }}</span>
-            <span class="price-unit">/h</span>
-          </div>
-        </div>
-
-        <!-- 标签 -->
-        <div class="tags-section">
-          <el-tag 
-            v-for="tag in item.tags" 
-            :key="tag"
-            type="primary"
-            size="small"
-            effect="plain"
-          >
-            {{ tag }}
-          </el-tag>
-        </div>
-
-        <!-- 详细信息 -->
-        <div class="info-section">
-          <div class="info-item">
-            <el-icon><Location /></el-icon>
-            <span>{{ item.location }}</span>
-          </div>
-          <div class="info-item">
-            <el-icon><Clock /></el-icon>
-            <span>{{ item.time }}</span>
-          </div>
-          <div class="info-item desc">
-            <el-icon><Document /></el-icon>
-            <span>{{ item.desc }}</span>
-          </div>
-        </div>
-
-        <!-- 底部 -->
-        <div class="card-footer">
-          <span class="publish-time">{{ item.publishTime }}</span>
-          <el-button type="primary" text size="small">
-            查看详情
-            <el-icon class="ml-1"><ArrowRight /></el-icon>
-          </el-button>
-        </div>
-      </el-card>
-
-      <el-empty v-if="students.length === 0" description="暂无需求" />
-    </div>
-  </div>
-</template>
-
-<style lang="scss" scoped>
-.student-list-page {
-  min-height: 100vh;
-  background: $bg-light;
-  padding-bottom: $spacing-xl;
-}
-
-.page-header {
-  background: linear-gradient(135deg, $primary-color 0%, #667eea 100%);
-  padding: $spacing-xl $spacing-lg;
-  color: #fff;
-
-  .page-title {
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 4px;
-  }
-
-  .page-subtitle {
-    font-size: 14px;
-    opacity: 0.9;
-  }
-}
-
-.list-content {
-  padding: $spacing-lg;
-}
-
-.demand-card {
-  margin-bottom: $spacing-md;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-
-  &:hover {
-    transform: translateY(-2px);
-  }
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: $spacing-sm;
-
-    .demand-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: $text-primary;
-    }
-
-    .demand-price {
-      .price-value {
-        font-size: 20px;
-        font-weight: 700;
-        color: $danger-color;
-      }
-
-      .price-unit {
-        font-size: 12px;
-        color: $text-muted;
-      }
-    }
-  }
-
-  .tags-section {
-    display: flex;
-    flex-wrap: wrap;
-    gap: $spacing-xs;
-    margin-bottom: $spacing-md;
-  }
-
-  .info-section {
-    background: $bg-light;
-    border-radius: 12px;
-    padding: $spacing-md;
-    margin-bottom: $spacing-md;
-
-    .info-item {
-      display: flex;
-      align-items: center;
-      gap: $spacing-sm;
-      font-size: 14px;
-      color: $text-muted;
-      margin-bottom: $spacing-sm;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      &.desc {
-        span {
-          display: -webkit-box;
-          -webkit-line-clamp: 1;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-      }
-
-      .el-icon {
-        color: $text-muted;
-        flex-shrink: 0;
-      }
-    }
-  }
-
-  .card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: $spacing-sm;
-    border-top: 1px solid $border-color;
-
-    .publish-time {
-      font-size: 12px;
-      color: $text-muted;
-    }
-  }
+<style scoped>
+.student-card {
+  border-radius: 12px;
 }
 </style>

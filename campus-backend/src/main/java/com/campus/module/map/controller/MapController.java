@@ -5,7 +5,7 @@ import com.campus.module.map.dto.DirectionRequest;
 import com.campus.module.map.dto.DirectionResult;
 import com.campus.module.map.dto.DistanceResult;
 import com.campus.module.map.dto.GeocoderResult;
-import com.campus.module.map.service.AmapService;
+import com.campus.module.map.service.MapService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,58 +13,39 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * 地图服务控制器
- * 使用高德地图API
- */
-@Tag(name = "地图服务", description = "逆地址解析、路径规划、距离计算（高德地图）")
+@Tag(name = "地图服务", description = "通用地图服务接口(逆地址解析、路径规划、距离计算)")
 @RestController
 @RequestMapping("/api/map")
 @RequiredArgsConstructor
 public class MapController {
 
-    private final AmapService mapService;
+    // 核心修改：注入接口
+    private final MapService mapService;
 
-    /**
-     * 逆地址解析 - 根据经纬度获取地址
-     */
     @Operation(summary = "逆地址解析", description = "根据经纬度获取详细地址信息")
     @GetMapping("/geocoder/reverse")
     public Result<GeocoderResult> reverseGeocode(
-            @Parameter(description = "纬度", required = true, example = "39.984154")
-            @RequestParam Double latitude,
-            @Parameter(description = "经度", required = true, example = "116.307490")
-            @RequestParam Double longitude) {
+            @Parameter(description = "纬度", required = true) @RequestParam Double latitude,
+            @Parameter(description = "经度", required = true) @RequestParam Double longitude) {
         GeocoderResult result = mapService.reverseGeocode(latitude, longitude);
-        if (result.getStatus() == 0) {
-            return Result.success(result);
-        }
-        return Result.fail(result.getMessage());
+        return result.getStatus() == 0 ? Result.success(result) : Result.fail(result.getMessage());
     }
 
-    /**
-     * 地址解析 - 根据地址获取经纬度
-     */
     @Operation(summary = "地址解析", description = "根据地址字符串获取经纬度")
     @GetMapping("/geocoder")
     public Result<GeocoderResult> geocode(
-            @Parameter(description = "地址", required = true, example = "北京市海淀区中关村")
-            @RequestParam String address) {
+            @Parameter(description = "地址", required = true) @RequestParam String address) {
         GeocoderResult result = mapService.geocode(address);
-        if (result.getStatus() == 0) {
-            return Result.success(result);
-        }
-        return Result.fail(result.getMessage());
+        return result.getStatus() == 0 ? Result.success(result) : Result.fail(result.getMessage());
     }
 
-    /**
-     * 路径规划
-     */
     @Operation(summary = "路径规划", description = "获取两点间的路径规划信息")
     @PostMapping("/direction")
     public Result<DirectionResult> direction(@Valid @RequestBody DirectionRequest request) {
         DirectionResult result;
-        switch (request.getMode()) {
+        String mode = request.getMode() != null ? request.getMode().toLowerCase() : "walking";
+
+        switch (mode) {
             case "driving":
                 result = mapService.drivingDirection(
                         request.getFromLatitude(), request.getFromLongitude(),
@@ -81,33 +62,17 @@ public class MapController {
                         request.getToLatitude(), request.getToLongitude());
         }
 
-        if (result.getStatus() == 0) {
-            return Result.success(result);
-        }
-        return Result.fail(result.getMessage());
+        return result.getStatus() == 0 ? Result.success(result) : Result.fail(result.getMessage());
     }
 
-    /**
-     * 距离计算
-     */
     @Operation(summary = "距离计算", description = "计算两点间的距离和预估时间")
     @GetMapping("/distance")
     public Result<DistanceResult> distance(
-            @Parameter(description = "起点纬度", required = true)
-            @RequestParam Double fromLatitude,
-            @Parameter(description = "起点经度", required = true)
-            @RequestParam Double fromLongitude,
-            @Parameter(description = "终点纬度", required = true)
-            @RequestParam Double toLatitude,
-            @Parameter(description = "终点经度", required = true)
-            @RequestParam Double toLongitude,
-            @Parameter(description = "出行方式: walking-步行, driving-驾车")
+            @RequestParam Double fromLatitude, @RequestParam Double fromLongitude,
+            @RequestParam Double toLatitude, @RequestParam Double toLongitude,
             @RequestParam(defaultValue = "walking") String mode) {
         DistanceResult result = mapService.calculateDistance(
                 fromLatitude, fromLongitude, toLatitude, toLongitude, mode);
-        if (result.getStatus() == 0) {
-            return Result.success(result);
-        }
-        return Result.fail(result.getMessage());
+        return result.getStatus() == 0 ? Result.success(result) : Result.fail(result.getMessage());
     }
 }
