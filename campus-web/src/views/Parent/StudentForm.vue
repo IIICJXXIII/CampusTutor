@@ -57,6 +57,32 @@
               </el-form-item>
             </el-col>
           </el-row>
+
+          <el-form-item label="家庭住址" prop="address">
+            <el-input 
+              v-model="form.address" 
+              placeholder="请输入详细地址（如：xx区xx路xx小区）" 
+              @keyup.enter="handleAddressSearch"
+              clearable
+            >
+              <template #append>
+                <el-button @click="handleAddressSearch" :loading="geoLoading" title="点击获取坐标">
+                  <el-icon class="mr-1"><Location /></el-icon> 定位
+                </el-button>
+              </template>
+            </el-input>
+            
+            <div class="mt-1 h-5 text-xs">
+              <div v-if="form.latitude && form.longitude" class="flex items-center text-green-600">
+                <el-icon class="mr-1"><CircleCheck /></el-icon>
+                <span>已获取坐标: [{{ form.longitude }}, {{ form.latitude }}]</span>
+              </div>
+              <div v-else class="flex items-center text-gray-400">
+                <el-icon class="mr-1"><Warning /></el-icon>
+                <span>请输入地址并点击“定位”按钮以获取精确位置（用于计算家教距离）</span>
+              </div>
+            </div>
+          </el-form-item>
         </div>
         
         <div class="section mb-6">
@@ -117,13 +143,15 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft, Location, CircleCheck, Warning } from '@element-plus/icons-vue'
 import { addStudent, updateStudent, getStudentDetail } from '@/api/parent'
+import request from '@/utils/request' // 引入通用请求工具用于调用地图接口
 
 const router = useRouter()
 const route = useRoute()
 const formRef = ref(null)
 const submitting = ref(false)
+const geoLoading = ref(false) // 地图定位loading状态
 
 const studentId = computed(() => route.params.id)
 const isEdit = computed(() => !!studentId.value)
@@ -135,13 +163,50 @@ const form = reactive({
   grade: '',
   schoolName: '',
   weakSubjects: [],
-  studyDesc: ''
+  studyDesc: '',
+  // 新增字段
+  address: '',
+  latitude: null,
+  longitude: null
 })
 
 const rules = {
   studentName: [{ required: true, message: '请输入学生姓名', trigger: 'blur' }],
   gender: [{ required: true, message: '请选择性别', trigger: 'change' }],
-  grade: [{ required: true, message: '请选择年级', trigger: 'change' }]
+  grade: [{ required: true, message: '请选择年级', trigger: 'change' }],
+  address: [{ required: true, message: '请输入家庭住址并定位', trigger: 'blur' }]
+}
+
+// 核心功能：地址解析
+const handleAddressSearch = async () => {
+  if (!form.address) return ElMessage.warning('请先输入详细地址')
+  
+  geoLoading.value = true
+  try {
+    // 调用我们在后端 MapController 定义的接口
+    const res = await request.get('/api/map/geocoder', {
+      params: { address: form.address }
+    })
+    
+    if (res.code === 200 && res.data.status === 0) {
+      // 兼容后端 ResultData 或 Result 结构
+      const resultData = res.data.result || res.data.resultData
+      if (resultData && resultData.location) {
+        form.latitude = resultData.location.lat
+        form.longitude = resultData.location.lng
+        ElMessage.success('地址定位成功')
+      } else {
+        ElMessage.warning('未能获取坐标，请尝试输入更标准的地址')
+      }
+    } else {
+      ElMessage.error(res.message || '地址解析失败')
+    }
+  } catch (error) {
+    console.error('定位失败:', error)
+    ElMessage.error('定位服务异常')
+  } finally {
+    geoLoading.value = false
+  }
 }
 
 const loadDetail = async () => {
@@ -151,11 +216,15 @@ const loadDetail = async () => {
     if (res.code === 200 && res.data) {
       const data = res.data
       form.id = data.id
-      // 这里的映射需要注意后端字段名
       form.studentName = data.name || data.studentName
       form.gender = data.gender
       form.grade = data.grade
-      form.schoolName = data.school || data.schoolName
+      form.schoolName = data.school || data.schoolName || data.universityName
+      
+      // 回显地址信息
+      form.address = data.address || ''
+      form.latitude = data.latitude
+      form.longitude = data.longitude
       
       // 处理科目列表
       if (data.subjects) {
@@ -186,13 +255,29 @@ const handleSubmit = async () => {
   await formRef.value.validate(async (valid) => {
     if (!valid) return
     
+    // 校验坐标是否存在
+    if (!form.latitude || !form.longitude) {
+      ElMessage.warning('请点击地址栏右侧的“定位”按钮以获取准确位置')
+      return
+    }
+    
     submitting.value = true
     try {
-      // 转换数据格式以匹配 StudentRequest
+      // 转换数据格式以匹配后端实体
       const payload = {
-        ...form,
-        id: isEdit.value ? parseInt(studentId.value) : null
+        id: isEdit.value ? parseInt(studentId.value) : null,
+        name: form.studentName, // 后端可能是 name
+        gender: form.gender,
+        grade: form.grade,
+        universityName: form.schoolName, // 后端实体用了 universityName 存储学校
+        address: form.address,
+        latitude: form.latitude,
+        longitude: form.longitude,
+        subjects: JSON.stringify(form.weakSubjects), // 数组转字符串存储
+        description: form.studyDesc // 后端可能是 description
       }
+      
+      // 如果后端接口需要特定字段名（如 studentName），请在这里调整 payload
       
       const res = isEdit.value ? await updateStudent(payload) : await addStudent(payload)
       
@@ -222,5 +307,6 @@ onMounted(() => {
 }
 .bottom-bar {
   z-index: 100;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
 }
 </style>

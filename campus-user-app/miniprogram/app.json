@@ -28,6 +28,7 @@
     "pages/teacher/orderDetail/orderDetail",
     "pages/teacher/orderConfirm/orderConfirm",
     "pages/parent/lessonList/lessonList",
+    "pages/parent/electronicSign/electronicSign",
     "pages/parent/lessonDetail/lessonDetail",
     "pages/teacher/demandDetail/demandDetail",
     "pages/teacher/teacherSchedule/teacherSchedule",

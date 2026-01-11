@@ -69,9 +69,28 @@ page {
 .stat-value {
   font-size: 52rpx;
   font-weight: 800;
-  color: #fff;
+  color: rgba(255, 255, 255, 0.95); /* Keep white if background is dark gradient */
   margin-bottom: 4rpx;
   text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.1);
+}
+
+/* Fix visibility if background is light */
+.stats-card {
+  background: white; /* Override gradient */
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.05); /* Softer shadow */
+}
+.stats-card .stat-value {
+    color: #333; /* Dark text for visibility */
+    text-shadow: none;
+}
+.stats-card .stat-label {
+    color: #666;
+}
+.stats-card .stat-divider {
+    background: #E0E0E0;
+}
+.stats-card::before {
+    background: rgba(0, 0, 0, 0.03); /* Subtle dark circle instead of white */
 }
 
 .stat-label {

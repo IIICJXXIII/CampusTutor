@@ -1,5 +1,10 @@
+/* 教师订单列表样式 - 简约专业风 */
 page {
-  background-color: #f6f7f9;
+  background-color: #F8F9FA;
+  --prof-primary: #1E6F9F;
+  --prof-secondary: #E8F8F5;
+  --prof-card-bg: #FFFFFF;
+  --prof-border: #E2E8F0;
 }
 
 /* 顶部 Tab */
@@ -12,7 +17,8 @@ page {
   align-items: center;
   justify-content: space-around;
   z-index: 100;
-  box-shadow: 0 2rpx 10rpx rgba(0,0,0,0.05);
+  box-shadow: 0 1rpx 3rpx rgba(0,0,0,0.05); /* Minimal shadow */
+  border-bottom: 1rpx solid var(--prof-border);
 }
 
 .tab-item {
@@ -24,8 +30,8 @@ page {
 }
 
 .tab-item.active {
-  color: #409EFF;
-  font-weight: bold;
+  color: var(--prof-primary);
+  font-weight: 700;
 }
 
 .tab-item.active::after {
@@ -36,11 +42,10 @@ page {
   transform: translateX(-50%);
   width: 40rpx;
   height: 4rpx;
-  background: #409EFF;
+  background: var(--prof-primary); /* Deep Blue */
   border-radius: 2rpx;
 }
 
-/* 列表容器 */
 .container {
   padding-top: 108rpx; /* 留出 Tab 高度 */
   padding-bottom: 40rpx;
@@ -52,117 +57,92 @@ page {
 
 /* 订单卡片 */
 .order-card {
-  background: #fff;
-  border-radius: 16rpx;
+  background: var(--prof-card-bg);
+  border-radius: 12rpx;
   margin-bottom: 24rpx;
   padding: 24rpx;
+  box-shadow: 0 1rpx 3rpx rgba(0,0,0,0.05);
+  border: 1rpx solid var(--prof-border);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1rpx solid #f5f5f5;
-  padding-bottom: 20rpx;
+  border-bottom: 1rpx solid #F0F0F0;
+  padding-bottom: 16rpx;
   margin-bottom: 20rpx;
-}
-
-.order-no {
-  font-size: 24rpx;
-  color: #999;
 }
 
 .status-text {
   font-size: 26rpx;
-  font-weight: bold;
-}
-
-.card-body {
-  margin-bottom: 20rpx;
+  font-weight: 600;
+  padding: 4rpx 12rpx;
+  border-radius: 4rpx;
+  background: #F8F9FA;
 }
 
 .course-title {
-  font-size: 32rpx;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 16rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #2D3748;
+  margin-bottom: 12rpx;
+}
+/* Tabs Interaction */
+.tab-item:active {
+  background-color: #FAFAFA;
 }
 
-.info-row {
+/* Empty State */
+.empty-state {
   display: flex;
-  margin-bottom: 8rpx;
+  flex-direction: column;
+  items-align: center;
+  justify-content: center;
+  padding-top: 200rpx;
+  text-align: center;
 }
 
-.info-row .label {
-  font-size: 26rpx;
-  color: #999;
+.empty-state::before {
+  content: '';
+  display: block;
+  width: 200rpx;
+  height: 200rpx;
+  background-color: #EDF2F7; /* Placeholder for image */
+  border-radius: 50%;
+  margin: 0 auto 32rpx;
+  background-image: radial-gradient(circle at 30% 30%, #E2E8F0 10%, transparent 10%); /* Simple graphic */
 }
 
-.info-row .value {
-  font-size: 26rpx;
-  color: #666;
-  margin-left: 10rpx;
+.empty-state text {
+  font-size: 30rpx;
+  color: #A0AEC0;
+  font-weight: 500;
 }
 
-/* 卡片底部 */
 .card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1rpx solid #f5f5f5;
+  border-top: 1rpx solid #F0F0F0;
   padding-top: 20rpx;
 }
 
-.price-box {
-  display: flex;
-  align-items: baseline;
-}
-.price-box .label { font-size: 24rpx; color: #999; }
-.price-box .symbol { font-size: 24rpx; color: #f56c6c; font-weight: bold; }
-.price-box .amount { font-size: 36rpx; color: #f56c6c; font-weight: bold; }
-
-.btn-group {
-  display: flex;
-}
-
+/* Buttons */
 .btn {
-  margin: 0 0 0 16rpx;
   font-size: 26rpx;
   padding: 0 24rpx;
-  height: 56rpx;
-  line-height: 54rpx; /* border考虑 */
-  border-radius: 28rpx;
+  height: 60rpx;
+  line-height: 58rpx;
+  border-radius: 8rpx; /* Sharper */
+  font-weight: 500;
+}
+
+.btn.primary {
+  background: var(--prof-primary);
+  color: #fff;
+  border: 1rpx solid var(--prof-primary);
 }
 
 .btn.plain {
   background: #fff;
-  border: 1rpx solid #dcdfe6;
+  border: 1rpx solid #DCDFE6;
   color: #606266;
-}
-
-.btn.primary {
-  background: #409EFF;
-  color: #fff;
-  border: 1rpx solid #409EFF;
-}
-
-.btn.disabled {
-  background: #f5f7fa;
-  border-color: #e4e7ed;
-  color: #c0c4cc;
-}
-
-/* 空状态 */
-.empty-state {
-  text-align: center;
-  padding-top: 100rpx;
-  color: #999;
-  font-size: 28rpx;
-}
-
-.loading-more, .no-more {
-  text-align: center;
-  padding: 20rpx;
-  font-size: 24rpx;
-  color: #ccc;
 }

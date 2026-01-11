@@ -104,7 +104,7 @@
 }
 
 .label {
-  color: var(--text-placeholder);
+  color: #666; /* Enforce visibility */
   width: 100rpx;
   flex-shrink: 0;
 }
@@ -145,15 +145,15 @@
 }
 
 .btn.detail {
-  background: var(--bg-body);
-  color: var(--text-main);
-  border: 1rpx solid var(--border);
+  background: #fff;
+  color: #333;
+  border: 1rpx solid #E2E8F0;
 }
 
 .btn.chat {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  background: #1E6F9F; /* Deep Blue Enforced */
   color: #fff;
-  box-shadow: var(--shadow-primary);
+  box-shadow: 0 4rpx 12rpx rgba(30, 111, 159, 0.4);
   border: none;
 }
 
@@ -170,7 +170,7 @@
 .btn.view-list {
   width: 100%;
   background: transparent;
-  color: var(--primary);
+  color: #1E6F9F; /* Deep Blue */
   font-size: 28rpx;
   height: auto;
   padding: 20rpx 0;
