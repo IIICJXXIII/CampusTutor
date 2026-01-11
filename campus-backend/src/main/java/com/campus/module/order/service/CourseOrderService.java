@@ -6,6 +6,7 @@ import com.campus.module.order.dto.AcceptDemandRequest;
 import com.campus.module.order.dto.CreateOrderRequest;
 import com.campus.module.order.dto.PayOrderRequest;
 import com.campus.module.order.entity.CourseOrder;
+import java.util.Map;
 
 /**
  * 课程订单Service
@@ -26,8 +27,9 @@ public interface CourseOrderService extends IService<CourseOrder> {
      * 
      * @param userId  用户ID
      * @param request 支付信息
+     * @return 支付参数
      */
-    void payOrder(Long userId, PayOrderRequest request);
+    Map<String, String> payOrder(Long userId, PayOrderRequest request);
 
     /**
      * 取消订单
@@ -91,4 +93,33 @@ public interface CourseOrderService extends IService<CourseOrder> {
      * @param orderId  订单ID
      */
     void confirmOrder(Long parentId, Long orderId);
+
+    /**
+     * 处理支付成功
+     * 
+     * @param orderNo       订单号
+     * @param transactionId 交易ID
+     */
+    void handlePaySuccess(String orderNo, String transactionId);
+
+    /**
+     * 申请退款
+     * 
+     * @param userId     用户ID
+     * @param orderId    订单ID
+     * @param refundAmount 退款金额
+     * @param reason     退款原因
+     * @return 退款单号
+     */
+    String applyRefund(Long userId, Long orderId, java.math.BigDecimal refundAmount, String reason);
+
+    /**
+     * 创建微信支付参数
+     * 
+     * @param userId  用户ID
+     * @param orderId 订单ID
+     * @param openid  用户openid
+     * @return 支付参数
+     */
+    Map<String, String> createWechatPayParams(Long userId, Long orderId, String openid);
 }

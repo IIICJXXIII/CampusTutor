@@ -66,6 +66,7 @@ const api = {
     listParent: `${API_HOST}/api/order/parent/list`,
     listTutor: `${API_HOST}/api/order/tutor/list`,
     pay: `${API_HOST}/api/order/pay`,
+    refund: `${API_HOST}/api/order/refund`,
     detail: (id) => `${API_HOST}/api/order/${id}`,
   },
   // 钱包模块 (Wallet)
