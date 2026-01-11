@@ -140,6 +140,18 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public boolean sendCode(String phone) {
+        // 防刷检查：1分钟内不能重复发送
+        String rateLimitKey = "sms:rate:" + phone;
+        if (stringRedisTemplate != null) {
+            try {
+                if (stringRedisTemplate.hasKey(rateLimitKey)) {
+                    throw new BusinessException(ResultCode.PARAM_ERROR, "验证码发送过于频繁，请1分钟后再试");
+                }
+            } catch (Exception e) {
+                // Redis不可用时忽略防刷检查
+            }
+        }
+
         // 生成6位随机验证码
         String code = RandomUtil.randomNumbers(6);
 
@@ -149,6 +161,8 @@ public class AuthServiceImpl implements AuthService {
         if (stringRedisTemplate != null) {
             try {
                 stringRedisTemplate.opsForValue().set(key, code, CODE_EXPIRE_MINUTES, TimeUnit.MINUTES);
+                // 设置防刷限制
+                stringRedisTemplate.opsForValue().set(rateLimitKey, "1", 1, TimeUnit.MINUTES);
             } catch (Exception e) {
                 log.warn("Redis不可用，使用内存缓存存储验证码");
                 memoryCodeCache.put(key, code);
@@ -157,9 +171,28 @@ public class AuthServiceImpl implements AuthService {
             memoryCodeCache.put(key, code);
         }
 
-        // TODO: 实际项目中接入短信服务商 API 发送短信
+        // 实际项目中接入短信服务商 API 发送短信
         // 这里只做 Mock，打印日志
         log.info("【Mock短信】手机号: {}, 验证码: {}, 有效期: {}分钟", phone, code, CODE_EXPIRE_MINUTES);
+
+        // TODO: 集成真实的短信服务
+        // 示例：阿里云短信服务调用
+        /*
+        try {
+            DefaultProfile profile = DefaultProfile.getProfile("cn-hangzhou", accessKeyId, accessKeySecret);
+            IAcsClient client = new DefaultAcsClient(profile);
+            SendSmsRequest request = new SendSmsRequest();
+            request.setPhoneNumbers(phone);
+            request.setSignName(signName);
+            request.setTemplateCode(templateCode);
+            request.setTemplateParam("{\"code\":\"" + code + "\"}");
+            SendSmsResponse response = client.getAcsResponse(request);
+            return "OK".equals(response.getCode());
+        } catch (Exception e) {
+            log.error("发送短信失败: {}", e.getMessage());
+            throw new BusinessException(ResultCode.SYSTEM_ERROR, "发送短信失败，请稍后重试");
+        }
+        */
 
         return true;
     }

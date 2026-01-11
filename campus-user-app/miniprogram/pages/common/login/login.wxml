@@ -1,37 +1,55 @@
 <view class="container">
+  <!-- 装饰背景 -->
+  <view class="bg-circle"></view>
+  
   <view class="header">
-    <text class="title">欢迎来到 CampusTutor</text>
-    <text class="subtitle">连接高校家教与中小学需求的桥梁</text>
+    <image class="logo" src="/static/images/logo.png" mode="aspectFit" wx:if="{{false}}"></image>
+    <text class="title">欢迎回来</text>
+    <text class="subtitle">登录 CampusTutor 开启家教之旅</text>
   </view>
 
   <view class="form-box">
     <view class="input-group">
+      <view class="icon-wrap">📱</view>
       <input class="input" type="number" placeholder="请输入手机号" maxlength="11" 
+             placeholder-class="placeholder"
              bindinput="handleInput" data-field="phone" value="{{phone}}"/>
     </view>
 
-    <view class="input-group row" wx:if="{{loginType === 'password'}}">
+    <view class="input-group" wx:if="{{loginType === 'password'}}">
+      <view class="icon-wrap">🔒</view>
       <input class="input" type="{{showPassword ? 'text' : 'password'}}" placeholder="请输入密码" 
+             placeholder-class="placeholder"
              bindinput="handleInput" data-field="password" value="{{password}}" password="{{!showPassword}}"/>
       <view class="eye-btn" bindtap="togglePasswordVisibility">
         <text>{{showPassword ? '🙈' : '👁️'}}</text>
       </view>
     </view>
 
-    <view class="input-group row" wx:else>
+    <view class="input-group" wx:else>
+      <view class="icon-wrap">🛡️</view>
       <input class="input" type="number" placeholder="请输入验证码" maxlength="6" 
+             placeholder-class="placeholder"
              bindinput="handleInput" data-field="code" value="{{code}}"/>
       <view class="code-btn" bindtap="sendSmsCode">获取验证码</view>
     </view>
 
-    <button class="submit-btn" bindtap="handleLogin" loading="{{isSubmitting}}">登 录</button>
-
-    <button class="wx-login-btn" bindtap="handleWxLogin">微信一键登录</button>
-
-    <view class="footer-actions">
+    <view class="action-row">
       <text class="link" bindtap="switchLoginType">{{loginType === 'password' ? '验证码登录' : '密码登录'}}</text>
-      <text class="divider">|</text>
       <text class="link" bindtap="goToRegister">注册新账号</text>
     </view>
+
+    <button class="submit-btn" bindtap="handleLogin" loading="{{isSubmitting}}">登 录</button>
+
+    <view class="divider-row">
+      <view class="line"></view>
+      <text class="text">其他登录方式</text>
+      <view class="line"></view>
+    </view>
+
+    <button class="wx-login-btn" bindtap="handleWxLogin">
+      <text class="wx-icon">🟢</text> 微信一键登录
+    </button>
+
   </view>
 </view>

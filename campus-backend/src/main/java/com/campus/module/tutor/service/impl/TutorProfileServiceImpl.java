@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -191,5 +193,80 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
                 .eq(TutorScheduleConfig::getTutorId, tutorId)
                 .orderByAsc(TutorScheduleConfig::getDayOfWeek)
                 .orderByAsc(TutorScheduleConfig::getStartTime));
+    }
+
+    @Override
+    public Map<String, Object> getCertificationStatus(Long userId) {
+        Map<String, Object> status = new HashMap<>();
+        TutorProfile profile = getByUserId(userId);
+        
+        if (profile == null) {
+            status.put("status", 0); // 未提交
+            status.put("statusText", "未提交认证");
+            status.put("canTeach", false);
+        } else {
+            status.put("status", profile.getCertStatus());
+            status.put("statusText", getCertStatusText(profile.getCertStatus()));
+            status.put("canTeach", profile.getCertStatus() == 2); // 已通过
+            status.put("profileId", profile.getId());
+            status.put("lastUpdateTime", profile.getUpdateTime());
+        }
+        
+        return status;
+    }
+
+    @Override
+    public Map<String, Object> getCertificationProgress(Long userId) {
+        Map<String, Object> progress = new HashMap<>();
+        TutorProfile profile = getByUserId(userId);
+        
+        if (profile == null) {
+            progress.put("step", 0);
+            progress.put("totalSteps", 3);
+            progress.put("currentStep", "填写基本信息");
+            progress.put("progress", 0);
+        } else {
+            // 检查认证所需字段
+            int completedFields = 0;
+            int totalFields = 8; // 基本信息、身份证、学生证、学历、专业、学校、照片等
+            
+            if (profile.getRealName() != null) completedFields++;
+            if (profile.getIdCard() != null) completedFields++;
+            if (profile.getIdCardFrontUrl() != null) completedFields++;
+            if (profile.getIdCardBackUrl() != null) completedFields++;
+            if (profile.getUniversityName() != null) completedFields++;
+            if (profile.getMajor() != null) completedFields++;
+            if (profile.getEducation() != null) completedFields++;
+            if (profile.getStudentCardUrl() != null) completedFields++;
+            
+            int progressPercent = (completedFields * 100) / totalFields;
+            
+            progress.put("step", 1);
+            progress.put("totalSteps", 3);
+            progress.put("currentStep", "审核中");
+            progress.put("progress", progressPercent);
+            progress.put("completedFields", completedFields);
+            progress.put("totalFields", totalFields);
+        }
+        
+        return progress;
+    }
+
+    /**
+     * 获取认证状态文本
+     */
+    private String getCertStatusText(Integer status) {
+        switch (status) {
+            case 0:
+                return "未提交";
+            case 1:
+                return "审核中";
+            case 2:
+                return "已通过";
+            case 3:
+                return "已拒绝";
+            default:
+                return "未知状态";
+        }
     }
 }

@@ -27,9 +27,9 @@ Page({
     try {
       const demand = await request.get(api.demand.detail(this.data.demandId));
       // 动态设置markers数组
-      const markers = demand && demand.longitude && demand.latitude ? [{ 
-        id: demand.id, 
-        latitude: demand.latitude, 
+      const markers = demand && demand.longitude && demand.latitude ? [{
+        id: demand.id,
+        latitude: demand.latitude,
         longitude: demand.longitude,
         width: 30,
         height: 30,
@@ -59,57 +59,77 @@ Page({
     wx.navigateBack();
   },
 
-  // 联系家长：优先复制手机号并提示拨打（如果有）
+  // 联系家长：跳转到聊天页面
   async handleContact() {
     if (!this.data.demand) return;
-    const d = this.data.demand || {};
-    const phone = d.parentPhone || d.phone || d.mobile || d.contact || null;
-    if (phone) {
-      wx.setClipboardData({ data: String(phone), success() {
-        wx.showToast({ title: '已复制家长手机号，可粘贴拨打', icon: 'none' });
-      }});
+    const d = this.data.demand;
+    const publisherId = d.publisherId || d.parentId;
+
+    if (!publisherId) {
+      wx.showToast({ title: '无法获取家长信息', icon: 'none' });
       return;
     }
 
-    // 无手机号，尝试根据发布者ID去取用户信息
-    const publisherId = d.publisherId || d.parentId || null;
-    if (publisherId) {
-      try {
-        const user = await request.get(api.user.byId(publisherId));
-        if (user && (user.username || user.nickname)) {
-          const contactValue = user.username || user.nickname;
-          wx.setClipboardData({ data: String(contactValue), success() { wx.showToast({ title: '已复制家长联系方式（用户名）', icon: 'none' }); } });
-          return;
-        }
-      } catch (err) {
-        console.warn('获取家长用户信息失败', err);
-      }
+    // 获取家长信息用于聊天
+    try {
+      const userInfo = await request.get(api.chat.userInfo(publisherId));
+      wx.navigateTo({
+        url: `/pages/common/chatDetail/chatDetail?userId=${publisherId}&nickname=${encodeURIComponent(userInfo.nickname || '家长')}&avatar=${encodeURIComponent(userInfo.avatar || '')}`
+      });
+    } catch (err) {
+      // 即使获取失败也跳转，使用默认信息
+      wx.navigateTo({
+        url: `/pages/common/chatDetail/chatDetail?userId=${publisherId}&nickname=${encodeURIComponent('家长')}&avatar=`
+      });
     }
-
-    wx.showModal({
-      title: '联系方式不可见',
-      content: '家长未公开联系电话，您可以在接单成功后通过平台沟通或等待后台开放联系功能。',
-      showCancel: false
-    });
   },
 
-  // 立即接单 -> 临时改为邀约下单引导
+  // 立即接单
   async handleInviteToOrder() {
     if (!this.data.demand) return;
-    // 先尝试联系家长（会复制联系方式或用户名）
-    await this.handleContact();
-    // 弹窗引导
-    const id = this.data.demand.id || this.data.demandId;
-    wx.showModal({
-      title: '邀约下单',
-      content: '请通过已复制的联系方式联系家长，确认时间与价格后邀请家长在家长端发起订单并支付；如需平台协助，可复制需求ID并反馈给管理员。是否复制需求ID？',
-      confirmText: '复制ID',
-      cancelText: '知道了',
-      success: (res) => {
-        if (res.confirm) {
-          wx.setClipboardData({ data: String(id), success() { wx.showToast({ title: '已复制ID', icon: 'none' }); } });
+    
+    try {
+      const demandId = this.data.demand.id || this.data.demandId;
+      
+      // 调用后端接单接口
+      const response = await request.get(api.demand.match(demandId));
+      
+      // 接单成功处理
+      wx.showToast({ title: '接单成功！', icon: 'success' });
+      
+      // 更新需求状态
+      this.setData({
+        'demand.status': 2 // 已匹配
+      });
+      
+      // 联系家长
+      await this.handleContact();
+      
+      // 弹窗引导
+      wx.showModal({
+        title: '接单成功',
+        content: '请通过已复制的联系方式联系家长，确认具体上课时间和相关细节。',
+        showCancel: false
+      });
+      
+    } catch (err) {
+      console.error('接单失败:', err);
+      
+      // 接单失败时，转为邀约引导
+      await this.handleContact();
+      
+      const id = this.data.demand.id || this.data.demandId;
+      wx.showModal({
+        title: '邀约下单',
+        content: '请通过已复制的联系方式联系家长，确认时间与价格后邀请家长在家长端发起订单并支付；如需平台协助，可复制需求ID并反馈给管理员。是否复制需求ID？',
+        confirmText: '复制ID',
+        cancelText: '知道了',
+        success: (res) => {
+          if (res.confirm) {
+            wx.setClipboardData({ data: String(id), success() { wx.showToast({ title: '已复制ID', icon: 'none' }); } });
+          }
         }
-      }
-    });
+      });
+    }
   }
 });

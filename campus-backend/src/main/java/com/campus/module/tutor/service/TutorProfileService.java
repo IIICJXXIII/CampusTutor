@@ -7,6 +7,7 @@ import com.campus.module.tutor.dto.TutorScheduleRequest;
 import com.campus.module.tutor.entity.TutorProfile;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 教员档案Service
@@ -47,4 +48,18 @@ public interface TutorProfileService extends IService<TutorProfile> {
      * @return 时间配置列表
      */
     List<?> getScheduleConfig(Long tutorId);
+
+    /**
+     * 获取认证状态
+     * @param userId 用户ID
+     * @return 认证状态信息
+     */
+    Map<String, Object> getCertificationStatus(Long userId);
+
+    /**
+     * 获取认证进度
+     * @param userId 用户ID
+     * @return 认证进度信息
+     */
+    Map<String, Object> getCertificationProgress(Long userId);
 }

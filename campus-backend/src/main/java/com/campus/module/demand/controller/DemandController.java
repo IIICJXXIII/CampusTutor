@@ -74,7 +74,7 @@ public class DemandController {
     }
 
     @Operation(summary = "需求详情")
-    @GetMapping("/{id}")
+    @GetMapping("/detail/{id}")
     public Result<DemandPost> detail(@PathVariable Long id) {
         DemandPost demand = demandPostService.getById(id);
         return Result.success(demand);
@@ -99,5 +99,22 @@ public class DemandController {
             @RequestParam(defaultValue = "10") Double radius) {
         List<DemandPost> list = demandPostService.searchNearby(longitude, latitude, radius);
         return Result.success(list);
+    }
+
+    @Operation(summary = "获取带有匹配度的需求列表（教师端专用）")
+    @GetMapping("/list-with-match")
+    public Result<IPage<DemandPost>> listWithMatchScore(
+            @RequestParam(required = false) String subject,
+            @RequestParam(required = false) String grade,
+            @RequestParam(required = false) Double longitude,
+            @RequestParam(required = false) Double latitude,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortOrder) {
+        Long tutorId = UserContext.getUserId();
+        IPage<DemandPost> result = demandPostService.pageListWithMatchScore(
+                tutorId, subject, grade, longitude, latitude, page, size, sortBy, sortOrder);
+        return Result.success(result);
     }
 }

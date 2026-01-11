@@ -1,0 +1,161 @@
+/* 用户信息查看页面样式 - userInfoView.wxss */
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--bg-body) 0%, #eef1f5 100%);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 页面头部 */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 88rpx;
+  padding: 0 32rpx;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-left {
+  width: 80rpx;
+  display: flex;
+  align-items: center;
+}
+
+.back-icon {
+  font-size: 40rpx;
+  color: var(--text-main);
+}
+
+.title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.header-right {
+  width: 80rpx;
+}
+
+/* 主要内容 */
+.content {
+  padding: 40rpx 32rpx;
+}
+
+/* 用户头像区域 */
+.avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx 0 60rpx;
+}
+
+.avatar-container {
+  position: relative;
+  margin-bottom: 32rpx;
+}
+
+.avatar {
+  width: 200rpx;
+  height: 200rpx;
+  border-radius: 50%;
+  border: 8rpx solid rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-md);
+  background: var(--bg-card);
+}
+
+.avatar-badge {
+  position: absolute;
+  bottom: 10rpx;
+  right: 10rpx;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  padding: 8rpx 20rpx;
+  border-radius: 30rpx;
+  box-shadow: var(--shadow-sm);
+  border: 4rpx solid #fff;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.user-name-section {
+  text-align: center;
+}
+
+.user-nickname {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 8rpx;
+  display: block;
+}
+
+.user-username {
+  font-size: 26rpx;
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+/* 信息卡片 */
+.info-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  margin-bottom: 32rpx;
+}
+
+.card-header {
+  padding: 32rpx;
+  border-bottom: 1rpx solid var(--bg-body);
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--text-main);
+  border-left: 8rpx solid var(--primary);
+  padding-left: 16rpx;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32rpx;
+  border-bottom: 1rpx solid var(--bg-body);
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-size: 28rpx;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  text-align: right;
+  max-width: 400rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 底部提示 */
+.footer-tip {
+  text-align: center;
+  padding: 40rpx 0;
+}
+
+.tip-text {
+  font-size: 24rpx;
+  color: var(--text-placeholder);
+}

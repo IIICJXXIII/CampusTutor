@@ -1,0 +1,282 @@
+/* aiAssistant.wxss */
+
+/* 容器 */
+.ai-assistant-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* 悬浮按钮 */
+.floating-btn {
+  position: fixed;
+  bottom: 120rpx;
+  right: 40rpx;
+  width: 120rpx;
+  height: 120rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 32rpx rgba(102, 126, 234, 0.8);
+  z-index: 9999;
+  transition: all 0.3s ease;
+  border: 4rpx solid white;
+}
+
+.floating-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2rpx 8rpx rgba(102, 126, 234, 0.6);
+}
+
+.btn-icon {
+  width: 56rpx;
+  height: 56rpx;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -8rpx;
+  right: -8rpx;
+  background-color: #ff6b6b;
+  color: white;
+  border-radius: 50%;
+  width: 32rpx;
+  height: 32rpx;
+  font-size: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 聊天窗口 */
+.chat-window {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80vh;
+  background-color: #fff;
+  border-radius: 32rpx 32rpx 0 0;
+  box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 头部 */
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 32rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  background-color: #f8f9fa;
+  border-radius: 32rpx 32rpx 0 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.ai-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+}
+
+.header-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.ai-status {
+  font-size: 24rpx;
+  color: #667eea;
+}
+
+.header-right {
+  width: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.close-btn {
+  font-size: 48rpx;
+  color: #999;
+  transition: all 0.3s ease;
+}
+
+.close-btn:active {
+  color: #666;
+  transform: scale(1.1);
+}
+
+/* 聊天内容 */
+.chat-content {
+  flex: 1;
+  padding: 32rpx;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+/* 系统消息 */
+.system-message {
+  align-self: center;
+  background-color: #f0f0f0;
+  padding: 16rpx 24rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: #666;
+  max-width: 80%;
+  text-align: center;
+}
+
+/* 消息样式 */
+.message {
+  display: flex;
+  align-items: flex-end;
+  gap: 16rpx;
+  max-width: 80%;
+}
+
+.user-message {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.ai-message {
+  align-self: flex-start;
+}
+
+.message-avatar {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.message-avatar image {
+  width: 100%;
+  height: 100%;
+}
+
+.message-content {
+  padding: 20rpx 24rpx;
+  border-radius: 24rpx;
+  font-size: 28rpx;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.user-message .message-content {
+  background-color: #667eea;
+  color: white;
+  border-bottom-right-radius: 8rpx;
+}
+
+.ai-message .message-content {
+  background-color: #f0f0f0;
+  color: #333;
+  border-bottom-left-radius: 8rpx;
+}
+
+/* 加载中 */
+.loading-message {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 24rpx;
+  background-color: #f0f0f0;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.loading-icon {
+  width: 32rpx;
+  height: 32rpx;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 快捷问题 */
+.quick-questions {
+  padding: 24rpx 32rpx;
+  border-top: 1rpx solid #f0f0f0;
+  background-color: #f8f9fa;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.quick-question-item {
+  padding: 12rpx 24rpx;
+  background-color: #fff;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 24rpx;
+  font-size: 24rpx;
+  color: #666;
+  transition: all 0.3s ease;
+}
+
+.quick-question-item:active {
+  background-color: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+/* 输入区域 */
+.input-area {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 32rpx;
+  border-top: 1rpx solid #f0f0f0;
+  background-color: #f8f9fa;
+  gap: 16rpx;
+}
+
+.input-field {
+  flex: 1;
+  height: 80rpx;
+  padding: 0 32rpx;
+  background-color: #fff;
+  border: 1rpx solid #e0e0e0;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.send-btn {
+  padding: 24rpx 48rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  color: white;
+  font-weight: 500;
+  box-shadow: 0 4rpx 16rpx rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
+}
+
+.send-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2rpx 8rpx rgba(102, 126, 234, 0.6);
+}

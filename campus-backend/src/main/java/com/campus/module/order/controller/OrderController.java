@@ -8,6 +8,7 @@ import com.campus.module.order.dto.CreateOrderRequest;
 import com.campus.module.order.dto.PayOrderRequest;
 import com.campus.module.order.entity.CourseOrder;
 import com.campus.module.order.service.CourseOrderService;
+import java.util.Map;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -51,10 +52,10 @@ public class OrderController {
 
     @Operation(summary = "支付订单")
     @PostMapping("/pay")
-    public Result<Void> pay(@Valid @RequestBody PayOrderRequest request) {
+    public Result<Map<String, String>> pay(@Valid @RequestBody PayOrderRequest request) {
         Long userId = UserContext.getUserId();
-        orderService.payOrder(userId, request);
-        return Result.success();
+        Map<String, String> payParams = orderService.payOrder(userId, request);
+        return Result.success(payParams);
     }
 
     @Operation(summary = "取消订单")
@@ -107,5 +108,26 @@ public class OrderController {
         Long tutorId = UserContext.getUserId();
         IPage<CourseOrder> result = orderService.listTutorOrders(tutorId, status, page, size);
         return Result.success(result);
+    }
+
+    @Operation(summary = "创建微信支付参数")
+    @PostMapping("/wechat-pay")
+    public Result<java.util.Map<String, String>> createWechatPay(
+            @RequestParam Long orderId,
+            @RequestParam String openid) {
+        Long userId = UserContext.getUserId();
+        var payParams = orderService.createWechatPayParams(userId, orderId, openid);
+        return Result.success(payParams);
+    }
+
+    @Operation(summary = "申请退款")
+    @PostMapping("/refund")
+    public Result<String> applyRefund(
+            @RequestParam Long orderId,
+            @RequestParam java.math.BigDecimal refundAmount,
+            @RequestParam String reason) {
+        Long userId = UserContext.getUserId();
+        String refundNo = orderService.applyRefund(userId, orderId, refundAmount, reason);
+        return Result.success(refundNo);
     }
 }

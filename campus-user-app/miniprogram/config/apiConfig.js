@@ -9,6 +9,7 @@ const BASE_URL = {
 const API_HOST = BASE_URL[ENV];
 
 const api = {
+  BASE_URL: API_HOST,
   host: API_HOST,
   // 认证模块
   auth: {
@@ -44,7 +45,15 @@ const api = {
     list: `${API_HOST}/api/demand/list`,
     my: `${API_HOST}/api/demand/my`,
     nearby: `${API_HOST}/api/demand/nearby`,
-    detail: (id) => `${API_HOST}/api/demand/${id}`,
+    detail: (id) => `${API_HOST}/api/demand/detail/${id}`,
+    match: (id) => `${API_HOST}/api/demand/${id}/match`,
+    listWithMatch: `${API_HOST}/api/demand/list-with-match`,
+  },
+  // LLM模块 (DeepSeek)
+  llm: {
+    parse: `${API_HOST}/api/llm/demand/parse`,
+    chat: `${API_HOST}/api/llm/chat`,
+    quickAnswer: `${API_HOST}/api/llm/quick-answer`
   },
   // 匹配模块 (Match)
   match: {
@@ -56,6 +65,7 @@ const api = {
     listParent: `${API_HOST}/api/order/parent/list`,
     listTutor: `${API_HOST}/api/order/tutor/list`,
     pay: `${API_HOST}/api/order/pay`,
+    refund: `${API_HOST}/api/order/refund`,
     detail: (id) => `${API_HOST}/api/order/${id}`,
   },
   // 钱包模块 (Wallet)
@@ -74,6 +84,23 @@ const api = {
     myRecords: `${API_HOST}/api/teaching/my-records`,
     orderRecords: (orderId) => `${API_HOST}/api/teaching/records/${orderId}`,
     detail: (recordId) => `${API_HOST}/api/teaching/record/${recordId}`,
+  },
+  // OCR识别模块
+  ocr: {
+    studentCard: `${API_HOST}/api/ocr/student-card`,
+    studentCardBase64: `${API_HOST}/api/ocr/student-card-base64`,
+    idCardFront: `${API_HOST}/api/ocr/id-card/front`,
+    idCardBack: `${API_HOST}/api/ocr/id-card/back`,
+    general: `${API_HOST}/api/ocr/general`
+  },
+  // 聊天模块
+  chat: {
+    sessions: `${API_HOST}/api/chat/sessions`,
+    history: (targetUserId) => `${API_HOST}/api/chat/history/${targetUserId}`,
+    send: `${API_HOST}/api/chat/send`,
+    unreadCount: `${API_HOST}/api/chat/unread-count`,
+    markRead: (targetUserId) => `${API_HOST}/api/chat/read/${targetUserId}`,
+    userInfo: (userId) => `${API_HOST}/api/chat/user-info/${userId}`
   },
   // 学习辅助模块（错题本）
   study: {
