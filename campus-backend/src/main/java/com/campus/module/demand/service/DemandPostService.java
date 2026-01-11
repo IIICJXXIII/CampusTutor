@@ -67,4 +67,19 @@ public interface DemandPostService extends IService<DemandPost> {
      * @return 需求列表
      */
     List<DemandPost> searchNearby(Double longitude, Double latitude, Double radiusKm);
+
+    /**
+     * 获取带有匹配度的需求列表（教师端专用）
+     * @param tutorId 教师ID
+     * @param subject 科目筛选
+     * @param grade 年级筛选
+     * @param longitude 经度
+     * @param latitude 纬度
+     * @param page 页码
+     * @param size 每页数量
+     * @param sortBy 排序字段
+     * @param sortOrder 排序方向
+     * @return 分页结果
+     */
+    IPage<DemandPost> pageListWithMatchScore(Long tutorId, String subject, String grade, Double longitude, Double latitude, Integer page, Integer size, String sortBy, String sortOrder);
 }

@@ -1,0 +1,248 @@
+/* 用户信息查看页面样式 - userInfoView.wxss */
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding-top: 20rpx;
+}
+
+/* 页面头部 */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 88rpx;
+  padding: 0 32rpx;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20rpx 20rpx 0 0;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 10;
+}
+
+.header-left {
+  width: 80rpx;
+  display: flex;
+  align-items: center;
+}
+
+.back-icon {
+  font-size: 48rpx;
+  color: #333;
+  font-weight: 300;
+  transition: all 0.3s ease;
+}
+
+.back-icon:active {
+  transform: translateX(-10rpx);
+}
+
+.header-center {
+  flex: 1;
+  text-align: center;
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #333;
+  letter-spacing: 2rpx;
+}
+
+.header-right {
+  width: 80rpx;
+}
+
+/* 主要内容 */
+.content {
+  padding: 0 32rpx 60rpx;
+  position: relative;
+  z-index: 1;
+}
+
+/* 用户头像区域 */
+.avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60rpx 0;
+  margin-bottom: 32rpx;
+}
+
+.avatar-container {
+  position: relative;
+  margin-bottom: 32rpx;
+}
+
+.avatar {
+  width: 200rpx;
+  height: 200rpx;
+  border-radius: 50%;
+  border: 8rpx solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.avatar:active {
+  transform: scale(1.05);
+  box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.2);
+}
+
+.avatar-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  padding: 12rpx 24rpx;
+  border-radius: 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(79, 172, 254, 0.4);
+  border: 4rpx solid white;
+}
+
+.badge-text {
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.user-name-section {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 32rpx 48rpx;
+  border-radius: 24rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.user-nickname {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 12rpx;
+  display: block;
+}
+
+.user-username {
+  font-size: 24rpx;
+  color: #666;
+  font-family: monospace;
+}
+
+/* 信息卡片 */
+.info-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 24rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+  margin-bottom: 32rpx;
+}
+
+.card-header {
+  padding: 32rpx 32rpx 16rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.card-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28rpx 32rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  transition: all 0.2s ease;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-item:active {
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.info-left {
+  flex: 1;
+}
+
+.info-label {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+  margin-bottom: 4rpx;
+  display: block;
+}
+
+.info-hint {
+  font-size: 20rpx;
+  color: #999;
+  display: block;
+}
+
+.info-value {
+  font-size: 28rpx;
+  color: #666;
+  text-align: right;
+  max-width: 300rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 角色徽章 */
+.role-badge {
+  padding: 12rpx 24rpx;
+  border-radius: 30rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
+}
+
+.role-badge.teacher {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+.role-badge.parent {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  color: white;
+}
+
+.role-text {
+  letter-spacing: 1rpx;
+}
+
+/* 底部提示 */
+.footer-tip {
+  text-align: center;
+  padding: 32rpx 0;
+}
+
+.tip-text {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(0, 0, 0, 0.1);
+  padding: 16rpx 32rpx;
+  border-radius: 30rpx;
+  backdrop-filter: blur(10px);
+}
+
+/* 响应式设计 */
+@media (max-width: 375px) {
+  .user-nickname {
+    font-size: 32rpx;
+  }
+  
+  .info-label {
+    font-size: 26rpx;
+  }
+  
+  .info-value {
+    font-size: 26rpx;
+  }
+}

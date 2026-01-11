@@ -46,8 +46,15 @@ const api = {
     list: `${API_HOST}/api/demand/list`,
     my: `${API_HOST}/api/demand/my`,
     nearby: `${API_HOST}/api/demand/nearby`,
-    detail: (id) => `${API_HOST}/api/demand/${id}`,
-    match: (id) => `${API_HOST}/api/demand/${id}/match`,
+        detail: (id) => `${API_HOST}/api/demand/${id}`,
+        match: (id) => `${API_HOST}/api/demand/${id}/match`,
+        listWithMatch: `${API_HOST}/api/demand/list-with-match`,
+  },
+  // LLM模块 (DeepSeek)
+  llm: {
+    parse: `${API_HOST}/api/llm/demand/parse`,
+    chat: `${API_HOST}/api/llm/chat`,
+    quickAnswer: `${API_HOST}/api/llm/quick-answer`
   },
   // 匹配模块 (Match)
   match: {
