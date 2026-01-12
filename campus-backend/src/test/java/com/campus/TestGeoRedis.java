@@ -14,8 +14,8 @@ import java.util.Map;
 /**
  * 测试Redis GEO索引功能
  */
-@SpringBootApplication
-@ComponentScan("com.campus")
+// @SpringBootApplication
+// @ComponentScan("com.campus")
 public class TestGeoRedis implements CommandLineRunner {
 
     @Autowired

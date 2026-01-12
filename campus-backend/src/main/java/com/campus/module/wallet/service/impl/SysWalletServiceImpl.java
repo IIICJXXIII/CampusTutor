@@ -53,7 +53,7 @@ public class SysWalletServiceImpl extends ServiceImpl<SysWalletMapper, SysWallet
         }
         return success;
     }
-    
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean freezeFromBalance(Long userId, BigDecimal amount) {
@@ -79,16 +79,16 @@ public class SysWalletServiceImpl extends ServiceImpl<SysWalletMapper, SysWallet
             createWallet(userId);
             wallet = getByUserId(userId);
         }
-        
+
         // 获取实际可解冻金额（不超过冻结金额）
         BigDecimal actualUnfreezeAmount = amount;
         if (wallet.getFrozenAmount().compareTo(amount) < 0) {
             // 记录详细日志以便排查
-            log.warn("冻结金额不足，将解冻全部冻结金额: userId={}, frozenAmount={}, requestedAmount={}", 
-                     userId, wallet.getFrozenAmount(), amount);
+            log.warn("冻结金额不足，将解冻全部冻结金额: userId={}, frozenAmount={}, requestedAmount={}",
+                    userId, wallet.getFrozenAmount(), amount);
             actualUnfreezeAmount = wallet.getFrozenAmount();
         }
-        
+
         // 减少冻结金额，增加回余额
         wallet.setFrozenAmount(wallet.getFrozenAmount().subtract(actualUnfreezeAmount));
         wallet.setBalance(wallet.getBalance().add(actualUnfreezeAmount));
