@@ -111,10 +111,20 @@ Page({
   async doPay(orderId) {
     wx.showLoading({ title: '支付中...' });
     try {
+      // 获取openid
+      let openid = wx.getStorageSync('openid') || '';
+      // 开发环境模拟openid
+      if (!openid) {
+        openid = 'o123456789abcdefghijklmnopqrstuvwxyz';
+        wx.setStorageSync('openid', openid);
+        console.log('使用模拟openid:', openid);
+      }
+      
       // 构造 PayOrderRequest
       await request.post(api.order.pay, {
         orderId: orderId,
-        payType: 2 // 微信
+        payType: 2, // 微信
+        openid: openid // 传递微信openid
       });
       wx.hideLoading();
       wx.showToast({ title: '支付成功', icon: 'success' });
@@ -125,6 +135,19 @@ Page({
     } catch (err) {
       wx.hideLoading();
       console.error(err);
+      if (err.msg === '缺少微信用户标识') {
+        wx.showModal({
+          title: '登录过期',
+          content: '微信用户标识已过期，请重新进行微信登录',
+          confirmText: '去登录',
+          cancelText: '取消',
+          success: (res) => {
+            if (res.confirm) {
+              wx.navigateTo({ url: '/pages/common/login/login' });
+            }
+          }
+        });
+      }
     }
   },
 
@@ -181,6 +204,34 @@ Page({
       this.loadOrders(true);
     } catch (err) {
       console.error(err);
+    }
+  },
+
+  // 确认订单（家长确认教师接单）
+  handleConfirm(e) {
+    const orderId = e.currentTarget.dataset.id;
+    const that = this;
+    
+    wx.showModal({
+      title: '确认订单',
+      content: '确认接受该教师的接单请求吗？确认后订单将变为待支付状态。',
+      success(res) {
+        if (res.confirm) {
+          that.doConfirm(orderId);
+        }
+      }
+    });
+  },
+
+  async doConfirm(orderId) {
+    try {
+      // POST /api/order/{id}/confirm
+      await request.post(`${api.order.detail(orderId)}/confirm`);
+      wx.showToast({ title: '确认成功', icon: 'success' });
+      this.loadOrders(true);
+    } catch (err) {
+      console.error(err);
+      wx.showToast({ title: '确认失败，请稍后重试', icon: 'none' });
     }
   },
 

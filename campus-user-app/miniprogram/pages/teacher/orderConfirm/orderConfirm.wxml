@@ -1,0 +1,79 @@
+<view class="container">
+  <view class="header">
+    <text class="title">确认接单</text>
+    <view class="back-btn" bindtap="handleBack">
+      <text class="back-icon">←</text>
+    </view>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+
+  <view class="error" wx:elif="{{error}}">
+    <text>加载失败</text>
+    <button bindtap="handleReload">重新加载</button>
+  </view>
+
+  <view wx:else>
+    <!-- 需求信息卡片 -->
+    <view class="demand-card">
+      <view class="row">
+        <text class="subject">{{demand.subject}}</text>
+        <text class="grade">{{demand.grade}}</text>
+      </view>
+      <view class="price">¥{{unitPrice}}/小时</view>
+      <view class="address">{{demand.address}}</view>
+    </view>
+
+    <!-- 表单区域 -->
+    <view class="form-box">
+      <!-- 课时设置 -->
+      <view class="input-group">
+        <view class="label">课时设置</view>
+        <view class="stepper">
+          <view class="step-btn minus {{totalHours <= 1 ? 'disabled' : ''}}" bindtap="changeHours" data-delta="-1">-</view>
+          <input class="step-input" type="number" value="{{totalHours}}" disabled />
+          <view class="step-btn plus" bindtap="changeHours" data-delta="1">+</view>
+        </view>
+      </view>
+
+      <!-- 授课方式 -->
+      <view class="input-group">
+        <view class="label">授课方式</view>
+        <view class="radio-group">
+          <view class="radio-item {{teachMode === 1 ? 'active' : ''}}" bindtap="selectMode" data-mode="1">上门</view>
+          <view class="radio-item {{teachMode === 2 ? 'active' : ''}}" bindtap="selectMode" data-mode="2">在线</view>
+        </view>
+      </view>
+
+      <!-- 备注 -->
+      <view class="input-group vertical">
+        <view class="label">备注</view>
+        <textarea class="remark-input" placeholder="请输入特殊要求..." bindinput="handleInput"></textarea>
+      </view>
+
+      <!-- 协议签署 -->
+      <view class="protocol-group">
+        <checkbox-group bindchange="handleProtocolChange">
+          <label class="checkbox-label">
+            <checkbox value="agree" checked="{{agreeProtocol}}" />
+            <text class="protocol-text">我已阅读并同意《家教服务协议》和《隐私政策》</text>
+          </label>
+        </checkbox-group>
+      </view>
+    </view>
+
+    <!-- 底部栏 -->
+    <view class="footer-bar">
+      <view class="total-box">
+        <text class="label">总计：</text>
+        <text class="symbol">¥</text>
+        <text class="amount">{{totalAmount}}</text>
+      </view>
+      <button class="submit-btn" bindtap="submitOrder" loading="{{isSubmitting}}" disabled="{{!agreeProtocol}}">
+        确认接单
+      </button>
+    </view>
+  </view>
+</view>

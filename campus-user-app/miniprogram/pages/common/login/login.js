@@ -129,6 +129,11 @@ Page({
             wx.setStorageSync('token', r.token);
             wx.setStorageSync('userInfo', r);
             
+            // 存储微信openid
+            if (r.openid) {
+              wx.setStorageSync('openid', r.openid);
+            }
+            
             // 对于教师角色，自动设置认证已提交标志
             if (r.role === 1) {
               wx.setStorageSync('certificationSubmitted', true);
