@@ -14,6 +14,7 @@ import com.campus.module.tutor.mapper.TutorProfileMapper;
 import com.campus.module.tutor.mapper.TutorScheduleConfigMapper;
 import com.campus.module.tutor.service.TutorProfileService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, TutorProfile>
         implements TutorProfileService {
 
@@ -103,10 +105,10 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
     public void updateProfile(Long userId, TutorProfileUpdateRequest request) {
         TutorProfile profile = getByUserId(userId);
         if (profile == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "请先完成教员认证");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "请先完成教员认证");
         }
         if (profile.getCertStatus() != 2) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "认证未通过，无法更新档案");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "认证未通过，无法更新档案");
         }
 
         // 更新字段
@@ -166,24 +168,45 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
     public void saveScheduleConfig(Long userId, TutorScheduleRequest request) {
         TutorProfile profile = getByUserId(userId);
         if (profile == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "请先完成教员认证");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "请先完成教员认证");
         }
 
-        // 删除旧配置
-        scheduleConfigMapper.delete(new LambdaQueryWrapper<TutorScheduleConfig>()
-                .eq(TutorScheduleConfig::getTutorId, profile.getId()));
+        log.info("保存教员课表配置: userId={}, tutorId={}", userId, profile.getId());
 
-        // 保存新配置
-        if (request.getSchedules() != null && !request.getSchedules().isEmpty()) {
-            for (TutorScheduleRequest.ScheduleItem item : request.getSchedules()) {
-                TutorScheduleConfig config = new TutorScheduleConfig();
-                config.setTutorId(profile.getId());
-                config.setDayOfWeek(item.getDayOfWeek());
-                config.setStartTime(item.getStartTime());
-                config.setEndTime(item.getEndTime());
-                config.setAvailable(item.getAvailable() != null ? item.getAvailable() : 1);
-                scheduleConfigMapper.insert(config);
+        try {
+            // 删除旧配置
+            scheduleConfigMapper.delete(new LambdaQueryWrapper<TutorScheduleConfig>()
+                    .eq(TutorScheduleConfig::getTutorId, profile.getId()));
+
+            // 保存新配置
+            if (request.getSchedules() != null && !request.getSchedules().isEmpty()) {
+                int savedCount = 0;
+                for (TutorScheduleRequest.ScheduleItem item : request.getSchedules()) {
+                    // 验证数据有效性
+                    if (item.getDayOfWeek() == null || item.getStartTime() == null || item.getEndTime() == null) {
+                        log.warn("跳过无效的课表配置项: {}", item);
+                        continue;
+                    }
+                    
+                    TutorScheduleConfig config = new TutorScheduleConfig();
+                    config.setTutorId(profile.getId());
+                    config.setDayOfWeek(item.getDayOfWeek());
+                    config.setStartTime(item.getStartTime());
+                    config.setEndTime(item.getEndTime());
+                    config.setAvailable(item.getAvailable() != null ? item.getAvailable() : 1);
+                    
+                    int result = scheduleConfigMapper.insert(config);
+                    if (result > 0) {
+                        savedCount++;
+                    }
+                }
+                log.info("课表配置保存完成: 共保存 {} 条配置", savedCount);
+            } else {
+                log.info("课表配置为空，已删除所有旧配置");
             }
+        } catch (Exception e) {
+            log.error("保存课表配置失败: userId={}, tutorId={}, error={}", userId, profile.getId(), e.getMessage(), e);
+            throw new BusinessException(ResultCode.FAIL.getCode(), "保存课表失败，请稍后重试");
         }
     }
 

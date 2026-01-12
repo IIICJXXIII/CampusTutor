@@ -1,6 +1,5 @@
 package com.campus.common.exception;
 
-import com.campus.common.result.ResultCode;
 import lombok.Getter;
 
 /**
@@ -16,7 +15,7 @@ public class BusinessException extends RuntimeException {
 
     public BusinessException(String message) {
         super(message);
-        this.code = ResultCode.FAIL.getCode();
+        this.code = 500;
         this.message = message;
     }
 
@@ -26,15 +25,9 @@ public class BusinessException extends RuntimeException {
         this.message = message;
     }
 
-    public BusinessException(ResultCode resultCode) {
-        super(resultCode.getMsg());
-        this.code = resultCode.getCode();
-        this.message = resultCode.getMsg();
-    }
-
-    public BusinessException(ResultCode resultCode, String message) {
-        super(message);
-        this.code = resultCode.getCode();
+    public BusinessException(Integer code, String message, Throwable cause) {
+        super(message, cause);
+        this.code = code;
         this.message = message;
     }
 }

@@ -63,12 +63,15 @@ Page({
     try {
       // 调用后端 API 获取教师课表
       console.log('加载教师课表，tutorId:', tutorId);
-      const result = await request.get(api.tutor.schedule);
+      console.log('调用API:', api.tutor.publicSchedule(tutorId));
+      const result = await request.get(api.tutor.publicSchedule(tutorId));
       console.log('获取到的课表数据:', result);
+      
+      // request.js已经处理了响应，直接返回了resData.data
       if (result && Array.isArray(result)) {
         this.parseScheduleFromServer(result);
       } else {
-        console.log('课表数据为空，使用默认数据');
+        console.log('课表数据为空或格式不正确，使用默认数据');
         // 使用默认数据
         const mockData = [];
         this.parseScheduleFromServer(mockData);
@@ -83,19 +86,30 @@ Page({
 
   // 解析服务器返回的课表
   parseScheduleFromServer(serverData) {
+    console.log('开始解析课表数据:', serverData);
     const data = [];
     for (let i = 0; i < this.data.timeSlots.length; i++) {
       data.push(new Array(7).fill(false));
     }
-    serverData.forEach(item => {
-      if (item.available === 1) {
-        const dayIndex = item.dayOfWeek - 1;
-        const slotIndex = this.matchTimeSlot(item.startTime);
-        if (slotIndex !== -1 && dayIndex >= 0 && dayIndex < 7) {
-          data[slotIndex][dayIndex] = true;
+    
+    if (serverData && Array.isArray(serverData)) {
+      serverData.forEach((item, index) => {
+        console.log(`处理第${index}个课时配置项:`, item);
+        if (item.available === 1) {
+          const dayIndex = item.dayOfWeek - 1;
+          const slotIndex = this.matchTimeSlot(item.startTime);
+          console.log(`计算结果: dayIndex=${dayIndex}, slotIndex=${slotIndex}`);
+          if (slotIndex !== -1 && dayIndex >= 0 && dayIndex < 7) {
+            data[slotIndex][dayIndex] = true;
+            console.log(`标记时段为可用: 时间段${slotIndex}, 星期${dayIndex}`);
+          }
         }
-      }
-    });
+      });
+    } else {
+      console.log('课表数据为空或格式不正确:', serverData);
+    }
+    
+    console.log('解析完成的课表数据:', data);
     this.setData({ scheduleData: data });
   },
 
@@ -254,17 +268,48 @@ Page({
       return;
     }
 
+    // 检查是否有选择的预约时段
+    const selectedSlots = this.getSelectedSlots();
+    if (selectedSlots.length === 0) {
+      wx.showToast({ title: '请选择至少一个预约时段', icon: 'none' });
+      return;
+    }
+
     // 传递必要信息到下单页，确保价格不为undefined
     const orderData = {
       tutorId: tutor.id,
       realName: tutor.realName,
       price: tutor.expectPrice || (tutor.price || 0),
       // 默认选中第一个科目，如果没有则留空
-      subject: tutor.teachSubjectsList && tutor.teachSubjectsList.length > 0 ? tutor.teachSubjectsList[0] : ''
+      subject: tutor.teachSubjectsList && tutor.teachSubjectsList.length > 0 ? tutor.teachSubjectsList[0] : '',
+      selectedSlots: selectedSlots
     };
 
     wx.navigateTo({
       url: `/pages/parent/order/confirm/confirm?data=${encodeURIComponent(JSON.stringify(orderData))}`
     });
+  },
+  
+  // 获取选中的预约时段
+  getSelectedSlots() {
+    const { bookingData, timeSlots, weekDays } = this.data;
+    const selectedSlots = [];
+    
+    bookingData.forEach((daySlots, slotIdx) => {
+      daySlots.forEach((selected, dayIdx) => {
+        if (selected) {
+          selectedSlots.push({
+            slotIdx,
+            dayIdx,
+            dayOfWeek: dayIdx + 1,
+            startTime: timeSlots[slotIdx].startTime,
+            endTime: timeSlots[slotIdx].endTime,
+            dayName: weekDays[dayIdx]
+          });
+        }
+      });
+    });
+    
+    return selectedSlots;
   }
 });

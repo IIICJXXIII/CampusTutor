@@ -20,17 +20,101 @@ Page({
     try {
       const order = await request.get(api.order.detail(this.data.orderId));
       let statusText = '未知';
+      let statusColor = '';
+      let statusSteps = [];
+      
       switch (order.status) {
-        case -1: statusText = '待确认'; break;
-        case 0: statusText = '待支付'; break;
-        case 1: statusText = '已支付，待开课'; break;
-        case 2: statusText = '进行中'; break;
-        case 3: statusText = '已完成'; break;
-        case 4: statusText = '已取消'; break;
-        case 5: statusText = '退款中'; break;
-        case 6: statusText = '已退款'; break;
+        case -1: 
+          statusText = '待确认';
+          statusColor = '#ff9800';
+          statusSteps = [
+            { text: '订单创建', status: 'completed' },
+            { text: '教师确认', status: 'active' },
+            { text: '家长支付', status: 'pending' },
+            { text: '课程进行', status: 'pending' },
+            { text: '课程完成', status: 'pending' }
+          ];
+          break;
+        case 0: 
+          statusText = '待支付';
+          statusColor = '#ff9800';
+          statusSteps = [
+            { text: '订单创建', status: 'completed' },
+            { text: '教师确认', status: 'completed' },
+            { text: '家长支付', status: 'active' },
+            { text: '课程进行', status: 'pending' },
+            { text: '课程完成', status: 'pending' }
+          ];
+          break;
+        case 1: 
+          statusText = '已支付，待开课';
+          statusColor = '#2196f3';
+          statusSteps = [
+            { text: '订单创建', status: 'completed' },
+            { text: '教师确认', status: 'completed' },
+            { text: '家长支付', status: 'completed' },
+            { text: '课程进行', status: 'active' },
+            { text: '课程完成', status: 'pending' }
+          ];
+          break;
+        case 2: 
+          statusText = '进行中';
+          statusColor = '#2196f3';
+          statusSteps = [
+            { text: '订单创建', status: 'completed' },
+            { text: '教师确认', status: 'completed' },
+            { text: '家长支付', status: 'completed' },
+            { text: '课程进行', status: 'completed' },
+            { text: '课程完成', status: 'active' }
+          ];
+          break;
+        case 3: 
+          statusText = '已完成';
+          statusColor = '#4caf50';
+          statusSteps = [
+            { text: '订单创建', status: 'completed' },
+            { text: '教师确认', status: 'completed' },
+            { text: '家长支付', status: 'completed' },
+            { text: '课程进行', status: 'completed' },
+            { text: '课程完成', status: 'completed' }
+          ];
+          break;
+        case 4: 
+          statusText = '已取消';
+          statusColor = '#9e9e9e';
+          statusSteps = [
+            { text: '订单创建', status: 'completed' },
+            { text: '订单取消', status: 'canceled' },
+            { text: '家长支付', status: 'pending' },
+            { text: '课程进行', status: 'pending' },
+            { text: '课程完成', status: 'pending' }
+          ];
+          break;
+        case 5: 
+          statusText = '退款中';
+          statusColor = '#ff5722';
+          statusSteps = [
+            { text: '订单创建', status: 'completed' },
+            { text: '教师确认', status: 'completed' },
+            { text: '家长支付', status: 'completed' },
+            { text: '退款处理', status: 'active' },
+            { text: '退款完成', status: 'pending' }
+          ];
+          break;
+        case 6: 
+          statusText = '已退款';
+          statusColor = '#ff5722';
+          statusSteps = [
+            { text: '订单创建', status: 'completed' },
+            { text: '教师确认', status: 'completed' },
+            { text: '家长支付', status: 'completed' },
+            { text: '退款处理', status: 'completed' },
+            { text: '退款完成', status: 'completed' }
+          ];
+          break;
       }
-      this.setData({ order, statusText, loading: false });
+      
+      this.setData({ order, statusText, statusColor, statusSteps, loading: false });
     } catch (err) {
       console.error(err);
       this.setData({ loading: false });
