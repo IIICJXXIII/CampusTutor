@@ -6,7 +6,8 @@ import com.campus.module.behavior.mapper.UserActionLogMapper;
 import com.campus.module.behavior.service.BehaviorService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -18,10 +19,11 @@ import java.util.concurrent.TimeUnit;
 /**
  * 用户行为服务实现
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BehaviorServiceImpl implements BehaviorService {
+
+    private static final Logger log = LoggerFactory.getLogger(BehaviorServiceImpl.class);
 
     private final UserActionLogMapper actionLogMapper;
     private final RedisTemplate<String, Object> redisTemplate;

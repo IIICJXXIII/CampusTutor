@@ -8,7 +8,8 @@ import com.campus.module.booking.entity.BookingRequest;
 import com.campus.module.booking.mapper.BookingRequestMapper;
 import com.campus.module.booking.service.BookingRequestService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,11 +18,12 @@ import java.util.List;
 /**
  * 预约请求服务实现
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BookingRequestServiceImpl extends ServiceImpl<BookingRequestMapper, BookingRequest>
         implements BookingRequestService {
+
+    private static final Logger log = LoggerFactory.getLogger(BookingRequestServiceImpl.class);
 
     private final BookingRequestMapper bookingRequestMapper;
 
@@ -56,17 +58,17 @@ public class BookingRequestServiceImpl extends ServiceImpl<BookingRequestMapper,
         // 获取预约请求
         BookingRequest bookingRequest = getById(bookingId);
         if (bookingRequest == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "预约请求不存在");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "预约请求不存在");
         }
 
         // 验证权限
         if (!bookingRequest.getTutorId().equals(userId)) {
-            throw new BusinessException(ResultCode.FORBIDDEN, "无权操作此预约请求");
+            throw new BusinessException(ResultCode.FORBIDDEN.getCode(), "无权操作此预约请求");
         }
 
         // 验证状态
         if (bookingRequest.getStatus() != 0) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "预约请求状态不正确");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "预约请求状态不正确");
         }
 
         // 更新状态
@@ -82,17 +84,17 @@ public class BookingRequestServiceImpl extends ServiceImpl<BookingRequestMapper,
         // 获取预约请求
         BookingRequest bookingRequest = getById(bookingId);
         if (bookingRequest == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "预约请求不存在");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "预约请求不存在");
         }
 
         // 验证权限
         if (!bookingRequest.getTutorId().equals(userId)) {
-            throw new BusinessException(ResultCode.FORBIDDEN, "无权操作此预约请求");
+            throw new BusinessException(ResultCode.FORBIDDEN.getCode(), "无权操作此预约请求");
         }
 
         // 验证状态
         if (bookingRequest.getStatus() != 0) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "预约请求状态不正确");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "预约请求状态不正确");
         }
 
         // 更新状态
@@ -109,17 +111,17 @@ public class BookingRequestServiceImpl extends ServiceImpl<BookingRequestMapper,
         // 获取预约请求
         BookingRequest bookingRequest = getById(bookingId);
         if (bookingRequest == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "预约请求不存在");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "预约请求不存在");
         }
 
         // 验证权限
         if (!bookingRequest.getParentId().equals(userId)) {
-            throw new BusinessException(ResultCode.FORBIDDEN, "无权操作此预约请求");
+            throw new BusinessException(ResultCode.FORBIDDEN.getCode(), "无权操作此预约请求");
         }
 
         // 验证状态
         if (bookingRequest.getStatus() != 0 && bookingRequest.getStatus() != 1) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "预约请求状态不正确");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "预约请求状态不正确");
         }
 
         // 更新状态

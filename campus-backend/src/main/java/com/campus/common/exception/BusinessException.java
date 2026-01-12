@@ -30,4 +30,9 @@ public class BusinessException extends RuntimeException {
         this.code = code;
         this.message = message;
     }
+    
+    // 添加getCode方法的明确声明
+    public Integer getCode() {
+        return code;
+    }
 }

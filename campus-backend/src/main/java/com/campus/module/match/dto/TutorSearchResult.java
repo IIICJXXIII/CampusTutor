@@ -1,13 +1,11 @@
 package com.campus.module.match.dto;
 
-import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
 
 /**
  * 教员搜索结果
  */
-@Data
 public class TutorSearchResult {
 
     /**
@@ -94,4 +92,141 @@ public class TutorSearchResult {
      * 距离(公里)
      */
     private Double distance;
+
+    // 显式的getter和setter方法
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getRealName() {
+        return realName;
+    }
+
+    public void setRealName(String realName) {
+        this.realName = realName;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public String getUniversityName() {
+        return universityName;
+    }
+
+    public void setUniversityName(String universityName) {
+        this.universityName = universityName;
+    }
+
+    public String getMajor() {
+        return major;
+    }
+
+    public void setMajor(String major) {
+        this.major = major;
+    }
+
+    public Integer getEducation() {
+        return education;
+    }
+
+    public void setEducation(Integer education) {
+        this.education = education;
+    }
+
+    public List<String> getTeachSubjects() {
+        return teachSubjects;
+    }
+
+    public void setTeachSubjects(List<String> teachSubjects) {
+        this.teachSubjects = teachSubjects;
+    }
+
+    public List<String> getTeachGrades() {
+        return teachGrades;
+    }
+
+    public void setTeachGrades(List<String> teachGrades) {
+        this.teachGrades = teachGrades;
+    }
+
+    public String getTeachStyle() {
+        return teachStyle;
+    }
+
+    public void setTeachStyle(String teachStyle) {
+        this.teachStyle = teachStyle;
+    }
+
+    public String getIntroduction() {
+        return introduction;
+    }
+
+    public void setIntroduction(String introduction) {
+        this.introduction = introduction;
+    }
+
+    public BigDecimal getExpectPrice() {
+        return expectPrice;
+    }
+
+    public void setExpectPrice(BigDecimal expectPrice) {
+        this.expectPrice = expectPrice;
+    }
+
+    public Integer getCanVisit() {
+        return canVisit;
+    }
+
+    public void setCanVisit(Integer canVisit) {
+        this.canVisit = canVisit;
+    }
+
+    public Integer getCanOnline() {
+        return canOnline;
+    }
+
+    public void setCanOnline(Integer canOnline) {
+        this.canOnline = canOnline;
+    }
+
+    public BigDecimal getRating() {
+        return rating;
+    }
+
+    public void setRating(BigDecimal rating) {
+        this.rating = rating;
+    }
+
+    public Integer getOrderCount() {
+        return orderCount;
+    }
+
+    public void setOrderCount(Integer orderCount) {
+        this.orderCount = orderCount;
+    }
+
+    public Double getDistance() {
+        return distance;
+    }
+
+    public void setDistance(Double distance) {
+        this.distance = distance;
+    }
 }

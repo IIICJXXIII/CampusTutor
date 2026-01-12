@@ -1,6 +1,8 @@
 package com.campus.module.match.dto;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -8,6 +10,7 @@ import java.util.List;
  * 匹配评分结果
  */
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class MatchScoreResult extends TutorSearchResult {
 
     /**
@@ -69,4 +72,5 @@ public class MatchScoreResult extends TutorSearchResult {
      * 匹配标签（如：科目匹配、距离近、评分高等）
      */
     private List<String> matchTags;
+
 }

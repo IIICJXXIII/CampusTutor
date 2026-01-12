@@ -84,4 +84,65 @@ public class TutorSearchRequest {
      * 每页数量
      */
     private Integer size = 10;
+
+    // 显式的getter方法
+    public Long getUserId() {
+        return userId;
+    }
+
+    public String getSubject() {
+        return subject;
+    }
+
+    public String getGrade() {
+        return grade;
+    }
+
+    public BigDecimal getMinPrice() {
+        return minPrice;
+    }
+
+    public BigDecimal getMaxPrice() {
+        return maxPrice;
+    }
+
+    public Integer getTeachMode() {
+        return teachMode;
+    }
+
+    public Integer getGender() {
+        return gender;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public Double getRadius() {
+        return radius;
+    }
+
+    public Integer getPage() {
+        return page;
+    }
+
+    public Integer getSize() {
+        return size;
+    }
+
+    public List<Integer> getEducations() {
+        return educations;
+    }
+
+    public String getSortBy() {
+        return sortBy;
+    }
+
+    public String getSortOrder() {
+        return sortOrder;
+    }
 }
