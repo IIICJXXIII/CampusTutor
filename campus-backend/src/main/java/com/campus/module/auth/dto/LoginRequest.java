@@ -2,14 +2,13 @@ package com.campus.module.auth.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 /**
  * 登录请求 DTO
  */
-@Data
 @Schema(description = "登录请求")
+@Data
 public class LoginRequest {
 
     @Schema(description = "账号/手机号", example = "13800138000 或 admin01")
@@ -24,4 +23,5 @@ public class LoginRequest {
 
     @Schema(description = "登录方式: password-密码登录, code-验证码登录", example = "password")
     private String loginType = "password";
+
 }

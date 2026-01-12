@@ -38,4 +38,13 @@ public enum ResultCode {
 
     private final Integer code;
     private final String msg;
+
+    // 显式的getter方法
+    public Integer getCode() {
+        return code;
+    }
+
+    public String getMsg() {
+        return msg;
+    }
 }

@@ -2,13 +2,11 @@ package com.campus.module.parent.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
 import java.util.List;
 
 /**
  * 添加/编辑学生请求
  */
-@Data
 public class StudentRequest {
 
     /**
@@ -39,4 +37,33 @@ public class StudentRequest {
      * 学习情况描述
      */
     private String studyDesc;
+
+    // 显式的getter方法
+    public Long getId() {
+        return id;
+    }
+
+    public String getStudentName() {
+        return studentName;
+    }
+
+    public Integer getGender() {
+        return gender;
+    }
+
+    public String getGrade() {
+        return grade;
+    }
+
+    public String getSchoolName() {
+        return schoolName;
+    }
+
+    public List<String> getWeakSubjects() {
+        return weakSubjects;
+    }
+
+    public String getStudyDesc() {
+        return studyDesc;
+    }
 }

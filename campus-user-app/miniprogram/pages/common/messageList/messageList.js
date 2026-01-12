@@ -1,5 +1,6 @@
 const request = require('../../../utils/request.js');
 const api = require('../../../config/apiConfig.js');
+const chatWebSocket = require('../../../utils/chatWebSocket.js');
 
 Page({
     data: {
@@ -9,8 +10,19 @@ Page({
         loading: true
     },
 
+    // WebSocket 消息回调
+    messageHandler: null,
+    connectHandler: null,
+
     onShow() {
         this.loadData();
+        // 注册WebSocket回调
+        this.registerWebSocketCallbacks();
+    },
+
+    onHide() {
+        // 移除WebSocket回调
+        this.removeWebSocketCallbacks();
     },
 
     async loadData() {
@@ -59,6 +71,54 @@ Page({
         this.loadData().then(() => {
             wx.stopPullDownRefresh();
         });
+    },
+
+    // 注册WebSocket回调
+    registerWebSocketCallbacks() {
+        // 消息回调
+        this.messageHandler = (type, data) => {
+            if (type === 'receive') {
+                // 收到新消息，刷新会话列表
+                this.loadData();
+                // 显示消息通知
+                this.showMessageNotification(data);
+            }
+        };
+        chatWebSocket.onMessage(this.messageHandler);
+
+        // 连接状态回调
+        this.connectHandler = (connected) => {
+            console.log('WebSocket连接状态:', connected);
+        };
+        chatWebSocket.onConnect(this.connectHandler);
+
+        // 尝试连接WebSocket
+        chatWebSocket.connect().catch(err => {
+            console.error('WebSocket连接失败:', err);
+        });
+    },
+
+    // 移除WebSocket回调
+    removeWebSocketCallbacks() {
+        if (this.messageHandler) {
+            chatWebSocket.offMessage(this.messageHandler);
+            this.messageHandler = null;
+        }
+        if (this.connectHandler) {
+            chatWebSocket.offConnect(this.connectHandler);
+            this.connectHandler = null;
+        }
+    },
+
+    // 显示消息通知
+    showMessageNotification(message) {
+        if (message && message.content) {
+            wx.showToast({
+                title: `收到新消息: ${message.content.substring(0, 20)}${message.content.length > 20 ? '...' : ''}`,
+                icon: 'none',
+                duration: 3000
+            });
+        }
     },
 
     // 格式化时间

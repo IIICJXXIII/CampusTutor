@@ -63,24 +63,25 @@ Page({
     try {
       // 调用后端 API 获取教师课表
       console.log('加载教师课表，tutorId:', tutorId);
-      console.log('调用API:', api.tutor.publicSchedule(tutorId));
-      const result = await request.get(api.tutor.publicSchedule(tutorId));
+      // 添加重试机制
+      const result = await this.retryRequest(() => 
+        request.get(api.tutor.publicSchedule(tutorId)),
+        3, // 最多重试3次
+        1000 // 重试间隔1秒
+      );
       console.log('获取到的课表数据:', result);
-      
-      // request.js已经处理了响应，直接返回了resData.data
       if (result && Array.isArray(result)) {
         this.parseScheduleFromServer(result);
       } else {
         console.log('课表数据为空或格式不正确，使用默认数据');
-        // 使用默认数据
-        const mockData = [];
-        this.parseScheduleFromServer(mockData);
+        // 使用空数组作为默认值
+        this.parseScheduleFromServer([]);
       }
     } catch (err) {
       console.error('加载课表失败:', err);
-      // 使用默认数据
-      const mockData = [];
-      this.parseScheduleFromServer(mockData);
+      wx.showToast({ title: '加载课表失败，请重试', icon: 'none' });
+      // 使用空数组作为默认值
+      this.parseScheduleFromServer([]);
     }
   },
 
@@ -88,21 +89,48 @@ Page({
   parseScheduleFromServer(serverData) {
     console.log('开始解析课表数据:', serverData);
     const data = [];
-    for (let i = 0; i < this.data.timeSlots.length; i++) {
+    const timeSlots = this.data.timeSlots || [];
+    const timeSlotsCount = timeSlots.length;
+    console.log('timeSlots数量:', timeSlotsCount);
+    
+    // 初始化二维数组
+    for (let i = 0; i < timeSlotsCount; i++) {
       data.push(new Array(7).fill(false));
     }
     
     if (serverData && Array.isArray(serverData)) {
+      console.log('课表数据是数组，长度:', serverData.length);
       serverData.forEach((item, index) => {
         console.log(`处理第${index}个课时配置项:`, item);
-        if (item.available === 1) {
-          const dayIndex = item.dayOfWeek - 1;
-          const slotIndex = this.matchTimeSlot(item.startTime);
-          console.log(`计算结果: dayIndex=${dayIndex}, slotIndex=${slotIndex}`);
-          if (slotIndex !== -1 && dayIndex >= 0 && dayIndex < 7) {
-            data[slotIndex][dayIndex] = true;
-            console.log(`标记时段为可用: 时间段${slotIndex}, 星期${dayIndex}`);
+        // 确保item是对象且包含必要字段
+        if (item && typeof item === 'object') {
+          console.log(`item.available:`, item.available);
+          console.log(`item.dayOfWeek:`, item.dayOfWeek);
+          console.log(`item.startTime:`, item.startTime);
+          
+          // 修复：使用更宽松的条件检查available
+          const isAvailable = item.available === 1 || item.available === true || item.available === '1';
+          if (isAvailable && item.dayOfWeek && item.startTime) {
+            const dayIndex = item.dayOfWeek - 1;
+            console.log(`计算dayIndex:`, dayIndex);
+            const slotIndex = this.matchTimeSlot(item.startTime);
+            console.log(`计算slotIndex:`, slotIndex);
+            
+            if (slotIndex !== -1 && dayIndex >= 0 && dayIndex < 7) {
+              if (slotIndex >= 0 && slotIndex < data.length) {
+                data[slotIndex][dayIndex] = true;
+                console.log(`标记时段为可用: 时间段${slotIndex}, 星期${dayIndex}`);
+              } else {
+                console.log(`slotIndex超出范围:`, slotIndex);
+              }
+            } else {
+              console.log(`索引无效: dayIndex=${dayIndex}, slotIndex=${slotIndex}`);
+            }
+          } else {
+            console.log(`课时配置项不完整或不可用:`, item);
           }
+        } else {
+          console.log(`课时配置项不是对象:`, item);
         }
       });
     } else {
@@ -111,6 +139,7 @@ Page({
     
     console.log('解析完成的课表数据:', data);
     this.setData({ scheduleData: data });
+    console.log('scheduleData更新完成');
   },
 
   matchTimeSlot(startTime) {
@@ -123,7 +152,28 @@ Page({
 
   // 判断时段是否可用
   isSlotAvailable(slotIdx, dayIdx) {
-    return this.data.scheduleData[slotIdx] && this.data.scheduleData[slotIdx][dayIdx];
+    console.log('检查时段可用性:', `slotIdx=${slotIdx}, dayIdx=${dayIdx}`);
+    console.log('scheduleData长度:', this.data.scheduleData.length);
+    if (!this.data.scheduleData || !Array.isArray(this.data.scheduleData)) {
+      console.log('scheduleData未初始化或不是数组');
+      return false;
+    }
+    if (slotIdx < 0 || slotIdx >= this.data.scheduleData.length) {
+      console.log('slotIdx超出范围');
+      return false;
+    }
+    const slotData = this.data.scheduleData[slotIdx];
+    if (!slotData || !Array.isArray(slotData)) {
+      console.log('时段数据未初始化或不是数组');
+      return false;
+    }
+    if (dayIdx < 0 || dayIdx >= slotData.length) {
+      console.log('dayIdx超出范围');
+      return false;
+    }
+    const isAvailable = slotData[dayIdx];
+    console.log('时段可用性结果:', isAvailable);
+    return isAvailable;
   },
 
   // 判断时段是否被选择
@@ -140,15 +190,27 @@ Page({
 
   // 切换预约选择
   toggleBooking(e) {
-    const { slot, day } = e.currentTarget.dataset;
+    console.log('收到点击事件:', e);
+    const dataset = e.currentTarget.dataset;
+    console.log('事件数据集:', dataset);
+    const slot = dataset.slot;
+    const day = dataset.day;
+    console.log('解析参数:', `slot=${slot}, day=${day}`);
+    
     // 只能选择可用时段
     if (!this.isSlotAvailable(slot, day)) {
+      console.log('时段不可预约，显示提示');
       wx.showToast({ title: '该时段不可预约', icon: 'none' });
       return;
     }
+    
+    console.log('时段可预约，切换选择状态');
     const data = this.data.bookingData;
+    console.log('切换前的bookingData:', data);
     data[slot][day] = !data[slot][day];
+    console.log('切换后的bookingData:', data);
     this.setData({ bookingData: data });
+    console.log('bookingData更新完成');
   },
 
   async fetchTutorDetail(id) {
@@ -268,48 +330,34 @@ Page({
       return;
     }
 
-    // 检查是否有选择的预约时段
-    const selectedSlots = this.getSelectedSlots();
-    if (selectedSlots.length === 0) {
-      wx.showToast({ title: '请选择至少一个预约时段', icon: 'none' });
-      return;
-    }
-
     // 传递必要信息到下单页，确保价格不为undefined
     const orderData = {
       tutorId: tutor.id,
       realName: tutor.realName,
       price: tutor.expectPrice || (tutor.price || 0),
       // 默认选中第一个科目，如果没有则留空
-      subject: tutor.teachSubjectsList && tutor.teachSubjectsList.length > 0 ? tutor.teachSubjectsList[0] : '',
-      selectedSlots: selectedSlots
+      subject: tutor.teachSubjectsList && tutor.teachSubjectsList.length > 0 ? tutor.teachSubjectsList[0] : ''
     };
 
     wx.navigateTo({
       url: `/pages/parent/order/confirm/confirm?data=${encodeURIComponent(JSON.stringify(orderData))}`
     });
   },
-  
-  // 获取选中的预约时段
-  getSelectedSlots() {
-    const { bookingData, timeSlots, weekDays } = this.data;
-    const selectedSlots = [];
-    
-    bookingData.forEach((daySlots, slotIdx) => {
-      daySlots.forEach((selected, dayIdx) => {
-        if (selected) {
-          selectedSlots.push({
-            slotIdx,
-            dayIdx,
-            dayOfWeek: dayIdx + 1,
-            startTime: timeSlots[slotIdx].startTime,
-            endTime: timeSlots[slotIdx].endTime,
-            dayName: weekDays[dayIdx]
-          });
+
+  // 带重试机制的请求
+  async retryRequest(requestFn, maxRetries = 3, retryDelay = 1000) {
+    let lastError;
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        return await requestFn();
+      } catch (error) {
+        lastError = error;
+        console.warn(`请求失败，${retryDelay}ms后重试 (${i + 1}/${maxRetries})`, error);
+        if (i < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
         }
-      });
-    });
-    
-    return selectedSlots;
+      }
+    }
+    throw lastError;
   }
 });
