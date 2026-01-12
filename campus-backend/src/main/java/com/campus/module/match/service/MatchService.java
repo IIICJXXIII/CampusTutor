@@ -71,18 +71,22 @@ public class MatchService {
         LambdaQueryWrapper<TutorProfile> wrapper = new LambdaQueryWrapper<TutorProfile>()
                 .eq(TutorProfile::getCertStatus, 2); // 只查已认证的
 
-        // 科目筛选(模糊匹配JSON数组)
+        // 科目筛选(模糊匹配JSON数组) - 修复：空字符串和空数组也应该匹配所有
         if (StringUtils.hasText(request.getSubject())) {
+            log.info("科目筛选条件: {}", request.getSubject());
             wrapper.and(w -> w.like(TutorProfile::getTeachSubjects, request.getSubject())
-                    .or().isNull(TutorProfile::getTeachSubjects));
+                    .or().isNull(TutorProfile::getTeachSubjects)
+                    .or().eq(TutorProfile::getTeachSubjects, "")
+                    .or().eq(TutorProfile::getTeachSubjects, "[]"));
         }
 
         // 年级筛选 - 使用GradeUtils进行智能匹配，同时匹配具体年级和对应的"全科"选项
         if (StringUtils.hasText(request.getGrade())) {
             String normalizedGrade = GradeUtils.normalize(request.getGrade());
             List<String> keywords = GradeUtils.getSearchKeywords(normalizedGrade);
+            log.info("年级筛选条件: {} -> 标准化: {} -> 关键词: {}", request.getGrade(), normalizedGrade, keywords);
 
-            // 构建OR条件：匹配具体年级或对应的全科或年级为NULL
+            // 构建OR条件：匹配具体年级或对应的全科或年级为NULL/空
             wrapper.and(w -> {
                 boolean first = true;
                 for (String keyword : keywords) {
@@ -93,14 +97,10 @@ public class MatchService {
                         w.or().like(TutorProfile::getTeachGrades, keyword);
                     }
                 }
-                // 添加年级为NULL的情况
-                if (first) {
-                    // 如果没有关键字，直接添加NULL条件
-                    w.isNull(TutorProfile::getTeachGrades);
-                } else {
-                    // 否则添加OR NULL条件
-                    w.or().isNull(TutorProfile::getTeachGrades);
-                }
+                // 添加年级为NULL或空的情况（兜底：如果教师没设置年级，应该能配所有需求）
+                w.or().isNull(TutorProfile::getTeachGrades);
+                w.or().eq(TutorProfile::getTeachGrades, "");
+                w.or().eq(TutorProfile::getTeachGrades, "[]");
             });
         }
 
@@ -164,6 +164,13 @@ public class MatchService {
         // 3. 分页查询
         Page<TutorProfile> pageParam = new Page<>(request.getPage(), request.getSize());
         IPage<TutorProfile> profilePage = tutorProfileMapper.selectPage(pageParam, wrapper);
+
+        // 调试日志：输出查询结果
+        log.info("匹配查询完成: 总数={}, 当前页记录数={}", profilePage.getTotal(), profilePage.getRecords().size());
+        for (TutorProfile p : profilePage.getRecords()) {
+            log.debug("匹配教师: id={}, name={}, subjects={}, grades={}, price={}",
+                    p.getId(), p.getRealName(), p.getTeachSubjects(), p.getTeachGrades(), p.getExpectPrice());
+        }
 
         // 4. 如果Redis无数据但有位置请求，在内存中计算距离
         if (distanceMap.isEmpty() && request.getLongitude() != null && request.getLatitude() != null) {

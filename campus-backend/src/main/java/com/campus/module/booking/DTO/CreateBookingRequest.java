@@ -1,4 +1,4 @@
-package com.campus.module.booking.dto;
+package com.campus.module.booking.DTO;
 
 import lombok.Data;
 import java.time.LocalDateTime;

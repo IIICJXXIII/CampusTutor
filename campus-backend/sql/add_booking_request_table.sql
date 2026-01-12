@@ -1,4 +1,5 @@
 -- Add booking_request table
+use campus_tutor_db;
 CREATE TABLE `booking_request` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `parent_id` bigint NOT NULL COMMENT '家长用户ID',
