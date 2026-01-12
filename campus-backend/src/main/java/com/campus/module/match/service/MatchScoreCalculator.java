@@ -885,4 +885,103 @@ public class MatchScoreCalculator {
                 return (visit == 1 || online == 1) ? weight : weight * 0.5;
         }
     }
+
+    // ============ 混合评分（协同过滤 + 内容匹配）============
+
+    /**
+     * 计算混合匹配分数（内容匹配 + 协同过滤）
+     * 
+     * 最终分数 = (1 - cfWeight) * contentScore + cfWeight * cfScore * 100
+     *
+     * @param tutor    教员档案
+     * @param demand   需求帖子
+     * @param distance 距离(公里)
+     * @param cfScore  协同过滤预测分数(0.0~1.0)，可为null表示无CF分数
+     * @param cfWeight 协同过滤权重(0.0~1.0)，如0.3表示CF占30%
+     * @return 混合评分结果
+     */
+    public MatchScoreResult calculateHybridScore(
+            TutorProfile tutor,
+            DemandPost demand,
+            Double distance,
+            Double cfScore,
+            double cfWeight) {
+
+        // 1. 首先计算内容匹配分数
+        MatchScoreResult contentResult = calculateScore(tutor, demand, distance);
+        double contentScore = contentResult.getMatchScore();
+
+        // 2. 如果没有CF分数，直接返回内容匹配结果
+        if (cfScore == null || cfWeight <= 0) {
+            return contentResult;
+        }
+
+        // 3. 计算混合分数
+        double cfScoreNormalized = cfScore * 100; // 转换到0-100范围
+        double hybridScore = (1 - cfWeight) * contentScore + cfWeight * cfScoreNormalized;
+
+        // 4. 更新结果
+        contentResult.setMatchScore(Math.min(100.0, hybridScore));
+        contentResult.setCfScore(cfScore);
+
+        // 5. 添加CF相关标签
+        if (cfScore >= 0.7) {
+            contentResult.getMatchTags().add("相似用户推荐⭐");
+        } else if (cfScore >= 0.5) {
+            contentResult.getMatchTags().add("智能推荐");
+        }
+
+        log.debug("Hybrid score for tutor {}: content={}, cf={}, hybrid={}",
+                tutor.getId(), contentScore, cfScoreNormalized, hybridScore);
+
+        return contentResult;
+    }
+
+    /**
+     * 计算混合匹配分数（基于搜索条件，无需求对象）
+     *
+     * @param tutor       教员档案
+     * @param subject     科目
+     * @param grade       年级
+     * @param distance    距离
+     * @param budgetPrice 预算价格
+     * @param cfScore     协同过滤预测分数(0.0~1.0)
+     * @param cfWeight    协同过滤权重(0.0~1.0)
+     * @return 混合评分结果
+     */
+    public MatchScoreResult calculateHybridScoreByCondition(
+            TutorProfile tutor,
+            String subject,
+            String grade,
+            Double distance,
+            BigDecimal budgetPrice,
+            Double cfScore,
+            double cfWeight) {
+
+        // 1. 首先计算内容匹配分数
+        MatchScoreResult contentResult = calculateScoreByCondition(tutor, subject, grade, distance, budgetPrice);
+        double contentScore = contentResult.getMatchScore();
+
+        // 2. 如果没有CF分数，直接返回内容匹配结果
+        if (cfScore == null || cfWeight <= 0) {
+            return contentResult;
+        }
+
+        // 3. 计算混合分数
+        double cfScoreNormalized = cfScore * 100;
+        double hybridScore = (1 - cfWeight) * contentScore + cfWeight * cfScoreNormalized;
+
+        // 4. 更新结果
+        contentResult.setMatchScore(Math.min(100.0, hybridScore));
+        contentResult.setCfScore(cfScore);
+
+        // 5. 添加CF相关标签
+        if (cfScore >= 0.7) {
+            contentResult.getMatchTags().add("相似用户推荐⭐");
+        } else if (cfScore >= 0.5) {
+            contentResult.getMatchTags().add("智能推荐");
+        }
+
+        return contentResult;
+    }
 }

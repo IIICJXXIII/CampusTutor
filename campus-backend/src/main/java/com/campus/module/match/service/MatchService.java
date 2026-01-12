@@ -39,6 +39,8 @@ public class MatchService {
     private final MatchScoreCalculator scoreCalculator;
     private final BehaviorService behaviorService;
     private final DynamicWeightCalculator dynamicWeightCalculator;
+    private final CollaborativeFilteringService cfService;
+    private final com.campus.module.match.config.CFConfig cfConfig;
 
     /**
      * 搜索教员
@@ -53,6 +55,7 @@ public class MatchService {
 
         if (request.getLongitude() != null && request.getLatitude() != null) {
             double radius = request.getRadius() != null ? request.getRadius() : 10.0;
+
             // 使用新方法获取带距离信息的结果
             Map<Long, Double> nearbyWithDistance = geoService.searchNearbyTutorsWithDistance(
                     request.getLongitude(), request.getLatitude(), radius);
@@ -197,7 +200,32 @@ public class MatchService {
                     .collect(Collectors.toList());
         }
 
-        // 5. 转换结果
+        // ============ 协同过滤预测 (User-Based CF) ============
+        Map<Long, Double> cfScores = new HashMap<>();
+        boolean enableCF = false;
+        double cfWeight = 0.0;
+
+        // 只有请求了"score"排序（即默认搜索或智能排序）且用户已登录，才尝试CF
+        if (("score".equals(sortBy) || StringUtils.isEmpty(sortBy)) && request.getUserId() != null) {
+            try {
+                // 检查是否启用且有足够的历史行为（冷启动检查）
+                if (cfConfig.isEnableCache() && cfService.hasEnoughHistory(request.getUserId())) {
+                    List<Long> candidateIds = filteredProfiles.stream()
+                            .map(TutorProfile::getId)
+                            .collect(Collectors.toList());
+
+                    if (!candidateIds.isEmpty()) {
+                        cfScores = cfService.batchPredictScores(request.getUserId(), candidateIds);
+                        enableCF = !cfScores.isEmpty();
+                        cfWeight = cfConfig.getCfWeight();
+                    }
+                }
+            } catch (Exception e) {
+                log.error("协同过滤预测异常，降级到纯加权算法: {}", e.getMessage());
+            }
+        }
+
+        // 6. 转换结果与评分计算
         List<Long> userIds = filteredProfiles.stream()
                 .map(TutorProfile::getUserId)
                 .collect(Collectors.toList());
@@ -211,6 +239,11 @@ public class MatchService {
         Map<Long, SysUser> finalUserMap = userMap;
         Map<Long, Double> finalDistanceMap = distanceMap;
 
+        // 传入有效final变量给Stream
+        boolean finalEnableCF = enableCF;
+        double finalCfWeight = cfWeight;
+        Map<Long, Double> finalCfScores = cfScores;
+
         List<TutorSearchResult> results = filteredProfiles.stream().map(profile -> {
             // 获取动态权重配置
             WeightConfig weights = dynamicWeightCalculator.getWeightsForUser(request.getUserId());
@@ -219,7 +252,7 @@ public class MatchService {
             TutorBehaviorStats stats = behaviorService.getTutorStats(profile.getId());
             Double hotnessScore = stats != null ? stats.getHotnessScore() : 0.0;
 
-            // 使用带行为信号的评分方法
+            // 使用带行为信号的评分方法 (内容匹配 + 行为热度)
             MatchScoreResult scoreResult = scoreCalculator.calculateScoreWithBehavior(
                     profile,
                     request.getSubject(),
@@ -236,6 +269,33 @@ public class MatchService {
                     weights.getEducationWeight(),
                     weights.getSpecialtyWeight(),
                     weights.getHotnessWeight());
+
+            // ============ 混合评分计算 (Hybrid Scoring) ============
+            // 如果启用了CF且该教员有预测分，则计算混合分数
+            if (finalEnableCF && finalCfScores.containsKey(profile.getId())) {
+                Double cfScore = finalCfScores.get(profile.getId());
+                if (cfScore != null) {
+                    double contentScore = scoreResult.getMatchScore(); // 0-100
+                    double cfScoreNormalized = cfScore * 100; // 0-100
+
+                    // 混合公式： (1-w) * Content + w * CF
+                    double hybridScore = (1 - finalCfWeight) * contentScore + finalCfWeight * cfScoreNormalized;
+
+                    // 更新分数
+                    scoreResult.setMatchScore(Math.min(100.0, hybridScore));
+                    scoreResult.setCfScore(cfScore);
+
+                    // 添加推荐标签
+                    if (cfScore >= 0.7) {
+                        scoreResult.getMatchTags().add("相似家长推荐");
+                    } else if (cfScore >= 0.5) {
+                        scoreResult.getMatchTags().add("猜你喜欢");
+                    }
+
+                    log.debug("Hybrid score for tutor {}: content={}, cf={}, hybrid={}",
+                            profile.getId(), contentScore, cfScoreNormalized, hybridScore);
+                }
+            }
 
             // 复制评分数据到结果
             scoreResult.setId(profile.getId());
@@ -289,7 +349,7 @@ public class MatchService {
         }
 
         // 如果按匹配分数排序（智能推荐）
-        if ("score".equals(sortBy) && !results.isEmpty()) {
+        if (("score".equals(sortBy) || StringUtils.isEmpty(sortBy)) && !results.isEmpty()) {
             results.sort((a, b) -> {
                 if (a instanceof MatchScoreResult && b instanceof MatchScoreResult) {
                     Double sa = ((MatchScoreResult) a).getMatchScore();
@@ -302,7 +362,7 @@ public class MatchService {
             });
         }
 
-        // 5. 构建返回分页
+        // 7. 构建返回分页
         Page<TutorSearchResult> resultPage = new Page<>(request.getPage(), request.getSize());
         resultPage.setRecords(results);
         // 如果有距离过滤，需要调整总记录数
