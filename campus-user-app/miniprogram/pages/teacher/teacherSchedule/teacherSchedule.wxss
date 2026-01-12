@@ -1,303 +1,233 @@
-/* 教师课表页面样式 - 简约专业风 */
+/* 教师课表页面样式 - 修复版本 */
+
+/* 页面容器 - 移除复杂背景 */
 .container {
-  padding: 20rpx;
-  flex: 1;
+  min-height: 100vh;
+  background: #F5F7FA;
+  padding: 0;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top);
 }
 
-/* 布局辅助类 */
-.flex-1 {
-  flex: 1;
+/* 说明卡片 */
+.info-card {
+  margin: 20rpx 24rpx;
+  padding: 20rpx 24rpx;
+  background: linear-gradient(135deg, #E8F8F5 0%, #D4F0E8 100%);
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  box-shadow: 0 2rpx 8rpx rgba(30, 111, 159, 0.08);
 }
 
-.text-20 {
-  font-size: 20px;
+.info-icon {
+  font-size: 32rpx;
 }
 
-/* 卡片样式扩展 */
-.card-secondary {
-  background-color: #E8F8F5;
-  border-left: 4px solid #1E6F9F;
+.info-text {
+  font-size: 24rpx;
+  color: #1E6F9F;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
-/* 课表滚动容器 */
-.schedule-scroll {
-  height: 600rpx;
-  border: 1px solid #F1F3F5;
-  border-radius: 12px;
+/* 课表主卡片 */
+.schedule-card {
+  margin: 0 16rpx;
+  background: #FFFFFF;
+  border-radius: 16rpx;
   overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
 }
 
-/* 课表网格 */
+/* 课表容器 - 不需要滚动，自适应宽度 */
+.schedule-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 课表网格 - 100%宽度 */
 .schedule-grid {
   display: flex;
   flex-direction: column;
-  min-width: 900rpx;
+  width: 100%;
 }
 
 /* 表头 */
 .grid-header {
   display: flex;
-  background-color: #F8F9FA;
-  border-bottom: 1px solid #F1F3F5;
+  background: linear-gradient(135deg, #1E6F9F 0%, #2D8CC9 100%);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .header-cell {
   flex: 1;
-  padding: 16rpx;
+  padding: 16rpx 4rpx;
   text-align: center;
-  border-right: 1px solid #F1F3F5;
-  min-width: 120rpx;
+  color: #FFFFFF;
+  font-size: 24rpx;
+  font-weight: 500;
+  border-right: 1rpx solid rgba(255, 255, 255, 0.1);
+}
+
+.header-cell:last-child {
+  border-right: none;
 }
 
 .header-cell.corner {
-  flex: 0 0 120rpx;
-  background-color: #1E6F9F;
-  color: #FFFFFF;
+  flex: 0 0 90rpx;
+  background: rgba(0, 0, 0, 0.1);
   font-weight: 600;
-  border-right: 1px solid #1A638A;
 }
 
-/* 时段标题 */
-.period-section {
-  margin-top: 16rpx;
-}
-
+/* 时段分组标题 */
 .period-title {
-  padding: 12rpx 20rpx;
-  background-color: #E8F8F5;
+  padding: 12rpx 16rpx;
+  background: #E8F8F5;
   color: #1E6F9F;
   font-weight: 600;
-  font-size: 14px;
-  border-left: 4px solid #1E6F9F;
+  font-size: 24rpx;
+  border-left: 4rpx solid #1E6F9F;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.period-icon {
+  font-size: 24rpx;
 }
 
 /* 网格行 */
 .grid-row {
   display: flex;
-  border-bottom: 1px solid #F1F3F5;
+  border-bottom: 1rpx solid #F1F3F5;
 }
 
-/* 时间单元格 */
+.grid-row:last-child {
+  border-bottom: none;
+}
+
+/* 时间单元格 - 紧凑版 */
 .time-cell {
-  flex: 0 0 120rpx;
-  padding: 16rpx;
-  background-color: #F8F9FA;
-  border-right: 1px solid #F1F3F5;
-  border-bottom: 1px solid #F1F3F5;
+  flex: 0 0 90rpx;
+  padding: 12rpx 6rpx;
+  background: #FAFBFC;
+  border-right: 1rpx solid #F1F3F5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rpx;
 }
 
-/* 课表单元格 */
+.time-start {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #343A40;
+}
+
+.time-end {
+  font-size: 18rpx;
+  color: #ADB5BD;
+}
+
+/* 课表单元格 - 紧凑版 */
 .schedule-cell {
   flex: 1;
-  min-height: 100rpx;
-  border-right: 1px solid #F1F3F5;
-  border-bottom: 1px solid #F1F3F5;
+  min-height: 70rpx;
+  border-right: 1rpx solid #F1F3F5;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  transition: all 0.3s ease;
-  background-color: #FFFFFF;
+  background: #FFFFFF;
+  transition: all 0.2s ease;
+}
+
+.schedule-cell:last-child {
+  border-right: none;
 }
 
 .schedule-cell:active {
-  background-color: #F8F9FA;
+  background: #F0F0F0;
 }
 
-/* 可预约状态 */
-.schedule-cell.available {
-  background-color: #E8F8F5;
-  border: 1px solid #D4F0E8;
+/* 选中/可预约状态 */
+.schedule-cell.active {
+  background: linear-gradient(135deg, #1E6F9F 0%, #2D8CC9 100%);
 }
 
-.available-icon {
-  font-size: 24px;
-  color: #1E6F9F;
-  font-weight: 600;
-}
-
-/* 已排课状态 */
-.schedule-cell.booked {
-  background-color: #1E6F9F;
+.schedule-cell.active text {
+  font-size: 26rpx;
+  font-weight: 700;
   color: #FFFFFF;
-  border: 1px solid #1A638A;
 }
 
-.booked-content {
-  padding: 8rpx;
-  text-align: center;
-  width: 100%;
+/* 图例区域 */
+.legend {
+  margin: 20rpx 24rpx;
+  padding: 16rpx 24rpx;
+  background: #FFFFFF;
+  border-radius: 12rpx;
+  display: flex;
+  justify-content: center;
+  gap: 48rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 }
 
-.text-xs {
-  font-size: 10px;
-  line-height: 1.2;
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
 }
 
-/* 图例样式 */
 .legend-dot {
-  width: 12rpx;
-  height: 12rpx;
-  border-radius: 50%;
-  flex-shrink: 0;
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 6rpx;
+  background: #F1F3F5;
+  border: 1rpx solid #DEE2E6;
 }
 
-.legend-dot.available {
-  background-color: #E8F8F5;
-  border: 1px solid #D4F0E8;
+.legend-dot.active {
+  background: linear-gradient(135deg, #1E6F9F 0%, #2D8CC9 100%);
+  border: none;
 }
 
-.legend-dot.booked {
-  background-color: #1E6F9F;
-  border: 1px solid #1A638A;
+.legend-item text {
+  font-size: 24rpx;
+  color: #495057;
 }
 
-.legend-dot.unavailable {
-  background-color: #F1F3F5;
-  border: 1px solid #DEE2E6;
+/* 操作区域 */
+.action-area {
+  padding: 24rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
 }
 
-/* 月视图样式 */
-.month-view {
-  border: 1px solid #F1F3F5;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.month-header {
-  padding: 20rpx;
-  background-color: #1E6F9F;
+.btn-save {
+  width: 100%;
+  height: 88rpx;
+  background: linear-gradient(135deg, #1E6F9F 0%, #2D8CC9 100%);
   color: #FFFFFF;
-  text-align: center;
-}
-
-.month-grid {
-  display: flex;
-  flex-direction: column;
-}
-
-.month-weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  border-bottom: 1px solid #F1F3F5;
-}
-
-.month-weekday {
-  padding: 12rpx;
-  text-align: center;
-  background-color: #F8F9FA;
-  border-right: 1px solid #F1F3F5;
-}
-
-.month-days {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-}
-
-.month-day {
-  padding: 16rpx;
-  min-height: 100rpx;
-  border-right: 1px solid #F1F3F5;
-  border-bottom: 1px solid #F1F3F5;
-  display: flex;
-  flex-direction: column;
-}
-
-.day-events {
-  margin-top: 8rpx;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4rpx;
-}
-
-.event-dot {
-  width: 8rpx;
-  height: 8rpx;
-  border-radius: 50%;
-}
-
-/* 表单组样式 */
-.form-group {
-  margin-bottom: 20rpx;
-}
-
-/* 模态框样式 */
-.modal-mask {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  font-size: 30rpx;
+  font-weight: 600;
+  border-radius: 20rpx;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999;
+  box-shadow: 0 6rpx 20rpx rgba(30, 111, 159, 0.3);
 }
 
-.modal-content {
-  background-color: #FFFFFF;
-  border-radius: 12px;
-  width: 85%;
-  max-width: 500rpx;
-  max-height: 70vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 0.5px 2px rgba(0, 0, 0, 0.1);
+.btn-save:active {
+  opacity: 0.9;
 }
 
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20rpx 24rpx;
-  border-bottom: 1px solid #F1F3F5;
-}
-
-.modal-close {
-  font-size: 24px;
-  color: #ADB5BD;
-  cursor: pointer;
-  padding: 4rpx;
-}
-
-.modal-close:active {
-  color: #6C757D;
-}
-
-.modal-body {
-  flex: 1;
-  padding: 24rpx;
-  overflow-y: auto;
-}
-
-/* 响应式设计 */
-@media (max-width: 375px) {
-  .container {
-    padding: 16rpx;
-  }
-  
-  .schedule-scroll {
-    height: 500rpx;
-  }
-  
-  .schedule-grid {
-    min-width: 700rpx;
-  }
-  
-  .header-cell {
-    min-width: 100rpx;
-  }
-  
-  .time-cell {
-    flex: 0 0 100rpx;
-  }
-  
-  .header-cell.corner {
-    flex: 0 0 100rpx;
-  }
-  
-  .schedule-cell {
-    min-height: 80rpx;
-  }
+.btn-save[disabled] {
+  background: #CED4DA;
+  box-shadow: none;
 }

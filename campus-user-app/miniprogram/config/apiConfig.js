@@ -34,8 +34,8 @@ const api = {
     certification: `${API_HOST}/api/tutor/certification`,
     schedule: `${API_HOST}/api/tutor/schedule`,
     publicSchedule: (tutorId) => `${API_HOST}/api/tutor/public/schedule/${tutorId}`,
-    // 教师公开详情 (后端为 /api/tutor/public/{id})
-    detail: (id) => `${API_HOST}/api/tutor/public/${id}`,
+    // 教师公开详情 (后端为 /api/tutor/public/profile/{id})
+    detail: (id) => `${API_HOST}/api/tutor/public/profile/${id}`,
   },
   // 家长模块 (Parent)
   parent: {
