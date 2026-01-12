@@ -37,30 +37,33 @@ Page({
       { label: '距离最近', value: 'distance' },
       { label: '价格最低', value: 'price_asc' } // 特殊处理
     ],
-    
+
     // UI状态
     activeSubject: 0,
     activeGrade: 0,
     activeSort: 1, // 默认不自动采用“智能推荐”，用户可自主选择
 
-    
+
     // 学历映射
     eduMap: { 1: '本科在读', 2: '本科毕业', 3: '硕士在读', 4: '硕士毕业', 5: '博士' }
   },
 
   onLoad(options) {
     // 接收预设关键词: subject, grade, longitude, latitude, demandId
+    // 注意：需要对URL参数进行解码
     if (options.subject) {
-      const idx = this.data.subjects.indexOf(options.subject);
-      this.setData({ 
-        'query.subject': options.subject,
-        activeSubject: idx > -1 ? idx : 0 
+      const subject = decodeURIComponent(options.subject);
+      const idx = this.data.subjects.indexOf(subject);
+      this.setData({
+        'query.subject': subject,
+        activeSubject: idx > -1 ? idx : 0
       });
     }
     if (options.grade) {
-      const gIdx = this.data.grades.indexOf(options.grade);
+      const grade = decodeURIComponent(options.grade);
+      const gIdx = this.data.grades.indexOf(grade);
       this.setData({
-        'query.grade': options.grade,
+        'query.grade': grade,
         activeGrade: gIdx > -1 ? gIdx : 0
       });
     }
@@ -107,7 +110,7 @@ Page({
       // 处理排序参数
       const q = { ...this.data.query };
       const sortValue = this.data.sortOptions[this.data.activeSort].value;
-      
+
       if (sortValue === 'price_asc') {
         q.sortBy = 'price';
         q.sortOrder = 'asc';
@@ -125,7 +128,7 @@ Page({
       }
 
       // 调用接口: POST /api/match/tutors，添加重试机制
-      const res = await this.retryRequest(() => 
+      const res = await this.retryRequest(() =>
         request.post(api.match.search, q),
         3, // 最多重试3次
         1000 // 重试间隔1秒
@@ -171,7 +174,7 @@ Page({
           } catch (err) {
             console.error('降级获取教师推荐失败', err);
           }
-        } 
+        }
         // 策略2: 清除科目限制
         else if (this.data.query.subject) {
           this.setData({ fallbackMessage: '未检索到匹配的老师，尝试清除科目限制' });
@@ -239,7 +242,7 @@ Page({
         hasMore: this.data.query.page < res.pages,
         loading: false
       });
-      
+
       if (!append) wx.stopPullDownRefresh();
 
     } catch (err) {
@@ -275,9 +278,9 @@ Page({
   onSubjectChange(e) {
     const idx = e.detail.value;
     const val = this.data.subjects[idx];
-    this.setData({ 
+    this.setData({
       activeSubject: idx,
-      'query.subject': val === '全部' ? '' : val 
+      'query.subject': val === '全部' ? '' : val
     }, () => this.refreshList());
   },
 
@@ -285,9 +288,9 @@ Page({
   onGradeChange(e) {
     const idx = e.detail.value;
     const val = this.data.grades[idx];
-    this.setData({ 
+    this.setData({
       activeGrade: idx,
-      'query.grade': val === '全部' ? '' : val 
+      'query.grade': val === '全部' ? '' : val
     }, () => this.refreshList());
   },
 
@@ -296,7 +299,7 @@ Page({
     const idx = e.detail.value;
     const val = this.data.sortOptions[idx].value;
     const queryUpdate = { activeSort: idx };
-    
+
     // 根据选择的排序值设置正确的参数
     if (val === 'price_asc') {
       queryUpdate['query.sortBy'] = 'price';
@@ -311,7 +314,7 @@ Page({
       queryUpdate['query.sortBy'] = '';
       queryUpdate['query.sortOrder'] = 'desc';
     }
-    
+
     this.setData(queryUpdate, () => this.refreshList());
   },
 

@@ -95,6 +95,7 @@
   </view>
 
   <!-- 课表预约 -->
+  <wxs src="./schedule.wxs" module="scheduleWxs"/>
   <view class="section-card schedule-section">
     <view class="section-title">
       <text>可预约时段</text>
@@ -109,11 +110,11 @@
         <block wx:for="{{timeSlots}}" wx:for-item="slot" wx:for-index="slotIdx" wx:key="slotIdx">
           <view class="grid-row">
             <view class="time-cell">{{slot.label}}</view>
-            <view class="schedule-cell {{getBookingCellClass(slotIdx, index)}}" 
-                  wx:for="{{weekDays}}" wx:for-index="index" wx:key="index"
-                  bindtap="toggleBooking" data-slot="{{slotIdx}}" data-day="{{index}}">
-              <text wx:if="{{isSlotBooked(slotIdx, index)}}">✓</text>
-              <text wx:elif="{{isSlotAvailable(slotIdx, index)}}"></text>
+            <view class="schedule-cell {{scheduleWxs.getCellClass(scheduleData, bookingData, slotIdx, dayIdx)}}" 
+                  wx:for="{{weekDays}}" wx:for-index="dayIdx" wx:key="dayIdx"
+                  bindtap="toggleBooking" data-slot="{{slotIdx}}" data-day="{{dayIdx}}">
+              <text wx:if="{{scheduleWxs.isSlotBooked(bookingData, slotIdx, dayIdx)}}">✓</text>
+              <text wx:elif="{{scheduleWxs.isSlotAvailable(scheduleData, slotIdx, dayIdx)}}"></text>
               <text wx:else>-</text>
             </view>
           </view>
