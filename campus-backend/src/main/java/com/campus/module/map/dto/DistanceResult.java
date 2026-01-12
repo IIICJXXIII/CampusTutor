@@ -1,12 +1,10 @@
 package com.campus.module.map.dto;
 
-import lombok.Data;
 import java.util.List;
 
 /**
  * 距离计算结果
  */
-@Data
 public class DistanceResult {
 
     /**
@@ -29,6 +27,35 @@ public class DistanceResult {
      */
     private List<Element> elements;
 
+    // 显式的getter和setter方法
+    public Integer getStatus() {
+        return status;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public Result getResult() {
+        return result;
+    }
+
+    public void setResult(Result result) {
+        this.result = result;
+    }
+
+    public List<Element> getElements() {
+        return elements;
+    }
+
     public void setElements(List<Element> elements) {
         this.elements = elements;
         // 同时设置兼容的result结构
@@ -40,23 +67,36 @@ public class DistanceResult {
         this.result.setRows(List.of(de));
     }
 
-    @Data
     public static class Result {
         /**
          * 距离矩阵
          */
         private List<DistanceElement> rows;
+
+        public List<DistanceElement> getRows() {
+            return rows;
+        }
+
+        public void setRows(List<DistanceElement> rows) {
+            this.rows = rows;
+        }
     }
 
-    @Data
     public static class DistanceElement {
         /**
          * 元素列表
          */
         private List<Element> elements;
+
+        public List<Element> getElements() {
+            return elements;
+        }
+
+        public void setElements(List<Element> elements) {
+            this.elements = elements;
+        }
     }
 
-    @Data
     public static class Element {
         /**
          * 距离(米)
@@ -67,5 +107,21 @@ public class DistanceResult {
          * 耗时(秒)
          */
         private Integer duration;
+
+        public Integer getDistance() {
+            return distance;
+        }
+
+        public void setDistance(Integer distance) {
+            this.distance = distance;
+        }
+
+        public Integer getDuration() {
+            return duration;
+        }
+
+        public void setDuration(Integer duration) {
+            this.duration = duration;
+        }
     }
 }
