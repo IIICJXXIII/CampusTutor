@@ -79,7 +79,14 @@ public class TutorController {
     @Operation(summary = "获取指定教师的时间配置（公开）")
     @GetMapping("/public/schedule/{tutorId}")
     public Result<?> getPublicSchedule(@PathVariable Long tutorId) {
-        return Result.success(tutorProfileService.getScheduleConfig(tutorId));
+        try {
+            var scheduleList = tutorProfileService.getScheduleConfig(tutorId);
+            // 即使为空也返回空列表，不返回404
+            return Result.success(scheduleList != null ? scheduleList : java.util.Collections.emptyList());
+        } catch (Exception e) {
+            // 捕获任何异常，返回空列表
+            return Result.success(java.util.Collections.emptyList());
+        }
     }
 
     @Operation(summary = "根据ID获取教员档案(公开)")

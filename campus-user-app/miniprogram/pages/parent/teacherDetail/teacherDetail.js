@@ -66,7 +66,7 @@ Page({
       console.log('调用API:', api.tutor.publicSchedule(tutorId));
       const result = await request.get(api.tutor.publicSchedule(tutorId));
       console.log('获取到的课表数据:', result);
-      
+
       // request.js已经处理了响应，直接返回了resData.data
       if (result && Array.isArray(result)) {
         this.parseScheduleFromServer(result);
@@ -91,7 +91,7 @@ Page({
     for (let i = 0; i < this.data.timeSlots.length; i++) {
       data.push(new Array(7).fill(false));
     }
-    
+
     if (serverData && Array.isArray(serverData)) {
       serverData.forEach((item, index) => {
         console.log(`处理第${index}个课时配置项:`, item);
@@ -108,7 +108,7 @@ Page({
     } else {
       console.log('课表数据为空或格式不正确:', serverData);
     }
-    
+
     console.log('解析完成的课表数据:', data);
     this.setData({ scheduleData: data });
   },
@@ -289,12 +289,12 @@ Page({
       url: `/pages/parent/order/confirm/confirm?data=${encodeURIComponent(JSON.stringify(orderData))}`
     });
   },
-  
+
   // 获取选中的预约时段
   getSelectedSlots() {
     const { bookingData, timeSlots, weekDays } = this.data;
     const selectedSlots = [];
-    
+
     bookingData.forEach((daySlots, slotIdx) => {
       daySlots.forEach((selected, dayIdx) => {
         if (selected) {
@@ -309,7 +309,7 @@ Page({
         }
       });
     });
-    
+
     return selectedSlots;
   }
 });
