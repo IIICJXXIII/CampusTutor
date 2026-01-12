@@ -137,7 +137,8 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
     public IPage<DemandPost> pageList(String subject, String grade, Integer page, Integer size) {
         Page<DemandPost> pageParam = new Page<>(page, size);
         LambdaQueryWrapper<DemandPost> wrapper = new LambdaQueryWrapper<DemandPost>()
-                .eq(DemandPost::getStatus, 1); // 只查上架的
+                .eq(DemandPost::getStatus, 1) // 只查上架的
+                .isNull(DemandPost::getMatchedTutorId); // 过滤掉已被接单的需求
 
         if (StringUtils.hasText(subject)) {
             wrapper.eq(DemandPost::getSubject, subject);
@@ -193,7 +194,8 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
         // 2. 构建查询条件
         Page<DemandPost> pageParam = new Page<>(page, size);
         LambdaQueryWrapper<DemandPost> wrapper = new LambdaQueryWrapper<DemandPost>()
-                .eq(DemandPost::getStatus, 1); // 只查上架的
+                .eq(DemandPost::getStatus, 1) // 只查上架的
+                .isNull(DemandPost::getMatchedTutorId); // 过滤掉已被接单的需求
 
         if (StringUtils.hasText(subject)) {
             wrapper.eq(DemandPost::getSubject, subject);
@@ -313,8 +315,7 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
         // 2. 验证教师是否存在且已认证
         TutorProfile tutorProfile = tutorProfileMapper.selectOne(
                 new LambdaQueryWrapper<TutorProfile>()
-                        .eq(TutorProfile::getUserId, tutorId)
-        );
+                        .eq(TutorProfile::getUserId, tutorId));
         if (tutorProfile == null) {
             throw new BusinessException(ResultCode.PARAM_ERROR, "教师档案不存在");
         }
