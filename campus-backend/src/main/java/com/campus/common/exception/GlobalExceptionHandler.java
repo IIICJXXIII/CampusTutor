@@ -5,7 +5,8 @@ import com.campus.common.result.ResultCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
@@ -22,9 +23,10 @@ import java.util.stream.Collectors;
 /**
  * 全局异常处理器
  */
-@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(BusinessException.class)
     public Result<Void> handleBusinessException(BusinessException e, HttpServletRequest request) {
@@ -39,7 +41,7 @@ public class GlobalExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining(", "));
         log.warn("参数校验失败: {}", message);
-        return Result.fail(ResultCode.PARAM_ERROR.getCode(), message);
+        return Result.fail(400, message);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -49,7 +51,7 @@ public class GlobalExceptionHandler {
                 .map(ConstraintViolation::getMessage)
                 .collect(Collectors.joining(", "));
         log.warn("参数校验失败: {}", message);
-        return Result.fail(ResultCode.PARAM_ERROR.getCode(), message);
+        return Result.fail(400, message);
     }
 
     @ExceptionHandler(BindException.class)
@@ -59,14 +61,14 @@ public class GlobalExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining(", "));
         log.warn("参数绑定失败: {}", message);
-        return Result.fail(ResultCode.PARAM_ERROR.getCode(), message);
+        return Result.fail(400, message);
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
         log.warn("缺少请求参数: {}", e.getParameterName());
-        return Result.fail(ResultCode.PARAM_ERROR.getCode(), "缺少必要参数: " + e.getParameterName());
+        return Result.fail(400, "缺少必要参数: " + e.getParameterName());
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
@@ -91,6 +93,6 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<Void> handleException(Exception e, HttpServletRequest request) {
         log.error("系统异常: URI={}, Error={}", request.getRequestURI(), e.getMessage(), e);
-        return Result.fail(ResultCode.FAIL.getCode(), "系统繁忙，请稍后重试");
+        return Result.fail(500, "系统繁忙，请稍后重试");
     }
 }

@@ -3,7 +3,6 @@ package com.campus.module.user.service.impl;
 import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.campus.common.exception.BusinessException;
-import com.campus.common.result.ResultCode;
 import com.campus.module.user.entity.SysUser;
 import com.campus.module.user.mapper.SysUserMapper;
 import com.campus.module.user.service.SysUserService;
@@ -39,7 +38,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Transactional(rollbackFor = Exception.class)
     public boolean register(SysUser user) {
         if (existsByUsername(user.getUsername())) {
-            throw new BusinessException(ResultCode.USERNAME_EXIST);
+            throw new BusinessException(5003, "用户名已存在");
         }
         String encryptPassword = SecureUtil.md5(user.getPassword());
         user.setPassword(encryptPassword);
@@ -54,7 +53,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     public boolean updateStatus(Long userId, Integer status) {
         SysUser user = getById(userId);
         if (user == null) {
-            throw new BusinessException(ResultCode.USER_NOT_EXIST);
+            throw new BusinessException(5001, "用户不存在");
         }
         user.setStatus(status);
         return updateById(user);
@@ -65,7 +64,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     public void resetPassword(String username, String newPassword) {
         SysUser user = getByUsername(username);
         if (user == null) {
-            throw new BusinessException(ResultCode.USER_NOT_EXIST);
+            throw new BusinessException(5001, "用户不存在");
         }
         // 密码加密
         String encryptedPassword = SecureUtil.md5(newPassword);
@@ -78,13 +77,13 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     public void updatePassword(Long userId, String oldPassword, String newPassword) {
         SysUser user = getById(userId);
         if (user == null) {
-            throw new BusinessException(ResultCode.USER_NOT_EXIST);
+            throw new BusinessException(5001, "用户不存在");
         }
         
         // 验证旧密码
         String encryptedOldPassword = SecureUtil.md5(oldPassword);
         if (!encryptedOldPassword.equals(user.getPassword())) {
-            throw new BusinessException(ResultCode.PASSWORD_ERROR);
+            throw new BusinessException(5004, "密码错误");
         }
         
         // 密码加密

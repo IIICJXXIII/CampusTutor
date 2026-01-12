@@ -8,8 +8,8 @@ import cn.hutool.json.JSONUtil;
 import com.campus.module.llm.config.LlmConfig;
 import com.campus.module.llm.dto.ChatMessage;
 import com.campus.module.llm.dto.ChatResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -19,12 +19,16 @@ import java.util.List;
  * LLM客户端服务
  * 封装与各种LLM服务商的API调用
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class LlmClientService {
 
+    private static final Logger log = LoggerFactory.getLogger(LlmClientService.class);
+    
     private final LlmConfig config;
+    
+    public LlmClientService(LlmConfig config) {
+        this.config = config;
+    }
 
     /**
      * 发送聊天请求

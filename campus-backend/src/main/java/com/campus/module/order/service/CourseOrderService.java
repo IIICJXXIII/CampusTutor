@@ -51,9 +51,10 @@ public interface CourseOrderService extends IService<CourseOrder> {
     /**
      * 完成订单
      * 
+     * @param tutorId 教员ID
      * @param orderId 订单ID
      */
-    void completeOrder(Long orderId);
+    void completeOrder(Long tutorId, Long orderId);
 
     /**
      * 获取家长订单列表
@@ -122,4 +123,15 @@ public interface CourseOrderService extends IService<CourseOrder> {
      * @return 支付参数
      */
     Map<String, String> createWechatPayParams(Long userId, Long orderId, String openid);
+    
+    /**
+     * 从预约请求创建订单
+     * 
+     * @param parentId   家长ID
+     * @param bookingId  预约请求ID
+     * @param totalHours 总课时
+     * @param unitPrice  课时单价
+     * @return 订单ID
+     */
+    Long createOrderFromBooking(Long parentId, Long bookingId, Integer totalHours, java.math.BigDecimal unitPrice);
 }

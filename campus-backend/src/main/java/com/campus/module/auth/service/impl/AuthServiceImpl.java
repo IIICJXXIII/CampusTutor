@@ -2,7 +2,6 @@ package com.campus.module.auth.service.impl;
 
 import cn.hutool.core.util.RandomUtil;
 import com.campus.common.exception.BusinessException;
-import com.campus.common.result.ResultCode;
 import com.campus.common.utils.JwtUtils;
 import com.campus.module.auth.dto.LoginRequest;
 import com.campus.module.auth.dto.LoginResponse;
@@ -57,12 +56,12 @@ public class AuthServiceImpl implements AuthService {
         // 根据账号/手机号查询用户
         SysUser user = sysUserService.getByUsername(request.getAccount());
         if (user == null) {
-            throw new BusinessException(ResultCode.USER_NOT_EXIST);
+            throw new BusinessException(5001, "用户不存在");
         }
 
         // 检查账号状态
         if (user.getStatus() == 0) {
-            throw new BusinessException(ResultCode.USER_DISABLED);
+            throw new BusinessException(5002, "账号已被禁用");
         }
 
         // 根据登录方式校验
@@ -77,10 +76,10 @@ public class AuthServiceImpl implements AuthService {
             }
         } else {
             // 密码登录（账号或手机号）
-            String encryptPassword = cn.hutool.crypto.SecureUtil.md5(request.getPassword());
-            if (!encryptPassword.equals(user.getPassword())) {
-                throw new BusinessException(ResultCode.PASSWORD_ERROR);
-            }
+        String encryptPassword = cn.hutool.crypto.SecureUtil.md5(request.getPassword());
+        if (!encryptPassword.equals(user.getPassword())) {
+            throw new BusinessException(5004, "密码错误");
+        }
         }
 
         // 生成 Token
@@ -106,7 +105,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 检查手机号是否已注册
         if (sysUserService.existsByUsername(request.getPhone())) {
-            throw new BusinessException(ResultCode.USERNAME_EXIST);
+            throw new BusinessException(5003, "用户名已存在");
         }
 
         // 创建用户
@@ -145,7 +144,7 @@ public class AuthServiceImpl implements AuthService {
         if (stringRedisTemplate != null) {
             try {
                 if (stringRedisTemplate.hasKey(rateLimitKey)) {
-                    throw new BusinessException(ResultCode.PARAM_ERROR, "验证码发送过于频繁，请1分钟后再试");
+                    throw new BusinessException(400, "验证码发送过于频繁，请1分钟后再试");
                 }
             } catch (Exception e) {
                 // Redis不可用时忽略防刷检查

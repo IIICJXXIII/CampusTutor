@@ -7,6 +7,7 @@ import com.campus.module.wallet.entity.SysWallet;
 import com.campus.module.wallet.mapper.SysWalletMapper;
 import com.campus.module.wallet.service.SysWalletService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,7 @@ import java.math.BigDecimal;
 /**
  * 用户钱包 Service 实现类
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SysWalletServiceImpl extends ServiceImpl<SysWalletMapper, SysWallet> implements SysWalletService {
@@ -77,12 +79,19 @@ public class SysWalletServiceImpl extends ServiceImpl<SysWalletMapper, SysWallet
             createWallet(userId);
             wallet = getByUserId(userId);
         }
+        
+        // 获取实际可解冻金额（不超过冻结金额）
+        BigDecimal actualUnfreezeAmount = amount;
         if (wallet.getFrozenAmount().compareTo(amount) < 0) {
-            throw new BusinessException("冻结金额不足");
+            // 记录详细日志以便排查
+            log.warn("冻结金额不足，将解冻全部冻结金额: userId={}, frozenAmount={}, requestedAmount={}", 
+                     userId, wallet.getFrozenAmount(), amount);
+            actualUnfreezeAmount = wallet.getFrozenAmount();
         }
+        
         // 减少冻结金额，增加回余额
-        wallet.setFrozenAmount(wallet.getFrozenAmount().subtract(amount));
-        wallet.setBalance(wallet.getBalance().add(amount));
+        wallet.setFrozenAmount(wallet.getFrozenAmount().subtract(actualUnfreezeAmount));
+        wallet.setBalance(wallet.getBalance().add(actualUnfreezeAmount));
         boolean success = updateById(wallet);
         if (!success) {
             throw new BusinessException("更新钱包失败");

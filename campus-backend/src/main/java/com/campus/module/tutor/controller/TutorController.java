@@ -76,6 +76,12 @@ public class TutorController {
         return Result.success(tutorProfileService.getScheduleConfig(profile.getId()));
     }
 
+    @Operation(summary = "获取指定教师的时间配置（公开）")
+    @GetMapping("/public/schedule/{tutorId}")
+    public Result<?> getPublicSchedule(@PathVariable Long tutorId) {
+        return Result.success(tutorProfileService.getScheduleConfig(tutorId));
+    }
+
     @Operation(summary = "根据ID获取教员档案(公开)")
     @GetMapping("/public/{id}")
     public Result<TutorProfile> getById(@PathVariable Long id) {
