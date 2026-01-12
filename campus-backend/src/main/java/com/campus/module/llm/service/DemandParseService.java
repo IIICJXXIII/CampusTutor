@@ -5,8 +5,8 @@ import cn.hutool.json.JSONUtil;
 import com.campus.module.llm.dto.ChatMessage;
 import com.campus.module.llm.dto.ChatResponse;
 import com.campus.module.llm.dto.DemandParseResult;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -19,12 +19,16 @@ import java.util.regex.Pattern;
  * 需求智能解析服务
  * 使用LLM解析自然语言描述的家教需求
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class DemandParseService {
 
+    private static final Logger log = LoggerFactory.getLogger(DemandParseService.class);
+    
     private final LlmClientService llmClient;
+    
+    public DemandParseService(LlmClientService llmClient) {
+        this.llmClient = llmClient;
+    }
 
     /**
      * 系统提示词 - 定义LLM如何解析需求

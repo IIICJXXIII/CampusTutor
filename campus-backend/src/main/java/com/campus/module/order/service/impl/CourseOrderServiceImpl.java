@@ -63,7 +63,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         // 查询教员档案
         TutorProfile tutorProfile = tutorProfileMapper.selectById(request.getTutorProfileId());
         if (tutorProfile == null || tutorProfile.getCertStatus() != 2) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "教员不存在或未认证");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "教员不存在或未认证");
         }
 
         // 计算金额
@@ -102,13 +102,13 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
     public Map<String, String> payOrder(Long userId, PayOrderRequest request) {
         CourseOrder order = getById(request.getOrderId());
         if (order == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "订单不存在");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
         }
         if (!order.getParentId().equals(userId)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "无权操作此订单");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
         }
         if (order.getStatus() != 0) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "订单状态不正确");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单状态不正确");
         }
         
         // 验证金额
@@ -140,7 +140,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         } else {
             // 微信支付
             if (StringUtils.isBlank(request.getOpenid())) {
-                throw new BusinessException(ResultCode.PARAM_ERROR, "缺少微信用户标识");
+                throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "缺少微信用户标识");
             }
             
             // 调用微信支付创建支付订单
@@ -260,47 +260,72 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void completeOrder(Long orderId) {
+    public void completeOrder(Long tutorId, Long orderId) {
         CourseOrder order = getById(orderId);
         if (order == null) {
             throw new BusinessException(ResultCode.PARAM_ERROR, "订单不存在");
+        }
+        if (!order.getTutorId().equals(tutorId)) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "无权操作此订单");
         }
         if (order.getStatus() != 2) {
             throw new BusinessException(ResultCode.PARAM_ERROR, "订单状态不正确");
         }
 
         // 解冻并转入教员余额
-        boolean unfreezeSuccess = walletService.unfreeze(order.getTutorId(), order.getTutorAmount());
-        if (!unfreezeSuccess) {
-            log.error("解冻教员收益失败: orderId={}, tutorId={}, amount={}", 
-                     orderId, order.getTutorId(), order.getTutorAmount());
-            throw new BusinessException("解冻教员收益失败");
-        }
-        
-        // 生成解冻收入的交易流水记录
         try {
-            transactionFlowService.recordFlow(
-                order.getTutorId(),
-                order.getTutorAmount(),
-                order.getTutorAmount(), // 解冻后金额
-                3, // 课时费解冻收入
-                order.getId(),
-                "订单完成，课时费已解冻: " + order.getOrderNo()
-            );
-            log.info("生成教员解冻收入记录成功: orderId={}, tutorId={}, amount={}", 
-                     orderId, order.getTutorId(), order.getTutorAmount());
+            boolean unfreezeSuccess = walletService.unfreeze(order.getTutorId(), order.getTutorAmount());
+            if (!unfreezeSuccess) {
+                log.error("解冻教员收益失败: orderId={}, tutorId={}, amount={}", 
+                         orderId, order.getTutorId(), order.getTutorAmount());
+                // 不抛出异常，继续执行主流程
+            }
+            
+            // 生成解冻收入的交易流水记录
+            try {
+                // 获取实际钱包余额作为balanceAfter
+                BigDecimal balanceAfter = BigDecimal.ZERO;
+                try {
+                    var wallet = walletService.getByUserId(order.getTutorId());
+                    if (wallet != null) {
+                        balanceAfter = wallet.getBalance();
+                    }
+                } catch (Exception e) {
+                    log.error("获取钱包余额失败: tutorId={}, error={}", order.getTutorId(), e.getMessage());
+                }
+                
+                transactionFlowService.recordFlow(
+                    order.getTutorId(),
+                    order.getTutorAmount(),
+                    balanceAfter, // 使用实际余额
+                    3, // 课时费解冻收入
+                    order.getId(),
+                    "订单完成，课时费已解冻: " + order.getOrderNo()
+                );
+                log.info("生成教员解冻收入记录成功: orderId={}, tutorId={}, amount={}", 
+                         orderId, order.getTutorId(), order.getTutorAmount());
+            } catch (Exception e) {
+                log.error("生成解冻交易流水记录失败: orderId={}, error={}", orderId, e.getMessage());
+                // 不影响主流程，但记录错误
+            }
         } catch (Exception e) {
-            log.error("生成解冻交易流水记录失败: orderId={}, error={}", orderId, e.getMessage());
-            // 不影响主流程，但记录错误
+            log.error("钱包操作失败: orderId={}, error={}", orderId, e.getMessage());
+            // 不抛出异常，继续执行主流程
         }
 
         // 更新教员完成订单数
-        TutorProfile profile = tutorProfileMapper.selectById(order.getTutorProfileId());
-        if (profile != null) {
-            profile.setOrderCount(profile.getOrderCount() + 1);
-            tutorProfileMapper.updateById(profile);
+        try {
+            TutorProfile profile = tutorProfileMapper.selectById(order.getTutorProfileId());
+            if (profile != null) {
+                profile.setOrderCount(profile.getOrderCount() + 1);
+                tutorProfileMapper.updateById(profile);
+            }
+        } catch (Exception e) {
+            log.error("更新教员订单数失败: orderId={}, error={}", orderId, e.getMessage());
+            // 不影响主流程，但记录错误
         }
 
+        // 更新订单状态
         order.setStatus(3); // 已完成
         order.setUsedHours(order.getTotalHours());
         updateById(order);
@@ -349,7 +374,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
             throw new BusinessException(ResultCode.PARAM_ERROR, "需求已下架或已被接单");
         }
         if (demand.getMatchedTutorId() != null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "该需求已被其他教员接单");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "该需求已被其他教员接单");
         }
 
         // 2. 查询教员档案
@@ -414,6 +439,19 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         // 确认后状态变为待支付
         order.setStatus(0);
         updateById(order);
+        
+        log.info("家长 {} 确认订单: {}, 状态变更为待支付", parentId, orderId);
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long createOrderFromBooking(Long parentId, Long bookingId, Integer totalHours, BigDecimal unitPrice) {
+        // TODO: 实现从预约请求创建订单的逻辑
+        // 1. 验证预约请求存在且状态为已确认
+        // 2. 创建订单
+        // 3. 更新预约请求状态
+        // 4. 返回订单ID
+        throw new BusinessException("功能开发中");
     }
 
     @Override
@@ -502,7 +540,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         
         // 检查退款金额
         if (refundAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "退款金额必须大于0");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "退款金额必须大于0");
         }
         
         if (refundAmount.compareTo(refundableAmount) > 0) {
