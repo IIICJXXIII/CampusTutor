@@ -13,19 +13,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * 百度 OCR 服务实现
- * 
  * 使用百度AI开放平台的OCR服务
- * 文档: https://ai.baidu.com/ai-doc/OCR/1k3h7y3db
  */
 @Slf4j
 @Service
@@ -57,7 +51,6 @@ public class BaiduOcrServiceImpl implements OcrService {
         OcrResultDTO result = new OcrResultDTO();
 
         if (!enabled) {
-            // 模拟模式：返回模拟数据
             return mockStudentCardResult();
         }
 
@@ -70,8 +63,10 @@ public class BaiduOcrServiceImpl implements OcrService {
                 return result;
             }
 
-            // 解析学生证信息
-            result = parseStudentCardText(text);
+            // 统一使用豆包大模型智能解析
+            log.info("【OCR URL模式】原始文本: \n{}", text);
+            result = doubaoVisionService.parseStudentCardWithLLM(text);
+
         } catch (Exception e) {
             log.error("学生证OCR识别失败", e);
             result.setSuccess(false);
@@ -86,7 +81,6 @@ public class BaiduOcrServiceImpl implements OcrService {
         OcrResultDTO result = new OcrResultDTO();
 
         if (!enabled) {
-            // 模拟模式
             return mockIdCardFrontResult();
         }
 
@@ -132,14 +126,13 @@ public class BaiduOcrServiceImpl implements OcrService {
     public OcrResultDTO recognizeIdCardBack(String imageUrl) {
         OcrResultDTO result = new OcrResultDTO();
         result.setSuccess(true);
-        // 背面主要是签发机关和有效期，根据需求可扩展
         return result;
     }
 
     @Override
     public String recognizeGeneral(String imageUrl) {
         if (!enabled) {
-            return "模拟识别结果\n姓名：张三\n学校：北京大学\n专业：计算机科学与技术\n学号：2022001234\n入学日期：2022年9月";
+            return "模拟识别结果\n姓名：张三\n学校：北京大学";
         }
 
         try {
@@ -155,11 +148,10 @@ public class BaiduOcrServiceImpl implements OcrService {
 
             JSONObject json = JSONUtil.parseObj(response.body());
             if (json.containsKey("error_code")) {
-                log.error("OCR识别失败: {}", json.getStr("error_msg"));
+                log.error("OCR API错误: {}", json.getStr("error_msg"));
                 return null;
             }
 
-            // 拼接所有识别出的文字
             StringBuilder sb = new StringBuilder();
             json.getJSONArray("words_result").forEach(item -> {
                 JSONObject obj = (JSONObject) item;
@@ -168,7 +160,7 @@ public class BaiduOcrServiceImpl implements OcrService {
 
             return sb.toString();
         } catch (Exception e) {
-            log.error("通用OCR识别失败", e);
+            log.error("通用OCR识别请求失败", e);
             return null;
         }
     }
@@ -178,15 +170,13 @@ public class BaiduOcrServiceImpl implements OcrService {
         OcrResultDTO result = new OcrResultDTO();
 
         if (!enabled) {
-            // 模拟模式：返回模拟数据
             return mockStudentCardResult();
         }
 
         try {
             // 使用Base64进行通用文字识别
             String text = recognizeGeneralByBase64(imageBase64);
-
-            log.info("【OCR Base64识别】识别结果文本: \n{}", text);
+            log.info("【OCR Base64模式】原始文本: \n{}", text);
 
             if (StrUtil.isBlank(text)) {
                 result.setSuccess(false);
@@ -194,7 +184,7 @@ public class BaiduOcrServiceImpl implements OcrService {
                 return result;
             }
 
-            // 使用豆包大模型智能解析学生证信息
+            // 使用豆包大模型智能解析
             result = doubaoVisionService.parseStudentCardWithLLM(text);
 
         } catch (Exception e) {
@@ -211,45 +201,32 @@ public class BaiduOcrServiceImpl implements OcrService {
      */
     private String recognizeGeneralByBase64(String imageBase64) {
         if (!enabled) {
-            return "模拟识别结果\n姓名：张三\n学校：北京大学\n专业：计算机科学与技术\n学号：2022001234\n入学日期：2022年9月";
+            return "模拟识别结果\n姓名：张三\n学校：北京大学";
         }
 
         try {
             String token = getAccessToken();
             String url = GENERAL_URL + "?access_token=" + token;
 
-            // 移除可能的data:image前缀和引号
             String base64Data = imageBase64.trim();
-            if (base64Data.startsWith("\"")) {
-                base64Data = base64Data.substring(1);
-            }
-            if (base64Data.endsWith("\"")) {
-                base64Data = base64Data.substring(0, base64Data.length() - 1);
-            }
-            if (base64Data.contains(",")) {
-                base64Data = base64Data.substring(base64Data.indexOf(",") + 1);
-            }
+            // 处理Base64前缀
+            if (base64Data.startsWith("\"")) base64Data = base64Data.substring(1);
+            if (base64Data.endsWith("\"")) base64Data = base64Data.substring(0, base64Data.length() - 1);
+            if (base64Data.contains(",")) base64Data = base64Data.substring(base64Data.indexOf(",") + 1);
 
-            log.info("【OCR调试】Base64长度: {}, 前20字符: {}",
-                    base64Data.length(),
-                    base64Data.length() > 20 ? base64Data.substring(0, 20) : base64Data);
-
-            // 直接使用Base64数据，hutool的form()方法会自动处理编码
+            // 百度API要求 base64 必须进行 URLEncode (Hutool 的 form 方法通常会自动处理，但直接传 String 比较保险)
+            // 这里直接用 hutool 的 form 发送，key 为 image
             HttpResponse response = HttpRequest.post(url)
                     .form("image", base64Data)
                     .execute();
 
-            String responseBody = response.body();
-            log.debug("【OCR调试】百度返回: {}", responseBody);
-
-            JSONObject json = JSONUtil.parseObj(responseBody);
+            String body = response.body();
+            JSONObject json = JSONUtil.parseObj(body);
             if (json.containsKey("error_code")) {
-                log.error("OCR Base64识别失败: error_code={}, error_msg={}",
-                        json.getStr("error_code"), json.getStr("error_msg"));
+                log.error("OCR Base64 API错误: {}", json.getStr("error_msg"));
                 return null;
             }
 
-            // 拼接所有识别出的文字
             StringBuilder sb = new StringBuilder();
             json.getJSONArray("words_result").forEach(item -> {
                 JSONObject obj = (JSONObject) item;
@@ -258,7 +235,7 @@ public class BaiduOcrServiceImpl implements OcrService {
 
             return sb.toString();
         } catch (Exception e) {
-            log.error("通用OCR Base64识别失败", e);
+            log.error("通用OCR Base64识别请求失败", e);
             return null;
         }
     }
@@ -267,7 +244,6 @@ public class BaiduOcrServiceImpl implements OcrService {
      * 获取百度 Access Token
      */
     private String getAccessToken() {
-        // 检查缓存
         if (accessToken != null && System.currentTimeMillis() < tokenExpireTime) {
             return accessToken;
         }
@@ -283,61 +259,10 @@ public class BaiduOcrServiceImpl implements OcrService {
 
         accessToken = json.getStr("access_token");
         int expiresIn = json.getInt("expires_in");
-        tokenExpireTime = System.currentTimeMillis() + (expiresIn - 60) * 1000L; // 提前1分钟过期
-
-        log.info("百度OCR Access Token刷新成功");
+        tokenExpireTime = System.currentTimeMillis() + (expiresIn - 60) * 1000L;
         return accessToken;
     }
 
-    /**
-     * 解析学生证文本
-     */
-    private OcrResultDTO parseStudentCardText(String text) {
-        OcrResultDTO result = new OcrResultDTO();
-        result.setSuccess(true);
-
-        // 使用正则表达式提取信息
-        // 姓名
-        Pattern namePattern = Pattern.compile("姓名[：:](\\S+)");
-        Matcher nameMatcher = namePattern.matcher(text);
-        if (nameMatcher.find()) {
-            result.setRealName(nameMatcher.group(1));
-        }
-
-        // 学校
-        Pattern schoolPattern = Pattern.compile("(\\S+大学|\\S+学院)");
-        Matcher schoolMatcher = schoolPattern.matcher(text);
-        if (schoolMatcher.find()) {
-            result.setUniversityName(schoolMatcher.group(1));
-        }
-
-        // 专业
-        Pattern majorPattern = Pattern.compile("专业[：:](\\S+)");
-        Matcher majorMatcher = majorPattern.matcher(text);
-        if (majorMatcher.find()) {
-            result.setMajor(majorMatcher.group(1));
-        }
-
-        // 学号
-        Pattern idPattern = Pattern.compile("学号[：:](\\d+)");
-        Matcher idMatcher = idPattern.matcher(text);
-        if (idMatcher.find()) {
-            result.setStudentId(idMatcher.group(1));
-        }
-
-        // 入学年份
-        Pattern yearPattern = Pattern.compile("(20\\d{2})年");
-        Matcher yearMatcher = yearPattern.matcher(text);
-        if (yearMatcher.find()) {
-            result.setEnrollYear(Integer.parseInt(yearMatcher.group(1)));
-        }
-
-        return result;
-    }
-
-    /**
-     * 从百度返回结果中提取字段值
-     */
     private String getWordsValue(JSONObject wordsResult, String key) {
         if (wordsResult.containsKey(key)) {
             return wordsResult.getJSONObject(key).getStr("words");
@@ -345,9 +270,6 @@ public class BaiduOcrServiceImpl implements OcrService {
         return null;
     }
 
-    /**
-     * 模拟学生证识别结果
-     */
     private OcrResultDTO mockStudentCardResult() {
         OcrResultDTO result = new OcrResultDTO();
         result.setSuccess(true);
@@ -359,9 +281,6 @@ public class BaiduOcrServiceImpl implements OcrService {
         return result;
     }
 
-    /**
-     * 模拟身份证识别结果
-     */
     private OcrResultDTO mockIdCardFrontResult() {
         OcrResultDTO result = new OcrResultDTO();
         result.setSuccess(true);
