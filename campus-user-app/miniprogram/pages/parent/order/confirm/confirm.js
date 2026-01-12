@@ -18,6 +18,7 @@ Page({
     teachMode: 1, // 1上门 2在线
     totalHours: 2, // 默认2课时
     remark: '',
+    agreeProtocol: false, // 是否同意协议
     
     // 计算属性
     totalAmount: 0,
@@ -35,13 +36,15 @@ Page({
     if (options.data) {
       try {
         const data = JSON.parse(decodeURIComponent(options.data));
+        console.log('接收到的订单数据:', data);
         this.setData({
           tutorId: data.tutorId,
           tutorName: data.realName,
-          unitPrice: data.price || 0, // 确保单价不为undefined
+          unitPrice: data.price || data.unitPrice || 0, // 确保单价不为undefined
           subject: data.subject
         });
         this.calcTotal();
+        console.log('设置的单价:', this.data.unitPrice);
       } catch (e) {
         console.error('参数解析失败', e);
       }
@@ -119,16 +122,46 @@ Page({
     this.setData({ remark: e.detail.value });
   },
 
+  // 协议签署处理
+  handleProtocolChange(e) {
+    this.setData({
+      agreeProtocol: e.detail.value.includes('agree')
+    });
+  },
+
   // 提交订单
   async submitOrder() {
     // 校验
     if (this.data.studentIndex === -1) return wx.showToast({ title: '请选择学生', icon: 'none' });
     if (!this.data.grade) return wx.showToast({ title: '请选择年级', icon: 'none' });
+    if (!this.data.agreeProtocol) return wx.showToast({ title: '请阅读并同意服务协议', icon: 'none' });
 
     this.setData({ isSubmitting: true });
 
     try {
       const student = this.data.studentList[this.data.studentIndex];
+
+      // 显示订单信息确认弹窗
+      const confirmResult = await wx.showModal({
+        title: '订单信息确认',
+        content: `
+学生：${student.studentName || student.name}
+课程：${this.data.subject} - ${this.data.grade}
+课时：${this.data.totalHours} 课时
+单价：¥${this.data.unitPrice}/课时
+总价：¥${this.data.totalAmount}
+授课方式：${this.data.teachMode === 1 ? '上门教学' : '在线教学'}
+备注：${this.data.remark || '无'}
+        `.trim(),
+        confirmText: '确认下单',
+        cancelText: '重新编辑',
+        confirmColor: '#07C160'
+      });
+
+      if (!confirmResult.confirm) {
+        this.setData({ isSubmitting: false });
+        return;
+      }
 
       // 构造 CreateOrderRequest
       const payload = {
@@ -162,6 +195,7 @@ Page({
     } catch (err) {
       console.error(err);
       this.setData({ isSubmitting: false });
+      wx.showToast({ title: err.message || '创建订单失败', icon: 'none' });
     }
   },
 
@@ -208,11 +242,21 @@ Page({
     wx.showLoading({ title: '支付处理中...' });
 
     try {
+      // 获取openid
+      let openid = wx.getStorageSync('openid') || '';
+      // 开发环境模拟openid
+      if (!openid) {
+        openid = 'o123456789abcdefghijklmnopqrstuvwxyz';
+        wx.setStorageSync('openid', openid);
+        console.log('使用模拟openid:', openid);
+      }
+      
       // 构造 PayOrderRequest
       const payload = {
         orderId: this.data.createdOrderId,
         payType: payType,
-        payPassword: '' // 微信支付不需要钱包密码
+        payPassword: '', // 微信支付不需要钱包密码
+        openid: openid // 添加微信openid
       };
 
       // 调用 /api/order/pay

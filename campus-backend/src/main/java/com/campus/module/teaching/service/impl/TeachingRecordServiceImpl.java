@@ -6,6 +6,7 @@ import com.campus.common.exception.BusinessException;
 import com.campus.common.result.ResultCode;
 import com.campus.module.order.entity.CourseOrder;
 import com.campus.module.order.mapper.CourseOrderMapper;
+import com.campus.module.order.service.CourseOrderService;
 import com.campus.module.teaching.dto.CheckInRequest;
 import com.campus.module.teaching.dto.TeachingRecordDTO;
 import com.campus.module.teaching.entity.TeachingRecord;
@@ -31,6 +32,7 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
 
     private final TeachingRecordMapper teachingRecordMapper;
     private final CourseOrderMapper courseOrderMapper;
+    private final CourseOrderService courseOrderService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -153,11 +155,15 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
         int used = order.getUsedHours() + 1;
         order.setUsedHours(used);
 
-        // 6. 【关键逻辑】判断是否完结订单
-        // 如果已用课时 >= 总课时，将订单状态改为 3-已完成
-        if (used >= order.getTotalHours()) {
-            order.setStatus(3);
-            log.info("订单 {} 所有课时已完成，自动归档为已完成状态", order.getId());
+        // 6. 更新订单已用课时
+        int confirmedCount = teachingRecordMapper.countConfirmedByOrderId(order.getId());
+        order.setUsedHours(confirmedCount);
+        
+        // 如果所有课时都已完成，调用订单完成方法（会解冻钱包金额）
+        if (confirmedCount >= order.getTotalHours()) {
+            courseOrderService.completeOrder(order.getId());
+        } else {
+            courseOrderMapper.updateById(order);
         }
 
         courseOrderMapper.updateById(order);
