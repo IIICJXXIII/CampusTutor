@@ -147,18 +147,19 @@ const goToOrders = () => {
 
 <template>
   <div class="payment-page">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <el-button 
-        v-if="status === 'pending'"
-        text 
-        @click="router.back()"
-        class="back-btn"
-      >
-        <el-icon><ArrowLeft /></el-icon>
-      </el-button>
-      <h1 class="page-title">收银台</h1>
-    </div>
+    <div class="payment-wrapper">
+      <!-- 页面头部 -->
+      <div class="page-header">
+        <el-button 
+          v-if="status === 'pending'"
+          text 
+          @click="router.back()"
+          class="back-btn"
+        >
+          <el-icon><ArrowLeft /></el-icon>
+        </el-button>
+        <h1 class="page-title">收银台</h1>
+      </div>
 
     <!-- 待支付状态 -->
     <template v-if="status !== 'success'">
@@ -226,7 +227,7 @@ const goToOrders = () => {
       </div>
 
       <!-- 支付按钮 -->
-      <div class="bottom-action">
+      <div class="action-section">
         <el-button 
           v-if="status === 'pending'"
           type="success" 
@@ -282,10 +283,15 @@ const goToOrders = () => {
 
 <style lang="scss" scoped>
 .payment-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 114px);
   background: $bg-light;
-  display: flex;
-  flex-direction: column;
+  padding: $spacing-xl 0;
+}
+
+.payment-wrapper {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 $spacing-lg;
 }
 
 .page-header {
@@ -295,7 +301,9 @@ const goToOrders = () => {
   align-items: center;
   justify-content: center;
   position: relative;
-  border-bottom: 1px solid $border-color;
+  border-radius: $radius-lg;
+  margin-bottom: $spacing-lg;
+  box-shadow: $shadow-sm;
 
   .back-btn {
     position: absolute;
@@ -311,6 +319,10 @@ const goToOrders = () => {
 .countdown-section {
   text-align: center;
   padding: $spacing-lg;
+  background: #fff;
+  border-radius: $radius-lg;
+  margin-bottom: $spacing-lg;
+  box-shadow: $shadow-sm;
 
   .countdown-label {
     font-size: 14px;
@@ -318,7 +330,7 @@ const goToOrders = () => {
   }
 
   .countdown-value {
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 700;
     font-family: 'SF Mono', monospace;
     color: $text-primary;
@@ -327,8 +339,9 @@ const goToOrders = () => {
 }
 
 .amount-card {
-  margin: 0 $spacing-lg $spacing-lg;
+  margin-bottom: $spacing-lg;
   border-radius: 16px;
+  box-shadow: $shadow-sm;
 
   .amount-header {
     text-align: center;
@@ -340,7 +353,7 @@ const goToOrders = () => {
     }
 
     .amount-value {
-      font-size: 40px;
+      font-size: 44px;
       font-weight: 700;
       color: $text-primary;
     }
@@ -360,8 +373,10 @@ const goToOrders = () => {
 }
 
 .payment-card {
-  margin: 0 $spacing-lg $spacing-lg;
+  margin-bottom: $spacing-lg;
   border-radius: 16px;
+  box-shadow: $shadow-sm;
+  box-shadow: $shadow-sm;
 
   .card-title {
     font-size: 14px;
@@ -430,22 +445,15 @@ const goToOrders = () => {
   gap: $spacing-xs;
   font-size: 12px;
   color: $text-muted;
-  margin-top: $spacing-lg;
+  margin-top: $spacing-md;
+  margin-bottom: $spacing-lg;
 }
 
-.bottom-action {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #fff;
-  padding: $spacing-md $spacing-lg;
-  border-top: 1px solid $border-color;
-
+.action-section {
   .el-button {
     width: 100%;
-    height: 48px;
-    font-size: 16px;
+    height: 52px;
+    font-size: 17px;
     font-weight: 600;
     border-radius: 12px;
   }
@@ -459,6 +467,8 @@ const goToOrders = () => {
   justify-content: center;
   padding: $spacing-xl;
   background: #fff;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
 
   .success-icon {
     width: 80px;
@@ -525,17 +535,26 @@ const goToOrders = () => {
   .success-actions {
     width: 100%;
     display: flex;
-    flex-direction: column;
-    gap: $spacing-sm;
-    margin-top: auto;
+    gap: $spacing-md;
+    margin-top: $spacing-xl;
 
     .el-button {
-      width: 100%;
+      flex: 1;
       height: 48px;
       font-size: 16px;
       font-weight: 600;
       border-radius: 12px;
     }
+  }
+}
+
+@media (max-width: 768px) {
+  .payment-wrapper {
+    padding: 0 $spacing-md;
+  }
+
+  .success-actions {
+    flex-direction: column;
   }
 }
 </style>

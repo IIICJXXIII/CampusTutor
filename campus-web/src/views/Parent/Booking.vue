@@ -172,6 +172,7 @@ const handleSign = async () => {
 
 <template>
   <div class="booking-page">
+    <div class="booking-wrapper">
     <!-- 页面头部 -->
     <div class="page-header">
       <el-button 
@@ -295,8 +296,8 @@ const handleSign = async () => {
         </div>
       </el-card>
 
-      <!-- 底部按钮 -->
-      <div class="bottom-action">
+      <!-- Step 1 按钮 -->
+      <div class="action-section">
         <el-button 
           type="primary" 
           size="large"
@@ -354,8 +355,9 @@ const handleSign = async () => {
         </el-checkbox>
       </div>
 
-      <!-- 签约按钮 -->
-      <div class="bottom-action">
+      <!-- Step 2 按钮 -->
+      <div class="action-section">
+        <el-button size="large" @click="step = 1">上一步</el-button>
         <el-button 
           type="primary" 
           size="large"
@@ -368,14 +370,21 @@ const handleSign = async () => {
         </el-button>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .booking-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 114px);
   background: $bg-light;
-  padding-bottom: 100px;
+  padding: $spacing-xl 0;
+}
+
+.booking-wrapper {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 0 $spacing-lg;
 }
 
 .page-header {
@@ -383,10 +392,9 @@ const handleSign = async () => {
   padding: $spacing-md $spacing-lg;
   display: flex;
   align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  border-bottom: 1px solid $border-color;
+  border-radius: $radius-lg;
+  margin-bottom: $spacing-lg;
+  box-shadow: $shadow-sm;
 
   .back-btn {
     margin-right: $spacing-sm;
@@ -402,7 +410,7 @@ const handleSign = async () => {
 }
 
 .step-content {
-  padding: $spacing-lg;
+  /* removed padding since wrapper handles it */
 }
 
 .teacher-card {
@@ -561,21 +569,27 @@ const handleSign = async () => {
   padding: $spacing-md 0;
 }
 
-.bottom-action {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #fff;
-  padding: $spacing-md $spacing-lg;
-  border-top: 1px solid $border-color;
+.action-section {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-xl;
 
   .el-button {
-    width: 100%;
+    flex: 1;
     height: 48px;
     font-size: 16px;
     font-weight: 600;
     border-radius: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .booking-wrapper {
+    padding: 0 $spacing-md;
+  }
+
+  .action-section {
+    flex-direction: column-reverse;
   }
 }
 </style>
