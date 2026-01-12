@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { payOrder, getOrderDetail } from '@/api/order'
+import { payOrder, getOrderDetail, confirmOrder } from '@/api/order'
 import { useOrderStore } from '@/stores'
 
 const router = useRouter()
@@ -20,7 +20,8 @@ const currentOrder = ref({
   teacher: '演示老师',
   subject: '演示课程',
   amount: 2000,
-  location: '线上教学'
+  location: '线上教学',
+  status: 0 // 订单状态
 })
 
 // 格式化倒计时
@@ -55,7 +56,8 @@ onMounted(async () => {
           teacher: res.data.tutorName || currentOrder.value.teacher,
           subject: res.data.subject || currentOrder.value.subject,
           amount: res.data.totalAmount || currentOrder.value.amount,
-          location: res.data.location || '线上教学'
+          location: res.data.location || '线上教学',
+          status: res.data.status // 保存订单状态
         }
       }
     } catch (e) {
@@ -93,12 +95,29 @@ const handlePay = async () => {
   try {
     // 调用后端支付API
     if (orderId && !orderId.startsWith('ORD-')) {
-      const payType = getPayType(selectedPayment.value)
-      await payOrder(orderId, payType)
+      // 关键修正：如果订单状态是 -1（待确认），先确认订单
+      if (currentOrder.value.status === -1) {
+        console.log('订单状态为待确认，先确认订单...')
+        try {
+          await confirmOrder(orderId)
+          console.log('订单确认成功')
+        } catch (confirmError) {
+          console.error('确认订单失败:', confirmError)
+          throw new Error('确认订单失败: ' + (confirmError.message || '未知错误'))
+        }
+      }
+      
+      // Web端使用钱包支付 (payType=1)
+      console.log('开始支付，订单ID:', orderId)
+      try {
+        const payType = 1 // 钱包支付
+        await payOrder(orderId, payType)
+        console.log('支付成功')
+      } catch (payError) {
+        console.error('支付API失败:', payError)
+        throw new Error(payError.message || '支付失败')
+      }
     }
-
-    // 模拟支付处理
-    await new Promise(resolve => setTimeout(resolve, 1000))
 
     status.value = 'success'
 
@@ -109,13 +128,9 @@ const handlePay = async () => {
 
     ElMessage.success('支付成功！')
   } catch (error) {
-    console.error('支付失败:', error)
-    // 演示模式：即使API调用失败也显示成功，方便测试
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    status.value = 'success'
-    if (orderId) {
-      orderStore.updateOrder(orderId, { status: 'active' })
-    }
+    console.error('支付流程失败:', error)
+    status.value = 'pending'
+    ElMessage.error(error.message || '支付失败，请重试')
   }
 }
 

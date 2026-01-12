@@ -90,8 +90,8 @@
       
       <!-- 操作按钮 -->
       <div class="action-bar">
-        <el-button v-if="order.status === 1" type="primary" size="large" @click="confirmOrder">
-          确认接单
+        <el-button v-if="order.status === 1" type="primary" size="large" @click="startOrder">
+          确认开课
         </el-button>
         <el-button v-if="order.status === 2" type="success" size="large" @click="goToCheckin">
           开始上课
@@ -109,7 +109,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Clock, Check, Close, ChatDotRound } from '@element-plus/icons-vue'
-import { getOrderDetail, confirmOrder as confirmOrderApi, cancelOrder as cancelOrderApi } from '@shared/api/order'
+import { getOrderDetail, confirmStartOrder as confirmStartOrderApi, cancelOrder as cancelOrderApi } from '@shared/api/order'
 import { getOrderLessons } from '@shared/api/teaching'
 import dayjs from 'dayjs'
 
@@ -126,13 +126,15 @@ const getStatusIcon = (status) => {
 }
 
 const getStatusText = (status) => {
-  const map = { 1: '待确认', 2: '进行中', 3: '已完成', 4: '已取消' }
+  const map = { '-1': '待家长确认', 0: '待家长支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
   return map[status] || '未知'
 }
 
 const getStatusDesc = (status) => {
   const map = {
-    1: '家长已创建订单，请确认是否接单',
+    '-1': '等待家长确认订单',
+    0: '等待家长支付',
+    1: '家长已支付，请确认开课',
     2: '订单进行中，请按时上课',
     3: '订单已完成，感谢您的付出',
     4: '订单已取消'
@@ -182,12 +184,12 @@ const loadLessons = async () => {
   }
 }
 
-const confirmOrder = async () => {
+const startOrder = async () => {
   try {
-    await ElMessageBox.confirm('确认接受此订单吗？', '确认接单')
-    const res = await confirmOrderApi(order.value.id)
+    await ElMessageBox.confirm('确认开始上课吗？', '确认开课')
+    const res = await confirmStartOrderApi(order.value.id)
     if (res.code === 200) {
-      ElMessage.success('接单成功')
+      ElMessage.success('开课成功')
       loadOrder()
     }
   } catch (error) {
