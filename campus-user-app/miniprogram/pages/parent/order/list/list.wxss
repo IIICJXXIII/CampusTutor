@@ -107,10 +107,10 @@ page {
 /* 卡片底部 */
 .card-footer {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   border-top: 1rpx solid #f5f5f5;
   padding-top: 20rpx;
+  gap: 16rpx;
 }
 
 .price-box {
@@ -123,15 +123,21 @@ page {
 
 .btn-group {
   display: flex;
+  justify-content: flex-end;
+  gap: 12rpx;
+  flex-wrap: wrap;
 }
 
 .btn {
-  margin: 0 0 0 16rpx;
-  font-size: 26rpx;
-  padding: 0 24rpx;
+  margin: 0;
+  font-size: 24rpx;
+  padding: 0 20rpx;
   height: 56rpx;
-  line-height: 54rpx; /* border考虑 */
   border-radius: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .btn.plain {
