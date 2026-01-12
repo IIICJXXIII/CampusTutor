@@ -60,11 +60,16 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
             throw new BusinessException(ResultCode.ORDER_STATUS_ERROR, "当前订单状态无法打卡");
         }
 
-        // 4. 【关键修复】严格校验是否还有未确认的记录
+        // 4. 【关键修复】校验是否还有真正开始但未确认的课时记录
         // 防止教员连续点击打卡，必须等家长确认上一节课后，才能打下一节
+        // 只检查有实际打卡数据（GPS坐标或照片）的记录，不包括预排的课表记录
         Long pendingCount = teachingRecordMapper.selectCount(new LambdaQueryWrapper<TeachingRecord>()
                 .eq(TeachingRecord::getOrderId, order.getId())
-                .eq(TeachingRecord::getStatus, 0)); // 0 = 待确认
+                .eq(TeachingRecord::getStatus, 0) // 0 = 待确认
+                .and(wrapper -> wrapper
+                        .isNotNull(TeachingRecord::getClockInLat)
+                        .or()
+                        .isNotNull(TeachingRecord::getClockInImg))); // 只计算有实际打卡数据的记录
 
         if (pendingCount > 0) {
             throw new BusinessException("上一节课家长尚未确认，请等待确认后再打卡");
@@ -75,36 +80,49 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
             throw new BusinessException("该订单课时已全部完成，无法继续打卡");
         }
 
-        // 6. 【优化逻辑】计算当前是第几节课
-        // 不直接依赖 order.usedHours，而是查询数据库中该订单最新的一条记录
-        TeachingRecord lastRecord = teachingRecordMapper.selectOne(new LambdaQueryWrapper<TeachingRecord>()
+        // 6. 【关键修复】查找第一个未打卡的预排课时记录
+        // generateTeachingRecords() 已预先创建了所有课时记录，打卡时应更新而非新建
+        TeachingRecord nextLesson = teachingRecordMapper.selectOne(new LambdaQueryWrapper<TeachingRecord>()
                 .eq(TeachingRecord::getOrderId, order.getId())
-                .orderByDesc(TeachingRecord::getLessonIndex)
+                .eq(TeachingRecord::getStatus, 0) // 待确认
+                .isNull(TeachingRecord::getClockInLat) // 未打卡（无GPS数据）
+                .isNull(TeachingRecord::getClockInImg) // 未打卡（无照片）
+                .orderByAsc(TeachingRecord::getLessonIndex)
                 .last("LIMIT 1"));
 
-        int currentLessonIndex = (lastRecord == null) ? 1 : (lastRecord.getLessonIndex() + 1);
+        TeachingRecord record;
+        if (nextLesson != null) {
+            // 7a. 更新已存在的预排课时记录
+            record = nextLesson;
+            record.setStartTime(LocalDateTime.now());
+            record.setEndTime(LocalDateTime.now().plusHours(2));
+            record.setClockInLat(request.getLatitude());
+            record.setClockInLng(request.getLongitude());
+            record.setClockInImg(request.getPhotoUrl());
+            record.setContentSummary(request.getContentSummary());
+            record.setHomeworkAssigned(request.getHomeworkAssigned());
+            // status 保持 0-待家长确认
+            updateById(record);
+        } else {
+            // 7b. 没有预排记录时（兼容旧订单），创建新记录
+            int currentLessonIndex = order.getUsedHours() + 1;
+            if (currentLessonIndex > order.getTotalHours()) {
+                throw new BusinessException("课时已满，无法继续打卡");
+            }
 
-        // 二次校验：防止计算出的课时超出总课时
-        if (currentLessonIndex > order.getTotalHours()) {
-            throw new BusinessException("课时已满，无法继续打卡");
+            record = new TeachingRecord();
+            record.setOrderId(order.getId());
+            record.setLessonIndex(currentLessonIndex);
+            record.setStartTime(LocalDateTime.now());
+            record.setEndTime(LocalDateTime.now().plusHours(2));
+            record.setClockInLat(request.getLatitude());
+            record.setClockInLng(request.getLongitude());
+            record.setClockInImg(request.getPhotoUrl());
+            record.setContentSummary(request.getContentSummary());
+            record.setHomeworkAssigned(request.getHomeworkAssigned());
+            record.setStatus(0); // 0-待家长确认
+            save(record);
         }
-
-        // 7. 保存打卡记录
-        TeachingRecord record = new TeachingRecord();
-        record.setOrderId(order.getId());
-        record.setLessonIndex(currentLessonIndex);
-        record.setStartTime(LocalDateTime.now());
-        // 默认一节课2小时
-        record.setEndTime(LocalDateTime.now().plusHours(2));
-
-        record.setClockInLat(request.getLatitude());
-        record.setClockInLng(request.getLongitude());
-        record.setClockInImg(request.getPhotoUrl());
-        record.setContentSummary(request.getContentSummary());
-        record.setHomeworkAssigned(request.getHomeworkAssigned());
-        record.setStatus(0); // 0-待家长确认
-
-        save(record);
 
         return record.getId();
     }
@@ -133,7 +151,8 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
     public void confirmByParent(Long parentId, Long recordId) {
         // 1. 获取记录
         TeachingRecord record = getById(recordId);
-        if (record == null) throw new BusinessException("记录不存在");
+        if (record == null)
+            throw new BusinessException("记录不存在");
 
         // 2. 校验权限
         CourseOrder order = courseOrderMapper.selectById(record.getOrderId());
@@ -158,7 +177,7 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
         // 6. 更新订单已用课时
         int confirmedCount = teachingRecordMapper.countConfirmedByOrderId(order.getId());
         order.setUsedHours(confirmedCount);
-        
+
         // 如果所有课时都已完成，调用订单完成方法（会解冻钱包金额）
         if (confirmedCount >= order.getTotalHours()) {
             courseOrderService.completeOrder(order.getId());
@@ -172,7 +191,8 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
     @Override
     public void disputeByParent(Long parentId, Long recordId, String reason) {
         TeachingRecord record = getById(recordId);
-        if (record == null) throw new BusinessException("记录不存在");
+        if (record == null)
+            throw new BusinessException("记录不存在");
 
         CourseOrder order = courseOrderMapper.selectById(record.getOrderId());
         if (!order.getParentId().equals(parentId)) {
@@ -225,13 +245,21 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
     }
 
     private TeachingRecordDTO convertToDTO(TeachingRecord record) {
-        if (record == null) return null;
+        if (record == null)
+            return null;
         String statusText;
         switch (record.getStatus()) {
-            case 0: statusText = "待确认"; break;
-            case 1: statusText = "已确认"; break;
-            case 2: statusText = "申诉中"; break;
-            default: statusText = "未知";
+            case 0:
+                statusText = "待确认";
+                break;
+            case 1:
+                statusText = "已确认";
+                break;
+            case 2:
+                statusText = "申诉中";
+                break;
+            default:
+                statusText = "未知";
         }
 
         return TeachingRecordDTO.builder()

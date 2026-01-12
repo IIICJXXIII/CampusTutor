@@ -63,9 +63,9 @@
                 v-if="order.status === 1" 
                 type="primary" 
                 size="small"
-                @click.stop="confirmOrder(order)"
+                @click.stop="startOrder(order)"
               >
-                确认接单
+                确认开课
               </el-button>
               <el-button 
                 v-if="order.status === 2" 
@@ -107,7 +107,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getTutorOrders, confirmOrder as confirmOrderApi } from '@shared/api/order'
+import { getTutorOrders, confirmStartOrder as confirmStartOrderApi } from '@shared/api/order'
 import dayjs from 'dayjs'
 
 const router = useRouter()
@@ -128,12 +128,12 @@ const statusMap = {
 }
 
 const getStatusType = (status) => {
-  const map = { 1: 'warning', 2: 'primary', 3: 'success', 4: 'info' }
+  const map = { '-1': 'info', 0: 'info', 1: 'warning', 2: 'primary', 3: 'success', 4: 'info' }
   return map[status] || 'info'
 }
 
 const getStatusText = (status) => {
-  const map = { 1: '待确认', 2: '进行中', 3: '已完成', 4: '已取消' }
+  const map = { '-1': '待家长确认', 0: '待家长支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
   return map[status] || '未知'
 }
 
@@ -170,16 +170,16 @@ const viewDetail = (id) => {
   router.push(`/orders/${id}`)
 }
 
-const confirmOrder = async (order) => {
+const startOrder = async (order) => {
   try {
     await ElMessageBox.confirm(
-      `确认接受 ${order.studentName} 的家教订单吗？`,
-      '确认接单'
+      `确认开始 ${order.studentName} 的家教课程吗？`,
+      '确认开课'
     )
     
-    const res = await confirmOrderApi(order.id)
+    const res = await confirmStartOrderApi(order.id)
     if (res.code === 200) {
-      ElMessage.success('接单成功')
+      ElMessage.success('开课成功')
       loadOrders()
     }
   } catch (error) {

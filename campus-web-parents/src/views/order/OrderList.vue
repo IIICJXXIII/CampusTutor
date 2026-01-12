@@ -8,8 +8,9 @@
     <div class="filter-tabs">
       <el-radio-group v-model="statusFilter" @change="handleFilterChange">
         <el-radio-button value="all">全部</el-radio-button>
-        <el-radio-button value="0">待确认</el-radio-button>
-        <el-radio-button value="1">待支付</el-radio-button>
+        <el-radio-button value="-1">待确认</el-radio-button>
+        <el-radio-button value="0">待支付</el-radio-button>
+        <el-radio-button value="1">待开课</el-radio-button>
         <el-radio-button value="2">进行中</el-radio-button>
         <el-radio-button value="3">已完成</el-radio-button>
         <el-radio-button value="4">已取消</el-radio-button>
@@ -75,13 +76,17 @@
           </div>
           
           <div class="order-actions" @click.stop>
-            <template v-if="order.status === 0">
+            <template v-if="order.status === -1">
               <el-button size="small" @click="cancelOrder(order)">取消</el-button>
               <el-button size="small" type="primary" @click="confirmOrder(order)">确认订单</el-button>
             </template>
-            <template v-else-if="order.status === 1">
+            <template v-else-if="order.status === 0">
               <el-button size="small" @click="cancelOrder(order)">取消</el-button>
               <el-button size="small" type="primary" @click="payOrder(order)">去支付</el-button>
+            </template>
+            <template v-else-if="order.status === 1">
+              <el-button size="small" @click="contactTutor(order)">联系老师</el-button>
+              <el-button size="small" type="info" disabled>等待教师开课</el-button>
             </template>
             <template v-else-if="order.status === 2">
               <el-button size="small" @click="viewLessons(order.id)">查看课时</el-button>
@@ -129,12 +134,12 @@ const pageSize = ref(10)
 const total = ref(0)
 
 const getStatusType = (status) => {
-  const types = { 0: 'warning', 1: 'danger', 2: 'primary', 3: 'success', 4: 'info' }
+  const types = { '-1': 'warning', 0: 'danger', 1: 'success', 2: 'primary', 3: 'success', 4: 'info' }
   return types[status] || 'info'
 }
 
 const getStatusText = (status) => {
-  const texts = { 0: '待确认', 1: '待支付', 2: '进行中', 3: '已完成', 4: '已取消' }
+  const texts = { '-1': '待确认', 0: '待支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
   return texts[status] || '未知'
 }
 
@@ -233,6 +238,10 @@ const completeOrder = async (order) => {
 
 const reviewOrder = (order) => {
   router.push(`/orders/${order.id}/review`)
+}
+
+const contactTutor = (order) => {
+  router.push(`/chat/${order.tutorId}`)
 }
 
 onMounted(() => {
