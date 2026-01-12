@@ -3,6 +3,7 @@ package com.campus.module.match.service;
 import cn.hutool.json.JSONUtil;
 import com.campus.module.demand.entity.DemandPost;
 import com.campus.module.match.dto.MatchScoreResult;
+import com.campus.module.match.dto.MatchViewType;
 import com.campus.module.tutor.entity.TutorProfile;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,21 +15,33 @@ import java.util.List;
 
 /**
  * 匹配评分计算器
- * 多维度加权评分算法
+ * 多维度加权评分算法 - 支持家长视角和教师视角
  */
 @Slf4j
 @Component
 public class MatchScoreCalculator {
 
-    // 各维度权重配置
-    private static final double WEIGHT_SUBJECT = 25.0; // 科目匹配 25%
-    private static final double WEIGHT_GRADE = 15.0; // 年级匹配 15%
-    private static final double WEIGHT_DISTANCE = 20.0; // 距离评分 20%
-    private static final double WEIGHT_PRICE = 10.0; // 价格匹配 10%
+    // ============ 家长视角权重配置（找老师）============
+    // 总计100%，关注教师质量和性价比
+    private static final double WEIGHT_SUBJECT = 23.0; // 科目匹配 23%
+    private static final double WEIGHT_GRADE = 14.0; // 年级匹配 14%
+    private static final double WEIGHT_DISTANCE = 18.0; // 距离评分 18%
+    private static final double WEIGHT_PRICE = 10.0; // 价格匹配 10%（教师报价越低越好）
     private static final double WEIGHT_RATING = 10.0; // 教员评分 10%
     private static final double WEIGHT_EXPERIENCE = 10.0; // 教学经验 10%
     private static final double WEIGHT_EDUCATION = 5.0; // 学历背景 5%
     private static final double WEIGHT_SPECIALTY = 5.0; // 教学特长 5%
+    private static final double WEIGHT_TEACH_MODE = 5.0; // 授课方式匹配 5%
+
+    // ============ 教师视角权重配置（找需求）============
+    // 总计100%，关注收益和匹配度
+    private static final double T_WEIGHT_SUBJECT = 25.0; // 科目匹配 25%
+    private static final double T_WEIGHT_GRADE = 15.0; // 年级匹配 15%
+    private static final double T_WEIGHT_DISTANCE = 15.0; // 距离评分 15%
+    private static final double T_WEIGHT_PRICE = 20.0; // 价格匹配 20%（需求预算越高越好）⭐
+    private static final double T_WEIGHT_TEACH_MODE = 10.0; // 授课方式匹配 10%
+    private static final double T_WEIGHT_FRESHNESS = 10.0; // 需求新鲜度 10%（新发布更好）
+    private static final double T_WEIGHT_DETAIL = 5.0; // 需求详细度 5%（描述清晰更靠谱）
 
     // 距离评分参数
     private static final double MAX_DISTANCE_KM = 10.0; // 最大考虑距离(公里)
@@ -101,9 +114,17 @@ public class MatchScoreCalculator {
             matchTags.add("特长匹配");
         }
 
-        // 9. 计算综合匹配分数
+        // 9. 授课方式匹配评分（新增）
+        double teachModeScore = calculateTeachModeScore(tutor.getCanVisit(), tutor.getCanOnline(),
+                demand.getTeachMode());
+        result.setTeachModeScore(teachModeScore);
+        if (teachModeScore >= WEIGHT_TEACH_MODE * 0.8) {
+            matchTags.add("授课方式匹配");
+        }
+
+        // 10. 计算综合匹配分数
         double totalScore = subjectScore + gradeScore + distanceScore + priceScore + ratingScore +
-                experienceScore + educationScore + specialtyScore;
+                experienceScore + educationScore + specialtyScore + teachModeScore;
         result.setMatchScore(Math.min(100.0, totalScore));
         result.setMatchTags(matchTags);
 
@@ -186,9 +207,16 @@ public class MatchScoreCalculator {
             matchTags.add("教学特长");
         }
 
-        // 9. 计算综合匹配分数
+        // 9. 授课方式匹配评分（无具体需求时，给默认分数）
+        double teachModeScore = calculateTeachModeScore(tutor.getCanVisit(), tutor.getCanOnline(), null);
+        result.setTeachModeScore(teachModeScore);
+        if (teachModeScore >= WEIGHT_TEACH_MODE * 0.8) {
+            matchTags.add("授课方式灵活");
+        }
+
+        // 10. 计算综合匹配分数
         double totalScore = subjectScore + gradeScore + distanceScore + priceScore + ratingScore +
-                experienceScore + educationScore + specialtyScore;
+                experienceScore + educationScore + specialtyScore + teachModeScore;
         result.setMatchScore(Math.min(100.0, totalScore));
         result.setMatchTags(matchTags);
 
@@ -379,6 +407,46 @@ public class MatchScoreCalculator {
             return WEIGHT_SPECIALTY * 0.6; // 部分匹配
         } else {
             return WEIGHT_SPECIALTY * 0.3; // 不匹配
+        }
+    }
+
+    /**
+     * 计算授课方式匹配分数（新增）
+     * 验证教师支持的授课方式是否满足需求
+     *
+     * @param canVisit  教师是否支持上门: 0否 1是
+     * @param canOnline 教师是否支持网课: 0否 1是
+     * @param teachMode 需求授课方式: 1上门 2网课 3均可
+     * @return 授课方式匹配分数
+     */
+    private double calculateTeachModeScore(Integer canVisit, Integer canOnline, Integer teachMode) {
+        // 默认值处理
+        int visit = canVisit != null ? canVisit : 0;
+        int online = canOnline != null ? canOnline : 0;
+        int mode = teachMode != null ? teachMode : 3; // 默认均可
+
+        // 匹配逻辑
+        switch (mode) {
+            case 1: // 需求要求上门
+                if (visit == 1) {
+                    return WEIGHT_TEACH_MODE; // 满分
+                } else {
+                    return 0; // 不支持上门
+                }
+            case 2: // 需求要求网课
+                if (online == 1) {
+                    return WEIGHT_TEACH_MODE; // 满分
+                } else {
+                    return 0; // 不支持网课
+                }
+            case 3: // 需求均可
+            default:
+                // 教师支持任意一种即可
+                if (visit == 1 || online == 1) {
+                    return WEIGHT_TEACH_MODE; // 满分
+                } else {
+                    return WEIGHT_TEACH_MODE * 0.5; // 信息不完整
+                }
         }
     }
 
@@ -653,6 +721,166 @@ public class MatchScoreCalculator {
             return weight * 0.6;
         } else {
             return weight * 0.3;
+        }
+    }
+
+    // ============ 教师视角专用方法 ============
+
+    /**
+     * 教师视角：计算需求对教师的吸引力分数
+     * 与家长视角不同：价格越高越好，关注需求热度和详细度
+     *
+     * @param tutor    教员档案
+     * @param demand   需求帖子
+     * @param distance 距离(公里)
+     * @return 匹配评分结果
+     */
+    public MatchScoreResult calculateScoreForTeacher(TutorProfile tutor, DemandPost demand, Double distance) {
+        MatchScoreResult result = new MatchScoreResult();
+        List<String> matchTags = new ArrayList<>();
+
+        // 1. 科目匹配分数（使用教师视角权重）
+        double subjectScore = calculateSubjectScoreWithWeight(tutor.getTeachSubjects(), demand.getSubject(),
+                T_WEIGHT_SUBJECT);
+        result.setSubjectScore(subjectScore);
+        if (subjectScore >= T_WEIGHT_SUBJECT * 0.8) {
+            matchTags.add("科目匹配");
+        }
+
+        // 2. 年级匹配分数
+        double gradeScore = calculateGradeScoreWithWeight(tutor.getTeachGrades(), demand.getGrade(), T_WEIGHT_GRADE);
+        result.setGradeScore(gradeScore);
+        if (gradeScore >= T_WEIGHT_GRADE * 0.8) {
+            matchTags.add("年级匹配");
+        }
+
+        // 3. 距离评分
+        double distanceScore = calculateDistanceScoreWithWeight(distance, T_WEIGHT_DISTANCE);
+        result.setDistanceScore(distanceScore);
+        if (distance != null && distance <= 3.0) {
+            matchTags.add("距离近");
+        }
+
+        // 4. 价格评分（教师视角：预算越高越好！）
+        double priceScore = calculatePriceScoreForTeacher(tutor.getExpectPrice(), demand.getExpectPrice());
+        result.setPriceScore(priceScore);
+        if (priceScore >= T_WEIGHT_PRICE * 0.8) {
+            matchTags.add("高薪需求💰");
+        }
+
+        // 5. 授课方式匹配
+        double teachModeScore = calculateTeachModeScoreWithWeight(
+                tutor.getCanVisit(), tutor.getCanOnline(), demand.getTeachMode(), T_WEIGHT_TEACH_MODE);
+        result.setTeachModeScore(teachModeScore);
+        if (teachModeScore >= T_WEIGHT_TEACH_MODE * 0.8) {
+            matchTags.add("授课方式匹配");
+        }
+
+        // 6. 需求新鲜度（新发布的更好）
+        double freshnessScore = calculateFreshnessScore(demand.getCreateTime());
+        if (freshnessScore >= T_WEIGHT_FRESHNESS * 0.8) {
+            matchTags.add("新发布🔥");
+        }
+
+        // 7. 需求详细度（描述清晰更靠谱）
+        double detailScore = calculateDetailScore(demand.getDetail());
+        if (detailScore >= T_WEIGHT_DETAIL * 0.8) {
+            matchTags.add("需求清晰");
+        }
+
+        // 8. 计算综合匹配分数
+        double totalScore = subjectScore + gradeScore + distanceScore + priceScore +
+                teachModeScore + freshnessScore + detailScore;
+        result.setMatchScore(Math.min(100.0, totalScore));
+        result.setMatchTags(matchTags);
+
+        return result;
+    }
+
+    /**
+     * 教师视角：价格评分（预算越高越好）
+     */
+    private double calculatePriceScoreForTeacher(BigDecimal tutorPrice, BigDecimal demandBudget) {
+        if (tutorPrice == null || demandBudget == null) {
+            return T_WEIGHT_PRICE * 0.5; // 无价格信息
+        }
+        double tutor = tutorPrice.doubleValue();
+        double budget = demandBudget.doubleValue();
+
+        if (tutor <= 0) {
+            return T_WEIGHT_PRICE * 0.5;
+        }
+
+        // 预算/期望 比值越高越好
+        double ratio = budget / tutor;
+        if (ratio >= 1.5) {
+            return T_WEIGHT_PRICE; // 预算高于期望50%以上，满分
+        } else if (ratio >= 1.0) {
+            return T_WEIGHT_PRICE * (0.8 + 0.2 * (ratio - 1.0) / 0.5); // 线性增长
+        } else if (ratio >= 0.8) {
+            return T_WEIGHT_PRICE * 0.6; // 略低于期望
+        } else {
+            return T_WEIGHT_PRICE * 0.3; // 远低于期望
+        }
+    }
+
+    /**
+     * 需求新鲜度评分（最近发布的得分更高）
+     */
+    private double calculateFreshnessScore(java.time.LocalDateTime createTime) {
+        if (createTime == null) {
+            return T_WEIGHT_FRESHNESS * 0.5;
+        }
+        long daysDiff = java.time.temporal.ChronoUnit.DAYS.between(createTime, java.time.LocalDateTime.now());
+        if (daysDiff <= 1) {
+            return T_WEIGHT_FRESHNESS; // 今天或昨天发布，满分
+        } else if (daysDiff <= 3) {
+            return T_WEIGHT_FRESHNESS * 0.8; // 3天内
+        } else if (daysDiff <= 7) {
+            return T_WEIGHT_FRESHNESS * 0.6; // 一周内
+        } else if (daysDiff <= 14) {
+            return T_WEIGHT_FRESHNESS * 0.4; // 两周内
+        } else {
+            return T_WEIGHT_FRESHNESS * 0.2; // 超过两周
+        }
+    }
+
+    /**
+     * 需求详细度评分（描述越详细越靠谱）
+     */
+    private double calculateDetailScore(String detail) {
+        if (!StringUtils.hasText(detail)) {
+            return T_WEIGHT_DETAIL * 0.2; // 无描述
+        }
+        int length = detail.length();
+        if (length >= 100) {
+            return T_WEIGHT_DETAIL; // 详细描述，满分
+        } else if (length >= 50) {
+            return T_WEIGHT_DETAIL * 0.8;
+        } else if (length >= 20) {
+            return T_WEIGHT_DETAIL * 0.6;
+        } else {
+            return T_WEIGHT_DETAIL * 0.4;
+        }
+    }
+
+    /**
+     * 带权重参数的授课方式匹配计算
+     */
+    private double calculateTeachModeScoreWithWeight(Integer canVisit, Integer canOnline, Integer teachMode,
+            double weight) {
+        int visit = canVisit != null ? canVisit : 0;
+        int online = canOnline != null ? canOnline : 0;
+        int mode = teachMode != null ? teachMode : 3;
+
+        switch (mode) {
+            case 1: // 需求要求上门
+                return visit == 1 ? weight : 0;
+            case 2: // 需求要求网课
+                return online == 1 ? weight : 0;
+            case 3: // 需求均可
+            default:
+                return (visit == 1 || online == 1) ? weight : weight * 0.5;
         }
     }
 }

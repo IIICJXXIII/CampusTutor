@@ -60,6 +60,13 @@ button::after{
   border: none;
 }
 
+/* Global button text centering */
+button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Utility Components */
 
 /* 1. Cards */

@@ -181,7 +181,6 @@
   font-family: monospace;
   margin-left: 8rpx;
 }
-
 /* 空状态样式 */
 .empty-card {
   display: flex;
