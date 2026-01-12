@@ -42,3 +42,13 @@ export function recognizeGeneral(imageUrl) {
     params: { imageUrl }
   });
 }
+
+/**
+ * 【新增】识别学生证（Base64模式）
+ * 解决本地开发图片URL无法被外网访问的问题
+ * @param {string} imageBase64 - 图片的Base64编码字符串
+ */
+export function recognizeStudentCardByBase64(imageBase64) {
+  // 注意：这里把 imageBase64 直接作为请求体(body)发送
+  return request.post('/ocr/student-card-base64', imageBase64);
+}
