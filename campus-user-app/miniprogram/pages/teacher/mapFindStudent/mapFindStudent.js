@@ -126,19 +126,50 @@ Page({
         return;
       }
 
-      // 处理数据，计算距离
-      const list = res.map(item => {
-        return {
-          ...item,
-          // 简单计算距离展示 (保留1位小数)
-          distance: this.getDistance(
+      // 处理数据，调用后端高德地图API计算距离
+      const list = await Promise.all(res.map(async item => {
+        try {
+          // 调用后端高德地图距离计算API
+          const distanceRes = await request.get(api.map.distance, {
+            fromLatitude: this.data.latitude,
+            fromLongitude: this.data.longitude,
+            toLatitude: item.latitude,
+            toLongitude: item.longitude,
+            mode: 'walking' // 使用步行距离，可根据需求改为driving
+          });
+          
+          // 获取距离（单位：米），转换为公里并保留1位小数
+          let distance = this.getDistance(
             this.data.latitude,
             this.data.longitude,
             item.latitude,
             item.longitude
-          ).toFixed(1)
-        };
-      });
+          ).toFixed(1);
+          
+          // 如果后端返回有效距离，则使用后端数据
+          if (distanceRes && distanceRes.status === 0 && distanceRes.elements && distanceRes.elements.length > 0) {
+            const meters = distanceRes.elements[0].distance;
+            distance = (meters / 1000).toFixed(1);
+          }
+          
+          return {
+            ...item,
+            distance
+          };
+        } catch (err) {
+          console.error(`计算距离失败: ${item.id}`, err);
+          // 如果API调用失败，回退到客户端计算
+          return {
+            ...item,
+            distance: this.getDistance(
+              this.data.latitude,
+              this.data.longitude,
+              item.latitude,
+              item.longitude
+            ).toFixed(1)
+          };
+        }
+      }));
 
       // 生成地图标记
       const markers = list.map((item, index) => ({
