@@ -8,7 +8,7 @@
 /* 页面头部 */
 .page-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   height: 88rpx;
   padding: 0 32rpx;
@@ -19,15 +19,10 @@
   z-index: 100;
 }
 
-.header-left {
-  width: 80rpx;
+.header-center {
   display: flex;
   align-items: center;
-}
-
-.back-icon {
-  font-size: 40rpx;
-  color: var(--text-main);
+  justify-content: center;
 }
 
 .title {
@@ -121,7 +116,10 @@
 }
 
 .card-header {
-  padding: 32rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24rpx 24rpx 16rpx;
   border-bottom: 1rpx solid var(--bg-body);
   display: flex;
   justify-content: space-between;
@@ -129,11 +127,64 @@
 }
 
 .card-title {
-  font-size: 30rpx;
+  font-size: 28rpx;
   font-weight: 700;
   color: var(--text-main);
-  border-left: 8rpx solid var(--primary);
-  padding-left: 16rpx;
+  border-left: 6rpx solid var(--primary);
+  padding-left: 14rpx;
+  margin: 0;
+}
+
+/* 基本信息版块修改按钮样式 */
+.card-edit-btn {
+  font-size: 22rpx;
+  color: var(--primary);
+  background: transparent;
+  border: 1rpx solid var(--primary);
+  border-radius: 16rpx;
+  padding: 6rpx 16rpx !important;
+  line-height: 1.2;
+  font-weight: 500;
+  box-shadow: none;
+  transition: all 0.3s ease;
+  min-width: auto !important;
+  width: auto !important;
+  white-space: nowrap;
+  height: auto !important;
+  display: block;
+  margin: 0 !important;
+  text-align: center;
+  overflow: visible;
+  position: relative;
+}
+
+/* 重置微信小程序按钮默认样式 */
+.card-edit-btn::after {
+  display: none !important;
+  content: none !important;
+}
+
+.card-edit-btn:active {
+  background: var(--primary);
+  color: #fff;
+  transform: scale(0.95);
+  border-color: var(--primary);
+}
+
+/* 确保按钮不会继承任何额外样式 */
+.card-edit-btn:focus {
+  outline: none;
+}
+
+/* 调整卡片头部布局，确保按钮完全靠右 */
+.card-header {
+  position: relative;
+}
+
+.card-header .card-edit-btn {
+  position: absolute;
+  top: 24rpx;
+  right: 24rpx;
 }
 
 .edit-hint {
@@ -315,4 +366,105 @@
 .tip-text {
   font-size: 24rpx;
   color: var(--text-placeholder);
+}
+
+/* 编辑模式样式 */
+.edit-input-wrap {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.edit-input {
+  width: 100%;
+  max-width: 400rpx;
+  height: 64rpx;
+  border: 2rpx solid var(--border);
+  border-radius: 32rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  color: var(--text-main);
+  background: var(--bg-body);
+  text-align: right;
+}
+
+.edit-input:focus {
+  border-color: var(--primary);
+  background: #fff;
+}
+
+.edit-select-wrap {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.edit-picker {
+  width: 100%;
+  max-width: 400rpx;
+  height: 64rpx;
+  border: 2rpx solid var(--border);
+  border-radius: 32rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  color: var(--text-main);
+  background: var(--bg-body);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.picker-value {
+  text-align: right;
+  flex: 1;
+}
+
+/* 编辑模式底部按钮 */
+.edit-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 24rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
+  background: var(--bg-card);
+  box-shadow: 0 -8rpx 24rpx rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.footer-btn {
+  flex: 1;
+  height: 96rpx;
+  border-radius: 48rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  margin: 0 16rpx;
+  transition: all 0.3s;
+  border: none;
+}
+
+.footer-btn::after {
+  border: none;
+}
+
+.cancel-btn {
+  background: var(--bg-body);
+  color: var(--text-main);
+  border: 2rpx solid var(--border);
+}
+
+.cancel-btn:active {
+  background: var(--border);
+}
+
+.save-btn {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #fff;
+  box-shadow: var(--shadow-md);
+}
+
+.save-btn:active {
+  transform: scale(0.98);
+  opacity: 0.9;
 }

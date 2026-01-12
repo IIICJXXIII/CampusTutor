@@ -91,8 +91,8 @@
             markers="{{markers}}"
             scale="15"
             show-location
-            enable-scroll="{{false}}"
-            enable-zoom="{{false}}"
+            enable-scroll="{{true}}"
+            enable-zoom="{{true}}"
           ></map>
         </view>
       </view>

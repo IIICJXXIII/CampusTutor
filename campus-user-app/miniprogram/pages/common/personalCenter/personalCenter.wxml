@@ -1,7 +1,7 @@
 <!-- 个人中心页面 - personalCenter.wxml -->
 <view class="container">
   <!-- 用户信息卡片 -->
-  <view class="user-card" bindtap="goToUserInfoView">
+  <view class="user-card">
     <view class="user-bg"></view>
     <view class="user-content">
       <image class="avatar" src="{{userInfo.avatarUrl || '/static/images/default-avatar.png'}}" mode="aspectFill"></image>
@@ -15,6 +15,10 @@
         <text class="phone">{{userInfo.username || ''}}</text>
       </view>
     </view>
+    <!-- 查看个人资料按钮 -->
+    <button class="view-profile-btn" bindtap="goToUserInfoView">
+      查看个人资料
+    </button>
   </view>
 
   <!-- 钱包资产卡片（教师专属） -->

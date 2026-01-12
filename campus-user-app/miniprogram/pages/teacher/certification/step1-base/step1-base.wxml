@@ -48,7 +48,7 @@
 
     <view class="input-group">
       <view class="label">入学年份</view>
-      <picker mode="date" fields="year" bindchange="handleYearChange">
+      <picker mode="date" fields="year" bindchange="handleYearChange" end="{{maxEnrollYear}}">
          <view class="picker {{!formData.enrollYear ? 'placeholder' : ''}}">
           {{formData.enrollYear || '请选择入学年份'}}
         </view>
