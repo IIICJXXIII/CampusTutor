@@ -21,6 +21,7 @@ import com.campus.module.tutor.entity.TutorProfile;
 import com.campus.module.tutor.mapper.TutorProfileMapper;
 import com.campus.module.wallet.service.SysWalletService;
 import com.campus.service.WechatPayService;
+import com.campus.module.wallet.service.SysTransactionFlowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -49,6 +50,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
     private final TeachingRecordMapper teachingRecordMapper;
     private final DemandPostMapper demandPostMapper;
     private final WechatPayService wechatPayService;
+    private final SysTransactionFlowService transactionFlowService;
 
     /**
      * 平台服务费比例(10%)
@@ -268,8 +270,29 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         }
 
         // 解冻并转入教员余额
-        walletService.unfreeze(order.getTutorId(), order.getTutorAmount());
-        walletService.recharge(order.getTutorId(), order.getTutorAmount());
+        boolean unfreezeSuccess = walletService.unfreeze(order.getTutorId(), order.getTutorAmount());
+        if (!unfreezeSuccess) {
+            log.error("解冻教员收益失败: orderId={}, tutorId={}, amount={}", 
+                     orderId, order.getTutorId(), order.getTutorAmount());
+            throw new BusinessException("解冻教员收益失败");
+        }
+        
+        // 生成解冻收入的交易流水记录
+        try {
+            transactionFlowService.recordFlow(
+                order.getTutorId(),
+                order.getTutorAmount(),
+                order.getTutorAmount(), // 解冻后金额
+                3, // 课时费解冻收入
+                order.getId(),
+                "订单完成，课时费已解冻: " + order.getOrderNo()
+            );
+            log.info("生成教员解冻收入记录成功: orderId={}, tutorId={}, amount={}", 
+                     orderId, order.getTutorId(), order.getTutorAmount());
+        } catch (Exception e) {
+            log.error("生成解冻交易流水记录失败: orderId={}, error={}", orderId, e.getMessage());
+            // 不影响主流程，但记录错误
+        }
 
         // 更新教员完成订单数
         TutorProfile profile = tutorProfileMapper.selectById(order.getTutorProfileId());
@@ -419,7 +442,29 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         updateById(order);
         
         // 冻结教员收益(待完课后解冻)
-        walletService.freeze(order.getTutorId(), order.getTutorAmount());
+        boolean freezeSuccess = walletService.freeze(order.getTutorId(), order.getTutorAmount());
+        if (!freezeSuccess) {
+            log.error("冻结教员收益失败: orderNo={}, tutorId={}, amount={}", 
+                     orderNo, order.getTutorId(), order.getTutorAmount());
+            throw new BusinessException("冻结教员收益失败");
+        }
+        
+        // 生成交易流水记录
+        try {
+            transactionFlowService.recordFlow(
+                order.getTutorId(),
+                order.getTutorAmount(),
+                order.getTutorAmount(), // 冻结金额作为收入
+                3, // 课时费解冻收入
+                order.getId(),
+                "订单支付成功，课时费已冻结: " + order.getOrderNo()
+            );
+            log.info("生成教员收入记录成功: orderNo={}, tutorId={}, amount={}", 
+                     orderNo, order.getTutorId(), order.getTutorAmount());
+        } catch (Exception e) {
+            log.error("生成交易流水记录失败: orderNo={}, error={}", orderNo, e.getMessage());
+            // 不影响主流程，但记录错误
+        }
         
         // 生成课程记录
         generateTeachingRecords(order);
@@ -498,7 +543,30 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
             BigDecimal refundRatio = refundAmount.divide(totalAmount, 4, RoundingMode.HALF_UP);
             BigDecimal refundToTutor = frozenAmount.multiply(refundRatio).setScale(2, RoundingMode.HALF_UP);
             
-            walletService.unfreeze(order.getTutorId(), refundToTutor);
+            boolean unfreezeSuccess = walletService.unfreeze(order.getTutorId(), refundToTutor);
+            if (!unfreezeSuccess) {
+                log.error("退款解冻教员冻结金额失败: orderId={}, tutorId={}, amount={}", 
+                         orderId, order.getTutorId(), refundToTutor);
+                throw new BusinessException("退款处理失败");
+            }
+            
+            // 生成退款交易流水记录
+            try {
+                transactionFlowService.recordFlow(
+                    order.getTutorId(),
+                    refundToTutor.negate(), // 负数表示支出/退款
+                    BigDecimal.ZERO, // 退款后余额
+                    5, // 退款
+                    order.getId(),
+                    "订单退款，已解冻: " + order.getOrderNo()
+                );
+                log.info("生成教员退款记录成功: orderId={}, tutorId={}, amount={}", 
+                         orderId, order.getTutorId(), refundToTutor);
+            } catch (Exception e) {
+                log.error("生成退款交易流水记录失败: orderId={}, error={}", orderId, e.getMessage());
+                // 不影响主流程，但记录错误
+            }
+            
             // 退还家长金额
             walletService.recharge(order.getParentId(), refundAmount);
             // 更新订单状态
@@ -511,7 +579,31 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
             // 解冻相应比例的冻结金额
             BigDecimal frozenAmount = order.getTutorAmount();
             BigDecimal refundToTutor = frozenAmount.multiply(refundRatio).setScale(2, RoundingMode.HALF_UP);
-            walletService.unfreeze(order.getTutorId(), refundToTutor);
+            
+            boolean unfreezeSuccess = walletService.unfreeze(order.getTutorId(), refundToTutor);
+            if (!unfreezeSuccess) {
+                log.error("部分退款解冻教员冻结金额失败: orderId={}, tutorId={}, amount={}", 
+                         orderId, order.getTutorId(), refundToTutor);
+                throw new BusinessException("退款处理失败");
+            }
+            
+            // 生成部分退款交易流水记录
+            try {
+                transactionFlowService.recordFlow(
+                    order.getTutorId(),
+                    refundToTutor.negate(), // 负数表示支出/退款
+                    order.getTutorAmount().subtract(refundToTutor), // 剩余冻结金额
+                    5, // 退款
+                    order.getId(),
+                    "订单部分退款，已解冻: " + order.getOrderNo()
+                );
+                log.info("生成教员部分退款记录成功: orderId={}, tutorId={}, amount={}", 
+                         orderId, order.getTutorId(), refundToTutor);
+            } catch (Exception e) {
+                log.error("生成部分退款交易流水记录失败: orderId={}, error={}", orderId, e.getMessage());
+                // 不影响主流程，但记录错误
+            }
+            
             // 退还家长金额
             walletService.recharge(order.getParentId(), refundAmount);
             // 更新订单金额

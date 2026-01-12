@@ -1,6 +1,7 @@
 <wxs module="tools">
   // 状态映射辅助函数
   var statusMap = {
+    '-1': { text: '待确认', color: '#909399' },
     '0': { text: '待支付', color: '#ff9900' },
     '1': { text: '待开课', color: '#409EFF' },
     '2': { text: '进行中', color: '#67c23a' },
@@ -55,6 +56,11 @@
             <block wx:if="{{item.status === 0}}">
               <button class="btn plain" catchtap="handleCancel" data-id="{{item.id}}">取消</button>
               <button class="btn primary" catchtap="handlePay" data-id="{{item.id}}">去支付</button>
+            </block>
+
+            <block wx:if="{{item.status === -1}}">
+              <button class="btn plain" catchtap="handleCancel" data-id="{{item.id}}">拒绝</button>
+              <button class="btn primary" catchtap="handleConfirm" data-id="{{item.id}}">确认</button>
             </block>
 
             <block wx:if="{{item.status === 1}}">

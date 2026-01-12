@@ -82,4 +82,12 @@ public interface DemandPostService extends IService<DemandPost> {
      * @return 分页结果
      */
     IPage<DemandPost> pageListWithMatchScore(Long tutorId, String subject, String grade, Double longitude, Double latitude, Integer page, Integer size, String sortBy, String sortOrder);
+
+    /**
+     * 教师接单匹配
+     * @param tutorId 教师ID
+     * @param demandId 需求ID
+     * @return 订单ID
+     */
+    Long matchDemand(Long tutorId, Long demandId);
 }
