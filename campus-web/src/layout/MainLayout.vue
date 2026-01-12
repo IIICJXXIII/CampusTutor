@@ -335,8 +335,8 @@ $breakpoint-md: 768px;
 
 .main-content {
   flex: 1;
-  padding: $spacing-lg;
-  max-width: 1400px;
+  padding: 32px 40px;
+  max-width: 1600px;
   width: 100%;
   margin: 0 auto;
 }
