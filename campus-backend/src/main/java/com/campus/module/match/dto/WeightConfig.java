@@ -1,12 +1,9 @@
 package com.campus.module.match.dto;
 
-import lombok.Data;
-
 /**
  * 动态权重配置
  * 根据用户成熟度动态调整各维度权重
  */
-@Data
 public class WeightConfig {
 
     // 科目匹配权重
@@ -51,10 +48,10 @@ public class WeightConfig {
      */
     public static WeightConfig newUserConfig() {
         WeightConfig config = new WeightConfig();
-        config.setRatingWeight(15.0); // 原10% -> 15%
-        config.setEducationWeight(8.0); // 原5% -> 8%
-        config.setHotnessWeight(2.0); // 原5% -> 2%
-        config.setExperienceWeight(5.0); // 原7% -> 5%
+        config.ratingWeight = 15.0; // 原10% -> 15%
+        config.educationWeight = 8.0; // 原5% -> 8%
+        config.hotnessWeight = 2.0; // 原5% -> 2%
+        config.experienceWeight = 5.0; // 原7% -> 5%
         return config;
     }
 
@@ -63,9 +60,50 @@ public class WeightConfig {
      */
     public static WeightConfig activeUserConfig() {
         WeightConfig config = new WeightConfig();
-        config.setHotnessWeight(10.0); // 原5% -> 10%
-        config.setRatingWeight(7.0); // 原10% -> 7%
-        config.setResponseWeight(8.0); // 原5% -> 8%
+        config.ratingWeight = 7.0; // 原10% -> 7%
+        config.hotnessWeight = 10.0; // 原5% -> 10%
+        config.responseWeight = 8.0; // 原5% -> 8%
         return config;
+    }
+
+    // 显式的getter方法
+    public double getSubjectWeight() {
+        return subjectWeight;
+    }
+
+    public double getGradeWeight() {
+        return gradeWeight;
+    }
+
+    public double getDistanceWeight() {
+        return distanceWeight;
+    }
+
+    public double getPriceWeight() {
+        return priceWeight;
+    }
+
+    public double getRatingWeight() {
+        return ratingWeight;
+    }
+
+    public double getExperienceWeight() {
+        return experienceWeight;
+    }
+
+    public double getEducationWeight() {
+        return educationWeight;
+    }
+
+    public double getSpecialtyWeight() {
+        return specialtyWeight;
+    }
+
+    public double getHotnessWeight() {
+        return hotnessWeight;
+    }
+
+    public double getResponseWeight() {
+        return responseWeight;
     }
 }

@@ -5,7 +5,8 @@ import com.campus.module.demand.entity.DemandPost;
 import com.campus.module.match.dto.MatchScoreResult;
 import com.campus.module.match.dto.MatchViewType;
 import com.campus.module.tutor.entity.TutorProfile;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -17,9 +18,10 @@ import java.util.List;
  * 匹配评分计算器
  * 多维度加权评分算法 - 支持家长视角和教师视角
  */
-@Slf4j
 @Component
 public class MatchScoreCalculator {
+
+    private static final Logger log = LoggerFactory.getLogger(MatchScoreCalculator.class);
 
     // ============ 家长视角权重配置（找老师）============
     // 总计100%，关注教师质量和性价比

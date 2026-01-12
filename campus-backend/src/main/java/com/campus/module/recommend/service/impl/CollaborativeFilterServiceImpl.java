@@ -6,7 +6,8 @@ import com.campus.module.recommend.service.CollaborativeFilterService;
 import com.campus.module.tutor.entity.TutorProfile;
 import com.campus.module.tutor.mapper.TutorProfileMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -18,10 +19,11 @@ import java.util.stream.Collectors;
  * 协同过滤推荐服务实现
  * 基于 Item-Based 协同过滤，使用余弦相似度
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CollaborativeFilterServiceImpl implements CollaborativeFilterService {
+
+    private static final Logger log = LoggerFactory.getLogger(CollaborativeFilterServiceImpl.class);
 
     private final UserActionLogMapper actionLogMapper;
     private final TutorProfileMapper tutorProfileMapper;

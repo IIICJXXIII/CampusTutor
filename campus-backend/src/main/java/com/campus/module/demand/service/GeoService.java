@@ -1,6 +1,7 @@
 package com.campus.module.demand.service;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.geo.*;
 import org.springframework.data.redis.connection.RedisGeoCommands;
@@ -14,9 +15,10 @@ import java.util.List;
  * 地理位置服务(基于Redis GEO)
  * Redis 不可用时会返回空结果，不影响主业务
  */
-@Slf4j
 @Service
 public class GeoService {
+
+    private static final Logger log = LoggerFactory.getLogger(GeoService.class);
 
     @Autowired(required = false)
     private StringRedisTemplate redisTemplate;
