@@ -69,6 +69,12 @@ public class MatchScoreResult extends TutorSearchResult {
     private Double teachModeScore;
 
     /**
+     * 协同过滤预测分数 (0.0~1.0)
+     * 基于相似用户行为预测的评分
+     */
+    private Double cfScore;
+
+    /**
      * 匹配标签（如：科目匹配、距离近、评分高等）
      */
     private List<String> matchTags;
