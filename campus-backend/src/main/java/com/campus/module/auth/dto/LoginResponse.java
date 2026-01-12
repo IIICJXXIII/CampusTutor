@@ -29,4 +29,114 @@ public class LoginResponse {
 
     @Schema(description = "角色: 0-管理员, 1-教员, 2-家长")
     private Integer role;
+
+    // 构造方法
+    public LoginResponse() {
+    }
+
+    public LoginResponse(String token, Long userId, String username, String nickname, String avatar, Integer role) {
+        this.token = token;
+        this.userId = userId;
+        this.username = username;
+        this.nickname = nickname;
+        this.avatar = avatar;
+        this.role = role;
+    }
+
+    // 显式的getter和setter方法
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
+    }
+
+    public Integer getRole() {
+        return role;
+    }
+
+    public void setRole(Integer role) {
+        this.role = role;
+    }
+
+    // Builder 模式
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private String token;
+        private Long userId;
+        private String username;
+        private String nickname;
+        private String avatar;
+        private Integer role;
+
+        public Builder token(String token) {
+            this.token = token;
+            return this;
+        }
+
+        public Builder userId(Long userId) {
+            this.userId = userId;
+            return this;
+        }
+
+        public Builder username(String username) {
+            this.username = username;
+            return this;
+        }
+
+        public Builder nickname(String nickname) {
+            this.nickname = nickname;
+            return this;
+        }
+
+        public Builder avatar(String avatar) {
+            this.avatar = avatar;
+            return this;
+        }
+
+        public Builder role(Integer role) {
+            this.role = role;
+            return this;
+        }
+
+        public LoginResponse build() {
+            return new LoginResponse(token, userId, username, nickname, avatar, role);
+        }
+    }
 }

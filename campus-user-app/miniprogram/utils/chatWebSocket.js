@@ -20,6 +20,8 @@ class ChatWebSocket {
         this.messageCallbacks = [];
         this.connectCallbacks = [];
         this.connectPromise = null; // 保存连接 Promise
+        this.reconnectTimer = null; // 重连定时器
+        this.messageQueue = []; // 消息队列，用于连接建立后发送
     }
 
     /**
@@ -69,6 +71,8 @@ class ChatWebSocket {
                     this.isConnecting = false;
                     this.socketTask = null;
                     this.connectPromise = null;
+                    // 触发重连
+                    this.scheduleReconnect();
                     reject(err);
                 }
             });
@@ -80,6 +84,8 @@ class ChatWebSocket {
                 this.reconnectCount = 0;
                 this.startHeartbeat();
                 this.connectCallbacks.forEach(cb => cb(true));
+                // 发送队列中的消息
+                this.flushMessageQueue();
                 resolve();
             });
 
@@ -107,9 +113,7 @@ class ChatWebSocket {
 
                 // 只在非正常关闭时尝试重连
                 if (res.code !== 1000 && this.reconnectCount < this.maxReconnect) {
-                    this.reconnectCount++;
-                    console.log(`尝试重连 (${this.reconnectCount}/${this.maxReconnect})...`);
-                    setTimeout(() => this.connect(), 3000);
+                    this.scheduleReconnect();
                 }
             });
 
@@ -118,11 +122,38 @@ class ChatWebSocket {
                 this.isConnected = false;
                 this.isConnecting = false;
                 this.connectPromise = null;
+                // 触发重连
+                this.scheduleReconnect();
                 reject(err);
             });
         });
 
         return this.connectPromise;
+    }
+
+    /**
+     * 调度重连，使用指数退避策略
+     */
+    scheduleReconnect() {
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+        }
+
+        this.reconnectCount++;
+        if (this.reconnectCount > this.maxReconnect) {
+            console.error('WebSocket 重连失败，已达到最大重试次数');
+            return;
+        }
+
+        // 指数退避策略：1s, 2s, 4s, 8s, 16s
+        const delay = Math.min(1000 * Math.pow(2, this.reconnectCount - 1), 16000);
+        console.log(`WebSocket 计划在 ${delay}ms 后重连 (${this.reconnectCount}/${this.maxReconnect})...`);
+
+        this.reconnectTimer = setTimeout(() => {
+            this.connect().catch(err => {
+                console.error('WebSocket 重连失败:', err);
+            });
+        }, delay);
     }
 
     handleMessage(data) {
@@ -157,7 +188,13 @@ class ChatWebSocket {
      */
     sendMessage(receiverId, content, msgType = 1) {
         if (!this.isConnected || !this.socketTask) {
-            console.warn('WebSocket 未连接，无法发送。isConnected:', this.isConnected);
+            console.warn('WebSocket 未连接，将消息加入队列');
+            // 将消息加入队列，等待连接建立后发送
+            this.messageQueue.push({ receiverId, content, msgType });
+            // 尝试连接
+            this.connect().catch(err => {
+                console.error('WebSocket 连接失败，无法发送消息:', err);
+            });
             return false;
         }
 
@@ -173,14 +210,37 @@ class ChatWebSocket {
         this.socketTask.send({
             data: JSON.stringify(message),
             success: () => console.log('WebSocket 消息发送成功'),
-            fail: (err) => console.error('WebSocket 消息发送失败:', err)
+            fail: (err) => {
+                console.error('WebSocket 消息发送失败:', err);
+                // 发送失败，将消息加入队列
+                this.messageQueue.push({ receiverId, content, msgType });
+            }
         });
 
         return true;
     }
 
+    /**
+     * 发送队列中的消息
+     */
+    flushMessageQueue() {
+        if (this.messageQueue.length === 0) return;
+
+        console.log(`WebSocket 连接已建立，发送队列中的 ${this.messageQueue.length} 条消息`);
+        while (this.messageQueue.length > 0) {
+            const msg = this.messageQueue.shift();
+            this.sendMessage(msg.receiverId, msg.content, msg.msgType);
+        }
+    }
+
+    /**
+     * 标记消息已读
+     */
     markAsRead(senderId) {
-        if (!this.isConnected || !this.socketTask) return;
+        if (!this.isConnected || !this.socketTask) {
+            console.warn('WebSocket 未连接，无法标记已读');
+            return;
+        }
 
         this.socketTask.send({
             data: JSON.stringify({
@@ -216,27 +276,34 @@ class ChatWebSocket {
         this.connectCallbacks = this.connectCallbacks.filter(cb => cb !== callback);
     }
 
+    /**
+     * 开始心跳检测
+     */
     startHeartbeat() {
         this.stopHeartbeat();
         this.heartbeatTimer = setInterval(() => {
             if (this.isConnected && this.socketTask) {
                 this.socketTask.send({
                     data: JSON.stringify({ type: 'ping' }),
-                    fail: () => { } // 静默失败
+                    fail: () => {
+                        console.warn('心跳发送失败，可能连接已断开');
+                        // 心跳失败，触发重连
+                        this.scheduleReconnect();
+                    }
                 });
             }
         }, 30000);
     }
 
-    stopHeartbeat() {
-        if (this.heartbeatTimer) {
-            clearInterval(this.heartbeatTimer);
-            this.heartbeatTimer = null;
-        }
-    }
-
+    /**
+     * 断开连接
+     */
     disconnect() {
         this.stopHeartbeat();
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
         if (this.socketTask) {
             this.socketTask.close();
             this.socketTask = null;
@@ -244,8 +311,12 @@ class ChatWebSocket {
         this.isConnected = false;
         this.isConnecting = false;
         this.connectPromise = null;
+        this.messageQueue = [];
     }
 
+    /**
+     * 获取连接状态
+     */
     getStatus() {
         return this.isConnected;
     }

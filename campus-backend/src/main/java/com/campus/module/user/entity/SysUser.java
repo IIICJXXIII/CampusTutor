@@ -45,4 +45,37 @@ public class SysUser implements Serializable {
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
+
+    // 显式的getter方法
+    public Long getId() {
+        return id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public Integer getRole() {
+        return role;
+    }
+
+    public Integer getStatus() {
+        return status;
+    }
+
+    public Integer getGender() {
+        return gender;
+    }
 }

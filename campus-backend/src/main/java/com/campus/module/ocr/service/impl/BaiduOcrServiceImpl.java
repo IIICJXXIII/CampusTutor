@@ -9,6 +9,8 @@ import com.campus.module.ocr.dto.OcrResultDTO;
 import com.campus.module.ocr.service.DoubaoVisionService;
 import com.campus.module.ocr.service.OcrService;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,8 @@ import java.util.Map;
 @Slf4j
 @Service
 public class BaiduOcrServiceImpl implements OcrService {
+
+    private static final Logger log = LoggerFactory.getLogger(BaiduOcrServiceImpl.class);
 
     @Autowired
     private DoubaoVisionService doubaoVisionService;
