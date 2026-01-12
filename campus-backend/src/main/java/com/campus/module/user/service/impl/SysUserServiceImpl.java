@@ -80,12 +80,14 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (user == null) {
             throw new BusinessException(ResultCode.USER_NOT_EXIST);
         }
-        // 校验旧密码
+        
+        // 验证旧密码
         String encryptedOldPassword = SecureUtil.md5(oldPassword);
-        if (!user.getPassword().equals(encryptedOldPassword)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "旧密码错误");
+        if (!encryptedOldPassword.equals(user.getPassword())) {
+            throw new BusinessException(ResultCode.PASSWORD_ERROR);
         }
-        // 更新新密码
+        
+        // 密码加密
         String encryptedNewPassword = SecureUtil.md5(newPassword);
         user.setPassword(encryptedNewPassword);
         updateById(user);

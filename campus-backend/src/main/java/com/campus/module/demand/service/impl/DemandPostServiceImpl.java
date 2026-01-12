@@ -13,6 +13,7 @@ import com.campus.module.demand.mapper.DemandPostMapper;
 import com.campus.module.demand.service.DemandPostService;
 import com.campus.module.demand.service.GeoService;
 import com.campus.module.match.service.MatchScoreCalculator;
+import com.campus.module.order.service.CourseOrderService;
 import com.campus.module.tutor.entity.TutorProfile;
 import com.campus.module.tutor.mapper.TutorProfileMapper;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
     private final GeoService geoService;
     private final TutorProfileMapper tutorProfileMapper;
     private final MatchScoreCalculator matchScoreCalculator;
+    private final CourseOrderService courseOrderService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -291,5 +293,48 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
         resultPage.setRecords(demandsWithMatchScore);
         resultPage.setTotal(demandPage.getTotal());
         return resultPage;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long matchDemand(Long tutorId, Long demandId) {
+        // 1. 验证需求是否存在且状态为上架
+        DemandPost demand = getById(demandId);
+        if (demand == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "需求不存在");
+        }
+        if (demand.getStatus() != 1) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "需求已下架或已匹配");
+        }
+        if (demand.getMatchedTutorId() != null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "需求已被其他教师匹配");
+        }
+
+        // 2. 验证教师是否存在且已认证
+        TutorProfile tutorProfile = tutorProfileMapper.selectOne(
+                new LambdaQueryWrapper<TutorProfile>()
+                        .eq(TutorProfile::getUserId, tutorId)
+        );
+        if (tutorProfile == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "教师档案不存在");
+        }
+        if (tutorProfile.getCertStatus() != 2) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "教师未认证或认证未通过");
+        }
+
+        // 3. 创建订单
+        com.campus.module.order.dto.AcceptDemandRequest acceptRequest = new com.campus.module.order.dto.AcceptDemandRequest();
+        acceptRequest.setDemandId(demandId);
+        acceptRequest.setTotalHours(10); // 默认10课时
+        acceptRequest.setRemark("系统自动创建的订单");
+
+        Long orderId = courseOrderService.acceptDemand(tutorId, acceptRequest);
+
+        // 4. 更新需求状态为已匹配
+        demand.setStatus(2);
+        demand.setMatchedTutorId(tutorId);
+        updateById(demand);
+
+        return orderId;
     }
 }

@@ -49,6 +49,15 @@
       <view class="label">备注要求</view>
       <textarea class="remark-input" placeholder="请输入特殊要求..." bindinput="handleInput" data-field="remark"></textarea>
     </view>
+
+    <view class="protocol-group">
+      <checkbox-group bindchange="handleProtocolChange">
+        <label class="checkbox-label">
+          <checkbox value="agree" checked="{{agreeProtocol}}" />
+          <text class="protocol-text">我已阅读并同意《家教服务协议》和《隐私政策》</text>
+        </label>
+      </checkbox-group>
+    </view>
   </view>
 
   <view class="footer-bar">
@@ -57,7 +66,7 @@
       <text class="symbol">¥</text>
       <text class="amount">{{totalAmount}}</text>
     </view>
-    <button class="pay-btn" bindtap="submitOrder" loading="{{isSubmitting}}">提交订单</button>
+    <button class="pay-btn" bindtap="submitOrder" loading="{{isSubmitting}}" disabled="{{!agreeProtocol}}">提交订单</button>
   </view>
 
   <view class="modal-mask" wx:if="{{showPayModal}}" bindtap="closePayModal">

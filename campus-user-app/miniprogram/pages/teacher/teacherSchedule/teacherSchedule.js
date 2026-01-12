@@ -97,22 +97,24 @@ Page({
         const { gridData, timeSlots } = this.data;
 
         // 构造请求数据
-        const schedules = [];
-        gridData.forEach((row, slotIndex) => {
-            row.forEach((cell, dayIndex) => {
-                schedules.push({
-                    dayOfWeek: dayIndex + 1,
-                    startTime: timeSlots[slotIndex].startTime,
-                    endTime: timeSlots[slotIndex].endTime,
-                    available: cell.active ? 1 : 0
-                });
-            });
+    const schedules = [];
+    gridData.forEach((row, slotIndex) => {
+      row.forEach((cell, dayIndex) => {
+        schedules.push({
+          dayOfWeek: dayIndex + 1,
+          startTime: timeSlots[slotIndex].startTime,
+          endTime: timeSlots[slotIndex].endTime,
+          available: cell.active ? 1 : 0
         });
+      });
+    });
+    console.log('保存课表数据:', { schedules });
 
         this.setData({ isSaving: true });
 
         try {
             await request.post(apiConfig.tutor.schedule, { schedules });
+      console.log('课表保存成功');
             wx.showToast({ title: '保存成功', icon: 'success' });
         } catch (err) {
             console.error('保存失败:', err);

@@ -61,17 +61,23 @@ Page({
   // 加载教师课表
   async loadTutorSchedule(tutorId) {
     try {
-      // 暂时注释掉不存在的API调用
-      // const result = await request.get(`${api.host}/api/tutor/${tutorId}/schedule`);
-      // if (result && Array.isArray(result)) {
-      //   this.parseScheduleFromServer(result);
-      // }
-      console.log('课表API暂时不可用，使用模拟数据');
-      // 使用模拟数据
-      const mockData = [];
-      this.parseScheduleFromServer(mockData);
+      // 调用后端 API 获取教师课表
+      console.log('加载教师课表，tutorId:', tutorId);
+      const result = await request.get(api.tutor.schedule);
+      console.log('获取到的课表数据:', result);
+      if (result && Array.isArray(result)) {
+        this.parseScheduleFromServer(result);
+      } else {
+        console.log('课表数据为空，使用默认数据');
+        // 使用默认数据
+        const mockData = [];
+        this.parseScheduleFromServer(mockData);
+      }
     } catch (err) {
       console.error('加载课表失败:', err);
+      // 使用默认数据
+      const mockData = [];
+      this.parseScheduleFromServer(mockData);
     }
   },
 
@@ -252,7 +258,7 @@ Page({
     const orderData = {
       tutorId: tutor.id,
       realName: tutor.realName,
-      price: tutor.expectPrice || 0,
+      price: tutor.expectPrice || (tutor.price || 0),
       // 默认选中第一个科目，如果没有则留空
       subject: tutor.teachSubjectsList && tutor.teachSubjectsList.length > 0 ? tutor.teachSubjectsList[0] : ''
     };
