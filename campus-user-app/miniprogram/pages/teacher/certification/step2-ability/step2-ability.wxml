@@ -1,3 +1,4 @@
+<wxs src="../../../../utils/array.wxs" module="arrayUtil" />
 <view class="container">
   <view class="step-header">
     <view class="step-item finished">
@@ -41,6 +42,42 @@
         <text class="icon">🎥</text>
         <text class="text">上传1分钟自我介绍</text>
       </view>
+    </view>
+
+    <!-- 教学设置 -->
+    <view class="section-title">可教授年级 <text class="required">*</text></view>
+    <view class="tag-container">
+      <view 
+        wx:for="{{gradeList}}" 
+        wx:key="id" 
+        class="tag {{arrayUtil.includes(selectedGrades, item.id) ? 'selected' : ''}}"
+        bindtap="toggleGrade"
+        data-id="{{item.id}}"
+      >{{item.name}}</view>
+    </view>
+
+    <view class="section-title">可教授科目 <text class="required">*</text></view>
+    <view class="tag-container">
+      <view 
+        wx:for="{{subjectList}}" 
+        wx:key="id" 
+        class="tag {{arrayUtil.includes(selectedSubjects, item.id) ? 'selected' : ''}}"
+        bindtap="toggleSubject"
+        data-id="{{item.id}}"
+      >{{item.name}}</view>
+    </view>
+
+    <view class="section-title">期望时薪 <text class="required">*</text></view>
+    <view class="price-input-wrap">
+      <text class="price-unit">¥</text>
+      <input 
+        class="price-input" 
+        type="digit" 
+        placeholder="请输入时薪" 
+        value="{{expectPrice}}" 
+        bindinput="onPriceInput"
+      />
+      <text class="price-suffix">/小时</text>
     </view>
   </view>
 
