@@ -1,9 +1,14 @@
 <!-- 用户信息查看页面 - userInfoView.wxml -->
+<wxs src="../../../utils/array.wxs" module="arrayUtil" />
 <view class="container">
   <!-- 页面头部 -->
   <view class="page-header">
     <view class="header-center">
       <text class="title">个人信息</text>
+    </view>
+    <view class="header-right">
+      <text wx:if="{{userInfo.role === 1 && !isEditing}}" class="edit-btn" bindtap="toggleEdit">编辑</text>
+      <text wx:if="{{userInfo.role === 1 && isEditing}}" class="cancel-btn" bindtap="toggleEdit">取消</text>
     </view>
   </view>
 
@@ -27,7 +32,7 @@
       </view>
     </view>
 
-    <!-- 信息卡片 -->
+    <!-- 基本信息卡片 -->
     <view class="info-card">
       <view class="card-header">
         <text class="card-title">基本信息</text>
@@ -38,14 +43,12 @@
       <view class="info-item">
         <view class="info-left">
           <text class="info-label">账号</text>
-          <text class="info-hint">登录账号</text>
         </view>
         <text class="info-value">{{userInfo.username || '未设置'}}</text>
       </view>
       <view class="info-item">
         <view class="info-left">
           <text class="info-label">昵称</text>
-          <text class="info-hint">个人昵称</text>
         </view>
         <view wx:if="{{isEditMode}}" class="edit-input-wrap">
           <input 
@@ -61,130 +64,77 @@
       <view class="info-item">
         <view class="info-left">
           <text class="info-label">角色</text>
-          <text class="info-hint">用户身份</text>
         </view>
         <view class="role-badge {{userInfo.role === 1 ? 'teacher' : 'parent'}}">
           <text class="role-text">{{userInfo.role === 1 ? '教师' : '家长'}}</text>
         </view>
       </view>
-      <view class="info-item">
-        <view class="info-left">
-          <text class="info-label">手机号</text>
-          <text class="info-hint">联系电话</text>
-        </view>
-        <view wx:if="{{isEditMode}}" class="edit-input-wrap">
-          <input 
-            class="edit-input" 
-            placeholder="请输入手机号" 
-            value="{{editUserInfo.phone || editUserInfo.username || ''}}" 
-            data-field="phone" 
-            bindinput="onInputChange"
-            type="number"
-          />
-        </view>
-        <text wx:else class="info-value">{{userInfo.phone || userInfo.username || '未设置'}}</text>
+    </view>
+
+    <!-- 教学设置卡片（仅教师） -->
+    <view wx:if="{{userInfo.role === 1}}" class="info-card teaching-card">
+      <view class="card-header">
+        <text class="card-title">教学设置</text>
+        <text wx:if="{{isEditing}}" class="edit-hint">点击选择/取消</text>
       </view>
 
-    </view>
-    
-    <!-- 认证信息卡片 -->
-    <view class="info-card" wx:if="{{userInfo.role === 1}}">
-      <view class="card-header">
-        <text class="card-title">教师认证信息</text>
-      </view>
-      <view class="info-item">
-        <view class="info-left">
-          <text class="info-label">真实姓名</text>
-          <text class="info-hint">认证姓名</text>
-        </view>
-        <text class="info-value">{{userInfo.realName || '未认证'}}</text>
-      </view>
-      <view class="info-item">
-        <view class="info-left">
-          <text class="info-label">身份证号</text>
-          <text class="info-hint">认证身份证</text>
-        </view>
-        <text class="info-value">{{userInfo.idCard || '未认证'}}</text>
-      </view>
-      <view class="info-item">
-        <view class="info-left">
-          <text class="info-label">学历</text>
-          <text class="info-hint">最高学历</text>
-        </view>
-        <text class="info-value">{{userInfo.education || '未认证'}}</text>
-      </view>
-      <view class="info-item">
-        <view class="info-left">
-          <text class="info-label">毕业院校</text>
-          <text class="info-hint">毕业学校</text>
-        </view>
-        <text class="info-value">{{userInfo.school || '未认证'}}</text>
-      </view>
-      <view class="info-item">
-        <view class="info-left">
-          <text class="info-label">专业</text>
-          <text class="info-hint">所学专业</text>
-        </view>
-        <text class="info-value">{{userInfo.major || '未认证'}}</text>
-      </view>
-      <view class="info-item">
-        <view class="info-left">
-          <text class="info-label">教龄</text>
-          <text class="info-hint">教学经验</text>
-        </view>
-        <text class="info-value">{{userInfo.teachingExperience || '未认证'}}</text>
-      </view>
-      <view class="info-item">
-        <view class="info-left">
-          <text class="info-label">认证状态</text>
-          <text class="info-hint">当前认证情况</text>
-        </view>
-        <view class="status-badge {{userInfo.certificationStatus === 1 ? 'passed' : userInfo.certificationStatus === 2 ? 'failed' : 'pending'}}">
-          <text class="status-text">
-            {{userInfo.certificationStatus === 1 ? '已通过' : userInfo.certificationStatus === 2 ? '未通过' : '待审核'}}
-          </text>
+      <!-- 可教授年级 -->
+      <view class="setting-section">
+        <view class="setting-label">可教授年级</view>
+        <view class="tag-container">
+          <view 
+            wx:for="{{gradeList}}" 
+            wx:key="id" 
+            class="tag {{arrayUtil.includes(selectedGrades, item.id) ? 'selected' : ''}} {{isEditing ? 'editable' : ''}}"
+            bindtap="toggleGrade"
+            data-id="{{item.id}}"
+          >{{item.name}}</view>
         </view>
       </view>
-    </view>
-    
-    <!-- 家长认证信息卡片 -->
-    <view class="info-card" wx:if="{{userInfo.role === 2}}">
-      <view class="card-header">
-        <text class="card-title">家长认证信息</text>
-      </view>
-      <view class="info-item">
-        <view class="info-left">
-          <text class="info-label">真实姓名</text>
-          <text class="info-hint">认证姓名</text>
+
+      <!-- 可教授科目 -->
+      <view class="setting-section">
+        <view class="setting-label">可教授科目</view>
+        <view class="tag-container">
+          <view 
+            wx:for="{{subjectList}}" 
+            wx:key="id" 
+            class="tag {{arrayUtil.includes(selectedSubjects, item.id) ? 'selected' : ''}} {{isEditing ? 'editable' : ''}}"
+            bindtap="toggleSubject"
+            data-id="{{item.id}}"
+          >{{item.name}}</view>
         </view>
-        <text class="info-value">{{userInfo.realName || '未认证'}}</text>
       </view>
-      <view class="info-item">
-        <view class="info-left">
-          <text class="info-label">身份证号</text>
-          <text class="info-hint">认证身份证</text>
+
+      <!-- 期望时薪 -->
+      <view class="setting-section">
+        <view class="setting-label">期望时薪</view>
+        <view class="price-display" wx:if="{{!isEditing}}">
+          <text class="price-value">¥{{expectPrice || '未设置'}}</text>
+          <text wx:if="{{expectPrice}}" class="price-unit">/小时</text>
         </view>
-        <text class="info-value">{{userInfo.idCard || '未认证'}}</text>
+        <view class="price-input-wrap" wx:if="{{isEditing}}">
+          <text class="price-symbol">¥</text>
+          <input 
+            class="price-input" 
+            type="digit" 
+            placeholder="请输入时薪" 
+            value="{{expectPrice}}" 
+            bindinput="onPriceInput"
+          />
+          <text class="price-suffix">/小时</text>
+        </view>
       </view>
-      <view class="info-item">
-        <view class="info-left">
-          <text class="info-label">学生姓名</text>
-          <text class="info-hint">子女姓名</text>
-        </view>
-        <text class="info-value">{{userInfo.studentName || '未设置'}}</text>
-      </view>
-      <view class="info-item">
-        <view class="info-left">
-          <text class="info-label">学生年级</text>
-          <text class="info-hint">子女年级</text>
-        </view>
-        <text class="info-value">{{userInfo.studentGrade || '未设置'}}</text>
+
+      <!-- 保存按钮 -->
+      <view wx:if="{{isEditing}}" class="save-section">
+        <button class="save-btn" bindtap="saveProfile" loading="{{isSaving}}">保存修改</button>
       </view>
     </view>
 
     <!-- 底部提示 -->
-    <view class="footer-tip" wx:if="{{!isEditMode}}">
-      <text class="tip-text">点击头像可查看大图</text>
+    <view class="footer-tip" wx:if="{{!isEditing}}">
+      <text class="tip-text">{{userInfo.role === 1 ? '点击右上角"编辑"可修改教学设置' : '如需修改信息请联系客服'}}</text>
     </view>
     
     <!-- 编辑模式底部按钮 -->

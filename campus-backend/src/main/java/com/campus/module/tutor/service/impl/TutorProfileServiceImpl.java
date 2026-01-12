@@ -54,6 +54,16 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
             if (request.getCertificateUrls() != null) {
                 existing.setCertificateUrls(JSONUtil.toJsonStr(request.getCertificateUrls()));
             }
+            // 处理教学设置字段
+            if (request.getTeachGrades() != null) {
+                existing.setTeachGrades(JSONUtil.toJsonStr(request.getTeachGrades()));
+            }
+            if (request.getTeachSubjects() != null) {
+                existing.setTeachSubjects(JSONUtil.toJsonStr(request.getTeachSubjects()));
+            }
+            if (request.getExpectPrice() != null) {
+                existing.setExpectPrice(request.getExpectPrice());
+            }
             // 开发阶段：直接通过审核
             existing.setCertStatus(2); // 已通过
             existing.setRejectReason(null);
@@ -74,6 +84,16 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
             profile.setStudentCardUrl(request.getStudentCardUrl());
             if (request.getCertificateUrls() != null) {
                 profile.setCertificateUrls(JSONUtil.toJsonStr(request.getCertificateUrls()));
+            }
+            // 处理教学设置字段
+            if (request.getTeachGrades() != null) {
+                profile.setTeachGrades(JSONUtil.toJsonStr(request.getTeachGrades()));
+            }
+            if (request.getTeachSubjects() != null) {
+                profile.setTeachSubjects(JSONUtil.toJsonStr(request.getTeachSubjects()));
+            }
+            if (request.getExpectPrice() != null) {
+                profile.setExpectPrice(request.getExpectPrice());
             }
             // 开发阶段：直接通过审核
             profile.setCertStatus(2); // 已通过
@@ -199,7 +219,7 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
     public Map<String, Object> getCertificationStatus(Long userId) {
         Map<String, Object> status = new HashMap<>();
         TutorProfile profile = getByUserId(userId);
-        
+
         if (profile == null) {
             status.put("status", 0); // 未提交
             status.put("statusText", "未提交认证");
@@ -211,7 +231,7 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
             status.put("profileId", profile.getId());
             status.put("lastUpdateTime", profile.getUpdateTime());
         }
-        
+
         return status;
     }
 
@@ -219,7 +239,7 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
     public Map<String, Object> getCertificationProgress(Long userId) {
         Map<String, Object> progress = new HashMap<>();
         TutorProfile profile = getByUserId(userId);
-        
+
         if (profile == null) {
             progress.put("step", 0);
             progress.put("totalSteps", 3);
@@ -229,18 +249,26 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
             // 检查认证所需字段
             int completedFields = 0;
             int totalFields = 8; // 基本信息、身份证、学生证、学历、专业、学校、照片等
-            
-            if (profile.getRealName() != null) completedFields++;
-            if (profile.getIdCard() != null) completedFields++;
-            if (profile.getIdCardFrontUrl() != null) completedFields++;
-            if (profile.getIdCardBackUrl() != null) completedFields++;
-            if (profile.getUniversityName() != null) completedFields++;
-            if (profile.getMajor() != null) completedFields++;
-            if (profile.getEducation() != null) completedFields++;
-            if (profile.getStudentCardUrl() != null) completedFields++;
-            
+
+            if (profile.getRealName() != null)
+                completedFields++;
+            if (profile.getIdCard() != null)
+                completedFields++;
+            if (profile.getIdCardFrontUrl() != null)
+                completedFields++;
+            if (profile.getIdCardBackUrl() != null)
+                completedFields++;
+            if (profile.getUniversityName() != null)
+                completedFields++;
+            if (profile.getMajor() != null)
+                completedFields++;
+            if (profile.getEducation() != null)
+                completedFields++;
+            if (profile.getStudentCardUrl() != null)
+                completedFields++;
+
             int progressPercent = (completedFields * 100) / totalFields;
-            
+
             progress.put("step", 1);
             progress.put("totalSteps", 3);
             progress.put("currentStep", "审核中");
@@ -248,7 +276,7 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
             progress.put("completedFields", completedFields);
             progress.put("totalFields", totalFields);
         }
-        
+
         return progress;
     }
 
