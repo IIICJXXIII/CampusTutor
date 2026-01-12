@@ -63,6 +63,8 @@ Page({
     try {
       // 调用后端 API 获取教师课表
       console.log('加载教师课表，tutorId:', tutorId);
+      console.log('调用API:', api.tutor.publicSchedule(tutorId));
+
       // 添加重试机制
       const result = await this.retryRequest(() =>
         request.get(api.tutor.publicSchedule(tutorId)),
@@ -70,20 +72,35 @@ Page({
         1000 // 重试间隔1秒
       );
       console.log('获取到的课表数据:', result);
-      if (result && Array.isArray(result)) {
+
+      if (result && Array.isArray(result) && result.length > 0) {
+        // 有课表数据，解析并显示
         this.parseScheduleFromServer(result);
       } else {
-        console.log('课表数据为空或格式不正确，使用默认数据');
-        // 使用空数组作为默认值
-        this.parseScheduleFromServer([]);
+        // 无课表数据或为空，设置所有时段为可用（让家长可以预约）
+        console.log('课表数据为空，设置所有时段为可用');
+        this.setAllSlotsAvailable();
       }
     } catch (err) {
-      console.error('加载课表失败:', err);
-      wx.showToast({ title: '加载课表失败，请重试', icon: 'none' });
-      // 使用空数组作为默认值
-      this.parseScheduleFromServer([]);
+      console.error('加载课表API失败:', err);
+      // API调用失败时，设置所有时段为可用（确保家长可以正常预约）
+      // 这是优雅降级策略：宁可让家长多选，不可让家长无法预约
+      console.log('API调用失败，设置所有时段为可用作为后备方案');
+      this.setAllSlotsAvailable();
     }
   },
+
+  // 设置所有时段为可用（API失败或无数据时的后备方案）
+  setAllSlotsAvailable() {
+    const data = [];
+    const timeSlots = this.data.timeSlots || [];
+    for (let i = 0; i < timeSlots.length; i++) {
+      data.push(new Array(7).fill(true)); // 全部设置为可用
+    }
+    this.setData({ scheduleData: data });
+    console.log('已将所有时段设置为可用，共', data.length, '行 x 7列');
+  },
+
 
   // 解析服务器返回的课表
   parseScheduleFromServer(serverData) {
