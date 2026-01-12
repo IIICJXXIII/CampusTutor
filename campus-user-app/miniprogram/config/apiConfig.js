@@ -32,6 +32,7 @@ const api = {
     profile: `${API_HOST}/api/tutor/profile`,
     certification: `${API_HOST}/api/tutor/certification`,
     schedule: `${API_HOST}/api/tutor/schedule`,
+    publicSchedule: (tutorId) => `${API_HOST}/api/tutor/public/schedule/${tutorId}`,
     // 教师公开详情 (后端为 /api/tutor/public/{id})
     detail: (id) => `${API_HOST}/api/tutor/public/${id}`,
   },

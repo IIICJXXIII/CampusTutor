@@ -9,3 +9,21 @@
 .actions .btn + .btn { margin-left: 10rpx; }
 .btn { padding: 14rpx 20rpx; border-radius: 8rpx; background: #f5f7fa; }
 .btn.primary { background: #409EFF; color: #fff; }
+
+/* 状态流程样式 */
+.status-flow { margin: 20rpx 0; }
+.flow-title { font-size: 32rpx; font-weight: bold; margin-bottom: 20rpx; color: #333; }
+.flow-steps { display: flex; flex-direction: column; }
+.flow-step { display: flex; align-items: center; margin-bottom: 20rpx; position: relative; }
+.step-dot { width: 32rpx; height: 32rpx; border-radius: 50%; margin-right: 16rpx; }
+.step-dot.completed { background-color: #4caf50; }
+.step-dot.active { background-color: #2196f3; }
+.step-dot.pending { background-color: #e0e0e0; }
+.step-dot.canceled { background-color: #9e9e9e; }
+.step-text { font-size: 28rpx; }
+.step-text.completed { color: #4caf50; }
+.step-text.active { color: #2196f3; font-weight: bold; }
+.step-text.pending { color: #9e9e9e; }
+.step-text.canceled { color: #9e9e9e; text-decoration: line-through; }
+.step-line { position: absolute; left: 16rpx; top: 32rpx; width: 2rpx; height: 40rpx; background-color: #e0e0e0; }
+.step-line.completed { background-color: #4caf50; }

@@ -67,4 +67,24 @@ public class TeachingController {
         List<TeachingRecordDTO> records = teachingRecordService.getRecordsByUserId(userId, role);
         return Result.success(records);
     }
+    
+    @Operation(summary = "更新课时进度")
+    @PostMapping("/update-progress/{recordId}")
+    public Result<Void> updateProgress(
+            @PathVariable Long recordId,
+            @RequestParam Integer progress,
+            @RequestParam(required = false) String notes) {
+        Long userId = UserContext.getUserId();
+        teachingRecordService.updateLessonProgress(userId, recordId, progress, notes);
+        return Result.success("进度更新成功");
+    }
+    
+    @Operation(summary = "获取课程统计信息")
+    @GetMapping("/statistics/{orderId}")
+    public Result<java.util.Map<String, Object>> getCourseStatistics(@PathVariable Long orderId) {
+        Long userId = UserContext.getUserId();
+        // TODO: 权限校验
+        java.util.Map<String, Object> statistics = teachingRecordService.getCourseStatistics(orderId);
+        return Result.success(statistics);
+    }
 }
