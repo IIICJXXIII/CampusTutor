@@ -22,6 +22,7 @@ const api = {
   user: {
     info: `${API_HOST}/api/user`,
     byId: (id) => `${API_HOST}/api/user/${id}`,
+    updateInfo: `${API_HOST}/api/user/info`,
   },
   // 文件上传
   file: {
@@ -112,6 +113,13 @@ const api = {
       detail: (id) => `${API_HOST}/api/study/wrongbook/${id}`,
       resolve: (id) => `${API_HOST}/api/study/wrongbook/${id}/resolve`
     }
+  },
+  // 地图模块 (Map)
+  map: {
+    distance: `${API_HOST}/api/map/distance`,
+    direction: `${API_HOST}/api/map/direction`,
+    geocode: `${API_HOST}/api/map/geocoder`,
+    reverseGeocode: `${API_HOST}/api/map/geocoder/reverse`
   }
 };
 

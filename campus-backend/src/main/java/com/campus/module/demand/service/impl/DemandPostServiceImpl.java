@@ -180,14 +180,14 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
     }
 
     @Override
-    public IPage<DemandPost> pageListWithMatchScore(Long tutorId, String subject, String grade, Double longitude, Double latitude, Integer page, Integer size, String sortBy, String sortOrder) {
+    public IPage<DemandPost> pageListWithMatchScore(Long tutorId, String subject, String grade, Double longitude,
+            Double latitude, Integer page, Integer size, String sortBy, String sortOrder) {
         // 1. 获取教师档案
         TutorProfile tutorProfile = null;
         if (tutorId != null) {
             tutorProfile = tutorProfileMapper.selectOne(
                     new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<TutorProfile>()
-                            .eq(TutorProfile::getUserId, tutorId)
-            );
+                            .eq(TutorProfile::getUserId, tutorId));
         }
 
         // 2. 构建查询条件
@@ -211,11 +211,11 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
         for (DemandPost demand : demands) {
             // 计算距离
             Double distance = null;
-            if (longitude != null && latitude != null && demand.getLongitude() != null && demand.getLatitude() != null) {
+            if (longitude != null && latitude != null && demand.getLongitude() != null
+                    && demand.getLatitude() != null) {
                 distance = geoService.calculateDistance(
                         longitude, latitude,
-                        demand.getLongitude().doubleValue(), demand.getLatitude().doubleValue()
-                );
+                        demand.getLongitude().doubleValue(), demand.getLatitude().doubleValue());
             }
 
             // 创建带有匹配度的需求对象
@@ -238,15 +238,14 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
             demandWithScore.setCreateTime(demand.getCreateTime());
             demandWithScore.setUpdateTime(demand.getUpdateTime());
 
-            // 计算匹配分数（如果教师档案存在）
+            // 计算匹配分数（如果教师档案存在）- 使用教师视角算法
             if (tutorProfile != null) {
-                com.campus.module.match.dto.MatchScoreResult scoreResult = matchScoreCalculator.calculateScoreByDemand(
-                        tutorProfile,
-                        demand.getSubject(),
-                        demand.getGrade(),
-                        distance,
-                        demand.getExpectPrice()
-                );
+                // 教师视角：价格越高越好，关注需求新鲜度和详细度
+                com.campus.module.match.dto.MatchScoreResult scoreResult = matchScoreCalculator
+                        .calculateScoreForTeacher(
+                                tutorProfile,
+                                demand,
+                                distance);
 
                 // 设置匹配度信息
                 demandWithScore.setMatchScore(scoreResult.getMatchScore());
@@ -277,7 +276,8 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
         if ("score".equals(sortBy) && !demandsWithMatchScore.isEmpty()) {
             boolean isAsc = "asc".equalsIgnoreCase(sortOrder);
             demandsWithMatchScore.sort((a, b) -> {
-                if (a instanceof com.campus.module.demand.dto.DemandWithMatchScore && b instanceof com.campus.module.demand.dto.DemandWithMatchScore) {
+                if (a instanceof com.campus.module.demand.dto.DemandWithMatchScore
+                        && b instanceof com.campus.module.demand.dto.DemandWithMatchScore) {
                     Double sa = ((com.campus.module.demand.dto.DemandWithMatchScore) a).getMatchScore();
                     Double sb = ((com.campus.module.demand.dto.DemandWithMatchScore) b).getMatchScore();
                     sa = sa != null ? sa : 0.0;
