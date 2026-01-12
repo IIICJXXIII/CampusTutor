@@ -1,12 +1,10 @@
 package com.campus.module.map.dto;
 
-import lombok.Data;
 import java.util.List;
 
 /**
  * 逆地址解析结果
  */
-@Data
 public class GeocoderResult {
 
     /**
@@ -29,6 +27,39 @@ public class GeocoderResult {
      */
     private ResultData resultData;
 
+    // 显式的getter和setter方法
+    public Integer getStatus() {
+        return status;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public Result getResult() {
+        return result;
+    }
+
+    public void setResult(Result result) {
+        this.result = result;
+    }
+
+    public ResultData getResultData() {
+        return resultData;
+    }
+
+    public void setResultData(ResultData resultData) {
+        this.resultData = resultData;
+    }
+
     public void setResult(ResultData data) {
         this.resultData = data;
         // 同时设置兼容字段
@@ -41,20 +72,57 @@ public class GeocoderResult {
         }
     }
 
-    @Data
     public static class ResultData {
         private String address;
         private Location location;
         private AddressComponent addressComponent;
+
+        public String getAddress() {
+            return address;
+        }
+
+        public void setAddress(String address) {
+            this.address = address;
+        }
+
+        public Location getLocation() {
+            return location;
+        }
+
+        public void setLocation(Location location) {
+            this.location = location;
+        }
+
+        public AddressComponent getAddressComponent() {
+            return addressComponent;
+        }
+
+        public void setAddressComponent(AddressComponent addressComponent) {
+            this.addressComponent = addressComponent;
+        }
     }
 
-    @Data
     public static class Location {
         private Double lat;
         private Double lng;
+
+        public Double getLat() {
+            return lat;
+        }
+
+        public void setLat(Double lat) {
+            this.lat = lat;
+        }
+
+        public Double getLng() {
+            return lng;
+        }
+
+        public void setLng(Double lng) {
+            this.lng = lng;
+        }
     }
 
-    @Data
     public static class Result {
         /**
          * 详细地址
@@ -75,15 +143,61 @@ public class GeocoderResult {
          * POI信息
          */
         private List<Poi> pois;
+
+        public String getAddress() {
+            return address;
+        }
+
+        public void setAddress(String address) {
+            this.address = address;
+        }
+
+        public FormattedAddress getFormattedAddresses() {
+            return formattedAddresses;
+        }
+
+        public void setFormattedAddresses(FormattedAddress formattedAddresses) {
+            this.formattedAddresses = formattedAddresses;
+        }
+
+        public AddressComponent getAddressComponent() {
+            return addressComponent;
+        }
+
+        public void setAddressComponent(AddressComponent addressComponent) {
+            this.addressComponent = addressComponent;
+        }
+
+        public List<Poi> getPois() {
+            return pois;
+        }
+
+        public void setPois(List<Poi> pois) {
+            this.pois = pois;
+        }
     }
 
-    @Data
     public static class FormattedAddress {
         private String recommend;
         private String rough;
+
+        public String getRecommend() {
+            return recommend;
+        }
+
+        public void setRecommend(String recommend) {
+            this.recommend = recommend;
+        }
+
+        public String getRough() {
+            return rough;
+        }
+
+        public void setRough(String rough) {
+            this.rough = rough;
+        }
     }
 
-    @Data
     public static class AddressComponent {
         /**
          * 国家
@@ -109,9 +223,56 @@ public class GeocoderResult {
          * 门牌号
          */
         private String streetNumber;
+
+        public String getNation() {
+            return nation;
+        }
+
+        public void setNation(String nation) {
+            this.nation = nation;
+        }
+
+        public String getProvince() {
+            return province;
+        }
+
+        public void setProvince(String province) {
+            this.province = province;
+        }
+
+        public String getCity() {
+            return city;
+        }
+
+        public void setCity(String city) {
+            this.city = city;
+        }
+
+        public String getDistrict() {
+            return district;
+        }
+
+        public void setDistrict(String district) {
+            this.district = district;
+        }
+
+        public String getStreet() {
+            return street;
+        }
+
+        public void setStreet(String street) {
+            this.street = street;
+        }
+
+        public String getStreetNumber() {
+            return streetNumber;
+        }
+
+        public void setStreetNumber(String streetNumber) {
+            this.streetNumber = streetNumber;
+        }
     }
 
-    @Data
     public static class Poi {
         /**
          * POI唯一标识
@@ -133,5 +294,45 @@ public class GeocoderResult {
          * 距离(米)
          */
         private Double distance;
+
+        public String getId() {
+            return id;
+        }
+
+        public void setId(String id) {
+            this.id = id;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public void setTitle(String title) {
+            this.title = title;
+        }
+
+        public String getAddress() {
+            return address;
+        }
+
+        public void setAddress(String address) {
+            this.address = address;
+        }
+
+        public String getCategory() {
+            return category;
+        }
+
+        public void setCategory(String category) {
+            this.category = category;
+        }
+
+        public Double getDistance() {
+            return distance;
+        }
+
+        public void setDistance(Double distance) {
+            this.distance = distance;
+        }
     }
 }

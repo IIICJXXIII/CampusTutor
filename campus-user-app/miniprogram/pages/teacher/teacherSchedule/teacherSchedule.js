@@ -47,12 +47,23 @@ Page({
     // 加载已保存的课表
     async loadSchedule() {
         try {
-            const result = await request.get(apiConfig.tutor.schedule);
+            const result = await this.retryRequest(() => 
+                request.get(apiConfig.tutor.schedule),
+                3, // 最多重试3次
+                1000 // 重试间隔1秒
+            );
             if (result && Array.isArray(result)) {
                 this.parseScheduleFromServer(result);
+            } else {
+                console.warn('加载课表返回的数据格式不正确:', result);
+                // 使用空数组作为默认值
+                this.parseScheduleFromServer([]);
             }
         } catch (err) {
             console.error('加载课表失败:', err);
+            wx.showToast({ title: '加载课表失败，请重试', icon: 'none' });
+            // 使用空数组作为默认值
+            this.parseScheduleFromServer([]);
         }
     },
 
@@ -117,14 +128,35 @@ Page({
         this.setData({ isSaving: true });
 
         try {
-            await request.post(apiConfig.tutor.schedule, { schedules });
+            await this.retryRequest(() => 
+                request.post(apiConfig.tutor.schedule, { schedules }),
+                3, // 最多重试3次
+                1000 // 重试间隔1秒
+            );
             console.log('课表保存成功');
             wx.showToast({ title: '保存成功', icon: 'success' });
         } catch (err) {
             console.error('保存失败:', err);
-            wx.showToast({ title: err.message || '保存失败', icon: 'none' });
+            wx.showToast({ title: err.message || '保存失败，请重试', icon: 'none' });
         } finally {
             this.setData({ isSaving: false });
         }
+    },
+
+    // 带重试机制的请求
+    async retryRequest(requestFn, maxRetries = 3, retryDelay = 1000) {
+        let lastError;
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                return await requestFn();
+            } catch (error) {
+                lastError = error;
+                console.warn(`请求失败，${retryDelay}ms后重试 (${i + 1}/${maxRetries})`, error);
+                if (i < maxRetries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
+                }
+            }
+        }
+        throw lastError;
     }
 });

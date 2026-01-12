@@ -2,6 +2,7 @@ package com.campus.module.demand.dto;
 
 import com.campus.module.demand.entity.DemandPost;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
@@ -9,6 +10,7 @@ import java.util.List;
  * 带有匹配度的需求信息
  */
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class DemandWithMatchScore extends DemandPost {
 
     /**

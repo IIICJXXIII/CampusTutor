@@ -1,11 +1,8 @@
 package com.campus.module.behavior.dto;
 
-import lombok.Data;
-
 /**
  * 行为记录请求 DTO
  */
-@Data
 public class BehaviorRecordRequest {
 
     /**
@@ -22,4 +19,17 @@ public class BehaviorRecordRequest {
      * 停留时长(秒)，仅查看详情时需要
      */
     private Integer duration;
+
+    // 显式的getter方法
+    public Long getTargetId() {
+        return targetId;
+    }
+
+    public Integer getActionType() {
+        return actionType;
+    }
+
+    public Integer getDuration() {
+        return duration;
+    }
 }

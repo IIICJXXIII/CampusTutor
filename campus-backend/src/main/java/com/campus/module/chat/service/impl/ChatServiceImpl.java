@@ -109,7 +109,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public Long sendMessage(Long senderId, Long receiverId, String content, String type) {
+    public Long sendMessageWithTypeString(Long senderId, Long receiverId, String content, String type) {
         // 将字符串类型转换为整数类型
         Integer msgType = 1; // 默认文本
         if ("image".equals(type)) {
