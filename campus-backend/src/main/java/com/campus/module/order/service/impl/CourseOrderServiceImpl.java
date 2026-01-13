@@ -20,6 +20,7 @@ import com.campus.module.teaching.mapper.TeachingRecordMapper;
 import com.campus.module.tutor.entity.TutorProfile;
 import com.campus.module.tutor.mapper.TutorProfileMapper;
 import com.campus.module.wallet.service.SysWalletService;
+import com.campus.module.wallet.entity.SysWallet;
 import com.campus.service.WechatPayService;
 import com.campus.module.wallet.service.SysTransactionFlowService;
 import lombok.RequiredArgsConstructor;
@@ -113,7 +114,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
 
         // 验证金额
         if (order.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "订单金额无效");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单金额无效");
         }
 
         // 钱包支付
@@ -122,7 +123,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
             boolean success = walletService.deduct(userId, order.getTotalAmount());
             if (!success) {
                 log.error("余额不足: userId={}, orderId={}, amount={}", userId, order.getId(), order.getTotalAmount());
-                throw new BusinessException(ResultCode.PARAM_ERROR, "余额不足");
+                throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "余额不足");
             }
 
             // 获取家长扣款后的余额
@@ -157,7 +158,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
                 log.error("冻结教员收益失败: tutorId={}, amount={}", order.getTutorId(), order.getTutorAmount());
                 // 回滚家长扣款
                 walletService.recharge(userId, order.getTotalAmount());
-                throw new BusinessException(ResultCode.PARAM_ERROR, "支付失败，请重试");
+                throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "支付失败，请重试");
             }
 
             // 记录教员收入流水（冻结状态）
@@ -278,13 +279,13 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
     public void cancelOrder(Long userId, Long orderId, String reason) {
         CourseOrder order = getById(orderId);
         if (order == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "订单不存在");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
         }
         if (!order.getParentId().equals(userId) && !order.getTutorId().equals(userId)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "无权操作此订单");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
         }
         if (order.getStatus() != 0 && order.getStatus() != 1) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "当前状态无法取消");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "当前状态无法取消");
         }
 
         // 如果已支付，需要退款
@@ -305,13 +306,13 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
     public void confirmStart(Long tutorId, Long orderId) {
         CourseOrder order = getById(orderId);
         if (order == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "订单不存在");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
         }
         if (!order.getTutorId().equals(tutorId)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "无权操作此订单");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
         }
         if (order.getStatus() != 1) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "订单状态不正确");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单状态不正确");
         }
 
         order.setStatus(2); // 进行中
@@ -323,13 +324,13 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
     public void completeOrder(Long tutorId, Long orderId) {
         CourseOrder order = getById(orderId);
         if (order == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "订单不存在");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
         }
         if (!order.getTutorId().equals(tutorId)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "无权操作此订单");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
         }
         if (order.getStatus() != 2) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "订单状态不正确");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单状态不正确");
         }
 
         // 解冻并转入教员余额
@@ -427,10 +428,10 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         // 1. 查询需求帖
         DemandPost demand = demandPostMapper.selectById(request.getDemandId());
         if (demand == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "需求不存在");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "需求不存在");
         }
         if (demand.getStatus() != 1) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "需求已下架或已被接单");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "需求已下架或已被接单");
         }
         if (demand.getMatchedTutorId() != null) {
             throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "该需求已被其他教员接单");
@@ -442,7 +443,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
                 .eq(TutorProfile::getCertStatus, 2); // 已认证
         TutorProfile tutorProfile = tutorProfileMapper.selectOne(profileWrapper);
         if (tutorProfile == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "教员未认证或档案不存在");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "教员未认证或档案不存在");
         }
 
         // 3. 计算金额
@@ -487,13 +488,13 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
     public void confirmOrder(Long parentId, Long orderId) {
         CourseOrder order = getById(orderId);
         if (order == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "订单不存在");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
         }
         if (!order.getParentId().equals(parentId)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "无权操作此订单");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
         }
         if (order.getStatus() != -1) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "订单状态不正确，仅待确认订单可确认");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单状态不正确，仅待确认订单可确认");
         }
 
         // 确认后状态变为待支付
@@ -574,15 +575,15 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
     public String applyRefund(Long userId, Long orderId, java.math.BigDecimal refundAmount, String reason) {
         CourseOrder order = getById(orderId);
         if (order == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "订单不存在");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
         }
 
         if (!order.getParentId().equals(userId)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "无权操作此订单");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
         }
 
         if (order.getStatus() != 1 && order.getStatus() != 2) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "订单状态不正确，仅已支付或进行中的订单可退款");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单状态不正确，仅已支付或进行中的订单可退款");
         }
 
         // 计算可退款金额（考虑已上课时）
@@ -591,7 +592,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         int remainingHours = totalHours - usedHours;
 
         if (remainingHours <= 0) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "无可退课时");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无可退课时");
         }
 
         BigDecimal totalAmount = order.getTotalAmount();
@@ -604,11 +605,11 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         }
 
         if (refundAmount.compareTo(refundableAmount) > 0) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "退款金额不能大于可退金额");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "退款金额不能大于可退金额");
         }
 
         if (refundAmount.compareTo(totalAmount) > 0) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "退款金额不能大于订单总金额");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "退款金额不能大于订单总金额");
         }
 
         // 生成退款单号
@@ -629,7 +630,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
                     orderId, refundNo, refundResponse.get("refundId"));
         } catch (Exception e) {
             log.error("退款申请失败: orderId={}, error={}", orderId, e.getMessage());
-            throw new BusinessException(ResultCode.REFUND_FAILED, "退款申请失败，请稍后重试");
+            throw new BusinessException(ResultCode.REFUND_FAILED.getCode(), "退款申请失败，请稍后重试");
         }
 
         // 处理退款逻辑
@@ -715,15 +716,15 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
     public java.util.Map<String, String> createWechatPayParams(Long userId, Long orderId, String openid) {
         CourseOrder order = getById(orderId);
         if (order == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "订单不存在");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
         }
 
         if (!order.getParentId().equals(userId)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "无权操作此订单");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
         }
 
         if (order.getStatus() != 0) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "订单状态不正确，仅待支付订单可发起支付");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单状态不正确，仅待支付订单可发起支付");
         }
 
         // 计算金额（分）

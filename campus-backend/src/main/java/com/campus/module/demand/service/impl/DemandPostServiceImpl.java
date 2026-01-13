@@ -72,11 +72,11 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
     @Transactional(rollbackFor = Exception.class)
     public void updateDemand(Long publisherId, DemandPostRequest request) {
         if (request.getId() == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "需求ID不能为空");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "需求ID不能为空");
         }
         DemandPost demand = getById(request.getId());
         if (demand == null || !demand.getPublisherId().equals(publisherId)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "需求不存在或无权限");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "需求不存在或无权限");
         }
 
         demand.setStudentId(request.getStudentId());
@@ -108,7 +108,7 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
     public void changeStatus(Long publisherId, Long demandId, Integer status) {
         DemandPost demand = getById(demandId);
         if (demand == null || !demand.getPublisherId().equals(publisherId)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "需求不存在或无权限");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "需求不存在或无权限");
         }
         demand.setStatus(status);
         updateById(demand);
@@ -119,7 +119,7 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
     public void deleteDemand(Long publisherId, Long demandId) {
         DemandPost demand = getById(demandId);
         if (demand == null || !demand.getPublisherId().equals(publisherId)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "需求不存在或无权限");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "需求不存在或无权限");
         }
         removeById(demandId);
         // 移除GEO索引
@@ -303,13 +303,13 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
         // 1. 验证需求是否存在且状态为上架
         DemandPost demand = getById(demandId);
         if (demand == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "需求不存在");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "需求不存在");
         }
         if (demand.getStatus() != 1) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "需求已下架或已匹配");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "需求已下架或已匹配");
         }
         if (demand.getMatchedTutorId() != null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "需求已被其他教师匹配");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "需求已被其他教师匹配");
         }
 
         // 2. 验证教师是否存在且已认证
@@ -317,10 +317,10 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
                 new LambdaQueryWrapper<TutorProfile>()
                         .eq(TutorProfile::getUserId, tutorId));
         if (tutorProfile == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "教师档案不存在");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "教师档案不存在");
         }
         if (tutorProfile.getCertStatus() != 2) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "教师未认证或认证未通过");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "教师未认证或认证未通过");
         }
 
         // 3. 创建订单
