@@ -43,4 +43,5 @@ public class UserActionLog {
      */
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
+
 }

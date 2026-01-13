@@ -96,7 +96,7 @@ public class ChatController {
         String content = (String) message.get("content");
         String type = (String) message.getOrDefault("type", "text");
         
-        Long messageId = chatService.sendMessage(userId, targetUserId, content, type);
+        Long messageId = chatService.sendMessageWithTypeString(userId, targetUserId, content, type);
         return Result.success(messageId);
     }
 

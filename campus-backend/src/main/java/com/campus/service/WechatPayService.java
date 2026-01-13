@@ -1,7 +1,8 @@
 package com.campus.service;
 
 import com.campus.config.WechatPayConfig;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -11,9 +12,10 @@ import java.util.Map;
 /**
  * 微信支付服务（模拟实现）
  */
-@Slf4j
 @Service
 public class WechatPayService {
+
+    private static final Logger log = LoggerFactory.getLogger(WechatPayService.class);
 
     private final WechatPayConfig wechatPayConfig;
 

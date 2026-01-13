@@ -37,30 +37,33 @@ Page({
       { label: '距离最近', value: 'distance' },
       { label: '价格最低', value: 'price_asc' } // 特殊处理
     ],
-    
+
     // UI状态
     activeSubject: 0,
     activeGrade: 0,
     activeSort: 1, // 默认不自动采用“智能推荐”，用户可自主选择
 
-    
+
     // 学历映射
     eduMap: { 1: '本科在读', 2: '本科毕业', 3: '硕士在读', 4: '硕士毕业', 5: '博士' }
   },
 
   onLoad(options) {
     // 接收预设关键词: subject, grade, longitude, latitude, demandId
+    // 注意：需要对URL参数进行解码
     if (options.subject) {
-      const idx = this.data.subjects.indexOf(options.subject);
-      this.setData({ 
-        'query.subject': options.subject,
-        activeSubject: idx > -1 ? idx : 0 
+      const subject = decodeURIComponent(options.subject);
+      const idx = this.data.subjects.indexOf(subject);
+      this.setData({
+        'query.subject': subject,
+        activeSubject: idx > -1 ? idx : 0
       });
     }
     if (options.grade) {
-      const gIdx = this.data.grades.indexOf(options.grade);
+      const grade = decodeURIComponent(options.grade);
+      const gIdx = this.data.grades.indexOf(grade);
       this.setData({
-        'query.grade': options.grade,
+        'query.grade': grade,
         activeGrade: gIdx > -1 ? gIdx : 0
       });
     }
@@ -107,7 +110,7 @@ Page({
       // 处理排序参数
       const q = { ...this.data.query };
       const sortValue = this.data.sortOptions[this.data.activeSort].value;
-      
+
       if (sortValue === 'price_asc') {
         q.sortBy = 'price';
         q.sortOrder = 'asc';
@@ -124,8 +127,12 @@ Page({
         delete q.sortOrder;
       }
 
-      // 调用接口: POST /api/match/tutors
-      const res = await request.post(api.match.search, q);
+      // 调用接口: POST /api/match/tutors，添加重试机制
+      const res = await this.retryRequest(() =>
+        request.post(api.match.search, q),
+        3, // 最多重试3次
+        1000 // 重试间隔1秒
+      );
       const records = res.records || [];
 
       // 数据处理 (格式化距离、标签等)
@@ -143,27 +150,90 @@ Page({
         matchLevel: item.matchScore ? (item.matchScore >= 90 ? 'excellent' : item.matchScore >= 75 ? 'good' : item.matchScore >= 60 ? 'fair' : 'poor') : 'unknown'
       }));
 
-      // 如果结果为空且我们是基于位置搜索的，尝试降级：清除位置并再次获取系统推荐
-      if (list.length === 0 && this.data.query.longitude && this.data.query.latitude) {
-        this.setData({ fallbackMessage: '未检索到附近老师，显示系统推荐（不含距离）' });
-        // 确保降级查询时也正确处理排序参数
-        const q2 = { ...this.data.query, longitude: null, latitude: null, page: 1 };
-        delete q2.longitude;
-        delete q2.latitude;
-        try {
-          const res2 = await request.post(api.match.search, q2);
-          const rec2 = res2.records || [];
-          list = rec2.map(item => ({
-            ...item,
-            teachSubjects: item.teachSubjects || [],
-            teachGrades: item.teachGrades || [],
-            matchScore: item.matchScore || null,
-            matchTags: item.matchTags || [],
-            distText: '',
-            matchLevel: item.matchScore ? (item.matchScore >= 90 ? 'excellent' : item.matchScore >= 75 ? 'good' : item.matchScore >= 60 ? 'fair' : 'poor') : 'unknown'
-          }));
-        } catch (err) {
-          console.error('降级获取教师推荐失败', err);
+      // 如果结果为空，尝试智能降级策略
+      if (list.length === 0) {
+        // 策略1: 清除位置限制
+        if (this.data.query.longitude && this.data.query.latitude) {
+          this.setData({ fallbackMessage: '未检索到附近老师，显示系统推荐（不含距离）' });
+          // 确保降级查询时也正确处理排序参数
+          const q2 = { ...this.data.query, longitude: null, latitude: null, page: 1 };
+          delete q2.longitude;
+          delete q2.latitude;
+          try {
+            const res2 = await request.post(api.match.search, q2);
+            const rec2 = res2.records || [];
+            list = rec2.map(item => ({
+              ...item,
+              teachSubjects: item.teachSubjects || [],
+              teachGrades: item.teachGrades || [],
+              matchScore: item.matchScore || null,
+              matchTags: item.matchTags || [],
+              distText: '',
+              matchLevel: item.matchScore ? (item.matchScore >= 90 ? 'excellent' : item.matchScore >= 75 ? 'good' : item.matchScore >= 60 ? 'fair' : 'poor') : 'unknown'
+            }));
+          } catch (err) {
+            console.error('降级获取教师推荐失败', err);
+          }
+        }
+        // 策略2: 清除科目限制
+        else if (this.data.query.subject) {
+          this.setData({ fallbackMessage: '未检索到匹配的老师，尝试清除科目限制' });
+          const q3 = { ...this.data.query, subject: '', page: 1 };
+          try {
+            const res3 = await request.post(api.match.search, q3);
+            const rec3 = res3.records || [];
+            list = rec3.map(item => ({
+              ...item,
+              teachSubjects: item.teachSubjects || [],
+              teachGrades: item.teachGrades || [],
+              matchScore: item.matchScore || null,
+              matchTags: item.matchTags || [],
+              distText: item.distance ? (item.distance < 1 ? Math.round(item.distance * 1000) + 'm' : item.distance.toFixed(1) + 'km') : '',
+              matchLevel: item.matchScore ? (item.matchScore >= 90 ? 'excellent' : item.matchScore >= 75 ? 'good' : item.matchScore >= 60 ? 'fair' : 'poor') : 'unknown'
+            }));
+          } catch (err) {
+            console.error('清除科目限制后获取教师推荐失败', err);
+          }
+        }
+        // 策略3: 清除年级限制
+        else if (this.data.query.grade) {
+          this.setData({ fallbackMessage: '未检索到匹配的老师，尝试清除年级限制' });
+          const q4 = { ...this.data.query, grade: '', page: 1 };
+          try {
+            const res4 = await request.post(api.match.search, q4);
+            const rec4 = res4.records || [];
+            list = rec4.map(item => ({
+              ...item,
+              teachSubjects: item.teachSubjects || [],
+              teachGrades: item.teachGrades || [],
+              matchScore: item.matchScore || null,
+              matchTags: item.matchTags || [],
+              distText: item.distance ? (item.distance < 1 ? Math.round(item.distance * 1000) + 'm' : item.distance.toFixed(1) + 'km') : '',
+              matchLevel: item.matchScore ? (item.matchScore >= 90 ? 'excellent' : item.matchScore >= 75 ? 'good' : item.matchScore >= 60 ? 'fair' : 'poor') : 'unknown'
+            }));
+          } catch (err) {
+            console.error('清除年级限制后获取教师推荐失败', err);
+          }
+        }
+        // 最终策略: 显示所有教师
+        else {
+          this.setData({ fallbackMessage: '未检索到匹配的老师，显示所有可用教师' });
+          const q5 = { page: 1, size: 10 };
+          try {
+            const res5 = await request.post(api.match.search, q5);
+            const rec5 = res5.records || [];
+            list = rec5.map(item => ({
+              ...item,
+              teachSubjects: item.teachSubjects || [],
+              teachGrades: item.teachGrades || [],
+              matchScore: item.matchScore || null,
+              matchTags: item.matchTags || [],
+              distText: item.distance ? (item.distance < 1 ? Math.round(item.distance * 1000) + 'm' : item.distance.toFixed(1) + 'km') : '',
+              matchLevel: item.matchScore ? (item.matchScore >= 90 ? 'excellent' : item.matchScore >= 75 ? 'good' : item.matchScore >= 60 ? 'fair' : 'poor') : 'unknown'
+            }));
+          } catch (err) {
+            console.error('获取所有教师推荐失败', err);
+          }
         }
       }
 
@@ -172,11 +242,12 @@ Page({
         hasMore: this.data.query.page < res.pages,
         loading: false
       });
-      
+
       if (!append) wx.stopPullDownRefresh();
 
     } catch (err) {
       console.error(err);
+      wx.showToast({ title: '获取教师列表失败，请重试', icon: 'none' });
       this.setData({ loading: false });
       wx.stopPullDownRefresh();
     }
@@ -207,9 +278,9 @@ Page({
   onSubjectChange(e) {
     const idx = e.detail.value;
     const val = this.data.subjects[idx];
-    this.setData({ 
+    this.setData({
       activeSubject: idx,
-      'query.subject': val === '全部' ? '' : val 
+      'query.subject': val === '全部' ? '' : val
     }, () => this.refreshList());
   },
 
@@ -217,9 +288,9 @@ Page({
   onGradeChange(e) {
     const idx = e.detail.value;
     const val = this.data.grades[idx];
-    this.setData({ 
+    this.setData({
       activeGrade: idx,
-      'query.grade': val === '全部' ? '' : val 
+      'query.grade': val === '全部' ? '' : val
     }, () => this.refreshList());
   },
 
@@ -228,7 +299,7 @@ Page({
     const idx = e.detail.value;
     const val = this.data.sortOptions[idx].value;
     const queryUpdate = { activeSort: idx };
-    
+
     // 根据选择的排序值设置正确的参数
     if (val === 'price_asc') {
       queryUpdate['query.sortBy'] = 'price';
@@ -243,7 +314,7 @@ Page({
       queryUpdate['query.sortBy'] = '';
       queryUpdate['query.sortOrder'] = 'desc';
     }
-    
+
     this.setData(queryUpdate, () => this.refreshList());
   },
 
@@ -297,5 +368,22 @@ Page({
   goToDetail(e) {
     const id = e.currentTarget.dataset.id;
     wx.navigateTo({ url: `/pages/parent/teacherDetail/teacherDetail?id=${id}` });
+  },
+
+  // 带重试机制的请求
+  async retryRequest(requestFn, maxRetries = 3, retryDelay = 1000) {
+    let lastError;
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        return await requestFn();
+      } catch (error) {
+        lastError = error;
+        console.warn(`请求失败，${retryDelay}ms后重试 (${i + 1}/${maxRetries})`, error);
+        if (i < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
+    throw lastError;
   }
 });

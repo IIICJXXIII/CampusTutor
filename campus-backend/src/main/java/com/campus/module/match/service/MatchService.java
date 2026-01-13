@@ -39,6 +39,8 @@ public class MatchService {
     private final MatchScoreCalculator scoreCalculator;
     private final BehaviorService behaviorService;
     private final DynamicWeightCalculator dynamicWeightCalculator;
+    private final CollaborativeFilteringService cfService;
+    private final com.campus.module.match.config.CFConfig cfConfig;
 
     /**
      * 搜索教员
@@ -53,6 +55,7 @@ public class MatchService {
 
         if (request.getLongitude() != null && request.getLatitude() != null) {
             double radius = request.getRadius() != null ? request.getRadius() : 10.0;
+
             // 使用新方法获取带距离信息的结果
             Map<Long, Double> nearbyWithDistance = geoService.searchNearbyTutorsWithDistance(
                     request.getLongitude(), request.getLatitude(), radius);
@@ -71,18 +74,22 @@ public class MatchService {
         LambdaQueryWrapper<TutorProfile> wrapper = new LambdaQueryWrapper<TutorProfile>()
                 .eq(TutorProfile::getCertStatus, 2); // 只查已认证的
 
-        // 科目筛选(模糊匹配JSON数组)
+        // 科目筛选(模糊匹配JSON数组) - 修复：空字符串和空数组也应该匹配所有
         if (StringUtils.hasText(request.getSubject())) {
+            log.info("科目筛选条件: {}", request.getSubject());
             wrapper.and(w -> w.like(TutorProfile::getTeachSubjects, request.getSubject())
-                    .or().isNull(TutorProfile::getTeachSubjects));
+                    .or().isNull(TutorProfile::getTeachSubjects)
+                    .or().eq(TutorProfile::getTeachSubjects, "")
+                    .or().eq(TutorProfile::getTeachSubjects, "[]"));
         }
 
         // 年级筛选 - 使用GradeUtils进行智能匹配，同时匹配具体年级和对应的"全科"选项
         if (StringUtils.hasText(request.getGrade())) {
             String normalizedGrade = GradeUtils.normalize(request.getGrade());
             List<String> keywords = GradeUtils.getSearchKeywords(normalizedGrade);
+            log.info("年级筛选条件: {} -> 标准化: {} -> 关键词: {}", request.getGrade(), normalizedGrade, keywords);
 
-            // 构建OR条件：匹配具体年级或对应的全科或年级为NULL
+            // 构建OR条件：匹配具体年级或对应的全科或年级为NULL/空
             wrapper.and(w -> {
                 boolean first = true;
                 for (String keyword : keywords) {
@@ -93,14 +100,10 @@ public class MatchService {
                         w.or().like(TutorProfile::getTeachGrades, keyword);
                     }
                 }
-                // 添加年级为NULL的情况
-                if (first) {
-                    // 如果没有关键字，直接添加NULL条件
-                    w.isNull(TutorProfile::getTeachGrades);
-                } else {
-                    // 否则添加OR NULL条件
-                    w.or().isNull(TutorProfile::getTeachGrades);
-                }
+                // 添加年级为NULL或空的情况（兜底：如果教师没设置年级，应该能配所有需求）
+                w.or().isNull(TutorProfile::getTeachGrades);
+                w.or().eq(TutorProfile::getTeachGrades, "");
+                w.or().eq(TutorProfile::getTeachGrades, "[]");
             });
         }
 
@@ -165,6 +168,13 @@ public class MatchService {
         Page<TutorProfile> pageParam = new Page<>(request.getPage(), request.getSize());
         IPage<TutorProfile> profilePage = tutorProfileMapper.selectPage(pageParam, wrapper);
 
+        // 调试日志：输出查询结果
+        log.info("匹配查询完成: 总数={}, 当前页记录数={}", profilePage.getTotal(), profilePage.getRecords().size());
+        for (TutorProfile p : profilePage.getRecords()) {
+            log.debug("匹配教师: id={}, name={}, subjects={}, grades={}, price={}",
+                    p.getId(), p.getRealName(), p.getTeachSubjects(), p.getTeachGrades(), p.getExpectPrice());
+        }
+
         // 4. 如果Redis无数据但有位置请求，在内存中计算距离
         if (distanceMap.isEmpty() && request.getLongitude() != null && request.getLatitude() != null) {
             double radius = request.getRadius() != null ? request.getRadius() : 10.0;
@@ -190,7 +200,32 @@ public class MatchService {
                     .collect(Collectors.toList());
         }
 
-        // 5. 转换结果
+        // ============ 协同过滤预测 (User-Based CF) ============
+        Map<Long, Double> cfScores = new HashMap<>();
+        boolean enableCF = false;
+        double cfWeight = 0.0;
+
+        // 只有请求了"score"排序（即默认搜索或智能排序）且用户已登录，才尝试CF
+        if (("score".equals(sortBy) || StringUtils.isEmpty(sortBy)) && request.getUserId() != null) {
+            try {
+                // 检查是否启用且有足够的历史行为（冷启动检查）
+                if (cfConfig.isEnableCache() && cfService.hasEnoughHistory(request.getUserId())) {
+                    List<Long> candidateIds = filteredProfiles.stream()
+                            .map(TutorProfile::getId)
+                            .collect(Collectors.toList());
+
+                    if (!candidateIds.isEmpty()) {
+                        cfScores = cfService.batchPredictScores(request.getUserId(), candidateIds);
+                        enableCF = !cfScores.isEmpty();
+                        cfWeight = cfConfig.getCfWeight();
+                    }
+                }
+            } catch (Exception e) {
+                log.error("协同过滤预测异常，降级到纯加权算法: {}", e.getMessage());
+            }
+        }
+
+        // 6. 转换结果与评分计算
         List<Long> userIds = filteredProfiles.stream()
                 .map(TutorProfile::getUserId)
                 .collect(Collectors.toList());
@@ -204,6 +239,11 @@ public class MatchService {
         Map<Long, SysUser> finalUserMap = userMap;
         Map<Long, Double> finalDistanceMap = distanceMap;
 
+        // 传入有效final变量给Stream
+        boolean finalEnableCF = enableCF;
+        double finalCfWeight = cfWeight;
+        Map<Long, Double> finalCfScores = cfScores;
+
         List<TutorSearchResult> results = filteredProfiles.stream().map(profile -> {
             // 获取动态权重配置
             WeightConfig weights = dynamicWeightCalculator.getWeightsForUser(request.getUserId());
@@ -212,7 +252,7 @@ public class MatchService {
             TutorBehaviorStats stats = behaviorService.getTutorStats(profile.getId());
             Double hotnessScore = stats != null ? stats.getHotnessScore() : 0.0;
 
-            // 使用带行为信号的评分方法
+            // 使用带行为信号的评分方法 (内容匹配 + 行为热度)
             MatchScoreResult scoreResult = scoreCalculator.calculateScoreWithBehavior(
                     profile,
                     request.getSubject(),
@@ -229,6 +269,33 @@ public class MatchService {
                     weights.getEducationWeight(),
                     weights.getSpecialtyWeight(),
                     weights.getHotnessWeight());
+
+            // ============ 混合评分计算 (Hybrid Scoring) ============
+            // 如果启用了CF且该教员有预测分，则计算混合分数
+            if (finalEnableCF && finalCfScores.containsKey(profile.getId())) {
+                Double cfScore = finalCfScores.get(profile.getId());
+                if (cfScore != null) {
+                    double contentScore = scoreResult.getMatchScore(); // 0-100
+                    double cfScoreNormalized = cfScore * 100; // 0-100
+
+                    // 混合公式： (1-w) * Content + w * CF
+                    double hybridScore = (1 - finalCfWeight) * contentScore + finalCfWeight * cfScoreNormalized;
+
+                    // 更新分数
+                    scoreResult.setMatchScore(Math.min(100.0, hybridScore));
+                    scoreResult.setCfScore(cfScore);
+
+                    // 添加推荐标签
+                    if (cfScore >= 0.7) {
+                        scoreResult.getMatchTags().add("相似家长推荐");
+                    } else if (cfScore >= 0.5) {
+                        scoreResult.getMatchTags().add("猜你喜欢");
+                    }
+
+                    log.debug("Hybrid score for tutor {}: content={}, cf={}, hybrid={}",
+                            profile.getId(), contentScore, cfScoreNormalized, hybridScore);
+                }
+            }
 
             // 复制评分数据到结果
             scoreResult.setId(profile.getId());
@@ -282,7 +349,7 @@ public class MatchService {
         }
 
         // 如果按匹配分数排序（智能推荐）
-        if ("score".equals(sortBy) && !results.isEmpty()) {
+        if (("score".equals(sortBy) || StringUtils.isEmpty(sortBy)) && !results.isEmpty()) {
             results.sort((a, b) -> {
                 if (a instanceof MatchScoreResult && b instanceof MatchScoreResult) {
                     Double sa = ((MatchScoreResult) a).getMatchScore();
@@ -295,7 +362,7 @@ public class MatchService {
             });
         }
 
-        // 5. 构建返回分页
+        // 7. 构建返回分页
         Page<TutorSearchResult> resultPage = new Page<>(request.getPage(), request.getSize());
         resultPage.setRecords(results);
         // 如果有距离过滤，需要调整总记录数

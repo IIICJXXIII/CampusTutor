@@ -74,7 +74,7 @@ public interface ChatService {
      * @param type       消息类型字符串 (text/image/file)
      * @return 消息ID
      */
-    Long sendMessage(Long senderId, Long receiverId, String content, String type);
+    Long sendMessageWithTypeString(Long senderId, Long receiverId, String content, String type);
 
     /**
      * 根据会话ID获取消息列表

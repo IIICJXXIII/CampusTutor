@@ -15,6 +15,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfig implements WebMvcConfigurer {
 
         private final JwtAuthenticationFilter jwtAuthenticationFilter;
+        private final OptionalJwtAuthenticationInterceptor optionalJwtInterceptor;
 
         @Value("${file.upload.path:./uploads}")
         private String uploadPath;
@@ -24,6 +25,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
          */
         @Override
         public void addInterceptors(InterceptorRegistry registry) {
+                // 1. 严格认证拦截器 (排除公共接口)
                 registry.addInterceptor(jwtAuthenticationFilter)
                                 .addPathPatterns("/api/**")
                                 .excludePathPatterns(
@@ -35,6 +37,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
                                                 "/api/demand/nearby",
                                                 "/api/demand/list-with-match",
                                                 "/api/llm/**",
+                                                "/api/tutor/public/**");
+
+                // 2. 可选认证拦截器 (针对上述排除的、但可能需要用户上下文的接口)
+                registry.addInterceptor(optionalJwtInterceptor)
+                                .addPathPatterns(
+                                                "/api/match/tutors",
+                                                "/api/demand/list",
+                                                "/api/demand/nearby",
+                                                "/api/demand/list-with-match",
                                                 "/api/tutor/public/**");
         }
 

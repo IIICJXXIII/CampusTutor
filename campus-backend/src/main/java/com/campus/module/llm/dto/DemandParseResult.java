@@ -1,7 +1,6 @@
 package com.campus.module.llm.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -9,7 +8,6 @@ import java.util.List;
 /**
  * 需求解析结果
  */
-@Data
 @Schema(description = "需求解析结果")
 public class DemandParseResult {
 
@@ -90,4 +88,108 @@ public class DemandParseResult {
      */
     @Schema(description = "补充说明")
     private String suggestion;
+
+    public Boolean getSuccess() {
+        return success;
+    }
+
+    public void setSuccess(Boolean success) {
+        this.success = success;
+    }
+
+    public String getOriginalText() {
+        return originalText;
+    }
+
+    public void setOriginalText(String originalText) {
+        this.originalText = originalText;
+    }
+
+    public String getSubject() {
+        return subject;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
+
+    public String getGrade() {
+        return grade;
+    }
+
+    public void setGrade(String grade) {
+        this.grade = grade;
+    }
+
+    public BigDecimal getExpectPrice() {
+        return expectPrice;
+    }
+
+    public void setExpectPrice(BigDecimal expectPrice) {
+        this.expectPrice = expectPrice;
+    }
+
+    public Integer getTeachMode() {
+        return teachMode;
+    }
+
+    public void setTeachMode(Integer teachMode) {
+        this.teachMode = teachMode;
+    }
+
+    public Integer getPreferGender() {
+        return preferGender;
+    }
+
+    public void setPreferGender(Integer preferGender) {
+        this.preferGender = preferGender;
+    }
+
+    public List<Integer> getEducations() {
+        return educations;
+    }
+
+    public void setEducations(List<Integer> educations) {
+        this.educations = educations;
+    }
+
+    public String getScheduleRequire() {
+        return scheduleRequire;
+    }
+
+    public void setScheduleRequire(String scheduleRequire) {
+        this.scheduleRequire = scheduleRequire;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getDetail() {
+        return detail;
+    }
+
+    public void setDetail(String detail) {
+        this.detail = detail;
+    }
+
+    public Double getConfidence() {
+        return confidence;
+    }
+
+    public void setConfidence(Double confidence) {
+        this.confidence = confidence;
+    }
+
+    public String getSuggestion() {
+        return suggestion;
+    }
+
+    public void setSuggestion(String suggestion) {
+        this.suggestion = suggestion;
+    }
 }

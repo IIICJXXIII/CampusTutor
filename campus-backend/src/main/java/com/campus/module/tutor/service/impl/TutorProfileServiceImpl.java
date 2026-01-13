@@ -14,6 +14,7 @@ import com.campus.module.tutor.mapper.TutorProfileMapper;
 import com.campus.module.tutor.mapper.TutorScheduleConfigMapper;
 import com.campus.module.tutor.service.TutorProfileService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, TutorProfile>
         implements TutorProfileService {
 
@@ -54,6 +56,16 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
             if (request.getCertificateUrls() != null) {
                 existing.setCertificateUrls(JSONUtil.toJsonStr(request.getCertificateUrls()));
             }
+            // 处理教学设置字段
+            if (request.getTeachGrades() != null) {
+                existing.setTeachGrades(JSONUtil.toJsonStr(request.getTeachGrades()));
+            }
+            if (request.getTeachSubjects() != null) {
+                existing.setTeachSubjects(JSONUtil.toJsonStr(request.getTeachSubjects()));
+            }
+            if (request.getExpectPrice() != null) {
+                existing.setExpectPrice(request.getExpectPrice());
+            }
             // 开发阶段：直接通过审核
             existing.setCertStatus(2); // 已通过
             existing.setRejectReason(null);
@@ -74,6 +86,16 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
             profile.setStudentCardUrl(request.getStudentCardUrl());
             if (request.getCertificateUrls() != null) {
                 profile.setCertificateUrls(JSONUtil.toJsonStr(request.getCertificateUrls()));
+            }
+            // 处理教学设置字段
+            if (request.getTeachGrades() != null) {
+                profile.setTeachGrades(JSONUtil.toJsonStr(request.getTeachGrades()));
+            }
+            if (request.getTeachSubjects() != null) {
+                profile.setTeachSubjects(JSONUtil.toJsonStr(request.getTeachSubjects()));
+            }
+            if (request.getExpectPrice() != null) {
+                profile.setExpectPrice(request.getExpectPrice());
             }
             // 开发阶段：直接通过审核
             profile.setCertStatus(2); // 已通过
@@ -103,10 +125,10 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
     public void updateProfile(Long userId, TutorProfileUpdateRequest request) {
         TutorProfile profile = getByUserId(userId);
         if (profile == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "请先完成教员认证");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "请先完成教员认证");
         }
         if (profile.getCertStatus() != 2) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "认证未通过，无法更新档案");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "认证未通过，无法更新档案");
         }
 
         // 更新字段
@@ -166,24 +188,45 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
     public void saveScheduleConfig(Long userId, TutorScheduleRequest request) {
         TutorProfile profile = getByUserId(userId);
         if (profile == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "请先完成教员认证");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "请先完成教员认证");
         }
 
-        // 删除旧配置
-        scheduleConfigMapper.delete(new LambdaQueryWrapper<TutorScheduleConfig>()
-                .eq(TutorScheduleConfig::getTutorId, profile.getId()));
+        log.info("保存教员课表配置: userId={}, tutorId={}", userId, profile.getId());
 
-        // 保存新配置
-        if (request.getSchedules() != null && !request.getSchedules().isEmpty()) {
-            for (TutorScheduleRequest.ScheduleItem item : request.getSchedules()) {
-                TutorScheduleConfig config = new TutorScheduleConfig();
-                config.setTutorId(profile.getId());
-                config.setDayOfWeek(item.getDayOfWeek());
-                config.setStartTime(item.getStartTime());
-                config.setEndTime(item.getEndTime());
-                config.setAvailable(item.getAvailable() != null ? item.getAvailable() : 1);
-                scheduleConfigMapper.insert(config);
+        try {
+            // 删除旧配置
+            scheduleConfigMapper.delete(new LambdaQueryWrapper<TutorScheduleConfig>()
+                    .eq(TutorScheduleConfig::getTutorId, profile.getId()));
+
+            // 保存新配置
+            if (request.getSchedules() != null && !request.getSchedules().isEmpty()) {
+                int savedCount = 0;
+                for (TutorScheduleRequest.ScheduleItem item : request.getSchedules()) {
+                    // 验证数据有效性
+                    if (item.getDayOfWeek() == null || item.getStartTime() == null || item.getEndTime() == null) {
+                        log.warn("跳过无效的课表配置项: {}", item);
+                        continue;
+                    }
+                    
+                    TutorScheduleConfig config = new TutorScheduleConfig();
+                    config.setTutorId(profile.getId());
+                    config.setDayOfWeek(item.getDayOfWeek());
+                    config.setStartTime(item.getStartTime());
+                    config.setEndTime(item.getEndTime());
+                    config.setAvailable(item.getAvailable() != null ? item.getAvailable() : 1);
+                    
+                    int result = scheduleConfigMapper.insert(config);
+                    if (result > 0) {
+                        savedCount++;
+                    }
+                }
+                log.info("课表配置保存完成: 共保存 {} 条配置", savedCount);
+            } else {
+                log.info("课表配置为空，已删除所有旧配置");
             }
+        } catch (Exception e) {
+            log.error("保存课表配置失败: userId={}, tutorId={}, error={}", userId, profile.getId(), e.getMessage(), e);
+            throw new BusinessException(ResultCode.FAIL.getCode(), "保存课表失败，请稍后重试");
         }
     }
 
@@ -199,7 +242,7 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
     public Map<String, Object> getCertificationStatus(Long userId) {
         Map<String, Object> status = new HashMap<>();
         TutorProfile profile = getByUserId(userId);
-        
+
         if (profile == null) {
             status.put("status", 0); // 未提交
             status.put("statusText", "未提交认证");
@@ -211,7 +254,7 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
             status.put("profileId", profile.getId());
             status.put("lastUpdateTime", profile.getUpdateTime());
         }
-        
+
         return status;
     }
 
@@ -219,7 +262,7 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
     public Map<String, Object> getCertificationProgress(Long userId) {
         Map<String, Object> progress = new HashMap<>();
         TutorProfile profile = getByUserId(userId);
-        
+
         if (profile == null) {
             progress.put("step", 0);
             progress.put("totalSteps", 3);
@@ -229,18 +272,26 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
             // 检查认证所需字段
             int completedFields = 0;
             int totalFields = 8; // 基本信息、身份证、学生证、学历、专业、学校、照片等
-            
-            if (profile.getRealName() != null) completedFields++;
-            if (profile.getIdCard() != null) completedFields++;
-            if (profile.getIdCardFrontUrl() != null) completedFields++;
-            if (profile.getIdCardBackUrl() != null) completedFields++;
-            if (profile.getUniversityName() != null) completedFields++;
-            if (profile.getMajor() != null) completedFields++;
-            if (profile.getEducation() != null) completedFields++;
-            if (profile.getStudentCardUrl() != null) completedFields++;
-            
+
+            if (profile.getRealName() != null)
+                completedFields++;
+            if (profile.getIdCard() != null)
+                completedFields++;
+            if (profile.getIdCardFrontUrl() != null)
+                completedFields++;
+            if (profile.getIdCardBackUrl() != null)
+                completedFields++;
+            if (profile.getUniversityName() != null)
+                completedFields++;
+            if (profile.getMajor() != null)
+                completedFields++;
+            if (profile.getEducation() != null)
+                completedFields++;
+            if (profile.getStudentCardUrl() != null)
+                completedFields++;
+
             int progressPercent = (completedFields * 100) / totalFields;
-            
+
             progress.put("step", 1);
             progress.put("totalSteps", 3);
             progress.put("currentStep", "审核中");
@@ -248,7 +299,7 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
             progress.put("completedFields", completedFields);
             progress.put("totalFields", totalFields);
         }
-        
+
         return progress;
     }
 

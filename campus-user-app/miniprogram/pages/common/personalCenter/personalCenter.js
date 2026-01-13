@@ -17,7 +17,7 @@ Page({
     this.initPageData();
   },
 
-  initPageData() {
+  async initPageData() {
     const userInfo = storageUtil.getUserInfo();
 
     // 检查登录状态，未登录则跳转到登录页
@@ -26,7 +26,11 @@ Page({
       return;
     }
 
+    // 先设置本地数据快速渲染
     this.setData({ userInfo });
+
+    // 从后端获取最新用户信息（包含头像等）
+    await this.refreshUserInfo(userInfo);
 
     // 根据角色生成不同的菜单配置
     if (userInfo.role === 1) {
@@ -67,6 +71,26 @@ Page({
       });
     } catch (err) {
       console.error('获取钱包信息失败:', err);
+    }
+  },
+
+  // 从后端刷新最新用户信息（解决头像不显示问题）
+  async refreshUserInfo(localUserInfo) {
+    try {
+      const userId = localUserInfo.id || localUserInfo.userId;
+      if (!userId) return;
+
+      const response = await request.get(apiConfig.user.byId(userId));
+      if (response) {
+        // 合并本地信息和后端信息，更新本地存储
+        const updatedUserInfo = { ...localUserInfo, ...response };
+        storageUtil.setUserInfo(updatedUserInfo);
+        // 更新页面显示
+        this.setData({ userInfo: updatedUserInfo });
+      }
+    } catch (err) {
+      console.error('刷新用户信息失败:', err);
+      // 失败时继续使用本地数据，不影响页面显示
     }
   },
 

@@ -43,4 +43,19 @@ public class TutorCertRequest {
      * 资质证书URLs
      */
     private List<String> certificateUrls;
+
+    /**
+     * 可授年级（如：小学一年级、初一、高三等）
+     */
+    private List<String> teachGrades;
+
+    /**
+     * 可授科目（如：语文、数学、英语等）
+     */
+    private List<String> teachSubjects;
+
+    /**
+     * 期望时薪(元)
+     */
+    private BigDecimal expectPrice;
 }

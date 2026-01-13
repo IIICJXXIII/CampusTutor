@@ -91,8 +91,8 @@
             markers="{{markers}}"
             scale="15"
             show-location
-            enable-scroll="{{false}}"
-            enable-zoom="{{false}}"
+            enable-scroll="{{true}}"
+            enable-zoom="{{true}}"
           ></map>
         </view>
       </view>
@@ -103,18 +103,17 @@
     <view class="bottom-spacer"></view>
   </scroll-view>
 
-    <!-- 操作按钮 -->
-    <view class="action-buttons">
-      <button class="btn-contact" bindtap="handleContact">联系家长</button>
+    <!-- 底部操作栏 -->
+    <view class="bottom-action-bar">
+      <button class="btn-secondary" bindtap="handleContact">联系家长</button>
       <block wx:if="{{demand && demand.status === 1}}">
-        <button class="btn-accept" bindtap="handleInviteToOrder">联系并邀约下单</button>
+        <button class="btn-primary" bindtap="handleInviteToOrder">立即接单</button>
       </block>
       <block wx:elif="{{demand && demand.status === 2}}">
-        <button class="btn-accept disabled">已被接单</button>
+        <button class="btn-disabled">已被接单</button>
       </block>
       <block wx:else>
         <button class="btn-disabled">不可接单</button>
       </block>
     </view>
-  </view>
 </view>
