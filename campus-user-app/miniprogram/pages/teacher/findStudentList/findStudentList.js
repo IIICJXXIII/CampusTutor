@@ -160,8 +160,8 @@ Page({
           // 处理匹配度数据
           const demandsWithMatch = newDemands.map(demand => ({
             ...demand,
-            // 确保匹配度数据存在
-            matchScore: demand.matchScore || null,
+            // 确保匹配度数据存在，并保留一位小数
+            matchScore: demand.matchScore ? Number(demand.matchScore.toFixed(1)) : null,
             matchTags: demand.matchTags || [],
             matchLevel: demand.matchLevel || 'unknown',
             // 距离格式化

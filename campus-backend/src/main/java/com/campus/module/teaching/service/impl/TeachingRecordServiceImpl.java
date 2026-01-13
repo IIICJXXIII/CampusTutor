@@ -42,12 +42,12 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
         // 1. 获取订单信息
         CourseOrder order = courseOrderMapper.selectById(request.getOrderId());
         if (order == null) {
-            throw new BusinessException(ResultCode.ORDER_NOT_FOUND);
+            throw new BusinessException(ResultCode.ORDER_NOT_FOUND.getCode(), ResultCode.ORDER_NOT_FOUND.getMsg());
         }
 
         // 2. 权限校验：必须是该订单的教员
         if (!order.getTutorId().equals(tutorId)) {
-            throw new BusinessException(ResultCode.FORBIDDEN, "您不是该订单的执教老师");
+            throw new BusinessException(ResultCode.FORBIDDEN.getCode(), "您不是该订单的执教老师");
         }
 
         // 3. 状态校验与自动流转 (兼容 1-待开课 和 2-进行中)
@@ -58,7 +58,7 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
             log.info("订单 {} 首次打卡，状态自动流转为进行中", order.getId());
         } else if (order.getStatus() != 2) {
             // 其他状态（如待支付0、已完成3等）不允许打卡
-            throw new BusinessException(ResultCode.ORDER_STATUS_ERROR, "当前订单状态无法打卡");
+            throw new BusinessException(ResultCode.ORDER_STATUS_ERROR.getCode(), "当前订单状态无法打卡");
         }
 
         // 4. 【关键修复】校验是否还有真正开始但未确认的课时记录
@@ -145,11 +145,11 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
         record.setContentSummary(contentSummary);
         record.setHomeworkAssigned(homeworkAssigned);
         updateById(record);
-        
-        log.info("教师 {} 完成课时打卡: {}, 内容摘要: {}, 作业: {}", 
-                 tutorId, recordId, contentSummary, homeworkAssigned);
+
+        log.info("教师 {} 完成课时打卡: {}, 内容摘要: {}, 作业: {}",
+                tutorId, recordId, contentSummary, homeworkAssigned);
     }
-    
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateLessonProgress(Long tutorId, Long recordId, Integer progress, String notes) {
@@ -167,11 +167,11 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
         // 1. 验证进度值 (0-100)
         // 2. 更新课时记录
         // 3. 记录操作日志
-        
-        log.info("教师 {} 更新课时进度: {}, 进度: {}, 备注: {}", 
-                 tutorId, recordId, progress, notes);
+
+        log.info("教师 {} 更新课时进度: {}, 进度: {}, 备注: {}",
+                tutorId, recordId, progress, notes);
     }
-    
+
     @Override
     public Map<String, Object> getCourseStatistics(Long orderId) {
         // TODO: 实现课程统计功能
@@ -209,10 +209,9 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
         int confirmedCount = teachingRecordMapper.countConfirmedByOrderId(order.getId());
         order.setUsedHours(confirmedCount);
 
-        
         // 如果所有课时都已完成，调用订单完成方法（会解冻钱包金额）
         if (confirmedCount >= order.getTotalHours()) {
-            courseOrderService.completeOrder(order.getId());
+            courseOrderService.completeOrder(order.getTutorId(), order.getId());
         } else {
             order.setUsedHours(confirmedCount);
             courseOrderMapper.updateById(order);

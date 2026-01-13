@@ -18,7 +18,7 @@ import java.util.List;
  * 家长学生Service实现
  */
 @Service
-public class ParentStudentServiceImpl extends ServiceImpl<ParentStudentMapper, ParentStudent> 
+public class ParentStudentServiceImpl extends ServiceImpl<ParentStudentMapper, ParentStudent>
         implements ParentStudentService {
 
     @Override
@@ -42,11 +42,11 @@ public class ParentStudentServiceImpl extends ServiceImpl<ParentStudentMapper, P
     @Transactional(rollbackFor = Exception.class)
     public void updateStudent(Long parentId, StudentRequest request) {
         if (request.getId() == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "学生ID不能为空");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "学生ID不能为空");
         }
         ParentStudent student = getById(request.getId());
         if (student == null || !student.getParentId().equals(parentId)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "学生不存在或无权限");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "学生不存在或无权限");
         }
 
         student.setStudentName(request.getStudentName());
@@ -65,7 +65,7 @@ public class ParentStudentServiceImpl extends ServiceImpl<ParentStudentMapper, P
     public void deleteStudent(Long parentId, Long studentId) {
         ParentStudent student = getById(studentId);
         if (student == null || !student.getParentId().equals(parentId)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "学生不存在或无权限");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "学生不存在或无权限");
         }
         removeById(studentId);
     }
