@@ -154,6 +154,11 @@ page {
   color: #67c23a;
 }
 
+.demand-status.completed {
+  background: #f4f4f5;
+  color: #909399;
+}
+
 /* 订单卡片 */
 .order-card {
   display: flex;

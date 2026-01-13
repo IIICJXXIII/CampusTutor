@@ -313,6 +313,11 @@ page {
   color: var(--success);
 }
 
+.demand-status.completed {
+  background: rgba(144, 147, 153, 0.1);
+  color: #909399;
+}
+
 /* 订单卡片 */
 .order-card {
   padding: 32rpx;
