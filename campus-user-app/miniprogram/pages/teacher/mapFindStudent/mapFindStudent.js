@@ -126,50 +126,25 @@ Page({
         return;
       }
 
-      // 处理数据，调用后端高德地图API计算距离
-      const list = await Promise.all(res.map(async item => {
-        try {
-          // 调用后端高德地图距离计算API
-          const distanceRes = await request.get(api.map.distance, {
-            fromLatitude: this.data.latitude,
-            fromLongitude: this.data.longitude,
-            toLatitude: item.latitude,
-            toLongitude: item.longitude,
-            mode: 'walking' // 使用步行距离，可根据需求改为driving
-          });
-          
-          // 获取距离（单位：米），转换为公里并保留1位小数
-          let distance = this.getDistance(
-            this.data.latitude,
-            this.data.longitude,
-            item.latitude,
-            item.longitude
-          ).toFixed(1);
-          
-          // 如果后端返回有效距离，则使用后端数据
-          if (distanceRes && distanceRes.status === 0 && distanceRes.elements && distanceRes.elements.length > 0) {
-            const meters = distanceRes.elements[0].distance;
-            distance = (meters / 1000).toFixed(1);
-          }
-          
-          return {
-            ...item,
-            distance
-          };
-        } catch (err) {
-          console.error(`计算距离失败: ${item.id}`, err);
-          // 如果API调用失败，回退到客户端计算
-          return {
-            ...item,
-            distance: this.getDistance(
-              this.data.latitude,
-              this.data.longitude,
-              item.latitude,
-              item.longitude
-            ).toFixed(1)
-          };
-        }
-      }));
+      // 方案结合：先用本地哈弗辛公式快速显示，再后台串行调用API更新精确距离
+      // 第一步：立即使用本地计算显示直线距离
+      const list = res.map(item => {
+        const distance = this.getDistance(
+          this.data.latitude,
+          this.data.longitude,
+          item.latitude,
+          item.longitude
+        ).toFixed(1);
+
+        return {
+          ...item,
+          distance,
+          distanceType: 'straight' // 标记为直线距离
+        };
+      });
+
+      // 第二步：在后台串行调用API更新为精确路径距离（避免QPS限制）
+      this.updateDistancesSequentially(list);
 
       // 生成地图标记
       const markers = list.map((item, index) => ({
@@ -319,11 +294,77 @@ Page({
     });
   },
 
-  // 点击降级列表项查看详情
   handleFallbackViewDetail(e) {
     const id = e.currentTarget.dataset.id;
     if (!id) return;
     wx.navigateTo({ url: `/pages/teacher/demandDetail/demandDetail?id=${id}` });
+  },
+
+  // 后台串行调用API更新精确路径距离（避免QPS限制）
+  async updateDistancesSequentially(list) {
+    const DELAY_MS = 300; // 每次请求间隔300ms，避免QPS限制
+
+    for (let i = 0; i < list.length; i++) {
+      // 检查页面是否还在显示，避免页面离开后继续请求
+      if (!this.data.demandList || this.data.demandList.length === 0) {
+        break;
+      }
+
+      const item = list[i];
+
+      // 跳过无效坐标
+      if (!item.latitude || !item.longitude) {
+        continue;
+      }
+
+      try {
+        const distanceRes = await request.get(api.map.distance, {
+          fromLatitude: this.data.latitude,
+          fromLongitude: this.data.longitude,
+          toLatitude: item.latitude,
+          toLongitude: item.longitude,
+          mode: 'walking'
+        });
+
+        // 如果后端返回有效距离，更新对应项
+        if (distanceRes && distanceRes.status === 0 && distanceRes.elements && distanceRes.elements.length > 0) {
+          const meters = distanceRes.elements[0].distance;
+          const preciseDistance = (meters / 1000).toFixed(1);
+
+          // 更新demandList中对应项的距离
+          const updatedList = this.data.demandList.map(d => {
+            if (d.id === item.id) {
+              return { ...d, distance: preciseDistance, distanceType: 'walking' };
+            }
+            return d;
+          });
+
+          // 同时更新currentDemand（如果正在显示该需求）
+          let updatedCurrentDemand = this.data.currentDemand;
+          if (this.data.currentDemand && this.data.currentDemand.id === item.id) {
+            updatedCurrentDemand = { ...this.data.currentDemand, distance: preciseDistance, distanceType: 'walking' };
+          }
+
+          this.setData({
+            demandList: updatedList,
+            currentDemand: updatedCurrentDemand
+          });
+        }
+      } catch (err) {
+        // API调用失败时保持本地计算的距离，不输出错误（避免刷屏）
+        console.debug(`距离API更新失败(${item.id}), 保持直线距离`);
+      }
+
+      // 延时，避免QPS限制
+      if (i < list.length - 1) {
+        await this.sleep(DELAY_MS);
+      }
+    }
+  },
+
+  // 延时辅助函数
+  sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   },
 
   // 辅助：计算两点距离 (单位：km)
