@@ -29,30 +29,28 @@
     <view class="wallet-header">
       <text class="wallet-title">我的钱包</text>
     </view>
-    <view class="wallet-body">
-      <view class="balance-section">
-        <view class="balance-item main">
-          <text class="label">可用余额</text>
-          <view class="amount-row">
-            <text class="symbol">¥</text>
-            <text class="amount">{{walletInfo.balance || '0.00'}}</text>
-          </view>
-        </view>
-        <view class="divider"></view>
-        <view class="balance-item">
-          <text class="label">冻结金额</text>
-          <view class="amount-row">
-            <text class="symbol small">¥</text>
-            <text class="amount small">{{walletInfo.frozenAmount || '0.00'}}</text>
-          </view>
+    
+    <!-- 余额信息区域 -->
+    <view class="balance-section">
+      <view class="balance-item-large">
+        <text class="label">可用余额 (元)</text>
+        <view class="amount-row">
+          <text class="symbol">¥</text>
+          <text class="amount">{{walletInfo.balance || '0.00'}}</text>
         </view>
       </view>
-      <view class="wallet-actions">
-        <button class="btn-withdraw" bindtap="showWithdrawPopup">
-          <text>提现</text>
-        </button>
+      
+      <view class="balance-item-small">
+        <text class="label-small">冻结金额</text>
+        <text class="amount-small">¥{{walletInfo.frozenAmount || '0.00'}}</text>
       </view>
     </view>
+    
+    <!-- 提现按钮 -->
+    <button class="btn-withdraw" bindtap="showWithdrawPopup">
+      <text class="withdraw-icon">💰</text>
+      <text>申请提现</text>
+    </button>
   </view>
 
   <!-- Tab 切换 -->
