@@ -51,12 +51,16 @@ Page({
     async loadWalletInfo() {
         try {
             const result = await request.get(apiConfig.wallet.info);
+            console.log('=== 钱包数据 ===', result);
+            const walletData = {
+                balance: result.balance ? Number(result.balance).toFixed(2) : '0.00',
+                frozenAmount: result.frozenAmount ? Number(result.frozenAmount).toFixed(2) : '0.00'
+            };
+            console.log('=== 格式化后的钱包数据 ===', walletData);
             this.setData({
-                walletInfo: {
-                    balance: result.balance ? Number(result.balance).toFixed(2) : '0.00',
-                    frozenAmount: result.frozenAmount ? Number(result.frozenAmount).toFixed(2) : '0.00'
-                }
+                walletInfo: walletData
             });
+            console.log('=== setData后的walletInfo ===', this.data.walletInfo);
         } catch (err) {
             console.error('获取钱包信息失败:', err);
         }
