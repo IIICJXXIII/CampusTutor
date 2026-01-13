@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { payOrder, getOrderDetail } from '@/api/order'
+import { payOrder, getOrderDetail, confirmOrder } from '@/api/order'
 import { useOrderStore } from '@/stores'
 
 const router = useRouter()
@@ -20,7 +20,8 @@ const currentOrder = ref({
   teacher: '演示老师',
   subject: '演示课程',
   amount: 2000,
-  location: '线上教学'
+  location: '线上教学',
+  status: 0 // 订单状态
 })
 
 // 格式化倒计时
@@ -55,7 +56,8 @@ onMounted(async () => {
           teacher: res.data.tutorName || currentOrder.value.teacher,
           subject: res.data.subject || currentOrder.value.subject,
           amount: res.data.totalAmount || currentOrder.value.amount,
-          location: res.data.location || '线上教学'
+          location: res.data.location || '线上教学',
+          status: res.data.status // 保存订单状态
         }
       }
     } catch (e) {
@@ -93,12 +95,29 @@ const handlePay = async () => {
   try {
     // 调用后端支付API
     if (orderId && !orderId.startsWith('ORD-')) {
-      const payType = getPayType(selectedPayment.value)
-      await payOrder(orderId, payType)
+      // 关键修正：如果订单状态是 -1（待确认），先确认订单
+      if (currentOrder.value.status === -1) {
+        console.log('订单状态为待确认，先确认订单...')
+        try {
+          await confirmOrder(orderId)
+          console.log('订单确认成功')
+        } catch (confirmError) {
+          console.error('确认订单失败:', confirmError)
+          throw new Error('确认订单失败: ' + (confirmError.message || '未知错误'))
+        }
+      }
+      
+      // Web端使用钱包支付 (payType=1)
+      console.log('开始支付，订单ID:', orderId)
+      try {
+        const payType = 1 // 钱包支付
+        await payOrder(orderId, payType)
+        console.log('支付成功')
+      } catch (payError) {
+        console.error('支付API失败:', payError)
+        throw new Error(payError.message || '支付失败')
+      }
     }
-
-    // 模拟支付处理
-    await new Promise(resolve => setTimeout(resolve, 1000))
 
     status.value = 'success'
 
@@ -109,13 +128,9 @@ const handlePay = async () => {
 
     ElMessage.success('支付成功！')
   } catch (error) {
-    console.error('支付失败:', error)
-    // 演示模式：即使API调用失败也显示成功，方便测试
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    status.value = 'success'
-    if (orderId) {
-      orderStore.updateOrder(orderId, { status: 'active' })
-    }
+    console.error('支付流程失败:', error)
+    status.value = 'pending'
+    ElMessage.error(error.message || '支付失败，请重试')
   }
 }
 
@@ -132,18 +147,19 @@ const goToOrders = () => {
 
 <template>
   <div class="payment-page">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <el-button 
-        v-if="status === 'pending'"
-        text 
-        @click="router.back()"
-        class="back-btn"
-      >
-        <el-icon><ArrowLeft /></el-icon>
-      </el-button>
-      <h1 class="page-title">收银台</h1>
-    </div>
+    <div class="payment-wrapper">
+      <!-- 页面头部 -->
+      <div class="page-header">
+        <el-button 
+          v-if="status === 'pending'"
+          text 
+          @click="router.back()"
+          class="back-btn"
+        >
+          <el-icon><ArrowLeft /></el-icon>
+        </el-button>
+        <h1 class="page-title">收银台</h1>
+      </div>
 
     <!-- 待支付状态 -->
     <template v-if="status !== 'success'">
@@ -211,7 +227,7 @@ const goToOrders = () => {
       </div>
 
       <!-- 支付按钮 -->
-      <div class="bottom-action">
+      <div class="action-section">
         <el-button 
           v-if="status === 'pending'"
           type="success" 
@@ -267,10 +283,15 @@ const goToOrders = () => {
 
 <style lang="scss" scoped>
 .payment-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 114px);
   background: $bg-light;
-  display: flex;
-  flex-direction: column;
+  padding: $spacing-xl 0;
+}
+
+.payment-wrapper {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 $spacing-lg;
 }
 
 .page-header {
@@ -280,7 +301,9 @@ const goToOrders = () => {
   align-items: center;
   justify-content: center;
   position: relative;
-  border-bottom: 1px solid $border-color;
+  border-radius: $radius-lg;
+  margin-bottom: $spacing-lg;
+  box-shadow: $shadow-sm;
 
   .back-btn {
     position: absolute;
@@ -296,6 +319,10 @@ const goToOrders = () => {
 .countdown-section {
   text-align: center;
   padding: $spacing-lg;
+  background: #fff;
+  border-radius: $radius-lg;
+  margin-bottom: $spacing-lg;
+  box-shadow: $shadow-sm;
 
   .countdown-label {
     font-size: 14px;
@@ -303,7 +330,7 @@ const goToOrders = () => {
   }
 
   .countdown-value {
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 700;
     font-family: 'SF Mono', monospace;
     color: $text-primary;
@@ -312,8 +339,9 @@ const goToOrders = () => {
 }
 
 .amount-card {
-  margin: 0 $spacing-lg $spacing-lg;
+  margin-bottom: $spacing-lg;
   border-radius: 16px;
+  box-shadow: $shadow-sm;
 
   .amount-header {
     text-align: center;
@@ -325,7 +353,7 @@ const goToOrders = () => {
     }
 
     .amount-value {
-      font-size: 40px;
+      font-size: 44px;
       font-weight: 700;
       color: $text-primary;
     }
@@ -345,8 +373,10 @@ const goToOrders = () => {
 }
 
 .payment-card {
-  margin: 0 $spacing-lg $spacing-lg;
+  margin-bottom: $spacing-lg;
   border-radius: 16px;
+  box-shadow: $shadow-sm;
+  box-shadow: $shadow-sm;
 
   .card-title {
     font-size: 14px;
@@ -415,22 +445,15 @@ const goToOrders = () => {
   gap: $spacing-xs;
   font-size: 12px;
   color: $text-muted;
-  margin-top: $spacing-lg;
+  margin-top: $spacing-md;
+  margin-bottom: $spacing-lg;
 }
 
-.bottom-action {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #fff;
-  padding: $spacing-md $spacing-lg;
-  border-top: 1px solid $border-color;
-
+.action-section {
   .el-button {
     width: 100%;
-    height: 48px;
-    font-size: 16px;
+    height: 52px;
+    font-size: 17px;
     font-weight: 600;
     border-radius: 12px;
   }
@@ -444,6 +467,8 @@ const goToOrders = () => {
   justify-content: center;
   padding: $spacing-xl;
   background: #fff;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
 
   .success-icon {
     width: 80px;
@@ -510,17 +535,26 @@ const goToOrders = () => {
   .success-actions {
     width: 100%;
     display: flex;
-    flex-direction: column;
-    gap: $spacing-sm;
-    margin-top: auto;
+    gap: $spacing-md;
+    margin-top: $spacing-xl;
 
     .el-button {
-      width: 100%;
+      flex: 1;
       height: 48px;
       font-size: 16px;
       font-weight: 600;
       border-radius: 12px;
     }
+  }
+}
+
+@media (max-width: 768px) {
+  .payment-wrapper {
+    padding: 0 $spacing-md;
+  }
+
+  .success-actions {
+    flex-direction: column;
   }
 }
 </style>

@@ -33,5 +33,5 @@ public interface SysUserService extends IService<SysUser> {
      * @param oldPassword 旧密码
      * @param newPassword 新密码
      */
-    void updatePassword(Long userId, String oldPassword, String newPassword);
+    //void updatePassword(Long userId, String oldPassword, String newPassword);
 }
