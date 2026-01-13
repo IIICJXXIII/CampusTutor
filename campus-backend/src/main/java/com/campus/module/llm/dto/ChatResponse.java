@@ -1,12 +1,10 @@
 package com.campus.module.llm.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
 
 /**
  * 智能对话响应
  */
-@Data
 @Schema(description = "智能对话响应")
 public class ChatResponse {
 
@@ -35,5 +33,37 @@ public class ChatResponse {
         response.setSuccess(false);
         response.setError(error);
         return response;
+    }
+
+    public Boolean getSuccess() {
+        return success;
+    }
+
+    public void setSuccess(Boolean success) {
+        this.success = success;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public Integer getTokensUsed() {
+        return tokensUsed;
+    }
+
+    public void setTokensUsed(Integer tokensUsed) {
+        this.tokensUsed = tokensUsed;
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
     }
 }

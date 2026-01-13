@@ -1,6 +1,7 @@
 package com.campus.module.chat.handler;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -10,9 +11,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * WebSocket 会话管理器
  * 管理在线用户的 WebSocket 连接
  */
-@Slf4j
 @Component
 public class ChatSessionManager {
+
+    private static final Logger log = LoggerFactory.getLogger(ChatSessionManager.class);
 
     /**
      * 存储用户ID -> WebSocketSession 的映射

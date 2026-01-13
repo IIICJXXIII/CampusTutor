@@ -63,40 +63,100 @@ Page({
     try {
       // 调用后端 API 获取教师课表
       console.log('加载教师课表，tutorId:', tutorId);
-      const result = await request.get(api.tutor.schedule);
+      console.log('调用API:', api.tutor.publicSchedule(tutorId));
+
+      // 添加重试机制
+      const result = await this.retryRequest(() =>
+        request.get(api.tutor.publicSchedule(tutorId)),
+        3, // 最多重试3次
+        1000 // 重试间隔1秒
+      );
       console.log('获取到的课表数据:', result);
-      if (result && Array.isArray(result)) {
+
+      if (result && Array.isArray(result) && result.length > 0) {
+        // 有课表数据，解析并显示
         this.parseScheduleFromServer(result);
       } else {
-        console.log('课表数据为空，使用默认数据');
-        // 使用默认数据
-        const mockData = [];
-        this.parseScheduleFromServer(mockData);
+        // 无课表数据或为空，设置所有时段为可用（让家长可以预约）
+        console.log('课表数据为空，设置所有时段为可用');
+        this.setAllSlotsAvailable();
       }
     } catch (err) {
-      console.error('加载课表失败:', err);
-      // 使用默认数据
-      const mockData = [];
-      this.parseScheduleFromServer(mockData);
+      console.error('加载课表API失败:', err);
+      // API调用失败时，设置所有时段为可用（确保家长可以正常预约）
+      // 这是优雅降级策略：宁可让家长多选，不可让家长无法预约
+      console.log('API调用失败，设置所有时段为可用作为后备方案');
+      this.setAllSlotsAvailable();
     }
   },
 
+  // 设置所有时段为可用（API失败或无数据时的后备方案）
+  setAllSlotsAvailable() {
+    const data = [];
+    const timeSlots = this.data.timeSlots || [];
+    for (let i = 0; i < timeSlots.length; i++) {
+      data.push(new Array(7).fill(true)); // 全部设置为可用
+    }
+    this.setData({ scheduleData: data });
+    console.log('已将所有时段设置为可用，共', data.length, '行 x 7列');
+  },
+
+
   // 解析服务器返回的课表
   parseScheduleFromServer(serverData) {
+    console.log('开始解析课表数据:', serverData);
     const data = [];
-    for (let i = 0; i < this.data.timeSlots.length; i++) {
+    const timeSlots = this.data.timeSlots || [];
+    const timeSlotsCount = timeSlots.length;
+    console.log('timeSlots数量:', timeSlotsCount);
+
+    // 初始化二维数组
+    for (let i = 0; i < timeSlotsCount; i++) {
       data.push(new Array(7).fill(false));
     }
-    serverData.forEach(item => {
-      if (item.available === 1) {
-        const dayIndex = item.dayOfWeek - 1;
-        const slotIndex = this.matchTimeSlot(item.startTime);
-        if (slotIndex !== -1 && dayIndex >= 0 && dayIndex < 7) {
-          data[slotIndex][dayIndex] = true;
+
+    if (serverData && Array.isArray(serverData)) {
+      console.log('课表数据是数组，长度:', serverData.length);
+      serverData.forEach((item, index) => {
+        console.log(`处理第${index}个课时配置项:`, item);
+        // 确保item是对象且包含必要字段
+        if (item && typeof item === 'object') {
+          console.log(`item.available:`, item.available);
+          console.log(`item.dayOfWeek:`, item.dayOfWeek);
+          console.log(`item.startTime:`, item.startTime);
+
+          // 修复：使用更宽松的条件检查available
+          const isAvailable = item.available === 1 || item.available === true || item.available === '1';
+          if (isAvailable && item.dayOfWeek && item.startTime) {
+            const dayIndex = item.dayOfWeek - 1;
+            console.log(`计算dayIndex:`, dayIndex);
+            const slotIndex = this.matchTimeSlot(item.startTime);
+            console.log(`计算slotIndex:`, slotIndex);
+
+            if (slotIndex !== -1 && dayIndex >= 0 && dayIndex < 7) {
+              if (slotIndex >= 0 && slotIndex < data.length) {
+                data[slotIndex][dayIndex] = true;
+                console.log(`标记时段为可用: 时间段${slotIndex}, 星期${dayIndex}`);
+              } else {
+                console.log(`slotIndex超出范围:`, slotIndex);
+              }
+            } else {
+              console.log(`索引无效: dayIndex=${dayIndex}, slotIndex=${slotIndex}`);
+            }
+          } else {
+            console.log(`课时配置项不完整或不可用:`, item);
+          }
+        } else {
+          console.log(`课时配置项不是对象:`, item);
         }
-      }
-    });
+      });
+    } else {
+      console.log('课表数据为空或格式不正确:', serverData);
+    }
+
+    console.log('解析完成的课表数据:', data);
     this.setData({ scheduleData: data });
+    console.log('scheduleData更新完成');
   },
 
   matchTimeSlot(startTime) {
@@ -109,7 +169,28 @@ Page({
 
   // 判断时段是否可用
   isSlotAvailable(slotIdx, dayIdx) {
-    return this.data.scheduleData[slotIdx] && this.data.scheduleData[slotIdx][dayIdx];
+    console.log('检查时段可用性:', `slotIdx=${slotIdx}, dayIdx=${dayIdx}`);
+    console.log('scheduleData长度:', this.data.scheduleData.length);
+    if (!this.data.scheduleData || !Array.isArray(this.data.scheduleData)) {
+      console.log('scheduleData未初始化或不是数组');
+      return false;
+    }
+    if (slotIdx < 0 || slotIdx >= this.data.scheduleData.length) {
+      console.log('slotIdx超出范围');
+      return false;
+    }
+    const slotData = this.data.scheduleData[slotIdx];
+    if (!slotData || !Array.isArray(slotData)) {
+      console.log('时段数据未初始化或不是数组');
+      return false;
+    }
+    if (dayIdx < 0 || dayIdx >= slotData.length) {
+      console.log('dayIdx超出范围');
+      return false;
+    }
+    const isAvailable = slotData[dayIdx];
+    console.log('时段可用性结果:', isAvailable);
+    return isAvailable;
   },
 
   // 判断时段是否被选择
@@ -126,15 +207,27 @@ Page({
 
   // 切换预约选择
   toggleBooking(e) {
-    const { slot, day } = e.currentTarget.dataset;
+    console.log('收到点击事件:', e);
+    const dataset = e.currentTarget.dataset;
+    console.log('事件数据集:', dataset);
+    const slot = dataset.slot;
+    const day = dataset.day;
+    console.log('解析参数:', `slot=${slot}, day=${day}`);
+
     // 只能选择可用时段
     if (!this.isSlotAvailable(slot, day)) {
+      console.log('时段不可预约，显示提示');
       wx.showToast({ title: '该时段不可预约', icon: 'none' });
       return;
     }
+
+    console.log('时段可预约，切换选择状态');
     const data = this.data.bookingData;
+    console.log('切换前的bookingData:', data);
     data[slot][day] = !data[slot][day];
+    console.log('切换后的bookingData:', data);
     this.setData({ bookingData: data });
+    console.log('bookingData更新完成');
   },
 
   async fetchTutorDetail(id) {
@@ -266,5 +359,22 @@ Page({
     wx.navigateTo({
       url: `/pages/parent/order/confirm/confirm?data=${encodeURIComponent(JSON.stringify(orderData))}`
     });
+  },
+
+  // 带重试机制的请求
+  async retryRequest(requestFn, maxRetries = 3, retryDelay = 1000) {
+    let lastError;
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        return await requestFn();
+      } catch (error) {
+        lastError = error;
+        console.warn(`请求失败，${retryDelay}ms后重试 (${i + 1}/${maxRetries})`, error);
+        if (i < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
+    throw lastError;
   }
 });

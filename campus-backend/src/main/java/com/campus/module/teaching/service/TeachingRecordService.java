@@ -63,4 +63,20 @@ public interface TeachingRecordService {
      * @return 课时记录列表
      */
     List<TeachingRecordDTO> getRecordsByUserId(Long userId, Integer role);
+    
+    /**
+     * 更新课时进度
+     * @param tutorId 教师用户ID
+     * @param recordId 课时记录ID
+     * @param progress 进度值 (0-100)
+     * @param notes 备注
+     */
+    void updateLessonProgress(Long tutorId, Long recordId, Integer progress, String notes);
+    
+    /**
+     * 获取课程统计信息
+     * @param orderId 订单ID
+     * @return 统计信息
+     */
+    java.util.Map<String, Object> getCourseStatistics(Long orderId);
 }

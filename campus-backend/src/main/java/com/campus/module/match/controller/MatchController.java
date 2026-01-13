@@ -1,6 +1,7 @@
 package com.campus.module.match.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.campus.common.context.UserContext;
 import com.campus.common.result.Result;
 import com.campus.module.match.dto.TutorSearchRequest;
 import com.campus.module.match.dto.TutorSearchResult;
@@ -24,6 +25,8 @@ public class MatchController {
     @Operation(summary = "搜索教员")
     @PostMapping("/tutors")
     public Result<IPage<TutorSearchResult>> searchTutors(@RequestBody TutorSearchRequest request) {
+        // 设置当前用户ID，用于个性化推荐(协同过滤)
+        request.setUserId(UserContext.getUserId());
         IPage<TutorSearchResult> result = matchService.searchTutors(request);
         return Result.success(result);
     }
@@ -40,8 +43,11 @@ public class MatchController {
             @RequestParam(required = false) String sortOrder,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
-        
+
         TutorSearchRequest request = new TutorSearchRequest();
+        // 设置当前用户ID
+        request.setUserId(UserContext.getUserId());
+
         request.setSubject(subject);
         request.setGrade(grade);
         request.setLongitude(longitude);
@@ -51,7 +57,7 @@ public class MatchController {
         request.setSortOrder(sortOrder);
         request.setPage(page);
         request.setSize(size);
-        
+
         IPage<TutorSearchResult> result = matchService.searchTutors(request);
         return Result.success(result);
     }

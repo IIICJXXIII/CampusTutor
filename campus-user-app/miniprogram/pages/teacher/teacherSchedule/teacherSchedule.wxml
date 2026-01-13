@@ -1,4 +1,4 @@
-<!-- 教师课表页面 - 修复版本 -->
+<!-- 教师课表页面 - 修复版本（无滚动） -->
 <view class="container">
   <!-- 说明卡片 -->
   <view class="info-card">
@@ -6,70 +6,75 @@
     <text class="info-text">点击时间格设置可预约时间，每节课40分钟</text>
   </view>
 
-  <!-- 课表网格 -->
-  <scroll-view class="schedule-scroll" scroll-x scroll-y>
-    <view class="schedule-grid">
-      <!-- 表头：星期 -->
-      <view class="grid-header">
-        <view class="header-cell corner">时间</view>
-        <view class="header-cell" wx:for="{{weekDays}}" wx:key="index">{{item}}</view>
+  <!-- 课表主卡片 -->
+  <view class="schedule-card">
+    <view class="schedule-wrapper">
+      <view class="schedule-grid">
+        <!-- 表头：星期 -->
+        <view class="grid-header">
+          <view class="header-cell corner">时间</view>
+          <view class="header-cell" wx:for="{{weekDays}}" wx:key="index">{{item}}</view>
+        </view>
+
+        <!-- 上午时段 -->
+        <view class="period-title">
+          <text class="period-icon">🌅</text>
+          <text>上午</text>
+        </view>
+        <block wx:for="{{5}}" wx:for-item="idx" wx:key="idx">
+          <view class="grid-row">
+            <view class="time-cell">
+              <text class="time-start">{{timeSlots[idx].startTime}}</text>
+              <text class="time-end">{{timeSlots[idx].endTime}}</text>
+            </view>
+            <view class="schedule-cell {{item.active ? 'active' : ''}}" 
+                  wx:for="{{gridData[idx]}}" wx:for-item="item" wx:for-index="dayIdx" wx:key="dayIdx"
+                  bindtap="toggleCell" data-slot="{{idx}}" data-day="{{dayIdx}}">
+              <text wx:if="{{item.active}}">✓</text>
+            </view>
+          </view>
+        </block>
+
+        <!-- 下午时段 -->
+        <view class="period-title">
+          <text class="period-icon">☀️</text>
+          <text>下午</text>
+        </view>
+        <block wx:for="{{5}}" wx:for-item="i" wx:key="i">
+          <view class="grid-row">
+            <view class="time-cell">
+              <text class="time-start">{{timeSlots[i+5].startTime}}</text>
+              <text class="time-end">{{timeSlots[i+5].endTime}}</text>
+            </view>
+            <view class="schedule-cell {{item.active ? 'active' : ''}}" 
+                  wx:for="{{gridData[i+5]}}" wx:for-item="item" wx:for-index="dayIdx" wx:key="dayIdx"
+                  bindtap="toggleCell" data-slot="{{i+5}}" data-day="{{dayIdx}}">
+              <text wx:if="{{item.active}}">✓</text>
+            </view>
+          </view>
+        </block>
+
+        <!-- 晚上时段 -->
+        <view class="period-title">
+          <text class="period-icon">🌙</text>
+          <text>晚上</text>
+        </view>
+        <block wx:for="{{3}}" wx:for-item="i" wx:key="i">
+          <view class="grid-row">
+            <view class="time-cell">
+              <text class="time-start">{{timeSlots[i+10].startTime}}</text>
+              <text class="time-end">{{timeSlots[i+10].endTime}}</text>
+            </view>
+            <view class="schedule-cell {{item.active ? 'active' : ''}}" 
+                  wx:for="{{gridData[i+10]}}" wx:for-item="item" wx:for-index="dayIdx" wx:key="dayIdx"
+                  bindtap="toggleCell" data-slot="{{i+10}}" data-day="{{dayIdx}}">
+              <text wx:if="{{item.active}}">✓</text>
+            </view>
+          </view>
+        </block>
       </view>
-
-      <!-- 上午时段标题 -->
-      <view class="period-title">上午</view>
-      
-      <!-- 上午时间段 (0-4) -->
-      <block wx:for="{{5}}" wx:for-item="idx" wx:key="idx">
-        <view class="grid-row">
-          <view class="time-cell">
-            <text class="time-start">{{timeSlots[idx].startTime}}</text>
-            <text class="time-end">{{timeSlots[idx].endTime}}</text>
-          </view>
-          <view class="schedule-cell {{item.active ? 'active' : ''}}" 
-                wx:for="{{gridData[idx]}}" wx:for-item="item" wx:for-index="dayIdx" wx:key="dayIdx"
-                bindtap="toggleCell" data-slot="{{idx}}" data-day="{{dayIdx}}">
-            <text wx:if="{{item.active}}">✓</text>
-          </view>
-        </view>
-      </block>
-
-      <!-- 下午时段标题 -->
-      <view class="period-title">下午</view>
-      
-      <!-- 下午时间段 (5-9) -->
-      <block wx:for="{{5}}" wx:for-item="i" wx:key="i">
-        <view class="grid-row">
-          <view class="time-cell">
-            <text class="time-start">{{timeSlots[i+5].startTime}}</text>
-            <text class="time-end">{{timeSlots[i+5].endTime}}</text>
-          </view>
-          <view class="schedule-cell {{item.active ? 'active' : ''}}" 
-                wx:for="{{gridData[i+5]}}" wx:for-item="item" wx:for-index="dayIdx" wx:key="dayIdx"
-                bindtap="toggleCell" data-slot="{{i+5}}" data-day="{{dayIdx}}">
-            <text wx:if="{{item.active}}">✓</text>
-          </view>
-        </view>
-      </block>
-
-      <!-- 晚上时段标题 -->
-      <view class="period-title">晚上</view>
-      
-      <!-- 晚上时间段 (10-12) -->
-      <block wx:for="{{3}}" wx:for-item="i" wx:key="i">
-        <view class="grid-row">
-          <view class="time-cell">
-            <text class="time-start">{{timeSlots[i+10].startTime}}</text>
-            <text class="time-end">{{timeSlots[i+10].endTime}}</text>
-          </view>
-          <view class="schedule-cell {{item.active ? 'active' : ''}}" 
-                wx:for="{{gridData[i+10]}}" wx:for-item="item" wx:for-index="dayIdx" wx:key="dayIdx"
-                bindtap="toggleCell" data-slot="{{i+10}}" data-day="{{dayIdx}}">
-            <text wx:if="{{item.active}}">✓</text>
-          </view>
-        </view>
-      </block>
     </view>
-  </scroll-view>
+  </view>
 
   <!-- 图例说明 -->
   <view class="legend">
@@ -86,7 +91,7 @@
   <!-- 保存按钮 -->
   <view class="action-area">
     <button class="btn-save" bindtap="saveSchedule" loading="{{isSaving}}" disabled="{{isSaving}}">
-      保存课表
+      {{isSaving ? '保存中...' : '保存课表'}}
     </button>
   </view>
 </view>

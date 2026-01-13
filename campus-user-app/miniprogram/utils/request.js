@@ -70,7 +70,12 @@ const request = (url, method = 'GET', data = {}, header = {}) => {
           }
         } else {
           console.error('HTTP Error:', statusCode, resData);
-          wx.showToast({ title: `服务异常 ${statusCode}`, icon: 'none' });
+          // 提供更详细的错误信息
+          let errorMessage = `服务异常 ${statusCode}`;
+          if (resData && resData.msg) {
+            errorMessage = resData.msg;
+          }
+          wx.showToast({ title: errorMessage, icon: 'none' });
           reject(res);
         }
       },

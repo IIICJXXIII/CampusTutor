@@ -1,13 +1,11 @@
 package com.campus.module.llm.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
 import java.util.List;
 
 /**
  * 聊天消息
  */
-@Data
 public class ChatMessage {
 
     @Schema(description = "角色: system, user, assistant")
@@ -33,5 +31,21 @@ public class ChatMessage {
 
     public static ChatMessage assistant(String content) {
         return new ChatMessage("assistant", content);
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
     }
 }

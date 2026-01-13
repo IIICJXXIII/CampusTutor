@@ -1,12 +1,10 @@
 package com.campus.module.admin.dto;
 
-import lombok.Data;
 import java.util.List;
 
 /**
  * 通用分页响应
  */
-@Data
 public class PageVO<T> {
 
     /** 数据列表 */
@@ -32,5 +30,46 @@ public class PageVO<T> {
         vo.setSize(size);
         vo.setPages((int) Math.ceil((double) total / size));
         return vo;
+    }
+
+    // 显式的getter和setter方法
+    public List<T> getRecords() {
+        return records;
+    }
+
+    public void setRecords(List<T> records) {
+        this.records = records;
+    }
+
+    public Long getTotal() {
+        return total;
+    }
+
+    public void setTotal(Long total) {
+        this.total = total;
+    }
+
+    public Integer getPage() {
+        return page;
+    }
+
+    public void setPage(Integer page) {
+        this.page = page;
+    }
+
+    public Integer getSize() {
+        return size;
+    }
+
+    public void setSize(Integer size) {
+        this.size = size;
+    }
+
+    public Integer getPages() {
+        return pages;
+    }
+
+    public void setPages(Integer pages) {
+        this.pages = pages;
     }
 }

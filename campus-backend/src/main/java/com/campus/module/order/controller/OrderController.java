@@ -75,11 +75,12 @@ public class OrderController {
     }
 
     @Operation(summary = "完成订单")
-    @PostMapping("/{id}/complete")
-    public Result<Void> complete(@PathVariable Long id) {
-        orderService.completeOrder(id);
-        return Result.success();
-    }
+@PostMapping("/{id}/complete")
+public Result<Void> complete(@PathVariable Long id) {
+    Long tutorId = UserContext.getUserId();
+    orderService.completeOrder(tutorId, id);
+    return Result.success();
+}
 
     @Operation(summary = "订单详情")
     @GetMapping("/{id}")

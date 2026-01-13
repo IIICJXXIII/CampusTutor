@@ -7,7 +7,22 @@
     <view class="row"><text class="label">科目/年级：</text><text>{{order.subject}} · {{order.grade}}</text></view>
     <view class="row"><text class="label">课时：</text><text>{{order.totalHours}} × {{order.unitPrice}} 元</text></view>
     <view class="row"><text class="label">总额：</text><text class="amount">{{order.totalAmount}} 元</text></view>
-    <view class="row"><text class="label">状态：</text><text>{{statusText}}</text></view>
+    <view class="row"><text class="label">状态：</text><text style="color: {{statusColor}}">{{statusText}}</text></view>
+    <view class="divider"></view>
+    
+    <!-- 订单状态流程 -->
+    <view class="status-flow">
+      <view class="flow-title">订单流程</view>
+      <view class="flow-steps">
+        <block wx:for="{{statusSteps}}" wx:key="index">
+          <view class="flow-step">
+            <view class="step-dot {{item.status}}"></view>
+            <view class="step-text {{item.status}}">{{item.text}}</view>
+            <view wx:if="{{index < statusSteps.length - 1}}" class="step-line {{statusSteps[index+1].status === 'completed' ? 'completed' : ''}}"></view>
+          </view>
+        </block>
+      </view>
+    </view>
     <view class="divider"></view>
 
     <view class="actions">

@@ -22,6 +22,7 @@ const api = {
   user: {
     info: `${API_HOST}/api/user`,
     byId: (id) => `${API_HOST}/api/user/${id}`,
+    updateInfo: `${API_HOST}/api/user/info`,
   },
   // 文件上传
   file: {
@@ -32,8 +33,9 @@ const api = {
     profile: `${API_HOST}/api/tutor/profile`,
     certification: `${API_HOST}/api/tutor/certification`,
     schedule: `${API_HOST}/api/tutor/schedule`,
-    // 教师公开详情 (后端为 /api/tutor/public/{id})
-    detail: (id) => `${API_HOST}/api/tutor/public/${id}`,
+    publicSchedule: (tutorId) => `${API_HOST}/api/tutor/public/schedule/${tutorId}`,
+    // 教师公开详情 (后端为 /api/tutor/public/profile/{id})
+    detail: (id) => `${API_HOST}/api/tutor/public/profile/${id}`,
   },
   // 家长模块 (Parent)
   parent: {
@@ -111,6 +113,13 @@ const api = {
       detail: (id) => `${API_HOST}/api/study/wrongbook/${id}`,
       resolve: (id) => `${API_HOST}/api/study/wrongbook/${id}/resolve`
     }
+  },
+  // 地图模块 (Map)
+  map: {
+    distance: `${API_HOST}/api/map/distance`,
+    direction: `${API_HOST}/api/map/direction`,
+    geocode: `${API_HOST}/api/map/geocoder`,
+    reverseGeocode: `${API_HOST}/api/map/geocoder/reverse`
   }
 };
 

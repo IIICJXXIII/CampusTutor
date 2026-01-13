@@ -1,6 +1,8 @@
 package com.campus.module.match.dto;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -8,6 +10,7 @@ import java.util.List;
  * 匹配评分结果
  */
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class MatchScoreResult extends TutorSearchResult {
 
     /**
@@ -61,7 +64,19 @@ public class MatchScoreResult extends TutorSearchResult {
     private Double hotnessScore;
 
     /**
+     * 授课方式匹配分数
+     */
+    private Double teachModeScore;
+
+    /**
+     * 协同过滤预测分数 (0.0~1.0)
+     * 基于相似用户行为预测的评分
+     */
+    private Double cfScore;
+
+    /**
      * 匹配标签（如：科目匹配、距离近、评分高等）
      */
     private List<String> matchTags;
+
 }

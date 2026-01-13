@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.campus.common.exception.BusinessException;
-import com.campus.common.result.ResultCode;
 import com.campus.module.user.service.SysUserService;
 
 /**
@@ -59,7 +58,7 @@ public class AuthController {
             @Parameter(description = "手机号") @RequestParam String phone) {
         // 检查手机号是否已注册
         if (!sysUserService.existsByUsername(phone)) {
-            throw new BusinessException(ResultCode.USER_NOT_EXIST);
+            throw new BusinessException(5001, "用户不存在");
         }
         authService.sendCode(phone);
         return Result.success("验证码已发送");
@@ -73,7 +72,7 @@ public class AuthController {
             @Parameter(description = "新密码") @RequestParam String newPassword) {
         // 验证验证码
         if (!authService.verifyCode(phone, code)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR, "验证码错误或已过期");
+            throw new BusinessException(400, "验证码错误或已过期");
         }
         // 重置密码
         sysUserService.resetPassword(phone, newPassword);

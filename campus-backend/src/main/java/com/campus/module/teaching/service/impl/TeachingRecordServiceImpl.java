@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -144,6 +145,41 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
         record.setContentSummary(contentSummary);
         record.setHomeworkAssigned(homeworkAssigned);
         updateById(record);
+        
+        log.info("教师 {} 完成课时打卡: {}, 内容摘要: {}, 作业: {}", 
+                 tutorId, recordId, contentSummary, homeworkAssigned);
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateLessonProgress(Long tutorId, Long recordId, Integer progress, String notes) {
+        TeachingRecord record = getById(recordId);
+        if (record == null) {
+            throw new BusinessException("记录不存在");
+        }
+
+        CourseOrder order = courseOrderMapper.selectById(record.getOrderId());
+        if (order == null || !order.getTutorId().equals(tutorId)) {
+            throw new BusinessException("无权操作");
+        }
+
+        // TODO: 实现课时进度更新逻辑
+        // 1. 验证进度值 (0-100)
+        // 2. 更新课时记录
+        // 3. 记录操作日志
+        
+        log.info("教师 {} 更新课时进度: {}, 进度: {}, 备注: {}", 
+                 tutorId, recordId, progress, notes);
+    }
+    
+    @Override
+    public Map<String, Object> getCourseStatistics(Long orderId) {
+        // TODO: 实现课程统计功能
+        // 1. 计算已完成课时数
+        // 2. 计算课程完成率
+        // 3. 统计教学内容分布
+        // 4. 返回统计结果
+        throw new BusinessException("功能开发中");
     }
 
     @Override
@@ -169,23 +205,18 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
         record.setStatus(1); // 已确认
         updateById(record);
 
-        // 5. 【关键逻辑】更新订单进度
-        // 只有家长确认了，课时才算真正消耗
-        int used = order.getUsedHours() + 1;
-        order.setUsedHours(used);
-
-        // 6. 更新订单已用课时
+        // 5. 更新订单已用课时
         int confirmedCount = teachingRecordMapper.countConfirmedByOrderId(order.getId());
         order.setUsedHours(confirmedCount);
 
+        
         // 如果所有课时都已完成，调用订单完成方法（会解冻钱包金额）
         if (confirmedCount >= order.getTotalHours()) {
             courseOrderService.completeOrder(order.getId());
         } else {
+            order.setUsedHours(confirmedCount);
             courseOrderMapper.updateById(order);
         }
-
-        courseOrderMapper.updateById(order);
     }
 
     @Override

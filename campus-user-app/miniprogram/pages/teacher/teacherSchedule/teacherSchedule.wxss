@@ -1,207 +1,233 @@
-/* 教师课表页面样式 - 简约专业风 */
-page {
-  background: #F8F9FA;
-  --prof-primary: #1E6F9F;
-  --prof-primary-dark: #165b85;
-  --prof-secondary: #E8F8F5;
-  --prof-selected-bg: #1E6F9F;
-  --prof-border: #E2E8F0;
-}
+/* 教师课表页面样式 - 修复版本 */
 
+/* 页面容器 - 移除复杂背景 */
 .container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  padding-bottom: env(safe-area-inset-bottom);
+  min-height: 100vh;
+  background: #F5F7FA;
+  padding: 0;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top);
 }
 
 /* 说明卡片 */
 .info-card {
+  margin: 20rpx 24rpx;
+  padding: 20rpx 24rpx;
+  background: linear-gradient(135deg, #E8F8F5 0%, #D4F0E8 100%);
+  border-radius: 12rpx;
   display: flex;
   align-items: center;
-  background: var(--prof-secondary); /* Mint Green BG */
-  border-radius: 8rpx;
-  padding: 16rpx 24rpx;
-  margin: 16rpx 24rpx;
-  flex-shrink: 0;
-  border: 1rpx solid #B0E0D8;
+  gap: 12rpx;
+  box-shadow: 0 2rpx 8rpx rgba(30, 111, 159, 0.08);
 }
 
 .info-icon {
   font-size: 32rpx;
-  margin-right: 12rpx;
 }
 
 .info-text {
   font-size: 24rpx;
-  color: var(--prof-primary); /* Deep Blue Text */
-  flex: 1;
+  color: #1E6F9F;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
-/* 课表滚动区域 */
-.schedule-scroll {
-  flex: 1;
-  margin: 0 24rpx;
-  background: #fff;
-  border-radius: 8rpx;
-  padding: 24rpx;
-  box-shadow: 0 1rpx 3rpx rgba(0, 0, 0, 0.05);
-  border: 1rpx solid var(--prof-border);
+/* 课表主卡片 */
+.schedule-card {
+  margin: 0 16rpx;
+  background: #FFFFFF;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
 }
 
+/* 课表容器 - 不需要滚动，自适应宽度 */
+.schedule-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 课表网格 - 100%宽度 */
 .schedule-grid {
-  min-width: 650rpx;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
+/* 表头 */
 .grid-header {
   display: flex;
+  background: linear-gradient(135deg, #1E6F9F 0%, #2D8CC9 100%);
   position: sticky;
   top: 0;
-  background: #fff;
   z-index: 10;
-  padding-bottom: 16rpx;
-  border-bottom: 1rpx solid var(--prof-border);
 }
 
 .header-cell {
   flex: 1;
-  min-width: 70rpx;
+  padding: 16rpx 4rpx;
   text-align: center;
+  color: #FFFFFF;
   font-size: 24rpx;
-  font-weight: 600;
-  color: #333;
-  padding: 8rpx 0;
+  font-weight: 500;
+  border-right: 1rpx solid rgba(255, 255, 255, 0.1);
+}
+
+.header-cell:last-child {
+  border-right: none;
 }
 
 .header-cell.corner {
-  min-width: 100rpx;
-  flex: none;
-  color: #999;
-  font-weight: normal;
-}
-
-/* 时段标题 */
-.period-title {
-  font-size: 24rpx;
+  flex: 0 0 90rpx;
+  background: rgba(0, 0, 0, 0.1);
   font-weight: 600;
-  color: var(--prof-primary);
-  padding: 12rpx 8rpx 4rpx;
-  background: transparent;
-  margin: 4rpx 0;
-  border-radius: 0;
-  border-bottom: 1rpx dashed var(--prof-border);
 }
 
+/* 时段分组标题 */
+.period-title {
+  padding: 12rpx 16rpx;
+  background: #E8F8F5;
+  color: #1E6F9F;
+  font-weight: 600;
+  font-size: 24rpx;
+  border-left: 4rpx solid #1E6F9F;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.period-icon {
+  font-size: 24rpx;
+}
+
+/* 网格行 */
 .grid-row {
   display: flex;
-  margin-bottom: 4rpx;
+  border-bottom: 1rpx solid #F1F3F5;
 }
 
+.grid-row:last-child {
+  border-bottom: none;
+}
+
+/* 时间单元格 - 紧凑版 */
 .time-cell {
-  min-width: 100rpx;
-  flex: none;
+  flex: 0 0 90rpx;
+  padding: 12rpx 6rpx;
+  background: #FAFBFC;
+  border-right: 1rpx solid #F1F3F5;
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
-  padding-right: 8rpx;
+  gap: 2rpx;
 }
 
 .time-start {
   font-size: 22rpx;
-  color: #333;
-  font-weight: 500;
-  font-family: monospace;
+  font-weight: 600;
+  color: #343A40;
 }
 
 .time-end {
   font-size: 18rpx;
-  color: #999;
-  font-family: monospace;
+  color: #ADB5BD;
 }
 
+/* 课表单元格 - 紧凑版 */
 .schedule-cell {
   flex: 1;
-  min-width: 70rpx;
-  height: 48rpx;
-  margin: 2rpx;
-  border-radius: 4rpx; /* Sharper */
-  background: #F8F9FA;
+  min-height: 70rpx;
+  border-right: 1rpx solid #F1F3F5;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.1s;
-  font-size: 22rpx;
-  color: #ccc;
-  border: 1rpx solid transparent;
+  background: #FFFFFF;
+  transition: all 0.2s ease;
 }
 
-.schedule-cell.active {
-  background: var(--prof-selected-bg);
-  color: #fff;
-  font-weight: bold;
-  border-color: var(--prof-primary-dark);
+.schedule-cell:last-child {
+  border-right: none;
 }
 
 .schedule-cell:active {
-  opacity: 0.8;
+  background: #F0F0F0;
 }
 
-/* 图例 */
+/* 选中/可预约状态 */
+.schedule-cell.active {
+  background: linear-gradient(135deg, #1E6F9F 0%, #2D8CC9 100%);
+}
+
+.schedule-cell.active text {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+/* 图例区域 */
 .legend {
+  margin: 20rpx 24rpx;
+  padding: 16rpx 24rpx;
+  background: #FFFFFF;
+  border-radius: 12rpx;
   display: flex;
   justify-content: center;
-  gap: 32rpx;
-  padding: 16rpx 0;
-  flex-shrink: 0;
+  gap: 48rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  font-size: 22rpx;
-  color: #666;
+  gap: 10rpx;
 }
 
 .legend-dot {
-  width: 20rpx;
-  height: 20rpx;
-  border-radius: 4rpx;
-  background: #F8F9FA;
-  margin-right: 8rpx;
-  border: 1rpx solid #ddd;
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 6rpx;
+  background: #F1F3F5;
+  border: 1rpx solid #DEE2E6;
 }
 
 .legend-dot.active {
-  background: var(--prof-primary);
+  background: linear-gradient(135deg, #1E6F9F 0%, #2D8CC9 100%);
   border: none;
 }
 
-/* 保存按钮 */
+.legend-item text {
+  font-size: 24rpx;
+  color: #495057;
+}
+
+/* 操作区域 */
 .action-area {
-  padding: 16rpx 24rpx;
-  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
-  background: #fff;
-  box-shadow: 0 -2rpx 8rpx rgba(0, 0, 0, 0.05);
-  flex-shrink: 0;
-  border-top: 1rpx solid var(--prof-border);
+  padding: 24rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
 }
 
 .btn-save {
   width: 100%;
-  height: 80rpx;
-  line-height: 80rpx;
-  background: var(--prof-primary);
-  color: #fff;
-  font-size: 28rpx;
+  height: 88rpx;
+  background: linear-gradient(135deg, #1E6F9F 0%, #2D8CC9 100%);
+  color: #FFFFFF;
+  font-size: 30rpx;
   font-weight: 600;
-  border-radius: 8rpx; /* 4px */
+  border-radius: 20rpx;
   border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6rpx 20rpx rgba(30, 111, 159, 0.3);
 }
 
 .btn-save:active {
-  background: var(--prof-primary-dark);
+  opacity: 0.9;
 }
 
 .btn-save[disabled] {
-  background: #CFD8DC;
+  background: #CED4DA;
+  box-shadow: none;
 }
