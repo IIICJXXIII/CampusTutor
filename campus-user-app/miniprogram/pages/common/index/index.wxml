@@ -148,8 +148,8 @@
               <text class="demand-title">{{item.subject}} - {{item.grade}}</text>
               <text class="demand-time">{{item.createTime}}</text>
             </view>
-            <view class="demand-status {{item.status === 2 ? 'matched' : 'active'}}">
-              {{item.status === 2 ? '已匹配' : item.status === 1 ? '寻找中' : '已下架'}}
+            <view class="demand-status {{item.status === 3 ? 'completed' : item.status === 2 ? 'matched' : 'active'}}">
+              {{item.status === 3 ? '已完成' : item.status === 2 ? '已匹配' : item.status === 1 ? '寻找中' : '已下架'}}
             </view>
           </view>
         </block>

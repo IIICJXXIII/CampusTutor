@@ -80,7 +80,7 @@ public class DemandPost {
     private String detail;
 
     /**
-     * 状态：0下架 1上架 2已匹配
+     * 状态：0下架 1上架 2已匹配 3已完成
      */
     private Integer status;
 
