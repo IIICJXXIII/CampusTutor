@@ -10,9 +10,9 @@
   <view class="form-box">
     <view class="input-group">
       <view class="label">上课学生</view>
-      <picker bindchange="handleStudentChange" value="{{studentIndex}}" range="{{studentList}}" range-key="name">
+      <picker bindchange="handleStudentChange" value="{{studentIndex}}" range="{{studentList}}" range-key="studentName">
         <view class="picker-val {{studentIndex === -1 ? 'placeholder' : ''}}">
-          {{studentIndex === -1 ? '请选择学生' : studentList[studentIndex].name}}
+          {{studentIndex === -1 ? '请选择学生' : studentList[studentIndex].studentName}}
         </view>
       </picker>
       <view class="arrow">></view>

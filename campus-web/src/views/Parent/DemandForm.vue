@@ -238,338 +238,606 @@ onMounted(() => {
 
 <template>
   <div class="demand-form-page">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <h1 class="page-title">发布家教需求</h1>
-      <p class="page-subtitle">填写信息，智能匹配最合适的老师</p>
-    </div>
+    <div class="page-wrapper">
+      <el-row :gutter="32">
+        <!-- 左侧信息栏 -->
+        <el-col :span="7" class="sidebar-col">
+          <!-- 标题卡片 -->
+          <el-card class="title-card" shadow="hover">
+            <div class="title-icon">
+              <el-icon :size="32"><Edit /></el-icon>
+            </div>
+            <h1>发布家教需求</h1>
+            <p>填写信息，智能匹配最合适的老师</p>
+          </el-card>
 
-    <!-- 步骤条 -->
-    <div class="step-container">
-      <el-steps :active="step - 1" align-center finish-status="success">
-        <el-step title="学生信息" />
-        <el-step title="教学需求" />
-        <el-step title="授课偏好" />
-      </el-steps>
-    </div>
-
-    <!-- Step 1: 学生信息 -->
-    <div v-if="step === 1" class="step-content">
-      <el-card>
-        <template #header>
-          <div class="card-header">
-            <el-icon><User /></el-icon>
-            <span>学生基本信息</span>
-          </div>
-        </template>
-
-        <el-form label-position="top" size="large">
-          <el-form-item label="学生姓名" required>
-            <el-input 
-              v-model="form.studentName" 
-              placeholder="请输入学生姓名"
-              prefix-icon="User"
-            />
-          </el-form-item>
-
-          <el-form-item label="就读年级" required>
-            <el-select v-model="form.grade" placeholder="请选择年级" style="width: 100%">
-              <el-option 
-                v-for="item in gradeOptions" 
-                :key="item.value" 
-                :label="item.label" 
-                :value="item.value" 
-              />
-            </el-select>
-          </el-form-item>
-
-          <el-form-item label="薄弱科目（可多选）" required>
-            <el-checkbox-group v-model="form.weakSubjects" class="subject-group">
-              <el-checkbox-button 
-                v-for="item in subjectOptions" 
-                :key="item.value" 
-                :value="item.value"
-              >
-                {{ item.label }}
-              </el-checkbox-button>
-            </el-checkbox-group>
-          </el-form-item>
-
-          <el-form-item label="性格特点">
-            <el-radio-group v-model="form.character">
-              <el-radio 
-                v-for="item in charOptions" 
-                :key="item.value" 
-                :value="item.value"
-                border
-              >
-                {{ item.label }}
-              </el-radio>
-            </el-radio-group>
-          </el-form-item>
-        </el-form>
-      </el-card>
-    </div>
-
-    <!-- Step 2: 教学需求 -->
-    <div v-if="step === 2" class="step-content">
-      <el-card>
-        <template #header>
-          <div class="card-header">
-            <el-icon><Aim /></el-icon>
-            <span>教学目标设定</span>
-          </div>
-        </template>
-
-        <el-form label-position="top" size="large">
-          <el-form-item label="教学目标">
-            <div class="target-cards">
-              <div 
-                v-for="item in targetOptions" 
-                :key="item.value"
-                class="target-card"
-                :class="{ active: form.target === item.value }"
-                @click="form.target = item.value"
-              >
-                <div class="target-label">{{ item.label }}</div>
-                <div class="target-desc">{{ item.desc }}</div>
+          <!-- 进度卡片 -->
+          <el-card class="progress-card" shadow="hover">
+            <template #header>
+              <div class="card-title">
+                <el-icon><List /></el-icon>
+                <span>填写进度</span>
               </div>
+            </template>
+            <el-steps :active="step - 1" direction="vertical" finish-status="success">
+              <el-step title="学生信息" description="基本信息和薄弱科目" />
+              <el-step title="教学需求" description="目标和频次设定" />
+              <el-step title="授课偏好" description="价格和教师要求" />
+            </el-steps>
+          </el-card>
+
+          <!-- 当前步骤提示 -->
+          <el-card class="tip-card" shadow="hover">
+            <template #header>
+              <div class="card-title">
+                <el-icon><InfoFilled /></el-icon>
+                <span>当前步骤</span>
+              </div>
+            </template>
+            <div class="tip-content" v-if="step === 1">
+              <p>👦 请填写学生的基本信息</p>
+              <p>📚 选择需要辅导的科目</p>
+              <p>😊 描述孩子的性格特点</p>
             </div>
-          </el-form-item>
-
-          <el-form-item label="上课频次">
-            <el-input 
-              v-model="form.frequency" 
-              placeholder="例如：每周2次，每次2小时"
-            />
-          </el-form-item>
-
-          <el-form-item label="补充说明（可选）">
-            <el-input
-              v-model="form.remark"
-              type="textarea"
-              :rows="3"
-              placeholder="描述学生的具体情况或特殊要求..."
-            />
-          </el-form-item>
-        </el-form>
-      </el-card>
-    </div>
-
-    <!-- Step 3: 授课偏好 -->
-    <div v-if="step === 3" class="step-content">
-      <el-card>
-        <template #header>
-          <div class="card-header">
-            <el-icon><Setting /></el-icon>
-            <span>授课偏好设置</span>
-          </div>
-        </template>
-
-        <el-form label-position="top" size="large">
-          <el-form-item label="可接受价格区间（元/小时）">
-            <el-slider
-              v-model="form.budgetRange"
-              range
-              :min="50"
-              :max="500"
-              :step="10"
-              :marks="{ 50: '50元', 250: '250元', 500: '500元' }"
-            />
-            <div class="budget-display">
-              当前预算：<span class="budget-value">{{ form.budgetRange[0] }} - {{ form.budgetRange[1] }} 元/小时</span>
+            <div class="tip-content" v-else-if="step === 2">
+              <p>🎯 选择合适的教学目标</p>
+              <p>📅 设定每周的上课频次</p>
+              <p>📝 补充特殊要求或情况</p>
             </div>
-          </el-form-item>
+            <div class="tip-content" v-else>
+              <p>💰 设定可接受的价格范围</p>
+              <p>👨‍🏫 选择教师性别偏好</p>
+              <p>🎭 选择喜欢的教学风格</p>
+            </div>
+          </el-card>
+        </el-col>
 
-          <el-form-item label="教师性别偏好">
-            <el-radio-group v-model="form.gender">
-              <el-radio-button 
-                v-for="item in genderOptions" 
-                :key="item.value" 
-                :value="item.value"
-              >
-                {{ item.label }}
-              </el-radio-button>
-            </el-radio-group>
-          </el-form-item>
+        <!-- 右侧表单区 -->
+        <el-col :span="17">
+          <!-- Step 1: 学生信息 -->
+          <el-card v-if="step === 1" class="form-card" shadow="hover">
+            <template #header>
+              <div class="form-header">
+                <div class="header-left">
+                  <el-icon><User /></el-icon>
+                  <span>学生基本信息</span>
+                </div>
+                <el-tag type="info">Step 1/3</el-tag>
+              </div>
+            </template>
 
-          <el-form-item label="教学风格偏好">
-            <el-select v-model="form.style" placeholder="请选择" style="width: 100%">
-              <el-option 
-                v-for="item in styleOptions" 
-                :key="item.value" 
-                :label="item.label" 
-                :value="item.value" 
-              />
-            </el-select>
-          </el-form-item>
+            <el-form label-position="top" size="large">
+              <el-row :gutter="24">
+                <el-col :span="12">
+                  <el-form-item label="学生姓名" required>
+                    <el-input v-model="form.studentName" placeholder="请输入学生姓名" prefix-icon="User" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="就读年级" required>
+                    <el-select v-model="form.grade" placeholder="请选择年级" style="width: 100%">
+                      <el-option v-for="item in gradeOptions" :key="item.value" :label="item.label" :value="item.value" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+              </el-row>
 
-          <el-form-item label="上课地点">
-            <el-input 
-              v-model="form.address" 
-              disabled
-              prefix-icon="Location"
-            />
-          </el-form-item>
-        </el-form>
-      </el-card>
-    </div>
+              <el-form-item label="薄弱科目（可多选）" required>
+                <el-checkbox-group v-model="form.weakSubjects" class="subject-group">
+                  <el-checkbox-button v-for="item in subjectOptions" :key="item.value" :value="item.value">
+                    {{ item.label }}
+                  </el-checkbox-button>
+                </el-checkbox-group>
+              </el-form-item>
 
-    <!-- 底部按钮 -->
-    <div class="bottom-actions">
-      <el-button 
-        v-if="step > 1" 
-        size="large" 
-        @click="step--"
-      >
-        上一步
-      </el-button>
-      
-      <el-button 
-        v-if="step < 3" 
-        type="primary" 
-        size="large"
-        @click="nextStep"
-      >
-        下一步
-        <el-icon><ArrowRight /></el-icon>
-      </el-button>
-      
-      <el-button 
-        v-if="step === 3" 
-        type="primary" 
-        size="large"
-        :loading="isSubmitting"
-        @click="handleSubmit"
-      >
-        {{ isSubmitting ? '提交中...' : '确认提交' }}
-      </el-button>
+              <el-form-item label="性格特点">
+                <el-radio-group v-model="form.character">
+                  <el-radio v-for="item in charOptions" :key="item.value" :value="item.value" border>
+                    {{ item.label }}
+                  </el-radio>
+                </el-radio-group>
+              </el-form-item>
+
+              <div class="form-actions">
+                <div></div>
+                <el-button type="primary" size="large" @click="nextStep">
+                  下一步 <el-icon><ArrowRight /></el-icon>
+                </el-button>
+              </div>
+            </el-form>
+          </el-card>
+
+          <!-- Step 2: 教学需求 -->
+          <el-card v-if="step === 2" class="form-card" shadow="hover">
+            <template #header>
+              <div class="form-header">
+                <div class="header-left">
+                  <el-icon><Aim /></el-icon>
+                  <span>教学目标设定</span>
+                </div>
+                <el-tag type="info">Step 2/3</el-tag>
+              </div>
+            </template>
+
+            <el-form label-position="top" size="large">
+              <el-form-item label="教学目标">
+                <div class="target-cards">
+                  <div v-for="item in targetOptions" :key="item.value" class="target-card" :class="{ active: form.target === item.value }" @click="form.target = item.value">
+                    <div class="target-label">{{ item.label }}</div>
+                    <div class="target-desc">{{ item.desc }}</div>
+                  </div>
+                </div>
+              </el-form-item>
+
+              <el-row :gutter="24">
+                <el-col :span="12">
+                  <el-form-item label="上课频次">
+                    <el-input v-model="form.frequency" placeholder="例如：每周<unknown>次，每次<unknown>小时" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="上课地点">
+                    <el-input v-model="form.address" disabled prefix-icon="Location" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+
+              <el-form-item label="补充说明（可选）">
+                <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="描述学生的具体情况或特殊要求..." />
+              </el-form-item>
+
+              <div class="form-actions">
+                <el-button size="large" @click="step--">上一步</el-button>
+                <el-button type="primary" size="large" @click="nextStep">
+                  下一步 <el-icon><ArrowRight /></el-icon>
+                </el-button>
+              </div>
+            </el-form>
+          </el-card>
+
+          <!-- Step 3: 授课偏好 -->
+          <el-card v-if="step === 3" class="form-card" shadow="hover">
+            <template #header>
+              <div class="form-header">
+                <div class="header-left">
+                  <el-icon><Setting /></el-icon>
+                  <span>授课偏好设置</span>
+                </div>
+                <el-tag type="info">Step 3/3</el-tag>
+              </div>
+            </template>
+
+            <el-form label-position="top" size="large">
+              <el-form-item label="可接受价格区间（元/小时）">
+                <el-slider v-model="form.budgetRange" range :min="50" :max="500" :step="10" :marks="{ 50: '50元', 150: '150元', 300: '300元', 500: '500元' }" />
+                <div class="budget-display">
+                  当前预算：<span class="budget-value">{{ form.budgetRange[0] }} - {{ form.budgetRange[1] }} 元/小时</span>
+                </div>
+              </el-form-item>
+
+              <el-row :gutter="24">
+                <el-col :span="12">
+                  <el-form-item label="教师性别偏好">
+                    <el-radio-group v-model="form.gender">
+                      <el-radio-button v-for="item in genderOptions" :key="item.value" :value="item.value">
+                        {{ item.label }}
+                      </el-radio-button>
+                    </el-radio-group>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="教学风格偏好">
+                    <el-select v-model="form.style" placeholder="请选择" style="width: 100%">
+                      <el-option v-for="item in styleOptions" :key="item.value" :label="item.label" :value="item.value" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+
+              <div class="form-actions">
+                <el-button size="large" @click="step--">上一步</el-button>
+                <el-button type="primary" size="large" :loading="isSubmitting" @click="handleSubmit">
+                  <el-icon><Check /></el-icon> {{ isSubmitting ? '提交中...' : '确认提交' }}
+                </el-button>
+              </div>
+            </el-form>
+          </el-card>
+        </el-col>
+      </el-row>
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .demand-form-page {
-  min-height: 100vh;
-  background: $bg-light;
-  padding-bottom: 100px;
+  min-height: calc(100vh - 114px);
+  background: linear-gradient(135deg, #fef9f3 0%, #fff5eb 50%, #f5f7fa 100%);
+  padding: 32px 0;
 }
 
-.page-header {
-  background: linear-gradient(135deg, $warning-color 0%, #f97316 100%);
-  padding: $spacing-xl $spacing-lg;
+.page-wrapper {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* 左侧边栏 */
+.sidebar-col {
+  position: sticky;
+  top: 100px;
+  height: fit-content;
+}
+
+.title-card {
+  border-radius: 16px;
+  border: none;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%);
   color: #fff;
+  text-align: center;
 
-  .page-title {
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 4px;
+  :deep(.el-card__body) {
+    padding: 32px 24px;
   }
 
-  .page-subtitle {
-    font-size: 14px;
-    opacity: 0.9;
-  }
-}
-
-.step-container {
-  background: #fff;
-  padding: $spacing-lg;
-  margin-bottom: $spacing-md;
-}
-
-.step-content {
-  padding: $spacing-lg;
-
-  .card-header {
+  .title-icon {
+    width: 64px;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
-    font-size: 16px;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+
+  h1 {
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+
+  p {
+    font-size: 14px;
+    opacity: 0.9;
+    margin: 0;
+  }
+}
+
+.progress-card {
+  border-radius: 16px;
+  border: none;
+  margin-bottom: 20px;
+
+  .card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 15px;
+    color: #303133;
+
+    .el-icon {
+      color: #ff6b00;
+    }
+  }
+
+  :deep(.el-steps) {
+    .el-step__head.is-finish {
+      color: #ff6b00;
+      border-color: #ff6b00;
+    }
+    .el-step__title.is-finish {
+      color: #ff6b00;
+    }
+    .el-step__head.is-process {
+      color: #ff6b00;
+      border-color: #ff6b00;
+    }
+    .el-step__title.is-process {
+      color: #ff6b00;
+      font-weight: 600;
+    }
+    .el-step__description {
+      font-size: 12px;
+      color: #909399;
+    }
+  }
+}
+
+.tip-card {
+  border-radius: 16px;
+  border: none;
+  background: linear-gradient(135deg, #fff5eb 0%, #fff 100%);
+
+  .card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 15px;
+    color: #303133;
+
+    .el-icon {
+      color: #ff6b00;
+    }
+  }
+
+  .tip-content {
+    p {
+      margin: 0 0 12px 0;
+      font-size: 13px;
+      color: #606266;
+      line-height: 1.6;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+/* 右侧表单卡片 */
+.form-card {
+  border-radius: 16px;
+  border: none;
+  box-shadow: 0 8px 40px rgba(255, 107, 0, 0.08);
+
+  .form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #303133;
+
+      .el-icon {
+        font-size: 22px;
+        color: #ff6b00;
+      }
+    }
+  }
+
+  :deep(.el-card__body) {
+    padding: 32px;
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 2px solid #fef0e5;
+
+  .el-button {
+    min-width: 140px;
+    height: 48px;
+    font-size: 15px;
     font-weight: 600;
-    color: $text-primary;
+    border-radius: 12px;
+    
+    &.el-button--primary {
+      background: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%);
+      border: none;
+      box-shadow: 0 8px 24px rgba(255, 107, 0, 0.3);
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 32px rgba(255, 107, 0, 0.4);
+      }
+    }
+
+    &.el-button--default {
+      border: 2px solid #e4e7ed;
+      
+      &:hover {
+        border-color: #ff6b00;
+        color: #ff6b00;
+      }
+    }
   }
 }
 
 .subject-group {
   display: flex;
   flex-wrap: wrap;
-  gap: $spacing-sm;
+  gap: 12px;
+
+  :deep(.el-checkbox-button) {
+    .el-checkbox-button__inner {
+      border-radius: 20px;
+      padding: 10px 20px;
+      border: 2px solid #e4e7ed;
+      background: #fff;
+      font-weight: 500;
+      transition: all 0.3s;
+
+      &:hover {
+        border-color: #ff9500;
+        color: #ff6b00;
+      }
+    }
+
+    &.is-checked .el-checkbox-button__inner {
+      background: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%);
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
+    }
+  }
 }
 
 .target-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: $spacing-md;
+  gap: 16px;
 
   .target-card {
-    padding: $spacing-md;
-    border: 2px solid $border-color;
-    border-radius: 12px;
+    padding: 24px 16px;
+    border: 2px solid #f0f2f5;
+    border-radius: 14px;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s;
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #ff9500, #ff6b00);
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
 
     &:hover {
-      border-color: $warning-color;
+      border-color: #ffd4b3;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(255, 107, 0, 0.1);
+
+      &::before {
+        transform: scaleX(1);
+      }
     }
 
     &.active {
-      border-color: $warning-color;
-      background: rgba($warning-color, 0.05);
+      border-color: #ff6b00;
+      background: linear-gradient(180deg, #fff5eb 0%, #fff 100%);
+
+      &::before {
+        transform: scaleX(1);
+      }
 
       .target-label {
-        color: $warning-color;
+        color: #ff6b00;
       }
     }
 
     .target-label {
-      font-size: 16px;
-      font-weight: 600;
-      color: $text-primary;
-      margin-bottom: 4px;
+      font-size: 17px;
+      font-weight: 700;
+      color: #303133;
+      margin-bottom: 6px;
     }
 
     .target-desc {
       font-size: 12px;
-      color: $text-muted;
+      color: #909399;
     }
   }
 }
 
 .budget-display {
-  margin-top: $spacing-md;
+  margin-top: 16px;
   text-align: center;
-  color: $text-secondary;
+  font-size: 14px;
+  color: #606266;
+  padding: 12px;
+  background: #fef9f3;
+  border-radius: 10px;
 
   .budget-value {
-    font-weight: 600;
-    color: $warning-color;
+    font-weight: 700;
+    font-size: 16px;
+    color: #ff6b00;
   }
 }
 
-.bottom-actions {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #fff;
-  padding: $spacing-md $spacing-lg;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-  display: flex;
-  gap: $spacing-md;
+/* 表单增强 */
+:deep(.el-form-item) {
+  margin-bottom: 24px;
 
-  .el-button {
-    flex: 1;
-    height: 48px;
-    font-size: 16px;
+  .el-form-item__label {
     font-weight: 600;
+    color: #303133;
+    font-size: 14px;
+  }
+}
+
+:deep(.el-input__wrapper), :deep(.el-textarea__inner) {
+  border-radius: 10px;
+  
+  &:focus-within {
+    box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.2);
+  }
+}
+
+:deep(.el-slider) {
+  .el-slider__bar {
+    background: linear-gradient(90deg, #ff9500, #ff6b00);
+  }
+  .el-slider__button {
+    border-color: #ff6b00;
+  }
+}
+
+:deep(.el-radio-group) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+:deep(.el-radio-button) {
+  .el-radio-button__inner {
+    border-radius: 10px !important;
+    border: 2px solid #e4e7ed !important;
+    padding: 12px 24px;
+    
+    &:hover {
+      color: #ff6b00;
+    }
+  }
+
+  &.is-active .el-radio-button__inner {
+    background: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%) !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
+  }
+}
+
+/* 响应式 */
+@media (max-width: 1024px) {
+  .sidebar-col {
+    display: none;
+  }
+
+  :deep(.el-col-17) {
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
   }
 }
 
 @media (max-width: 768px) {
+  .demand-form-page {
+    padding: 16px 0;
+  }
+
+  .page-wrapper {
+    padding: 0 16px;
+  }
+
   .target-cards {
     grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: 12px;
+
+    .el-button {
+      width: 100%;
+      min-width: auto;
+    }
   }
 }
 </style>

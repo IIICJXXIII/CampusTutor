@@ -1,92 +1,130 @@
 <template>
   <div class="find-students-page">
-    <div class="top-bar">
-      <div class="search-box">
-        <el-input 
-          v-model="searchQuery" 
-          placeholder="搜索科目/年级/位置..." 
-          prefix-icon="Search"
-          clearable
-          @keyup.enter="handleSearch"
-        />
-      </div>
-      <div class="view-switch">
-        <el-radio-group v-model="viewMode" size="small" @change="handleViewChange">
-          <el-radio-button value="list">
-            <el-icon><List /></el-icon> 列表
-          </el-radio-button>
-          <el-radio-button value="map">
-            <el-icon><MapLocation /></el-icon> 地图
-          </el-radio-button>
-        </el-radio-group>
-      </div>
-    </div>
+    <div class="page-container">
+      <el-row :gutter="24">
+        <!-- 左侧筛选栏 -->
+        <el-col :span="6" class="filter-col">
+          <el-card class="filter-card" shadow="hover">
+            <template #header>
+              <div class="filter-header">
+                <span>筛选条件</span>
+                <el-button link type="primary" size="small" @click="resetFilter">重置</el-button>
+              </div>
+            </template>
+            
+            <el-form :model="filterForm" label-position="top" size="default">
+              <el-form-item label="科目">
+                <el-select v-model="filterForm.subject" placeholder="请选择科目" clearable style="width: 100%">
+                  <el-option v-for="item in subjects" :key="item" :label="item" :value="item" />
+                </el-select>
+              </el-form-item>
 
-    <div v-show="viewMode === 'list'" class="list-container" v-loading="loading">
-      <div v-if="students.length === 0 && !loading" class="empty-state">
-        <el-empty description="附近暂无需求，试着扩大搜索范围" />
-      </div>
-      
-      <div 
-        v-for="item in students" 
-        :key="item.id" 
-        class="student-card"
-        @click="goDetail(item.id)"
-      >
-        <div class="card-header">
-          <span class="grade-subject">{{ item.grade }} · {{ item.subject }}</span>
-          <span class="price">¥{{ item.expectPrice }}/h</span>
-        </div>
-        <div class="card-body">
-          <p class="desc line-clamp-2">{{ item.detail || '暂无详细描述...' }}</p>
-          <div class="tags">
-            <el-tag size="small" type="info" effect="plain">{{ item.teachMode === 1 ? '上门' : '网课' }}</el-tag>
-            <el-tag size="small" type="warning" effect="plain" v-if="item.distance">
-              距您 {{ formatDistance(item.distance) }}
-            </el-tag>
-          </div>
-        </div>
-        <div class="card-footer">
-          <span class="location"><el-icon><Location /></el-icon> {{ item.address || '位置保密' }}</span>
-          <span class="time">{{ formatTime(item.createTime) }}</span>
-        </div>
-      </div>
-    </div>
+              <el-form-item label="年级">
+                <el-select v-model="filterForm.grade" placeholder="请选择年级" clearable style="width: 100%">
+                  <el-option v-for="item in grades" :key="item" :label="item" :value="item" />
+                </el-select>
+              </el-form-item>
 
-    <div v-show="viewMode === 'map'" class="map-container">
-      <div id="amap-container" class="amap-box"></div>
-      
-      <transition name="slide-up">
-        <div v-if="selectedDemand" class="map-float-card" @click="goDetail(selectedDemand.id)">
-          <div class="float-header">
-            <span class="title">{{ selectedDemand.grade }} {{ selectedDemand.subject }}</span>
-            <span class="close-btn" @click.stop="selectedDemand = null">×</span>
+              <el-form-item label="授课方式">
+                <el-radio-group v-model="filterForm.teachMode">
+                  <el-radio :value="null">不限</el-radio>
+                  <el-radio :value="1">上门</el-radio>
+                  <el-radio :value="2">网课</el-radio>
+                </el-radio-group>
+              </el-form-item>
+
+              <el-button type="primary" class="search-btn" @click="handleSearch" :loading="loading">
+                搜索需求
+              </el-button>
+            </el-form>
+          </el-card>
+        </el-col>
+
+        <!-- 右侧内容区 -->
+        <el-col :span="18">
+          <div class="toolbar">
+            <div class="total-count">共找到 <b>{{ students.length }}</b> 个需求</div>
+            <el-radio-group v-model="viewMode" size="default" @change="handleViewChange">
+              <el-radio-button value="list">
+                <el-icon><List /></el-icon> 列表
+              </el-radio-button>
+              <el-radio-button value="map">
+                <el-icon><MapLocation /></el-icon> 地图
+              </el-radio-button>
+            </el-radio-group>
           </div>
-          <div class="float-content">
-            <div class="price-dist">
-              <span class="price">¥{{ selectedDemand.expectPrice }}</span>
-              <span class="dist">约 {{ formatDistance(selectedDemand.distance) }}</span>
+
+          <div v-show="viewMode === 'list'" class="list-container" v-loading="loading">
+            <div v-if="students.length === 0 && !loading" class="empty-state">
+              <el-empty description="附近暂无需求，试着扩大搜索范围" />
             </div>
-            <div class="address">{{ selectedDemand.address }}</div>
+            
+            <div class="student-grid">
+              <el-card 
+                v-for="item in students" 
+                :key="item.id" 
+                class="student-card"
+                shadow="hover"
+                @click="goDetail(item.id)"
+              >
+                <div class="card-header">
+                  <span class="grade-subject">{{ item.grade }} · {{ item.subject }}</span>
+                  <span class="price">¥{{ item.expectPrice }}/h</span>
+                </div>
+                <div class="card-body">
+                  <p class="desc line-clamp-2">{{ item.detail || '暂无详细描述...' }}</p>
+                  <div class="tags">
+                    <el-tag size="small" type="info" effect="plain">{{ item.teachMode === 1 ? '上门' : '网课' }}</el-tag>
+                    <el-tag size="small" type="warning" effect="plain" v-if="item.distance">
+                      距您 {{ formatDistance(item.distance) }}
+                    </el-tag>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <span class="location"><el-icon><Location /></el-icon> {{ item.address || '位置保密' }}</span>
+                  <span class="time">{{ formatTime(item.createTime) }}</span>
+                </div>
+              </el-card>
+            </div>
           </div>
-          <el-button type="primary" size="small" class="action-btn">查看详情</el-button>
-        </div>
-      </transition>
 
-      <div class="map-controls">
-        <div class="control-btn" @click="locateUser" title="回到我的位置">
-          <el-icon><Aim /></el-icon>
-        </div>
-        <div class="control-btn" @click="refreshMapData" title="搜索该区域">
-          <el-icon><Refresh /></el-icon>
-        </div>
-      </div>
+          <div v-show="viewMode === 'map'" class="map-container">
+            <div id="amap-container" class="amap-box"></div>
+            
+            <transition name="slide-up">
+              <div v-if="selectedDemand" class="map-float-card" @click="goDetail(selectedDemand.id)">
+                <div class="float-header">
+                  <span class="title">{{ selectedDemand.grade }} {{ selectedDemand.subject }}</span>
+                  <span class="close-btn" @click.stop="selectedDemand = null">×</span>
+                </div>
+                <div class="float-content">
+                  <div class="price-dist">
+                    <span class="price">¥{{ selectedDemand.expectPrice }}</span>
+                    <span class="dist">约 {{ formatDistance(selectedDemand.distance) }}</span>
+                  </div>
+                  <div class="address">{{ selectedDemand.address }}</div>
+                </div>
+                <el-button type="primary" size="small" class="action-btn">查看详情</el-button>
+              </div>
+            </transition>
+
+            <div class="map-controls">
+              <div class="control-btn" @click="locateUser" title="回到我的位置">
+                <el-icon><Aim /></el-icon>
+              </div>
+              <div class="control-btn" @click="refreshMapData" title="搜索该区域">
+                <el-icon><Refresh /></el-icon>
+              </div>
+            </div>
+          </div>
+        </el-col>
+      </el-row>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, shallowRef } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { findNearbyDemands } from '@/api/match'
@@ -115,6 +153,24 @@ const loading = ref(false)
 const searchQuery = ref('')
 const students = ref([])
 const selectedDemand = ref(null)
+
+// 筛选表单
+const filterForm = reactive({
+  subject: '',
+  grade: '',
+  teachMode: null
+})
+
+const subjects = ['数学', '英语', '语文', '物理', '化学', '生物', '地理', '历史', '政治']
+const grades = ['小学一年级', '小学二年级', '小学三年级', '小学四年级', '小学五年级', '小学六年级', 
+              '初一', '初二', '初三', '高一', '高二', '高三']
+
+const resetFilter = () => {
+  filterForm.subject = ''
+  filterForm.grade = ''
+  filterForm.teachMode = null
+  handleSearch()
+}
 
 // 使用 shallowRef 避免 Vue 深度代理地图实例导致卡顿
 const map = shallowRef(null) 
@@ -190,8 +246,10 @@ const fetchData = async (lng, lat) => {
     const params = {
       longitude: lng,
       latitude: lat,
-      radius: 50, // 扩大搜索半径到50公里
-      subject: searchQuery.value || null
+      radius: 50,
+      subject: filterForm.subject || searchQuery.value || null,
+      grade: filterForm.grade || null,
+      teachMode: filterForm.teachMode || null
     }
 
     let res = await findNearbyDemands(params)
@@ -295,74 +353,106 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .find-students-page {
-  /* 确保页面有高度和背景色，防止白屏 */
-  height: calc(100vh - 60px);
-  display: flex;
-  flex-direction: column;
+  min-height: calc(100vh - 114px);
   background-color: #f5f7fa;
+  padding-bottom: 40px;
 }
 
-.top-bar {
-  padding: 12px 16px;
-  background: #fff;
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* 筛选侧边栏 */
+.filter-card {
+  border-radius: 8px;
+  border: none;
+  position: sticky;
+  top: 20px;
+
+  .filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+  }
+
+  .search-btn {
+    width: 100%;
+    margin-top: 10px;
+    font-weight: 600;
+  }
+}
+
+/* 顶部工具栏 */
+.toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  z-index: 10;
+  margin-bottom: 16px;
+  background: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
 
-  .search-box {
-    flex: 1;
-    max-width: 300px;
-    margin-right: 12px;
+  .total-count {
+    color: #606266;
+    b {
+      color: #409eff;
+      font-size: 16px;
+    }
   }
 }
 
 .list-container {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-  
-  .student-card {
-    background: #fff;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
-    cursor: pointer;
-    transition: all 0.2s;
+  min-height: 400px;
+}
 
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
+.student-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
 
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      .grade-subject { font-weight: 600; font-size: 16px; color: #303133; }
-      .price { color: #f56c6c; font-weight: 700; font-size: 16px; }
-    }
+.student-card {
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
 
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    .grade-subject { font-weight: 600; font-size: 16px; color: #303133; }
+    .price { color: #f56c6c; font-weight: 700; font-size: 16px; }
+  }
+
+  .card-body {
     .desc {
       font-size: 13px; color: #606266; margin-bottom: 8px; height: 36px; line-height: 1.4;
     }
 
     .tags { display: flex; gap: 6px; margin-bottom: 12px; }
+  }
 
-    .card-footer {
-      display: flex; justify-content: space-between; font-size: 12px; color: #909399; border-top: 1px solid #f0f2f5; padding-top: 8px;
-      .location { display: flex; align-items: center; gap: 4px; }
-    }
+  .card-footer {
+    display: flex; justify-content: space-between; font-size: 12px; color: #909399; border-top: 1px solid #f0f2f5; padding-top: 8px;
+    .location { display: flex; align-items: center; gap: 4px; }
   }
 }
 
 .map-container {
-  flex: 1;
   position: relative;
   width: 100%;
-  height: 100%;
+  height: 500px;
+  border-radius: 12px;
+  overflow: hidden;
 
   .amap-box { width: 100%; height: 100%; }
 
@@ -394,7 +484,6 @@ onBeforeUnmount(() => {
       }
       .address {
         font-size: 12px; color: #909399;
-        /* === 修复了 @include text-ellipsis === */
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
     }
@@ -408,4 +497,15 @@ onBeforeUnmount(() => {
 
 .slide-up-enter-active, .slide-up-leave-active { transition: all 0.3s ease-out; }
 .slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); opacity: 0; }
+
+/* 响应式调整 */
+@media (max-width: 992px) {
+  .filter-col {
+    display: none;
+  }
+
+  .student-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

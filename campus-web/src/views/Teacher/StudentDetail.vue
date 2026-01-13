@@ -125,6 +125,7 @@ onMounted(() => {
 
 <template>
   <div class="student-detail-page" v-loading="loading">
+    <div class="detail-wrapper">
     <!-- 页面头部 -->
     <div class="page-header">
       <el-button text @click="handleBack">
@@ -220,8 +221,8 @@ onMounted(() => {
       <p class="desc-content">{{ demand.desc }}</p>
     </el-card>
 
-    <!-- 底部操作栏 -->
-    <div class="bottom-action">
+    <!-- 操作区域 -->
+    <div class="action-section">
       <el-button size="large" @click="handleContact" :disabled="isSelf">
         <el-icon class="mr-1"><ChatDotRound /></el-icon>
         联系家长
@@ -240,14 +241,21 @@ onMounted(() => {
         已被接单
       </el-button>
     </div>
+    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .student-detail-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 114px);
   background: $bg-light;
-  padding-bottom: 100px;
+  padding: $spacing-xl 0;
+}
+
+.detail-wrapper {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 0 $spacing-lg;
 }
 
 .page-header {
@@ -256,10 +264,9 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  border-bottom: 1px solid $border-color;
+  border-radius: $radius-lg;
+  margin-bottom: $spacing-lg;
+  box-shadow: $shadow-sm;
 
   .page-title {
     font-size: 18px;
@@ -268,8 +275,9 @@ onMounted(() => {
 }
 
 .info-card {
-  margin: $spacing-lg;
+  margin-bottom: $spacing-lg;
   border-radius: 16px;
+  box-shadow: $shadow-sm;
 
   .card-header {
     display: flex;
@@ -321,8 +329,9 @@ onMounted(() => {
 }
 
 .detail-card {
-  margin: 0 $spacing-lg $spacing-lg;
+  margin-bottom: $spacing-lg;
   border-radius: 16px;
+  box-shadow: $shadow-sm;
 
   .detail-item {
     display: flex;
@@ -381,8 +390,9 @@ onMounted(() => {
 }
 
 .desc-card {
-  margin: 0 $spacing-lg;
+  margin-bottom: $spacing-lg;
   border-radius: 16px;
+  box-shadow: $shadow-sm;
 
   .card-title {
     font-weight: 600;
@@ -396,21 +406,27 @@ onMounted(() => {
   }
 }
 
-.bottom-action {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #fff;
-  padding: $spacing-md $spacing-lg;
-  border-top: 1px solid $border-color;
+.action-section {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-lg;
 
   .el-button {
-    width: 100%;
+    flex: 1;
     height: 48px;
     font-size: 16px;
     font-weight: 600;
     border-radius: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .detail-wrapper {
+    padding: 0 $spacing-md;
+  }
+
+  .action-section {
+    flex-direction: column;
   }
 }
 </style>

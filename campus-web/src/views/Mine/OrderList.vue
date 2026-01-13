@@ -244,24 +244,33 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .order-list-page {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
 }
 
 .page-header {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  background: #fff;
+  padding: 20px 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
   .page-title {
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 600;
     margin-bottom: 16px;
+    color: #303133;
   }
+}
+
+.order-container {
+  min-height: 300px;
 }
 
 .order-card {
   background: #fff;
   border-radius: 12px;
-  padding: 16px 20px;
+  padding: 20px 24px;
   margin-bottom: 16px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
   transition: all 0.3s;
@@ -271,6 +280,7 @@ onMounted(() => {
   &:hover {
     border-color: #409eff;
     transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   }
 
   .card-header {
@@ -279,11 +289,12 @@ onMounted(() => {
     align-items: center;
     padding-bottom: 12px;
     border-bottom: 1px solid #f0f2f5;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
 
     .order-no {
       font-size: 13px;
       color: #909399;
+      font-family: monospace;
     }
   }
 
@@ -292,35 +303,35 @@ onMounted(() => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
 
       .label { color: #606266; font-size: 14px; }
-      .highlight { color: #303133; font-weight: 600; font-size: 15px; }
+      .highlight { color: #303133; font-weight: 600; font-size: 16px; }
       .price {
         color: #f56c6c; font-weight: 700;
         .currency { font-size: 14px; }
-        .amount { font-size: 20px; }
+        .amount { font-size: 22px; }
       }
     }
 
     .info-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      background: #f9fafc;
-      padding: 12px;
-      border-radius: 8px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      padding: 16px;
+      border-radius: 10px;
 
       .grid-item {
         display: flex;
         align-items: center;
         font-size: 13px;
         color: #606266;
-        .el-icon { margin-right: 6px; font-size: 14px; color: #909399; }
+        .el-icon { margin-right: 6px; font-size: 16px; color: #909399; }
         
         &.progress {
           color: #409eff;
-          grid-column: span 2;
+          font-weight: 500;
         }
       }
     }
@@ -331,8 +342,8 @@ onMounted(() => {
     justify-content: flex-end;
     align-items: center;
     border-top: 1px dashed #e4e7ed;
-    padding-top: 12px;
-    margin-top: 12px;
+    padding-top: 16px;
+    margin-top: 16px;
 
     .status-tip {
       font-size: 13px;
@@ -344,6 +355,35 @@ onMounted(() => {
       display: flex;
       gap: 12px;
       align-items: center;
+    }
+  }
+}
+
+/* 响应式调整 */
+@media (max-width: 992px) {
+  .order-card .card-body .info-grid {
+    grid-template-columns: repeat(2, 1fr);
+
+    .grid-item.progress {
+      grid-column: span 2;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .page-header {
+    padding: 16px;
+  }
+
+  .order-card {
+    padding: 16px;
+    
+    .card-body .info-grid {
+      grid-template-columns: 1fr;
+
+      .grid-item.progress {
+        grid-column: span 1;
+      }
     }
   }
 }

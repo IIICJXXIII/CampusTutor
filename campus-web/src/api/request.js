@@ -39,9 +39,10 @@ request.interceptors.response.use(
       return res;
     }
     
-    // 业务失败
-    console.warn('业务异常:', res.message);
-    return Promise.reject(new Error(res.message || '请求失败'));
+    // 业务失败 - 记录详细错误
+    console.warn('业务异常:', res);
+    const errorMsg = res.message || res.msg || '请求失败';
+    return Promise.reject(new Error(errorMsg));
   },
   error => {
     // HTTP 错误处理
