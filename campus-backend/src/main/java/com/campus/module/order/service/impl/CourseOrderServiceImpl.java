@@ -389,6 +389,22 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         order.setStatus(3); // 已完成
         order.setUsedHours(order.getTotalHours());
         updateById(order);
+
+        // 更新需求状态为已完成
+        if (order.getDemandId() != null) {
+            try {
+                DemandPost demand = demandPostMapper.selectById(order.getDemandId());
+                if (demand != null && demand.getStatus() != 3) {
+                    demand.setStatus(3); // 已完成
+                    demandPostMapper.updateById(demand);
+                    log.info("需求状态更新为已完成: demandId={}, orderId={}", demand.getId(), orderId);
+                }
+            } catch (Exception e) {
+                log.error("更新需求状态失败: demandId={}, orderId={}, error={}",
+                        order.getDemandId(), orderId, e.getMessage());
+                // 不影响主流程
+            }
+        }
     }
 
     @Override

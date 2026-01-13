@@ -18,7 +18,8 @@ Page({
     statusMap: {
       0: { text: '已关闭', color: '#909399', bg: '#f4f4f5' },
       1: { text: '招聘中', color: '#409EFF', bg: '#ecf5ff' },
-      2: { text: '已匹配', color: '#67c23a', bg: '#f0f9eb' }
+      2: { text: '已匹配', color: '#67c23a', bg: '#f0f9eb' },
+      3: { text: '已完成', color: '#909399', bg: '#f4f4f5' }
     }
   },
 
@@ -36,7 +37,7 @@ Page({
     try {
       // 对应 DemandController.myDemands -> GET /api/demand/my
       const res = await request.get(api.demand.my);
-      
+
       // 简单的时间格式化
       const list = (res || []).map(item => ({
         ...item,
@@ -57,9 +58,9 @@ Page({
     const { id, status } = e.currentTarget.dataset;
     const newStatus = status === 1 ? 0 : 1; // 1->0(下架), 0->1(上架)
     const actionName = newStatus === 1 ? '上架' : '关闭';
-    
-    // 状态2(已匹配)不可操作
-    if (status === 2) return;
+
+    // 状态2(已匹配)或3(已完成)不可操作
+    if (status === 2 || status === 3) return;
 
     const that = this;
     wx.showModal({
@@ -70,10 +71,10 @@ Page({
           try {
             // 根据状态调用不同接口
             // DemandController: POST /{id}/online 或 /{id}/offline
-            const url = newStatus === 1 
+            const url = newStatus === 1
               ? `${api.demand.publish}/${id}/online` // 注意：这里api路径可能需要微调，假设是 /api/demand/{id}/online
               : `${api.demand.publish}/${id}/offline`;
-            
+
             // 由于apiConfig里可能没单独定义online/offline，这里手动拼接
             // 假设 api.demand.publish 是 .../publish，我们需要 .../demand/{id}/online
             // 更安全的做法是利用 apiConfig.host 拼接
@@ -81,7 +82,7 @@ Page({
             const actUrl = `${baseUrl}/${id}/${newStatus === 1 ? 'online' : 'offline'}`;
 
             await request.post(actUrl);
-            
+
             wx.showToast({ title: '操作成功', icon: 'success' });
             that.fetchMyDemands();
           } catch (err) {
@@ -96,7 +97,7 @@ Page({
   handleDelete(e) {
     const id = e.currentTarget.dataset.id;
     const that = this;
-    
+
     wx.showModal({
       title: '警告',
       content: '删除后无法恢复，确定删除吗？',
@@ -108,7 +109,7 @@ Page({
             // 同样手动拼接一下URL
             const baseUrl = api.demand.list.replace('/list', '');
             await request.delete(`${baseUrl}/${id}`);
-            
+
             wx.showToast({ title: '已删除', icon: 'success' });
             that.fetchMyDemands();
           } catch (err) {
