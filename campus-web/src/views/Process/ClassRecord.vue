@@ -1,86 +1,142 @@
 <template>
   <div class="class-record-page">
-    
-    <div class="calendar-card">
-      <el-calendar v-model="currentDate">
-        <template #date-cell="{ data }">
-          <div class="calendar-cell" :class="{ 'is-selected': data.isSelected }">
-            <span class="day-num">{{ data.day.split('-').slice(2).join('') }}</span>
-            
-            <div v-if="hasLegacy(data.day)" class="class-dot"></div>
-          </div>
-        </template>
-      </el-calendar>
-    </div>
-
-    <div class="page-header">
-      <div class="header-left">
-        <h3>{{ selectedDateInfo }}</h3>
-        <span class="sub-text" v-if="currentDayRecords.length > 0">
-          当日共 {{ currentDayRecords.length }} 节课
-        </span>
-      </div>
-      
-      <el-button v-if="isTutor" type="primary" @click="openCheckInDialog" round>
-        <el-icon style="margin-right:4px"><Position /></el-icon> 立即打卡
-      </el-button>
-    </div>
-
-    <div class="record-list" v-loading="loading">
-      <el-empty v-if="records.length === 0 && !loading" description="暂无课时记录" />
-      
-      <div v-for="item in records" :key="item.id" class="record-card" :class="{ 'highlight-card': isSameDay(item.startTime, currentDate) }">
-        <div class="card-left">
-          <div class="date-box">
-            <span class="day">{{ formatDay(item.startTime) }}</span>
-            <span class="month">{{ formatMonth(item.startTime) }}</span>
-          </div>
-          <div class="time-line">
-            <div class="time-start">{{ formatTime(item.startTime) }}</div>
-            <div class="duration-line"></div>
-            <div class="time-end">{{ formatTime(item.endTime) }}</div>
-          </div>
+    <div class="page-wrapper">
+      <!-- 页面标题 -->
+      <div class="page-title-bar">
+        <div class="title-left">
+          <h1>课时记录</h1>
+          <p class="subtitle">查看您的授课/上课历史</p>
         </div>
-        
-        <div class="card-right">
-          <div class="info-header">
-            <span class="lesson-idx">第 {{ item.lessonIndex }} 课时</span>
-            <el-tag :type="getStatusType(item.status)" size="small">
-              {{ item.statusText }}
-            </el-tag>
-          </div>
-          
-          <div class="info-content">
-            <p><strong>内容：</strong>{{ item.contentSummary || '无内容记录' }}</p>
-            <p><strong>作业：</strong>{{ item.homeworkAssigned || '无作业' }}</p>
-          </div>
-
-          <div class="info-footer">
-            <el-button 
-              v-if="isParent && item.status === 0" 
-              type="primary" 
-              size="small" 
-              @click="handleConfirm(item.id)"
-            >
-              确认课时
-            </el-button>
-            <el-button 
-              v-if="isParent && item.status === 0" 
-              type="danger" 
-              plain
-              size="small" 
-              @click="handleDispute(item.id)"
-            >
-              申诉
-            </el-button>
-          </div>
-        </div>
+        <el-button v-if="isTutor" type="primary" @click="openCheckInDialog" class="checkin-btn">
+          <el-icon><Position /></el-icon>
+          立即打卡
+        </el-button>
       </div>
+
+      <el-row :gutter="24">
+        <!-- 左侧日历面板 -->
+        <el-col :span="10" class="calendar-col">
+          <el-card class="calendar-card" shadow="hover">
+            <template #header>
+              <div class="calendar-header">
+                <el-icon><Calendar /></el-icon>
+                <span>课程日历</span>
+              </div>
+            </template>
+            <el-calendar v-model="currentDate">
+              <template #date-cell="{ data }">
+                <div class="calendar-cell" :class="{ 'is-selected': data.isSelected, 'has-class': hasLegacy(data.day) }">
+                  <span class="day-num">{{ data.day.split('-').slice(2).join('') }}</span>
+                  <div v-if="hasLegacy(data.day)" class="class-dot"></div>
+                </div>
+              </template>
+            </el-calendar>
+
+            <!-- 日历图例 -->
+            <div class="calendar-legend">
+              <div class="legend-item">
+                <span class="dot active"></span>
+                <span>有课程</span>
+              </div>
+              <div class="legend-item">
+                <span class="dot selected"></span>
+                <span>已选日期</span>
+              </div>
+            </div>
+          </el-card>
+
+          <!-- 统计卡片 -->
+          <el-card class="stats-card" shadow="hover">
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-value">{{ records.length }}</div>
+                <div class="stat-label">总课时</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value success">{{ records.filter(r => r.status === 1).length }}</div>
+                <div class="stat-label">已确认</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value warning">{{ records.filter(r => r.status === 0).length }}</div>
+                <div class="stat-label">待确认</div>
+              </div>
+            </div>
+          </el-card>
+        </el-col>
+
+        <!-- 右侧记录列表 -->
+        <el-col :span="14">
+          <el-card class="records-card" shadow="hover">
+            <template #header>
+              <div class="records-header">
+                <div class="header-title">
+                  <el-icon><Clock /></el-icon>
+                  <span>{{ selectedDateInfo }} 课时记录</span>
+                  <el-tag v-if="currentDayRecords.length > 0" type="info" size="small">
+                    {{ currentDayRecords.length }} 节课
+                  </el-tag>
+                </div>
+              </div>
+            </template>
+
+            <div class="record-list" v-loading="loading">
+              <el-empty v-if="records.length === 0 && !loading" description="暂无课时记录" />
+              
+              <div v-for="item in records" :key="item.id" class="record-card" :class="{ 'highlight-card': isSameDay(item.startTime, currentDate) }">
+                <div class="card-timeline">
+                  <div class="date-badge">
+                    <span class="day">{{ formatDay(item.startTime) }}</span>
+                    <span class="month">{{ formatMonth(item.startTime) }}</span>
+                  </div>
+                  <div class="time-info">
+                    <span class="time-start">{{ formatTime(item.startTime) }}</span>
+                    <div class="time-connector">
+                      <div class="connector-line"></div>
+                      <el-icon><ArrowDown /></el-icon>
+                    </div>
+                    <span class="time-end">{{ formatTime(item.endTime) }}</span>
+                  </div>
+                </div>
+                
+                <div class="card-content">
+                  <div class="content-header">
+                    <span class="lesson-idx">第 {{ item.lessonIndex }} 课时</span>
+                    <el-tag :type="getStatusType(item.status)" effect="light" round>
+                      {{ item.statusText }}
+                    </el-tag>
+                  </div>
+                  
+                  <div class="content-body">
+                    <div class="info-row">
+                      <el-icon><Document /></el-icon>
+                      <span><strong>教学内容：</strong>{{ item.contentSummary || '无内容记录' }}</span>
+                    </div>
+                    <div class="info-row">
+                      <el-icon><EditPen /></el-icon>
+                      <span><strong>布置作业：</strong>{{ item.homeworkAssigned || '无作业' }}</span>
+                    </div>
+                  </div>
+
+                  <div class="content-footer" v-if="isParent && item.status === 0">
+                    <el-button type="primary" size="small" @click="handleConfirm(item.id)">
+                      <el-icon><Check /></el-icon> 确认课时
+                    </el-button>
+                    <el-button type="danger" plain size="small" @click="handleDispute(item.id)">
+                      <el-icon><Warning /></el-icon> 申诉
+                    </el-button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
     </div>
 
-    <el-dialog v-model="showCheckIn" title="上课打卡" width="90%" destroy-on-close>
-      <el-form :model="form" label-width="70px">
-        <el-form-item label="课程">
+    <!-- 打卡弹窗 -->
+    <el-dialog v-model="showCheckIn" title="上课打卡" width="500px" destroy-on-close class="checkin-dialog">
+      <el-form :model="form" label-width="80px" label-position="top">
+        <el-form-item label="选择课程">
           <el-select v-model="form.orderId" placeholder="请选择当前课程" :disabled="!!preSelectedOrderId" style="width: 100%">
             <el-option 
               v-for="order in activeOrders" 
@@ -91,40 +147,52 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="位置">
+        <el-form-item label="当前位置">
           <div class="location-box">
             <div class="addr-text">
               <el-icon v-if="locationLoading" class="is-loading"><Loading /></el-icon>
-              <span v-else>{{ form.address || '等待定位...' }}</span>
+              <el-icon v-else><Location /></el-icon>
+              <span>{{ form.address || '等待定位...' }}</span>
             </div>
-            <el-button link type="primary" @click="getLocation" size="small">刷新</el-button>
+            <el-button link type="primary" @click="getLocation">刷新定位</el-button>
           </div>
         </el-form-item>
 
-        <el-form-item label="拍照">
+        <el-form-item label="拍照打卡">
           <el-upload
-            class="avatar-uploader"
+            class="photo-uploader"
             action="#"
             :show-file-list="false"
             :http-request="handleFileUpload"
           >
-            <img v-if="form.photoUrl" :src="form.photoUrl" class="uploaded-img" />
-            <el-icon v-else class="avatar-uploader-icon"><Camera /></el-icon>
+            <div v-if="form.photoUrl" class="photo-preview">
+              <img :src="form.photoUrl" />
+              <div class="photo-overlay">
+                <el-icon><RefreshRight /></el-icon>
+                <span>重新拍照</span>
+              </div>
+            </div>
+            <div v-else class="photo-placeholder">
+              <el-icon :size="32"><Camera /></el-icon>
+              <span>点击拍照</span>
+            </div>
           </el-upload>
         </el-form-item>
 
-        <el-form-item label="内容">
-          <el-input v-model="form.contentSummary" type="textarea" placeholder="简述今日教学重点" />
+        <el-form-item label="教学内容">
+          <el-input v-model="form.contentSummary" type="textarea" :rows="3" placeholder="简述今日教学重点..." />
         </el-form-item>
 
-        <el-form-item label="作业">
+        <el-form-item label="布置作业">
           <el-input v-model="form.homeworkAssigned" placeholder="如有作业请填写" />
         </el-form-item>
       </el-form>
 
       <template #footer>
         <el-button @click="showCheckIn = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitCheckIn">确认打卡</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitCheckIn">
+          <el-icon><Check /></el-icon> 确认打卡
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -294,166 +362,536 @@ const getStatusType = (s) => ({0:'warning',1:'success'}[s] || 'info')
 
 <style lang="scss" scoped>
 .class-record-page {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 12px;
-  background-color: #f5f7fa;
-  min-height: 100vh;
+  min-height: calc(100vh - 114px);
+  background: linear-gradient(180deg, #f0f4ff 0%, #f5f7fa 100%);
+  padding: 32px 0;
 }
 
-/* 日历卡片 */
-.calendar-card {
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-  margin-bottom: 16px;
+.page-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
 
-  /* 强制调整 Element 日历样式以适应移动端/小屏 */
+/* 页面标题栏 */
+.page-title-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  background: #fff;
+  padding: 24px 32px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+
+  .title-left {
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #1a1a2e;
+      margin: 0 0 6px 0;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #909399;
+      margin: 0;
+    }
+  }
+
+  .checkin-btn {
+    height: 48px;
+    padding: 0 28px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #409eff 0%, #667eea 100%);
+    border: none;
+    box-shadow: 0 8px 24px rgba(64, 158, 255, 0.3);
+
+    .el-icon {
+      margin-right: 8px;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(64, 158, 255, 0.4);
+    }
+  }
+}
+
+/* 日历面板 */
+.calendar-card {
+  border-radius: 16px;
+  border: none;
+  margin-bottom: 20px;
+  overflow: hidden;
+
+  .calendar-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 16px;
+    color: #303133;
+
+    .el-icon {
+      color: #409eff;
+      font-size: 18px;
+    }
+  }
+
   :deep(.el-calendar__header) {
     padding: 12px 16px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f2f5;
     
-    .el-calendar__title { font-size: 16px; font-weight: 600; }
-    .el-button { font-size: 12px; }
+    .el-calendar__title { 
+      font-size: 15px; 
+      font-weight: 600;
+      color: #303133;
+    }
+    .el-button { 
+      font-size: 12px;
+    }
   }
   
   :deep(.el-calendar__body) {
-    padding: 8px;
+    padding: 12px;
   }
   
   :deep(.el-calendar-table .el-calendar-day) {
-    height: 48px; /* 减小高度 */
+    height: 44px;
     padding: 0;
     display: flex;
     justify-content: center;
     align-items: center;
   }
+
+  :deep(.el-calendar-table thead th) {
+    font-size: 12px;
+    color: #909399;
+    font-weight: 500;
+  }
 }
 
 .calendar-cell {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border-radius: 8px;
+  transition: all 0.2s;
+  cursor: pointer;
+  
+  .day-num {
+    font-size: 13px;
+    font-weight: 500;
+    color: #303133;
+    z-index: 1;
+  }
+
+  .class-dot {
+    width: 5px;
+    height: 5px;
+    background: linear-gradient(135deg, #409eff, #667eea);
+    border-radius: 50%;
+    position: absolute;
+    bottom: 3px;
+  }
+
+  &.has-class {
+    background: rgba(64, 158, 255, 0.08);
+  }
+
+  &.is-selected {
+    background: linear-gradient(135deg, #409eff 0%, #667eea 100%);
+    .day-num { 
+      color: #fff; 
+      font-weight: 700; 
+    }
+    .class-dot {
+      background: #fff;
+    }
+  }
+
+  &:hover:not(.is-selected) {
+    background: rgba(64, 158, 255, 0.15);
+  }
+}
+
+.calendar-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 12px 0;
+  border-top: 1px solid #f0f2f5;
+  margin-top: 8px;
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #909399;
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+
+      &.active {
+        background: linear-gradient(135deg, #409eff, #667eea);
+      }
+
+      &.selected {
+        background: #67c23a;
+      }
+    }
+  }
+}
+
+/* 统计卡片 */
+.stats-card {
+  border-radius: 16px;
+  border: none;
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    text-align: center;
+    gap: 8px;
+
+    .stat-item {
+      padding: 16px 8px;
+      background: #f8fafc;
+      border-radius: 12px;
+
+      .stat-value {
+        font-size: 28px;
+        font-weight: 800;
+        color: #303133;
+        font-family: 'SF Mono', monospace;
+
+        &.success { color: #67c23a; }
+        &.warning { color: #e6a23c; }
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: #909399;
+        margin-top: 4px;
+      }
+    }
+  }
+}
+
+/* 记录卡片区域 */
+.records-card {
+  border-radius: 16px;
+  border: none;
+  min-height: 500px;
+
+  .records-header {
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      color: #303133;
+
+      .el-icon {
+        color: #409eff;
+        font-size: 18px;
+      }
+    }
+  }
+}
+
+.record-list {
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 8px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 3px;
+  }
+}
+
+.record-card {
+  display: flex;
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 2px solid #f0f2f5;
+  transition: all 0.3s;
+
+  &:hover {
+    border-color: #e0e6ff;
+    box-shadow: 0 8px 24px rgba(64, 158, 255, 0.08);
+    transform: translateY(-2px);
+  }
+
+  &.highlight-card {
+    border-color: #409eff;
+    background: linear-gradient(135deg, #f0f7ff 0%, #fff 100%);
+  }
+}
+
+.card-timeline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-right: 24px;
+  border-right: 2px solid #f0f2f5;
+  min-width: 80px;
+
+  .date-badge {
+    background: linear-gradient(135deg, #409eff 0%, #667eea 100%);
+    color: #fff;
+    border-radius: 12px;
+    padding: 12px 16px;
+    text-align: center;
+    margin-bottom: 12px;
+
+    .day {
+      font-size: 24px;
+      font-weight: 800;
+      display: block;
+    }
+
+    .month {
+      font-size: 11px;
+      opacity: 0.9;
+    }
+  }
+
+  .time-info {
+    text-align: center;
+    font-size: 12px;
+    color: #606266;
+
+    .time-start, .time-end {
+      font-weight: 600;
+      font-family: 'SF Mono', monospace;
+    }
+
+    .time-connector {
+      padding: 4px 0;
+      color: #c0c4cc;
+
+      .connector-line {
+        width: 2px;
+        height: 8px;
+        background: #e4e7ed;
+        margin: 0 auto 2px;
+      }
+    }
+  }
+}
+
+.card-content {
+  flex: 1;
+  padding-left: 24px;
+
+  .content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+
+    .lesson-idx {
+      font-weight: 700;
+      font-size: 16px;
+      color: #303133;
+    }
+  }
+
+  .content-body {
+    margin-bottom: 16px;
+
+    .info-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      color: #606266;
+      margin-bottom: 8px;
+      line-height: 1.6;
+
+      .el-icon {
+        color: #909399;
+        margin-top: 3px;
+      }
+
+      strong {
+        color: #303133;
+      }
+    }
+  }
+
+  .content-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px dashed #e4e7ed;
+  }
+}
+
+/* 打卡弹窗 */
+.location-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #f8fafc 0%, #f5f7fa 100%);
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid #e4e7ed;
+
+  .addr-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #606266;
+
+    .el-icon {
+      color: #409eff;
+    }
+  }
+}
+
+.photo-uploader {
+  :deep(.el-upload) {
+    width: 140px;
+    height: 140px;
+    border: 2px dashed #dcdfe6;
+    border-radius: 12px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s;
+
+    &:hover {
+      border-color: #409eff;
+    }
+  }
+}
+
+.photo-preview {
+  width: 100%;
+  height: 100%;
+  position: relative;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .photo-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.3s;
+    gap: 4px;
+
+    .el-icon {
+      font-size: 24px;
+    }
+
+    span {
+      font-size: 12px;
+    }
+  }
+
+  &:hover .photo-overlay {
+    opacity: 1;
+  }
+}
+
+.photo-placeholder {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
-  
-  .day-num {
-    font-size: 14px;
-    font-weight: 500;
-    color: #303133;
-    z-index: 1;
-  }
+  color: #909399;
+  gap: 8px;
 
-  /* 标记点 */
-  .class-dot {
-    width: 6px;
-    height: 6px;
-    background-color: #409eff;
-    border-radius: 50%;
-    margin-top: 2px;
-  }
-
-  &.is-selected {
-    background-color: #ecf5ff;
-    border-radius: 4px;
-    .day-num { color: #409eff; font-weight: bold; }
+  span {
+    font-size: 12px;
   }
 }
 
-/* 页面操作头 */
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  padding: 0 4px;
+/* 响应式 */
+@media (max-width: 1024px) {
+  .page-wrapper {
+    padding: 0 20px;
+  }
 
-  .header-left {
-    h3 { margin: 0; font-size: 18px; color: #303133; }
-    .sub-text { font-size: 12px; color: #909399; margin-top: 2px; }
+  .calendar-col {
+    display: none;
+  }
+
+  :deep(.el-col-14) {
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
   }
 }
 
-/* 列表卡片 */
-.record-card {
-  display: flex;
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-  border: 1px solid transparent;
-  transition: all 0.3s;
-
-  &.highlight-card {
-    border-color: #409eff;
-    background-color: #f0f9eb;
+@media (max-width: 768px) {
+  .class-record-page {
+    padding: 16px 0;
   }
 
-  .card-left {
-    display: flex;
+  .page-wrapper {
+    padding: 0 16px;
+  }
+
+  .page-title-bar {
     flex-direction: column;
-    align-items: center;
-    padding-right: 16px;
-    border-right: 1px solid #eee;
-    min-width: 70px;
-    
-    .day { font-size: 20px; font-weight: bold; color: #303133; }
-    .month { font-size: 12px; color: #909399; }
-    .time-line { margin-top: 8px; font-size: 12px; color: #606266; text-align: center; }
-    .duration-line { height: 10px; width: 2px; background: #ddd; margin: 2px auto; }
+    gap: 16px;
+    text-align: center;
+    padding: 20px;
+
+    .checkin-btn {
+      width: 100%;
+    }
   }
 
-  .card-right {
-    flex: 1;
-    padding-left: 16px;
-    
-    .info-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-      .lesson-idx { font-weight: 600; font-size: 15px; }
-    }
-    
-    .info-content {
-      font-size: 13px;
-      color: #666;
-      margin-bottom: 8px;
-      p { margin: 2px 0; }
-    }
-    
-    .info-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      border-top: 1px dashed #eee;
-      padding-top: 8px;
-    }
+  .record-card {
+    flex-direction: column;
   }
-}
 
-/* 弹窗样式 */
-.location-box {
-  display: flex;
-  align-items: center;
-  background: #f5f7fa;
-  padding: 8px;
-  border-radius: 4px;
-  .addr-text { flex: 1; font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 8px;}
-}
-.avatar-uploader {
-  border: 1px dashed #d9d9d9;
-  border-radius: 6px;
-  width: 80px;
-  height: 80px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  .uploaded-img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
-  .avatar-uploader-icon { font-size: 24px; color: #8c939d; }
+  .card-timeline {
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 2px solid #f0f2f5;
+    padding-right: 0;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    justify-content: space-between;
+  }
+
+  .card-content {
+    padding-left: 0;
+  }
 }
 </style>

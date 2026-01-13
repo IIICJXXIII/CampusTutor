@@ -62,6 +62,7 @@ const showFeatureTip = (feature) => {
 
 <template>
   <div class="settings-page">
+    <div class="settings-wrapper">
     <div class="page-header">
       <el-button text @click="router.back()">
         <el-icon><ArrowLeft /></el-icon>
@@ -136,14 +137,21 @@ const showFeatureTip = (feature) => {
         退出登录
       </el-button>
     </div>
+    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .settings-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 114px);
   background: $bg-light;
-  padding-bottom: 40px;
+  padding: $spacing-xl 0;
+}
+
+.settings-wrapper {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 $spacing-lg;
 }
 
 .page-header {
@@ -152,13 +160,12 @@ const showFeatureTip = (feature) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  border-bottom: 1px solid $border-color;
+  border-radius: $radius-lg;
+  margin-bottom: $spacing-lg;
+  box-shadow: $shadow-sm;
 
   .page-title {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 600;
   }
   
@@ -168,7 +175,7 @@ const showFeatureTip = (feature) => {
 }
 
 .settings-group {
-  padding: $spacing-lg $spacing-lg 0;
+  margin-bottom: $spacing-lg;
 
   .group-title {
     font-size: 14px;
@@ -180,6 +187,7 @@ const showFeatureTip = (feature) => {
   .settings-card {
     border-radius: 12px;
     border: none;
+    box-shadow: $shadow-sm;
     
     :deep(.el-card__body) {
       padding: 0;
@@ -192,13 +200,14 @@ const showFeatureTip = (feature) => {
       justify-content: space-between;
       cursor: pointer;
       min-height: 56px;
+      transition: background 0.2s;
 
-      &:active {
+      &:hover {
         background-color: $bg-light;
       }
 
       .label {
-        font-size: 16px;
+        font-size: 15px;
         color: $text-primary;
       }
 
@@ -225,13 +234,14 @@ const showFeatureTip = (feature) => {
 }
 
 .logout-section {
-  padding: $spacing-xl $spacing-lg;
-  margin-top: $spacing-lg;
+  margin-top: $spacing-xl;
 
   .logout-btn {
     width: 100%;
+    height: 48px;
     border-radius: 12px;
     font-weight: 600;
+    font-size: 16px;
   }
 }
 </style>

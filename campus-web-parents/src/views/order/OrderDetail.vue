@@ -121,13 +121,17 @@
       
       <!-- 底部操作 -->
       <div class="action-bar">
-        <template v-if="order.status === 0">
+        <template v-if="order.status === -1">
           <el-button size="large" @click="cancelOrder">取消订单</el-button>
           <el-button size="large" type="primary" @click="confirmOrder">确认订单</el-button>
         </template>
-        <template v-else-if="order.status === 1">
+        <template v-else-if="order.status === 0">
           <el-button size="large" @click="cancelOrder">取消订单</el-button>
           <el-button size="large" type="primary" @click="goToPay">立即支付</el-button>
+        </template>
+        <template v-else-if="order.status === 1">
+          <el-button size="large" @click="contactTutor">联系老师</el-button>
+          <el-button size="large" type="info" disabled>等待教师开课</el-button>
         </template>
         <template v-else-if="order.status === 2">
           <el-button size="large" @click="contactTutor">联系老师</el-button>
@@ -163,14 +167,15 @@ const order = ref(null)
 const lessons = ref([])
 
 const getStatusText = (status) => {
-  const texts = { 0: '待确认', 1: '待支付', 2: '进行中', 3: '已完成', 4: '已取消' }
+  const texts = { '-1': '待确认', 0: '待支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
   return texts[status] || '未知'
 }
 
 const getStatusDesc = (status) => {
   const descs = {
-    0: '请确认订单信息，确认后进入待支付状态',
-    1: '请在24小时内完成支付，超时订单将自动取消',
+    '-1': '请确认订单信息，确认后进入待支付状态',
+    0: '请在24小时内完成支付，超时订单将自动取消',
+    1: '已支付成功，等待教师确认开课',
     2: '订单进行中，老师会按约定时间上课',
     3: '订单已完成，感谢您的使用',
     4: '订单已取消'
