@@ -3,14 +3,32 @@
   <view class="form-box">
     <view class="input-group">
       <view class="label">需求标题</view>
-      <input class="input" placeholder="例：急寻小学三年级数学家教" bindinput="handleInput" data-field="title" value="{{form.title}}"/>
+      <input class="input" placeholder="例：寻找科创启蒙教练" bindinput="handleInput" data-field="title" value="{{form.title}}"/>
     </view>
 
     <view class="input-group">
-      <view class="label">辅导科目</view>
-      <picker bindchange="handleSubjectChange" range="{{subjects}}">
+      <view class="label">素质科目</view>
+      <picker mode="multiSelector" bindchange="handleSubjectChange" bindcolumnchange="handleSubjectColumnChange" value="{{selectedCategoryIndex}}" range="{{subjectCategories}}">
         <view class="picker-val {{!form.subject ? 'placeholder' : ''}}">
-          {{form.subject || '请选择科目'}}
+          {{form.subject || '请选择科目分类'}}
+        </view>
+      </picker>
+    </view>
+
+    <view class="input-group">
+      <view class="label">基础水平</view>
+      <picker bindchange="handleSkillLevelChange" range="{{skillLevels}}">
+        <view class="picker-val {{!form.skillLevel ? 'placeholder' : ''}}">
+          {{form.skillLevel || '请选择基础水平'}}
+        </view>
+      </picker>
+    </view>
+
+    <view class="input-group">
+      <view class="label">场地要求</view>
+      <picker bindchange="handleVenueTypeChange" range="{{venueTypes}}">
+        <view class="picker-val {{!form.venueType ? 'placeholder' : ''}}">
+          {{form.venueType || '请选择场地要求'}}
         </view>
       </picker>
     </view>

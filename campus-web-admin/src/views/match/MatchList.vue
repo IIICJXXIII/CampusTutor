@@ -212,41 +212,43 @@ const pagination = reactive({
   total: 0
 })
 
+const generateMatches = () => {
+  const subjects = ['钢琴/乐器陪练', '美术/书法', '声乐/视唱练耳', '中考体育专项', '羽毛球/网球陪练', '篮球/足球指导', '少儿编程(Scratch/Python)', '机器人/3D打印', '科学实验/航模']
+  const grades = ['4-6岁', '7-9岁', '10-12岁', '13-15岁', '16-18岁']
+  const firstNames = ['赵', '钱', '孙', '李', '周', '吴', '郑', '王', '陈', '林', '张']
+  const matchTypes = ['system', 'manual', 'apply']
+  const results = ['success', 'failed', 'pending']
+  
+  return Array.from({ length: 50 }, (_, i) => {
+    const subject = subjects[Math.floor(Math.random() * subjects.length)]
+    const result = results[Math.floor(Math.random() * results.length)]
+    const matchScore = result === 'success' ? Math.floor(Math.random() * 20) + 80 : Math.floor(Math.random() * 40) + 40
+    
+    return {
+      id: i + 1,
+      demandId: 100 + i,
+      parentName: firstNames[Math.floor(Math.random() * firstNames.length)] + '家长',
+      studentName: firstNames[Math.floor(Math.random() * firstNames.length)] + '小童',
+      subject: subject,
+      grade: grades[Math.floor(Math.random() * grades.length)],
+      expectPrice: Math.floor(Math.random() * 20) * 10 + 100,
+      address: ['海淀区中关村', '朝阳区建国门', '西城区单大街', '东城区王府井', '南山区科技园'][Math.floor(Math.random() * 5)] + (Math.floor(Math.random() * 100) + 1) + '号',
+      tutorName: firstNames[Math.floor(Math.random() * firstNames.length)] + '老师',
+      tutorSchool: ['北京体育大学', '中央音乐学院', '清华大学', '北京大学', '中央美术学院'][Math.floor(Math.random() * 5)],
+      tutorSubjects: subject,
+      tutorPrice: Math.floor(Math.random() * 20) * 10 + 120,
+      tutorRating: parseFloat((Math.random() * 1.5 + 3.5).toFixed(1)),
+      matchType: matchTypes[Math.floor(Math.random() * matchTypes.length)],
+      matchScore: matchScore,
+      result: result,
+      failReason: result === 'failed' ? ['时间不匹配', '价格不合适', '距离太远', '家长拒绝'][Math.floor(Math.random() * 4)] : null,
+      createTime: `2026-01-${String(Math.floor(Math.random() * 28 + 1)).padStart(2, '0')} 10:30:00`
+    }
+  })
+}
+
 // 模拟数据
-const tableData = ref([
-  { 
-    id: 1, demandId: 101, parentName: '张妈妈', studentName: '张小明',
-    subject: '数学', grade: '初三', expectPrice: 150, address: '海淀区中关村',
-    tutorName: '李老师', tutorSchool: '北京大学', tutorSubjects: '数学、物理',
-    tutorPrice: 150, tutorRating: 4.8,
-    matchType: 'system', matchScore: 92, result: 'success',
-    failReason: null, createTime: '2026-01-15 10:30:00'
-  },
-  { 
-    id: 2, demandId: 102, parentName: '李爸爸', studentName: '李小华',
-    subject: '英语', grade: '高一', expectPrice: 200, address: '朝阳区建国门',
-    tutorName: '王老师', tutorSchool: '清华大学', tutorSubjects: '英语',
-    tutorPrice: 180, tutorRating: 4.9,
-    matchType: 'apply', matchScore: 88, result: 'success',
-    failReason: null, createTime: '2026-01-14 15:00:00'
-  },
-  { 
-    id: 3, demandId: 103, parentName: '王女士', studentName: '王小红',
-    subject: '物理', grade: '高二', expectPrice: 180, address: '西城区西单',
-    tutorName: '张老师', tutorSchool: '北京师范大学', tutorSubjects: '物理、化学',
-    tutorPrice: 200, tutorRating: 4.5,
-    matchType: 'manual', matchScore: 75, result: 'failed',
-    failReason: '家长拒绝，价格不合适', createTime: '2026-01-13 09:00:00'
-  },
-  { 
-    id: 4, demandId: 104, parentName: '赵先生', studentName: '赵小刚',
-    subject: '语文', grade: '初一', expectPrice: 120, address: '东城区王府井',
-    tutorName: '陈老师', tutorSchool: '中国人民大学', tutorSubjects: '语文',
-    tutorPrice: 130, tutorRating: 4.7,
-    matchType: 'system', matchScore: 85, result: 'pending',
-    failReason: null, createTime: '2026-01-16 11:00:00'
-  }
-])
+const tableData = ref(generateMatches())
 
 onMounted(() => {
   fetchData()

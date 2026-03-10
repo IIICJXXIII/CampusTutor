@@ -198,21 +198,81 @@ onMounted(() => {
   fetchData()
 })
 
+const generateTutors = () => {
+  const subjects = ['钢琴/乐器陪练', '美术/书法', '声乐/视唱练耳', '中考体育专项', '羽毛球/网球陪练', '篮球/足球指导', '少儿编程(Scratch/Python)', '机器人/3D打印', '科学实验/航模']
+  const grades = ['4-6岁', '7-9岁', '10-12岁', '13-15岁', '16-18岁']
+  const firstNames = ['赵', '钱', '孙', '李', '周', '吴', '郑', '王', '陈', '林', '张']
+  const universities = ['北京体育大学', '中央音乐学院', '清华大学', '北京大学', '中央美术学院', '北京师范大学']
+  
+  return Array.from({ length: 50 }, (_, i) => {
+    // 随机 1-2 个科目
+    const tSubjects = []
+    const count = Math.floor(Math.random() * 2) + 1
+    for(let j=0; j<count; j++) {
+      const s = subjects[Math.floor(Math.random() * subjects.length)]
+      if(!tSubjects.includes(s)) tSubjects.push(s)
+    }
+
+    // 随机 1-3 个年级
+    const tGrades = []
+    const gCount = Math.floor(Math.random() * 3) + 1
+    for(let j=0; j<gCount; j++) {
+      const g = grades[Math.floor(Math.random() * grades.length)]
+      if(!tGrades.includes(g)) tGrades.push(g)
+    }
+    
+    return {
+      id: i + 1,
+      realName: firstNames[Math.floor(Math.random() * firstNames.length)] + (Math.random() > 0.5 ? '教练' : '老师'),
+      idCard: '1101051999' + String(Math.floor(Math.random() * 8999 + 1000)) + '123X',
+      universityName: universities[Math.floor(Math.random() * universities.length)],
+      major: ['体育教育', '音乐表演', '计算机科学', '美术学', '教育学'][Math.floor(Math.random() * 5)],
+      education: Math.floor(Math.random() * 4) + 1,
+      enrollYear: 2018 + Math.floor(Math.random() * 6),
+      teachSubjects: tSubjects,
+      teachGrades: tGrades,
+      expectPrice: Math.floor(Math.random() * 20) * 10 + 100,
+      canVisit: Math.random() > 0.2,
+      canOnline: Math.random() > 0.4,
+      certStatus: Math.floor(Math.random() * 4),
+      rating: parseFloat((Math.random() * 1.5 + 3.5).toFixed(1)), // 3.5 - 5.0
+      orderCount: Math.floor(Math.random() * 100),
+      introduction: '专业素质教育指导，拥有丰富带队和考级经验。',
+      idCardFrontUrl: 'https://picsum.photos/400/300?random=' + (i*3+1),
+      idCardBackUrl: 'https://picsum.photos/400/300?random=' + (i*3+2),
+      studentCardUrl: 'https://picsum.photos/400/300?random=' + (i*3+3)
+    }
+  })
+}
+
+// 缓存模拟数据
+const mockTutors = generateTutors()
+
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await tutorApi.getList({
-      page: pagination.page,
-      size: pagination.size,
-      keyword: searchForm.keyword || undefined,
-      certStatus: searchForm.certStatus ?? undefined,
-      education: searchForm.education ?? undefined
-    })
-    tableData.value = res.data.records || []
-    pagination.total = res.data.total || 0
+    // 使用模拟数据实现本地过滤和分页
+    setTimeout(() => {
+      let filtered = [...mockTutors]
+      if (searchForm.keyword) {
+        filtered = filtered.filter(t => t.realName.includes(searchForm.keyword) || t.universityName.includes(searchForm.keyword))
+      }
+      if (searchForm.certStatus !== null && searchForm.certStatus !== '') {
+        filtered = filtered.filter(t => t.certStatus === searchForm.certStatus)
+      }
+      if (searchForm.education !== null && searchForm.education !== '') {
+        filtered = filtered.filter(t => t.education === searchForm.education)
+      }
+      
+      const start = (pagination.page - 1) * pagination.size
+      const end = start + pagination.size
+      
+      tableData.value = filtered.slice(start, end)
+      pagination.total = filtered.length
+      loading.value = false
+    }, 300)
   } catch (error) {
     console.error('获取教师列表失败:', error)
-  } finally {
     loading.value = false
   }
 }

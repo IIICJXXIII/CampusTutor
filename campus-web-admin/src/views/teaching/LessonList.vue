@@ -176,56 +176,39 @@ const pagination = reactive({
   total: 0
 })
 
+const generateLessons = () => {
+  const subjects = ['钢琴/乐器陪练', '美术/书法', '声乐/视唱练耳', '中考体育专项', '羽毛球/网球陪练', '篮球/足球指导', '少儿编程(Scratch/Python)', '机器人/3D打印', '科学实验/航模']
+  const firstNames = ['赵', '钱', '孙', '李', '周', '吴', '郑', '王', '陈', '林', '张']
+  const statuses = ['pending', 'ongoing', 'completed', 'cancelled']
+  
+  return Array.from({ length: 50 }, (_, i) => {
+    const status = statuses[Math.floor(Math.random() * statuses.length)]
+    const isCompleted = status === 'completed'
+    
+    return {
+      id: i + 1,
+      orderNo: 'ORD202601' + String(Math.floor(Math.random() * 899 + 100)),
+      lessonNo: Math.floor(Math.random() * 10) + 1,
+      tutorName: firstNames[Math.floor(Math.random() * firstNames.length)] + '老师',
+      studentName: firstNames[Math.floor(Math.random() * firstNames.length)] + '学员',
+      subject: subjects[Math.floor(Math.random() * subjects.length)],
+      lessonDate: `2026-01-${String(Math.floor(Math.random() * 28 + 1)).padStart(2, '0')}`,
+      startTime: '14:00',
+      endTime: '16:00',
+      duration: 120,
+      price: Math.floor(Math.random() * 20) * 10 + 100,
+      status: status,
+      address: ['海淀区中关村', '朝阳区建国门', '西城区单大街', '东城区王府井', '南山区科技园'][Math.floor(Math.random() * 5)] + (Math.floor(Math.random() * 100) + 1) + '号',
+      checkInPhoto: isCompleted ? `https://picsum.photos/400/300?random=${i}` : null,
+      checkInTime: isCompleted ? `2026-01-16 14:05:00` : null,
+      rating: isCompleted ? Math.floor(Math.random() * 2) + 4 : null,
+      comment: isCompleted ? '老师很专业，孩子学得很开心' : null
+    }
+  })
+}
+
 // 模拟数据
-const tableData = ref([
-  { 
-    id: 1, orderNo: 'ORD20260115001', lessonNo: 1, 
-    tutorName: '李老师', studentName: '张小明', subject: '数学',
-    lessonDate: '2026-01-16', startTime: '14:00', endTime: '16:00',
-    duration: 120, price: 150, status: 'completed',
-    address: '北京市海淀区中关村大街1号',
-    checkInPhoto: 'https://picsum.photos/400/300?random=1',
-    checkInTime: '2026-01-16 14:05:00',
-    rating: 5, comment: '讲解清晰，孩子很喜欢'
-  },
-  { 
-    id: 2, orderNo: 'ORD20260115001', lessonNo: 2, 
-    tutorName: '李老师', studentName: '张小明', subject: '数学',
-    lessonDate: '2026-01-18', startTime: '14:00', endTime: '16:00',
-    duration: 120, price: 150, status: 'completed',
-    address: '北京市海淀区中关村大街1号',
-    checkInPhoto: 'https://picsum.photos/400/300?random=2',
-    checkInTime: '2026-01-18 14:02:00',
-    rating: 4, comment: '不错，继续保持'
-  },
-  { 
-    id: 3, orderNo: 'ORD20260115001', lessonNo: 3, 
-    tutorName: '李老师', studentName: '张小明', subject: '数学',
-    lessonDate: '2026-01-20', startTime: '14:00', endTime: '16:00',
-    duration: 120, price: 150, status: 'completed',
-    address: '北京市海淀区中关村大街1号',
-    checkInPhoto: 'https://picsum.photos/400/300?random=3',
-    checkInTime: '2026-01-20 14:00:00',
-    rating: null, comment: null
-  },
-  { 
-    id: 4, orderNo: 'ORD20260115001', lessonNo: 4, 
-    tutorName: '李老师', studentName: '张小明', subject: '数学',
-    lessonDate: '2026-01-22', startTime: '14:00', endTime: '16:00',
-    duration: 120, price: 150, status: 'pending',
-    address: '北京市海淀区中关村大街1号',
-    checkInPhoto: null
-  },
-  { 
-    id: 5, orderNo: 'ORD20260114001', lessonNo: 1, 
-    tutorName: '王老师', studentName: '李小华', subject: '英语',
-    lessonDate: '2026-01-15', startTime: '10:00', endTime: '12:00',
-    duration: 120, price: 200, status: 'ongoing',
-    address: '北京市朝阳区建国路88号',
-    checkInPhoto: 'https://picsum.photos/400/300?random=5',
-    checkInTime: '2026-01-15 10:00:00'
-  }
-])
+const tableData = ref(generateLessons())
 
 onMounted(() => {
   fetchData()

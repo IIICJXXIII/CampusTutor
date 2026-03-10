@@ -1,4 +1,4 @@
-﻿package com.campus.module.match.service;
+package com.campus.module.match.service;
 
 import cn.hutool.json.JSONUtil;
 import com.campus.module.demand.entity.DemandPost;
@@ -63,8 +63,30 @@ public class MatchScoreCalculator {
         return config.getParentSpecialty();
     }
 
+    private double getWeightSkillLevel() {
+        return config.getParentSkillLevel();
+    }
+
     private double getWeightTeachMode() {
         return config.getParentTeachMode();
+    }
+
+    // ============ 素质教育：科目类别判断 ============
+
+    private static final String[] SPORTS_KEYWORDS = {"体育", "跳绳", "篮球", "足球", "羽毛球", "网球", "游泳", "跑步"};
+    private static final String[] ART_KEYWORDS = {"艺术", "钢琴", "乐器", "美术", "书法", "声乐", "舞蹈", "绘画"};
+    private static final String[] STEAM_KEYWORDS = {"科创", "STEAM", "编程", "Scratch", "Python", "机器人", "3D打印", "航模", "科学"};
+
+    /**
+     * 判断科目所属大类：sports / art / steam / other
+     */
+    private String detectSubjectCategory(String subject) {
+        if (subject == null) return "other";
+        String s = subject.toLowerCase();
+        for (String kw : SPORTS_KEYWORDS) { if (s.contains(kw.toLowerCase())) return "sports"; }
+        for (String kw : ART_KEYWORDS) { if (s.contains(kw.toLowerCase())) return "art"; }
+        for (String kw : STEAM_KEYWORDS) { if (s.contains(kw.toLowerCase())) return "steam"; }
+        return "other";
     }
 
     // ============ 教师视角权重获取方法（找需求）============
@@ -113,6 +135,12 @@ public class MatchScoreCalculator {
         MatchScoreResult result = new MatchScoreResult();
         List<String> matchTags = new ArrayList<>();
 
+        // 素质教育：根据科目类别动态调整权重
+        String category = detectSubjectCategory(demand.getSubject());
+        double distanceMultiplier = "sports".equals(category) ? 1.5 : 1.0;
+        double skillMultiplier = ("sports".equals(category) ? 1.2 : ("art".equals(category) || "steam".equals(category)) ? 1.5 : 1.0);
+        double ratingMultiplier = ("art".equals(category) || "steam".equals(category)) ? 1.2 : 1.0;
+
         // 1. 科目匹配分数
         double subjectScore = calculateSubjectScore(tutor.getTeachSubjects(), demand.getSubject());
         result.setSubjectScore(subjectScore);
@@ -120,15 +148,16 @@ public class MatchScoreCalculator {
             matchTags.add("科目匹配");
         }
 
-        // 2. 年级匹配分数
+        // 2. 年龄段匹配分数（原年级，权重已降低）
         double gradeScore = calculateGradeScore(tutor.getTeachGrades(), demand.getGrade());
         result.setGradeScore(gradeScore);
         if (gradeScore >= getWeightGrade() * 0.8) {
-            matchTags.add("年级匹配");
+            matchTags.add("年龄段匹配");
         }
 
-        // 3. 距离评分
-        double distanceScore = calculateDistanceScore(distance);
+        // 3. 距离评分（体育类加权）
+        double distanceScore = calculateDistanceScore(distance) * distanceMultiplier;
+        distanceScore = Math.min(distanceScore, getWeightDistance() * 1.5); // 上限
         result.setDistanceScore(distanceScore);
         if (distance != null && distance <= 3.0) {
             matchTags.add("距离近");
@@ -141,8 +170,9 @@ public class MatchScoreCalculator {
             matchTags.add("价格合适");
         }
 
-        // 5. 教员评分权重
-        double ratingScore = calculateRatingScore(tutor.getRating());
+        // 5. 教员评分权重（艺术/科创类加权）
+        double ratingScore = calculateRatingScore(tutor.getRating()) * ratingMultiplier;
+        ratingScore = Math.min(ratingScore, getWeightRating() * 1.5);
         result.setRatingScore(ratingScore);
         if (tutor.getRating() != null && tutor.getRating().doubleValue() >= 4.5) {
             matchTags.add("高评分");
@@ -162,8 +192,9 @@ public class MatchScoreCalculator {
             matchTags.add("学历优秀");
         }
 
-        // 8. 教学特长评分
-        double specialtyScore = calculateSpecialtyScore(tutor.getTeachStyle(), null);
+        // 8. 教学特长评分（艺术/科创类加权）
+        double specialtyScore = calculateSpecialtyScore(tutor.getTeachStyle(), null) * skillMultiplier;
+        specialtyScore = Math.min(specialtyScore, getWeightSpecialty() * 1.5);
         result.setSpecialtyScore(specialtyScore);
         if (specialtyScore >= getWeightSpecialty() * 0.8) {
             matchTags.add("特长匹配");
@@ -177,9 +208,15 @@ public class MatchScoreCalculator {
             matchTags.add("授课方式匹配");
         }
 
-        // 10. 计算综合匹配分数
+        // 10. 基础水平匹配评分（素质教育新增维度）
+        double skillLevelScore = calculateSkillLevelScore(tutor.getTeachStyle(), demand.getSkillLevel());
+        if (skillLevelScore >= getWeightSkillLevel() * 0.8) {
+            matchTags.add("水平匹配");
+        }
+
+        // 11. 计算综合匹配分数
         double totalScore = subjectScore + gradeScore + distanceScore + priceScore + ratingScore +
-                experienceScore + educationScore + specialtyScore + teachModeScore;
+                experienceScore + educationScore + specialtyScore + teachModeScore + skillLevelScore;
         result.setMatchScore(Math.min(100.0, totalScore));
         result.setMatchTags(matchTags);
 
@@ -276,6 +313,52 @@ public class MatchScoreCalculator {
         result.setMatchTags(matchTags);
 
         return result;
+    }
+
+    /**
+     * 计算基础水平匹配分数（素质教育新增）
+     * 基于学生的基础水平和教员的教学风格进行匹配
+     *
+     * @param teachStyle 教员教学风格
+     * @param skillLevel 需求基础水平：零基础、有基础、考级/比赛冲刺
+     */
+    private double calculateSkillLevelScore(String teachStyle, String skillLevel) {
+        if (!StringUtils.hasText(skillLevel)) {
+            return getWeightSkillLevel() * 0.5; // 未填写给一半分
+        }
+        if (!StringUtils.hasText(teachStyle)) {
+            return getWeightSkillLevel() * 0.3; // 教员未填教学风格
+        }
+
+        String style = teachStyle.toLowerCase();
+        String level = skillLevel.toLowerCase();
+
+        // 零基础 → 匹配"启蒙、入门、基础、耐心、兴趣"
+        if (level.contains("零基础")) {
+            if (style.contains("启蒙") || style.contains("入门") || style.contains("基础")
+                    || style.contains("耐心") || style.contains("兴趣")) {
+                return getWeightSkillLevel();
+            }
+            return getWeightSkillLevel() * 0.5;
+        }
+        // 有基础 → 匹配"提升、进阶、系统、技巧"
+        if (level.contains("有基础")) {
+            if (style.contains("提升") || style.contains("进阶") || style.contains("系统")
+                    || style.contains("技巧")) {
+                return getWeightSkillLevel();
+            }
+            return getWeightSkillLevel() * 0.5;
+        }
+        // 考级/比赛冲刺 → 匹配"考级、竞赛、比赛、冲刺、专业"
+        if (level.contains("考级") || level.contains("冲刺") || level.contains("比赛")) {
+            if (style.contains("考级") || style.contains("竞赛") || style.contains("比赛")
+                    || style.contains("冲刺") || style.contains("专业")) {
+                return getWeightSkillLevel();
+            }
+            return getWeightSkillLevel() * 0.3;
+        }
+
+        return getWeightSkillLevel() * 0.5; // 默认
     }
 
     /**

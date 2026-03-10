@@ -6,29 +6,26 @@ Page({
     certImgs: [],
     videoUrl: '',
     isSubmitting: false,
-    // 年级列表（小一到高三）
+    // 年龄段列表
     gradeList: [
-      { id: 'primary_1', name: '小学一年级' },
-      { id: 'primary_2', name: '小学二年级' },
-      { id: 'primary_3', name: '小学三年级' },
-      { id: 'primary_4', name: '小学四年级' },
-      { id: 'primary_5', name: '小学五年级' },
-      { id: 'primary_6', name: '小学六年级' },
-      { id: 'junior_1', name: '初一' },
-      { id: 'junior_2', name: '初二' },
-      { id: 'junior_3', name: '初三' },
-      { id: 'senior_1', name: '高一' },
-      { id: 'senior_2', name: '高二' },
-      { id: 'senior_3', name: '高三' }
+      { id: 'age_4_6', name: '4-6岁' },
+      { id: 'age_7_9', name: '7-9岁' },
+      { id: 'age_10_12', name: '10-12岁' },
+      { id: 'age_13_15', name: '13-15岁' },
+      { id: 'age_16_18', name: '16-18岁' },
+      { id: 'age_18_plus', name: '18岁以上' }
     ],
-    // 科目列表
+    // 素质教育科目列表
     subjectList: [
-      { id: 'chinese', name: '语文' },
-      { id: 'math', name: '数学' },
-      { id: 'english', name: '英语' },
-      { id: 'physics', name: '物理' },
-      { id: 'chemistry', name: '化学' },
-      { id: 'biology', name: '生物' }
+      { id: 'piano', name: '钢琴/乐器陪练' },
+      { id: 'art', name: '美术/书法' },
+      { id: 'vocal', name: '声乐/视唱练耳' },
+      { id: 'pe_exam', name: '中考体育专项' },
+      { id: 'racket', name: '羽毛球/网球陪练' },
+      { id: 'ball', name: '篮球/足球指导' },
+      { id: 'coding', name: '少儿编程(Scratch/Python)' },
+      { id: 'robot', name: '机器人/3D打印' },
+      { id: 'science', name: '科学实验/航模' }
     ],
     selectedGrades: [], // 已选年级
     selectedSubjects: [], // 已选科目
