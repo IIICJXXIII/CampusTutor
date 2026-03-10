@@ -41,6 +41,8 @@ public class MatchService {
     private final DynamicWeightCalculator dynamicWeightCalculator;
     private final CollaborativeFilteringService cfService;
     private final com.campus.module.match.config.CFConfig cfConfig;
+    private final RealtimeIntentService realtimeIntentService;
+    private final TrafficPoolService trafficPoolService;
 
     /**
      * 搜索教员
@@ -295,6 +297,38 @@ public class MatchService {
                     log.debug("Hybrid score for tutor {}: content={}, cf={}, hybrid={}",
                             profile.getId(), contentScore, cfScoreNormalized, hybridScore);
                 }
+            }
+
+            // ============ 实时意图加分 (Realtime Intent Boost) ============
+            try {
+                double intentBoost = realtimeIntentService.calculateIntentBoost(request.getUserId(), profile);
+                if (intentBoost > 0) {
+                    double boostedScore = scoreResult.getMatchScore() + intentBoost;
+                    scoreResult.setMatchScore(Math.min(100.0, boostedScore));
+                    scoreResult.getMatchTags().add("越刷越懂你");
+                    log.debug("Intent boost for tutor {}: +{}, new score={}",
+                            profile.getId(), intentBoost, scoreResult.getMatchScore());
+                }
+            } catch (Exception e) {
+                log.debug("意图加分失败(Redis不可用)，跳过: {}", e.getMessage());
+            }
+
+            // ============ 流量池赛马加分 (Traffic Pool Boost) ============
+            try {
+                com.campus.module.match.dto.TrafficPoolLevel poolLevel = trafficPoolService.getPoolLevel(profile.getId());
+                double poolBoost = trafficPoolService.getPoolBoostScore(poolLevel);
+                if (poolBoost > 0) {
+                    double poolBoostedScore = scoreResult.getMatchScore() + poolBoost;
+                    scoreResult.setMatchScore(Math.min(100.0, poolBoostedScore));
+                    String poolTag = trafficPoolService.getPoolTag(poolLevel);
+                    if (poolTag != null) {
+                        scoreResult.getMatchTags().add(poolTag);
+                    }
+                    log.debug("Pool boost for tutor {}: level={}, +{}, new score={}",
+                            profile.getId(), poolLevel, poolBoost, scoreResult.getMatchScore());
+                }
+            } catch (Exception e) {
+                log.debug("流量池加分失败(Redis不可用)，跳过: {}", e.getMessage());
             }
 
             // 复制评分数据到结果

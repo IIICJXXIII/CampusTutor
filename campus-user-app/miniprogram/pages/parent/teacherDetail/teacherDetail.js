@@ -44,7 +44,21 @@ Page({
       this.initScheduleData();
       this.fetchTutorDetail(options.id);
       this.loadTutorSchedule(options.id);
+      // 上报"查看教员详情"行为（非阻塞，用于实时意图追踪）
+      this.recordViewAction(options.id);
     }
+  },
+
+  /**
+   * 上报查看教员行为到后端（异步、静默）
+   * 触发 Redis Streams 意图事件 -> 实时标签追踪
+   */
+  recordViewAction(tutorId) {
+    const token = wx.getStorageSync('token');
+    if (!token) return; // 未登录不上报
+    request.post(api.behavior.view, { targetId: parseInt(tutorId) }).catch(() => {
+      // 静默失败，不影响页面体验
+    });
   },
 
   // 初始化课表数据结构
