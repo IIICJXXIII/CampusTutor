@@ -207,11 +207,11 @@ const recentUsers = ref([
 
 // 最新订单 (模拟)
 const recentOrders = ref([
-  { id: 1, orderNo: 'ORD20260106001', subject: '数学', amount: 200, status: 1 },
-  { id: 2, orderNo: 'ORD20260106002', subject: '英语', amount: 180, status: 2 },
-  { id: 3, orderNo: 'ORD20260105003', subject: '物理', amount: 220, status: 3 },
-  { id: 4, orderNo: 'ORD20260105004', subject: '化学', amount: 200, status: 1 },
-  { id: 5, orderNo: 'ORD20260104005', subject: '语文', amount: 160, status: 4 }
+  { id: 1, orderNo: 'ORD20260106001', subject: '中考体育专项', amount: 200, status: 1 },
+  { id: 2, orderNo: 'ORD20260106002', subject: '少儿编程(Scratch/Python)', amount: 180, status: 2 },
+  { id: 3, orderNo: 'ORD20260105003', subject: '钢琴/乐器陪练', amount: 220, status: 3 },
+  { id: 4, orderNo: 'ORD20260105004', subject: '美术/书法', amount: 200, status: 1 },
+  { id: 5, orderNo: 'ORD20260104005', subject: '机器人/3D打印', amount: 160, status: 4 }
 ])
 
 const orderChartType = ref('week')

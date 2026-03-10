@@ -8,11 +8,15 @@
         </el-form-item>
         <el-form-item label="科目">
           <el-select v-model="searchForm.subject" placeholder="全部" clearable style="width: 120px;">
-            <el-option label="数学" value="数学" />
-            <el-option label="英语" value="英语" />
-            <el-option label="语文" value="语文" />
-            <el-option label="物理" value="物理" />
-            <el-option label="化学" value="化学" />
+            <el-option label="钢琴/乐器陪练" value="钢琴/乐器陪练" />
+            <el-option label="美术/书法" value="美术/书法" />
+            <el-option label="声乐/视唱练耳" value="声乐/视唱练耳" />
+            <el-option label="中考体育专项" value="中考体育专项" />
+            <el-option label="羽毛球/网球陪练" value="羽毛球/网球陪练" />
+            <el-option label="篮球/足球指导" value="篮球/足球指导" />
+            <el-option label="少儿编程" value="少儿编程(Scratch/Python)" />
+            <el-option label="机器人/3D打印" value="机器人/3D打印" />
+            <el-option label="科学实验/航模" value="科学实验/航模" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
@@ -130,10 +134,10 @@
         <el-form-item label="选择教师">
           <el-select v-model="matchForm.tutorId" placeholder="请选择教师" style="width: 100%;" filterable>
             <el-option 
-              v-for="tutor in tutorList" 
-              :key="tutor.id" 
-              :label="`${tutor.name} - ${tutor.subject}`" 
-              :value="tutor.id" 
+              v-for="sub in ['钢琴/乐器陪练', '美术/书法', '中考体育专项']"
+              :key="sub" 
+              :label="`随机分配教师 - ${sub}`" 
+              :value="Math.floor(Math.random() * 1000)" 
             />
           </el-select>
         </el-form-item>
@@ -177,40 +181,43 @@ const pagination = reactive({
   total: 0
 })
 
-// 模拟教师列表
-const tutorList = ref([
-  { id: 1, name: '李老师', subject: '数学', phone: '13900000001' },
-  { id: 2, name: '王老师', subject: '英语', phone: '13900000002' },
-  { id: 3, name: '张老师', subject: '物理', phone: '13900000003' }
-])
+const generateDemands = () => {
+  const subjects = ['钢琴/乐器陪练', '美术/书法', '声乐/视唱练耳', '中考体育专项', '羽毛球/网球陪练', '篮球/足球指导', '少儿编程(Scratch/Python)', '机器人/3D打印', '科学实验/航模']
+  const grades = ['4-6岁', '7-9岁', '10-12岁', '13-15岁', '16-18岁']
+  const statuses = ['pending', 'matched', 'closed', 'expired']
+  const firstNames = ['赵', '钱', '孙', '李', '周', '吴', '郑', '王', '陈', '林', '张']
+  
+  return Array.from({ length: 50 }, (_, i) => {
+    const isMatched = Math.random() > 0.5
+    const status = isMatched ? 'matched' : statuses[Math.floor(Math.random() * statuses.length)]
+    const subject = subjects[Math.floor(Math.random() * subjects.length)]
+    
+    return {
+      id: i + 1,
+      parentName: firstNames[Math.floor(Math.random() * firstNames.length)] + '家长',
+      phone: '13800' + String(Math.floor(Math.random() * 899999 + 100000)),
+      studentName: firstNames[Math.floor(Math.random() * firstNames.length)] + '小' + ['明', '红', '华', '刚', '强', '丽'][Math.floor(Math.random() * 6)],
+      grade: grades[Math.floor(Math.random() * grades.length)],
+      subject: subject,
+      expectPrice: Math.floor(Math.random() * 20) * 10 + 100, // 100~300
+      frequency: '每周' + (Math.floor(Math.random() * 3) + 1) + '次',
+      teacherGender: Math.random() > 0.7 ? (Math.random() > 0.5 ? '男' : '女') : null,
+      address: ['海淀区中关村', '朝阳区建国门', '西城区单大街', '东城区王府井', '南山区科技园'][Math.floor(Math.random() * 5)] + (Math.floor(Math.random() * 100) + 1) + '号',
+      description: '希望找到一位有经验的老师辅导' + subject,
+      status: status,
+      createTime: `2026-01-${String(Math.floor(Math.random() * 28 + 1)).padStart(2, '0')} 10:00:00`,
+      matchedTutor: status === 'matched' ? {
+        name: firstNames[Math.floor(Math.random() * firstNames.length)] + '老师',
+        phone: '13900' + String(Math.floor(Math.random() * 899999 + 100000)),
+        subject: subject,
+        matchTime: '2026-01-15 10:00:00'
+      } : null
+    }
+  })
+}
 
 // 模拟数据
-const tableData = ref([
-  { 
-    id: 1, parentName: '张妈妈', phone: '13800138001', studentName: '张小明',
-    grade: '初三', subject: '数学', expectPrice: 150, frequency: '每周2次',
-    teacherGender: '男', address: '北京市海淀区中关村大街1号',
-    description: '孩子数学基础较差，需要巩固提高',
-    status: 'pending', createTime: '2026-01-15 10:00:00',
-    matchedTutor: null
-  },
-  { 
-    id: 2, parentName: '李爸爸', phone: '13800138002', studentName: '李小华',
-    grade: '高一', subject: '英语', expectPrice: 200, frequency: '每周3次',
-    teacherGender: null, address: '北京市朝阳区建国路88号',
-    description: '英语听力和口语需要加强',
-    status: 'matched', createTime: '2026-01-14 15:30:00',
-    matchedTutor: { name: '王老师', phone: '13900000002', subject: '英语', matchTime: '2026-01-14 16:00:00' }
-  },
-  { 
-    id: 3, parentName: '王女士', phone: '13800138003', studentName: '王小红',
-    grade: '小学五年级', subject: '语文', expectPrice: 120, frequency: '每周2次',
-    teacherGender: '女', address: '北京市西城区西单大街10号',
-    description: '语文阅读理解需要提升',
-    status: 'closed', createTime: '2026-01-10 09:00:00',
-    matchedTutor: null
-  }
-])
+const tableData = ref(generateDemands())
 
 const filteredData = computed(() => {
   if (viewMode.value === 'all') return tableData.value

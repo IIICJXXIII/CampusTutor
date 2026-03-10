@@ -25,9 +25,26 @@ public class DemandController {
 
     private final DemandPostService demandPostService;
 
+    /**
+     * 学科类敏感词黑名单（合规：平台已转型素质教育，禁止学科辅导）
+     */
+    private static final String[] SUBJECT_BLACKLIST = {
+            "数学", "语文", "英语", "物理", "化学", "生物", "历史", "地理", "政治",
+            "提分", "冲刺", "补习", "补课", "奥数", "作文辅导"
+    };
+
     @Operation(summary = "发布需求")
     @PostMapping("/publish")
     public Result<Long> publish(@Valid @RequestBody DemandPostRequest request) {
+        // 敏感词拦截：禁止发布学科类辅导需求
+        String content = (request.getTitle() + " " + request.getSubject() + " "
+                + (request.getDetail() != null ? request.getDetail() : "")).toLowerCase();
+        for (String word : SUBJECT_BLACKLIST) {
+            if (content.contains(word)) {
+                return Result.fail("平台已全面转型素质教育，请勿发布学科类辅导需求。");
+            }
+        }
+
         Long publisherId = UserContext.getUserId();
         Long demandId = demandPostService.publishDemand(publisherId, request);
         return Result.success(demandId);

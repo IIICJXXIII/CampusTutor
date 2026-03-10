@@ -28,10 +28,10 @@ class DemandServiceTest {
 
     @Autowired
     private DemandPostService demandPostService;
-    
+
     @Autowired
     private GeoService geoService;
-    
+
     @Autowired
     private SysUserService userService;
 
@@ -65,13 +65,13 @@ class DemandServiceTest {
         request.setLatitude(new BigDecimal("39.991957"));
 
         Long demandId = demandPostService.publishDemand(testUserId, request);
-        
+
         assertNotNull(demandId, "应返回需求ID");
-        
+
         DemandPost demand = demandPostService.getById(demandId);
         assertNotNull(demand, "需求应存在");
         assertEquals("数学", demand.getSubject());
-        
+
         System.out.println("✅ 需求发布成功，ID: " + demandId);
     }
 
@@ -91,7 +91,7 @@ class DemandServiceTest {
         }
 
         List<DemandPost> myDemands = demandPostService.listMyDemands(testUserId);
-        
+
         assertEquals(3, myDemands.size(), "应有3个需求");
         System.out.println("✅ 需求列表查询成功");
     }
@@ -110,7 +110,7 @@ class DemandServiceTest {
         demandPostService.publishDemand(testUserId, request);
 
         IPage<DemandPost> page = demandPostService.pageList("化学", null, 1, 10);
-        
+
         assertNotNull(page);
         System.out.println("✅ 分页查询成功，总数: " + page.getTotal());
     }
@@ -121,7 +121,7 @@ class DemandServiceTest {
     void testGeoService() {
         try {
             geoService.addTutorLocation(10001L, 116.397451, 39.909187);
-            
+
             Map<Long, Double> nearby = geoService.searchNearbyTutorsWithDistance(116.400000, 39.910000, 5.0);
             System.out.println("✅ GeoService正常，附近: " + nearby.size() + " 个");
         } catch (Exception e) {

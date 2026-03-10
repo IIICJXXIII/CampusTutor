@@ -99,7 +99,7 @@
     <view class="header">
       <view class="welcome">
         <text class="greeting">Hello, {{userInfo.nickname || '家长'}} <text style="font-size:48rpx">👋</text></text>
-        <text class="subtitle">为孩子找到最适合的家教</text>
+        <text class="subtitle">为孩子找到最适合的素质教育老师</text>
       </view>
     </view>
 
@@ -145,7 +145,7 @@
         <block wx:for="{{demandList}}" wx:key="id">
           <view class="demand-card-simple">
             <view class="demand-info">
-              <text class="demand-title">{{item.subject}} - {{item.grade}}</text>
+              <text class="demand-title">{{item.subject}}</text>
               <text class="demand-time">{{item.createTime}}</text>
             </view>
             <view class="demand-status {{item.status === 3 ? 'completed' : item.status === 2 ? 'matched' : 'active'}}">
