@@ -37,10 +37,10 @@
     </view>
 
     <view class="form-group">
-      <view class="label">就读年级</view>
+      <view class="label">年龄段</view>
       <picker bindchange="handleGradeChange" value="{{gradeIndex}}" range="{{grades}}">
         <view class="picker-val {{!form.grade ? 'placeholder' : ''}}">
-          {{form.grade || '请选择年级'}}
+          {{form.grade || '请选择年龄段'}}
         </view>
       </picker>
     </view>
@@ -51,8 +51,8 @@
     </view>
 
     <view class="form-group vertical">
-      <view class="label">学习情况 / 薄弱点</view>
-      <textarea class="textarea" placeholder="例如：数学基础较弱，英语单词记不住..." bindinput="handleInput" data-field="studyDesc" value="{{form.studyDesc}}"></textarea>
+      <view class="label">学习情况 / 期望</view>
+      <textarea class="textarea" placeholder="例如：零基础，对积木拼搭感兴趣..." bindinput="handleInput" data-field="studyDesc" value="{{form.studyDesc}}"></textarea>
     </view>
 
     <view class="btn-row">

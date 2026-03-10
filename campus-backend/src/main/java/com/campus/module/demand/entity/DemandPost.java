@@ -40,9 +40,19 @@ public class DemandPost {
     private String subject;
 
     /**
-     * 需求年级
+     * 年龄段（原年级字段，素质教育转型后改为可选）
      */
     private String grade;
+
+    /**
+     * 基础水平：零基础、有基础、考级/比赛冲刺
+     */
+    private String skillLevel;
+
+    /**
+     * 场地类型：1教员上门 2学员上门 3公共场馆
+     */
+    private Integer venueType;
 
     /**
      * 期望价格(元/小时)
