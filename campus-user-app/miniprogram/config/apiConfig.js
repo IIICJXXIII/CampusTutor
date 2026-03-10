@@ -114,6 +114,13 @@ const api = {
       resolve: (id) => `${API_HOST}/api/study/wrongbook/${id}/resolve`
     }
   },
+  // 行为追踪模块 (Behavior)
+  behavior: {
+    view: `${API_HOST}/api/behavior/view`,
+    favorite: `${API_HOST}/api/behavior/favorite`,
+    chat: `${API_HOST}/api/behavior/chat`,
+    search: `${API_HOST}/api/behavior/search`,
+  },
   // 地图模块 (Map)
   map: {
     distance: `${API_HOST}/api/map/distance`,
