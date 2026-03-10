@@ -11,7 +11,7 @@
   <view class="form-box">
     <view class="input-group">
       <view class="icon-wrap">📱</view>
-      <input class="input" type="number" placeholder="请输入手机号" maxlength="11" 
+      <input class="input" type="number" placeholder="请输入手机号或用户名" maxlength="11" 
              placeholder-class="placeholder"
              bindinput="handleInput" data-field="phone" value="{{phone}}"/>
     </view>

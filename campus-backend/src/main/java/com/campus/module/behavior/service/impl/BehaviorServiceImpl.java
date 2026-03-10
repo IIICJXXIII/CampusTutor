@@ -4,6 +4,7 @@ import com.campus.module.behavior.dto.TutorBehaviorStats;
 import com.campus.module.behavior.entity.UserActionLog;
 import com.campus.module.behavior.mapper.UserActionLogMapper;
 import com.campus.module.behavior.service.BehaviorService;
+import com.campus.module.match.service.IntentEventProducer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -28,6 +29,7 @@ public class BehaviorServiceImpl implements BehaviorService {
     private final UserActionLogMapper actionLogMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
+    private final IntentEventProducer intentEventProducer;
 
     // Redis 缓存 Key 前缀
     private static final String TUTOR_STATS_KEY = "behavior:tutor:stats:";
@@ -64,6 +66,12 @@ public class BehaviorServiceImpl implements BehaviorService {
             redisTemplate.delete(USER_SEARCH_COUNT_KEY + userId);
         }
 
+        // 触发实时意图标签更新（异步，通过 Redis Streams 发布事件）
+        if (targetId != null && (actionType == ACTION_VIEW || actionType == ACTION_FAVORITE
+                || actionType == ACTION_CHAT || actionType == ACTION_ORDER)) {
+            intentEventProducer.publishAction(userId, targetId, actionType);
+        }
+
         log.info("记录用户行为: userId={}, targetId={}, actionType={}", userId, targetId, actionType);
     }
 
@@ -75,14 +83,18 @@ public class BehaviorServiceImpl implements BehaviorService {
 
         // 尝试从缓存获取
         String cacheKey = TUTOR_STATS_KEY + tutorId;
-        Object cachedObj = redisTemplate.opsForValue().get(cacheKey);
-        if (cachedObj != null) {
-            try {
-                // 使用 ObjectMapper 进行类型转换
-                return objectMapper.convertValue(cachedObj, TutorBehaviorStats.class);
-            } catch (Exception e) {
-                log.warn("缓存反序列化失败: {}", e.getMessage());
+        try {
+            Object cachedObj = redisTemplate.opsForValue().get(cacheKey);
+            if (cachedObj != null) {
+                try {
+                    // 使用 ObjectMapper 进行类型转换
+                    return objectMapper.convertValue(cachedObj, TutorBehaviorStats.class);
+                } catch (Exception e) {
+                    log.warn("缓存反序列化失败: {}", e.getMessage());
+                }
             }
+        } catch (Exception e) {
+            log.warn("Redis不可用，跳过缓存直接查库: {}", e.getMessage());
         }
 
         // 从数据库统计
@@ -145,9 +157,15 @@ public class BehaviorServiceImpl implements BehaviorService {
 
         // 尝试从缓存获取
         String cacheKey = USER_SEARCH_COUNT_KEY + userId;
-        Integer cached = (Integer) redisTemplate.opsForValue().get(cacheKey);
-        if (cached != null) {
-            return cached;
+        try {
+            Object cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached instanceof Integer) {
+                return (Integer) cached;
+            } else if (cached instanceof Number) {
+                return ((Number) cached).intValue();
+            }
+        } catch (Exception e) {
+            log.warn("Redis不可用，跳过搜索计数缓存: {}", e.getMessage());
         }
 
         // 从数据库统计
