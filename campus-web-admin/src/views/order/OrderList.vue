@@ -253,43 +253,56 @@ const pagination = reactive({
   total: 0
 })
 
+const generateOrders = () => {
+  const subjects = ['钢琴/乐器陪练', '美术/书法', '声乐/视唱练耳', '中考体育专项', '羽毛球/网球陪练', '篮球/足球指导', '少儿编程(Scratch/Python)', '机器人/3D打印', '科学实验/航模']
+  const firstNames = ['赵', '钱', '孙', '李', '周', '吴', '郑', '王', '陈', '林', '张']
+  const statuses = ['pending', 'paid', 'active', 'completed', 'refunding', 'cancelled']
+  
+  return Array.from({ length: 50 }, (_, i) => {
+    const status = statuses[Math.floor(Math.random() * statuses.length)]
+    const isCompleted = status === 'completed'
+    const lessonCount = Math.floor(Math.random() * 20) + 5
+    const completedCount = isCompleted ? lessonCount : (status === 'active' ? Math.floor(Math.random() * lessonCount) : 0)
+    const lessonPrice = Math.floor(Math.random() * 20) * 10 + 100
+    const totalAmount = lessonCount * lessonPrice
+    const escrowAmount = isCompleted ? 0 : (lessonCount - completedCount) * lessonPrice
+    
+    // 生成关联测试课时
+    const lessons = Array.from({ length: lessonCount }, (_, j) => {
+      const isLessonCompleted = j < completedCount
+      return {
+        lessonNo: j + 1,
+        date: `2026-01-${String(Math.floor(Math.random() * 28 + 1)).padStart(2, '0')}`,
+        startTime: '14:00',
+        endTime: '16:00',
+        status: isLessonCompleted ? 'completed' : 'pending'
+      }
+    })
+    
+    return {
+      id: i + 1,
+      orderNo: 'ORD202601' + String(Math.floor(Math.random() * 899 + 100)) + String(i).padStart(3, '0'),
+      parentName: firstNames[Math.floor(Math.random() * firstNames.length)] + '家长',
+      parentPhone: '13800' + String(Math.floor(Math.random() * 899999 + 100000)),
+      tutorName: firstNames[Math.floor(Math.random() * firstNames.length)] + '老师',
+      tutorPhone: '13900' + String(Math.floor(Math.random() * 899999 + 100000)),
+      subject: subjects[Math.floor(Math.random() * subjects.length)],
+      lessonCount: lessonCount,
+      lessonPrice: lessonPrice,
+      totalAmount: totalAmount,
+      escrowAmount: escrowAmount,
+      completedCount: completedCount,
+      status: status,
+      createTime: `2026-01-${String(Math.floor(Math.random() * 28 + 1)).padStart(2, '0')} 10:00:00`,
+      payTime: status !== 'pending' && status !== 'cancelled' ? `2026-01-${String(Math.floor(Math.random() * 28 + 1)).padStart(2, '0')} 10:05:00` : null,
+      transactionId: status !== 'pending' && status !== 'cancelled' ? 'WX202601' + String(Math.floor(Math.random() * 89999999 + 10000000)) : null,
+      lessons: lessons
+    }
+  })
+}
+
 // 模拟数据
-const tableData = ref([
-  { 
-    id: 1, orderNo: 'ORD20260115001', parentName: '张妈妈', parentPhone: '13800138001',
-    tutorName: '李老师', tutorPhone: '13900000001', subject: '数学',
-    lessonCount: 10, lessonPrice: 150, totalAmount: 1500, escrowAmount: 1200,
-    completedCount: 3, status: 'active', createTime: '2026-01-15 10:00:00',
-    payTime: '2026-01-15 10:05:00', transactionId: 'WX20260115100500001',
-    lessons: [
-      { lessonNo: 1, date: '2026-01-16', startTime: '14:00', endTime: '16:00', status: 'completed' },
-      { lessonNo: 2, date: '2026-01-18', startTime: '14:00', endTime: '16:00', status: 'completed' },
-      { lessonNo: 3, date: '2026-01-20', startTime: '14:00', endTime: '16:00', status: 'completed' },
-      { lessonNo: 4, date: '2026-01-22', startTime: '14:00', endTime: '16:00', status: 'pending' }
-    ]
-  },
-  { 
-    id: 2, orderNo: 'ORD20260114001', parentName: '李爸爸', parentPhone: '13800138002',
-    tutorName: '王老师', tutorPhone: '13900000002', subject: '英语',
-    lessonCount: 20, lessonPrice: 200, totalAmount: 4000, escrowAmount: 3200,
-    completedCount: 8, status: 'active', createTime: '2026-01-14 15:00:00',
-    payTime: '2026-01-14 15:10:00', transactionId: 'WX20260114151000002'
-  },
-  { 
-    id: 3, orderNo: 'ORD20260110001', parentName: '王女士', parentPhone: '13800138003',
-    tutorName: '张老师', tutorPhone: '13900000003', subject: '物理',
-    lessonCount: 5, lessonPrice: 180, totalAmount: 900, escrowAmount: 450,
-    completedCount: 0, status: 'refunding', createTime: '2026-01-10 09:00:00',
-    payTime: '2026-01-10 09:05:00', transactionId: 'WX20260110090500003'
-  },
-  { 
-    id: 4, orderNo: 'ORD20260108001', parentName: '赵先生', parentPhone: '13800138004',
-    tutorName: '陈老师', tutorPhone: '13900000004', subject: '语文',
-    lessonCount: 10, lessonPrice: 120, totalAmount: 1200, escrowAmount: 0,
-    completedCount: 10, status: 'completed', createTime: '2026-01-08 11:00:00',
-    payTime: '2026-01-08 11:05:00', transactionId: 'WX20260108110500004'
-  }
-])
+const tableData = ref(generateOrders())
 
 onMounted(() => {
   fetchData()

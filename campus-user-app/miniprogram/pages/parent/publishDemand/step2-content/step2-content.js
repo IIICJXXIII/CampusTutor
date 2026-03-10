@@ -3,22 +3,38 @@ const api = require('../../../../config/apiConfig.js');
 
 Page({
   data: {
-    // 表单数据 (对应 DemandPostRequest)
     form: {
       studentId: null,
       title: '',
-      grade: '', // 自动从上一步带入
+      grade: '',
       subject: '',
+      skillLevel: '',
+      venueType: '',
       expectPrice: '',
-      teachMode: 1, // 1上门
+      teachMode: 1,
       address: '',
       longitude: null,
       latitude: null,
       detail: '',
-      scheduleRequire: [] // 暂时留空
+      scheduleRequire: []
     },
 
-    subjects: ['语文', '数学', '英语', '物理', '化学', '全科作业'],
+    // 素质教育科目二级联动
+    subjectCategories: [
+      ['艺术素养', '体育健康', '科创STEAM'],
+      ['钢琴/乐器陪练', '美术/书法', '声乐/视唱练耳']
+    ],
+    subjectChildren: {
+      '艺术素养': ['钢琴/乐器陪练', '美术/书法', '声乐/视唱练耳'],
+      '体育健康': ['中考体育专项', '羽毛球/网球陪练', '篮球/足球指导'],
+      '科创STEAM': ['少儿编程(Scratch/Python)', '机器人/3D打印', '科学实验/航模']
+    },
+    selectedCategoryIndex: [0, 0],
+
+    // 基础水平 & 场地要求
+    skillLevels: ['零基础', '有基础', '考级/比赛冲刺'],
+    venueTypes: ['教员上门', '学员上门', '公共场馆'],
+
     isSubmitting: false
   },
 
@@ -44,13 +60,40 @@ Page({
   },
 
   handleSubjectChange(e) {
-    const idx = e.detail.value;
-    const subject = this.data.subjects[idx];
+    const vals = e.detail.value;
+    const catIdx = vals[0];
+    const subIdx = vals[1];
+    const catName = this.data.subjectCategories[0][catIdx];
+    const children = this.data.subjectChildren[catName];
+    const subject = children[subIdx];
     this.setData({
+      selectedCategoryIndex: vals,
       'form.subject': subject,
-      // 优化标题体验
-      'form.title': `急寻${this.data.form.grade}${subject}老师`
+      'form.title': `寻找${subject}老师`
     });
+  },
+
+  handleSubjectColumnChange(e) {
+    const { column, value } = e.detail;
+    if (column === 0) {
+      const catName = this.data.subjectCategories[0][value];
+      const children = this.data.subjectChildren[catName];
+      this.setData({
+        'subjectCategories[1]': children,
+        'selectedCategoryIndex[0]': value,
+        'selectedCategoryIndex[1]': 0
+      });
+    }
+  },
+
+  handleSkillLevelChange(e) {
+    const idx = e.detail.value;
+    this.setData({ 'form.skillLevel': this.data.skillLevels[idx] });
+  },
+
+  handleVenueTypeChange(e) {
+    const idx = e.detail.value;
+    this.setData({ 'form.venueType': this.data.venueTypes[idx] });
   },
 
   setTeachMode(e) {

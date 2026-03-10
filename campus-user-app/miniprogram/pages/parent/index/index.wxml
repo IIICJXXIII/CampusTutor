@@ -4,7 +4,7 @@
   <view class="header">
     <view class="welcome">
       <text class="greeting">您好，{{userInfo.nickname || '家长'}} 👋</text>
-      <text class="subtitle">为孩子找到最适合的家教</text>
+      <text class="subtitle">为孩子找到最适合的素质教育老师</text>
     </view>
   </view>
 
@@ -15,7 +15,7 @@
         <text class="icon-text">📝</text>
       </view>
       <text class="action-title">发布需求</text>
-      <text class="action-desc">快速找家教</text>
+      <text class="action-desc">快速找老师</text>
     </view>
     <view class="action-item" bindtap="goToMyDemands">
       <view class="action-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)">
@@ -50,7 +50,7 @@
       <block wx:for="{{demandList}}" wx:key="id">
         <view class="demand-card" bindtap="goToDemandDetail" data-id="{{item.id}}">
           <view class="demand-info">
-            <text class="demand-title">{{item.subject}} - {{item.grade}}</text>
+            <text class="demand-title">{{item.subject}}</text>
             <text class="demand-time">{{item.createTime}}</text>
           </view>
           <view class="demand-status {{item.status === 3 ? 'completed' : item.status === 2 ? 'matched' : 'active'}}">

@@ -18,8 +18,11 @@ public class MatchWeightConfig {
     /** 科目匹配权重 */
     private double parentSubject = 23.0;
 
-    /** 年级匹配权重 */
-    private double parentGrade = 14.0;
+    /** 年龄段匹配权重（原年级，素质教育场景降低重要性） */
+    private double parentGrade = 2.0;
+
+    /** 基础水平匹配权重（素质教育新增） */
+    private double parentSkillLevel = 12.0;
 
     /** 距离评分权重 */
     private double parentDistance = 18.0;

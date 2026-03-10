@@ -1,8 +1,8 @@
 Page({
     data: {
         orderNo: 'ORD-20230520-8821',
-        subject: '高中数学',
-        grade: '高二',
+        subject: '中考体育专项',
+        grade: '13-15岁',
         teachMode: 1,
         unitPrice: 120,
         totalHours: 20,
