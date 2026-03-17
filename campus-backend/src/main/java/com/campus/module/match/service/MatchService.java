@@ -305,7 +305,7 @@ public class MatchService {
                 if (intentBoost > 0) {
                     double boostedScore = scoreResult.getMatchScore() + intentBoost;
                     scoreResult.setMatchScore(Math.min(100.0, boostedScore));
-                    scoreResult.getMatchTags().add("越刷越懂你");
+                    scoreResult.getMatchTags().add("系统推荐");
                     log.debug("Intent boost for tutor {}: +{}, new score={}",
                             profile.getId(), intentBoost, scoreResult.getMatchScore());
                 }
@@ -315,7 +315,8 @@ public class MatchService {
 
             // ============ 流量池赛马加分 (Traffic Pool Boost) ============
             try {
-                com.campus.module.match.dto.TrafficPoolLevel poolLevel = trafficPoolService.getPoolLevel(profile.getId());
+                com.campus.module.match.dto.TrafficPoolLevel poolLevel = trafficPoolService
+                        .getPoolLevel(profile.getId());
                 double poolBoost = trafficPoolService.getPoolBoostScore(poolLevel);
                 if (poolBoost > 0) {
                     double poolBoostedScore = scoreResult.getMatchScore() + poolBoost;
