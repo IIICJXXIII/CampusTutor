@@ -36,8 +36,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                                                 "/api/demand/list",
                                                 "/api/demand/nearby",
                                                 "/api/demand/list-with-match",
-                                                "/api/llm/**",
-                                                "/api/tutor/public/**");
+                                                "/api/tutor/public/**",
+                                                "/api/llm/**");
 
                 // 2. 可选认证拦截器 (针对上述排除的、但可能需要用户上下文的接口)
                 registry.addInterceptor(optionalJwtInterceptor)

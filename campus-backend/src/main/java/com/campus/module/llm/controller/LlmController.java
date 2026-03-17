@@ -60,13 +60,18 @@ public class LlmController {
      */
     @Operation(summary = "生成教案", description = "根据学生情况和科目生成详细教案")
     @PostMapping("/lesson/plan")
-    public Result<String> generateLessonPlan(
-            @RequestParam String subject,
-            @RequestParam String studentLevel,
-            @RequestParam String lessonDuration,
-            @RequestParam String studentInfo) {
-        String plan = chatAssistantService.generateLessonPlan(subject, studentLevel, lessonDuration, studentInfo);
-        return Result.success(plan);
+    public Result<String> generateLessonPlan(@Valid @RequestBody LessonPlanRequest request) {
+        try {
+            String plan = chatAssistantService.generateLessonPlan(
+                request.getSubject(), 
+                request.getStudentLevel(), 
+                request.getLessonDuration(), 
+                request.getStudentInfo()
+            );
+            return Result.success("生成成功", plan);
+        } catch (RuntimeException e) {
+            return Result.fail(e.getMessage());
+        }
     }
 
     /**
@@ -74,11 +79,16 @@ public class LlmController {
      */
     @Operation(summary = "润色评语", description = "将简单评语润色为专业、温馨的反馈")
     @PostMapping("/lesson/comment")
-    public Result<String> polishComment(
-            @RequestParam String rawComment,
-            @RequestParam String subject,
-            @RequestParam String studentInfo) {
-        String polished = chatAssistantService.polishComment(rawComment, subject, studentInfo);
-        return Result.success(polished);
+    public Result<String> polishComment(@Valid @RequestBody PolishCommentRequest request) {
+        try {
+            String polished = chatAssistantService.polishComment(
+                request.getRawComment(), 
+                request.getSubject(), 
+                request.getStudentInfo()
+            );
+            return Result.success("润色成功", polished);
+        } catch (RuntimeException e) {
+            return Result.fail(e.getMessage());
+        }
     }
 }

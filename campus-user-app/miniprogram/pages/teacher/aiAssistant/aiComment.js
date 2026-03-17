@@ -1,5 +1,5 @@
 // AI评语润色页面逻辑
-const apiConfig = require('../../../config/apiConfig.js');
+const api = require('../../../config/apiConfig.js');
 
 Page({
   data: {
@@ -41,31 +41,35 @@ Page({
     this.setData({ loading: true });
     
     wx.request({
-      url: getApp().globalData.baseUrl + '/api/llm/lesson/comment',
+      url: api.llm.commentPolish,
       method: 'POST',
       data: {
         rawComment,
         subject,
-        studentInfo
+        studentInfo: studentInfo || '无特殊情况'
       },
       header: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (wx.getStorageSync('token') || '')
       },
       success: (res) => {
-        if (res.data.code === 200) {
+        if (res.statusCode === 200 && res.data.code === 200) {
           this.setData({
-            result: res.data.data
+            result: res.data.data || ''
           });
+          if (!res.data.data) {
+            wx.showToast({ title: 'AI返回内容为空，请重试', icon: 'none' });
+          }
         } else {
           wx.showToast({
-            title: res.data.message || '润色失败',
+            title: res.data.msg || '润色失败，请稍后重试',
             icon: 'none'
           });
         }
       },
       fail: () => {
         wx.showToast({
-          title: '网络错误',
+          title: '网络错误，请检查连接',
           icon: 'none'
         });
       },
@@ -76,6 +80,7 @@ Page({
   },
   
   copyResult() {
+    if (!this.data.result) return;
     wx.setClipboardData({
       data: this.data.result,
       success: () => {

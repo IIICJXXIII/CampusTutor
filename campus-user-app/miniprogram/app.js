@@ -2,7 +2,8 @@
 App({
   onLaunch: function () {
     this.globalData = {
-      env: ""
+      env: "",
+      baseUrl: "http://localhost:8080"
     };
     // 注意：本项目使用自有后端，不使用微信云开发，已注释掉云初始化代码
     // if (!wx.cloud) {
@@ -15,6 +16,7 @@ App({
     // }
   },
   globalData: {
-    env: ""
+    env: "",
+    baseUrl: "http://localhost:8080"
   }
 });

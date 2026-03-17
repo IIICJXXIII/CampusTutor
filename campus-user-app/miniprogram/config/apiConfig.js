@@ -56,7 +56,9 @@ const api = {
   llm: {
     parse: `${API_HOST}/api/llm/demand/parse`,
     chat: `${API_HOST}/api/llm/chat`,
-    quickAnswer: `${API_HOST}/api/llm/quick-answer`
+    quickAnswer: `${API_HOST}/api/llm/quick-answer`,
+    lessonPlan: `${API_HOST}/api/llm/lesson/plan`,
+    commentPolish: `${API_HOST}/api/llm/lesson/comment`
   },
   // 匹配模块 (Match)
   match: {
