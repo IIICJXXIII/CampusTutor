@@ -143,18 +143,20 @@ const sendMessage = async () => {
   
   try {
     const res = await chat({
-      message: content,
-      context: messages.value.slice(-10).map(m => ({
+      scene: 'tutor',
+      messages: messages.value.slice(-10).map(m => ({
         role: m.role,
         content: m.content
       }))
     })
     
     if (res.code === 200) {
+      // 响应结构调整为适配 res.data.content 或者是原始的 res.data.reply
+      const replyContent = res.data.content || res.data.reply
       messages.value.push({
         id: Date.now() + 1,
         role: 'assistant',
-        content: res.data.reply
+        content: replyContent
       })
       scrollToBottom()
       
