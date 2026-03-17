@@ -20,6 +20,9 @@ public class ChatResponse {
     @Schema(description = "错误信息")
     private String error;
 
+    @Schema(description = "工具调用")
+    private cn.hutool.json.JSONArray toolCalls;
+
     public static ChatResponse success(String content, Integer tokens) {
         ChatResponse response = new ChatResponse();
         response.setSuccess(true);
@@ -65,5 +68,17 @@ public class ChatResponse {
 
     public void setError(String error) {
         this.error = error;
+    }
+
+    public boolean hasToolCalls() {
+        return toolCalls != null && !toolCalls.isEmpty();
+    }
+
+    public cn.hutool.json.JSONArray getToolCalls() {
+        return toolCalls;
+    }
+
+    public void setToolCalls(cn.hutool.json.JSONArray toolCalls) {
+        this.toolCalls = toolCalls;
     }
 }

@@ -96,15 +96,18 @@ Component({
 
     // 调用AI接口
     callAiApi(content) {
+      // 获取最近10条历史记录构建上下文
+      const historyContext = this.data.messages.slice(-10).map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      }));
+
       // 真实API调用
       wx.request({
         url: api.llm.chat,
         method: 'POST',
         data: {
-          messages: [{
-            role: 'user',
-            content: content
-          }],
+          messages: historyContext,
           scene: 'general'
         },
         header: {

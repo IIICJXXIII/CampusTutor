@@ -1,7 +1,15 @@
 package com.campus.module.llm.service;
 
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.campus.module.llm.dto.ChatMessage;
 import com.campus.module.llm.dto.ChatResponse;
+import com.campus.module.map.service.MapService;
+import com.campus.module.match.dto.TutorSearchRequest;
+import com.campus.module.match.dto.TutorSearchResult;
+import com.campus.module.match.service.MatchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,25 +27,27 @@ import java.util.List;
 public class ChatAssistantService {
 
     private final LlmClientService llmClient;
+    private final MatchService matchService;
+    private final MapService mapService;
 
     /**
      * 需求咨询场景的系统提示词
      */
     private static final String DEMAND_SYSTEM_PROMPT = """
             你是"校园智教"家教平台的AI助手。你的任务是帮助家长发布家教需求。
-            
+
             平台功能介绍：
             1. 家长可以发布家教需求，描述孩子的年级、科目、学习问题等
             2. 系统会智能匹配合适的大学生教员
             3. 家长可以查看教员的学校、专业、教学评价等信息
             4. 确认后可以预约试课、签约正式课程
-            
+
             你需要：
             1. 引导家长描述孩子的学习需求（年级、科目、学习困难等）
             2. 询问对教员的期望（性别、学历、价格等）
             3. 确认授课方式（上门/网课）和时间安排
             4. 收集完信息后，告知家长可以提交需求了
-            
+
             回复要简洁友好，不要太长。用中文回复。
             """;
 
@@ -46,13 +56,13 @@ public class ChatAssistantService {
      */
     private static final String TUTOR_SYSTEM_PROMPT = """
             你是"校园智教"家教平台的AI助手。你的任务是帮助家长了解和选择合适的教员。
-            
+
             你需要：
             1. 解答关于教员资质、认证流程的问题
             2. 说明平台的教员筛选标准
             3. 帮助家长理解如何查看教员评价
             4. 解释试课、签约、退费等流程
-            
+
             回复要专业、简洁。用中文回复。
             """;
 
@@ -61,20 +71,20 @@ public class ChatAssistantService {
      */
     private static final String GENERAL_SYSTEM_PROMPT = """
             你是"校园智教"家教平台的AI客服助手。
-            
+
             平台介绍：
             - 这是一个连接家长和大学生教员的家教服务平台
             - 所有教员都经过实名认证和学历认证
             - 支持上门家教和在线网课两种授课方式
             - 提供课时托管和评价系统保障服务质量
-            
+
             你可以回答：
             - 平台使用问题
             - 发布需求流程
             - 教员认证流程
             - 支付和退费政策
             - 安全保障措施
-            
+
             回复要友好、简洁、专业。用中文回复。如果问题超出你的知识范围，建议联系人工客服。
             """;
 
@@ -98,7 +108,148 @@ public class ChatAssistantService {
         fullMessages.add(ChatMessage.system(systemPrompt));
         fullMessages.addAll(messages);
 
-        return llmClient.chat(fullMessages);
+        JSONArray tools = null;
+        if ("tutor".equals(scene) || "general".equals(scene)) {
+            tools = buildTutorSearchTool();
+        }
+
+        int maxDepth = 3;
+        while (maxDepth-- > 0) {
+            ChatResponse response = llmClient.chat(fullMessages, tools);
+
+            if (!response.getSuccess() || !response.hasToolCalls()) {
+                return response;
+            }
+
+            JSONArray toolCalls = response.getToolCalls();
+            fullMessages.add(ChatMessage.assistantWithTool(toolCalls));
+
+            for (int i = 0; i < toolCalls.size(); i++) {
+                JSONObject toolCall = toolCalls.getJSONObject(i);
+                if ("function".equals(toolCall.getStr("type"))) {
+                    JSONObject function = toolCall.getJSONObject("function");
+                    String functionName = function.getStr("name");
+                    String toolCallId = toolCall.getStr("id");
+
+                    if ("search_tutors".equals(functionName)) {
+                        String argumentsStr = function.getStr("arguments");
+                        JSONObject arguments = JSONUtil.parseObj(argumentsStr);
+                        String subject = arguments.getStr("subject");
+                        String grade = arguments.getStr("grade");
+                        Integer teachMode = arguments.getInt("teachMode");
+                        String location = arguments.getStr("location");
+                        Integer maxPrice = arguments.getInt("maxPrice");
+                        Integer gender = arguments.getInt("gender");
+
+                        try {
+                            TutorSearchRequest request = new TutorSearchRequest();
+                            request.setSubject(subject);
+                            request.setGrade(grade);
+                            if (teachMode != null) {
+                                request.setTeachMode(teachMode);
+                            }
+                            if (gender != null) {
+                                request.setGender(gender);
+                            }
+                            if (maxPrice != null) {
+                                request.setMaxPrice(java.math.BigDecimal.valueOf(maxPrice));
+                            }
+                            if (location != null && !location.trim().isEmpty()) {
+                                com.campus.module.map.dto.GeocoderResult geoResult = mapService.geocode(location);
+                                if (geoResult != null && geoResult.getStatus() != null && geoResult.getStatus() == 0) {
+                                    if (geoResult.getResultData() != null && geoResult.getResultData().getLocation() != null) {
+                                        request.setLatitude(geoResult.getResultData().getLocation().getLat());
+                                        request.setLongitude(geoResult.getResultData().getLocation().getLng());
+                                        request.setRadius(15.0);
+                                    }
+                                }
+                            }
+                            
+                            request.setPage(1);
+                            request.setSize(3);
+
+                            IPage<TutorSearchResult> matchResult = matchService.searchTutors(request);
+
+                            List<JSONObject> simplifyResults = new ArrayList<>();
+                            for (TutorSearchResult result : matchResult.getRecords()) {
+                                JSONObject obj = new JSONObject();
+                                obj.set("realName", result.getRealName());
+                                obj.set("universityName", result.getUniversityName());
+                                obj.set("major", result.getMajor());
+                                if (result instanceof com.campus.module.match.dto.MatchScoreResult scoreResult) {
+                                    obj.set("matchScore", scoreResult.getMatchScore());
+                                    obj.set("matchTags", scoreResult.getMatchTags());
+                                }
+                                simplifyResults.add(obj);
+                            }
+
+                            fullMessages.add(
+                                    ChatMessage.toolResult(toolCallId, JSONUtil.toJsonStr(simplifyResults)));
+
+                        } catch (Exception e) {
+                            log.error("执行本地工具search_tutors失败", e);
+                            fullMessages.add(ChatMessage.toolResult(toolCallId, "{\"error\": \"内部执行失败\"}"));
+                        }
+                    } else {
+                        log.warn("大模型调用了未定义的工具: {}", functionName);
+                        fullMessages.add(ChatMessage.toolResult(toolCallId, "{\"error\": \"未找到该工具，请使用已定义的工具或直接回复文本\"}"));
+                    }
+                }
+            }
+        }
+
+        return ChatResponse.fail("已达到最大工具调用次数限制，请明确您的需求。");
+    }
+
+    private JSONArray buildTutorSearchTool() {
+        JSONObject tool = new JSONObject();
+        tool.set("type", "function");
+
+        JSONObject function = new JSONObject();
+        function.set("name", "search_tutors");
+        function.set("description", "根据科目和年级搜索合适的家教老师");
+
+        JSONObject parameters = new JSONObject();
+        parameters.set("type", "object");
+
+        JSONObject properties = new JSONObject();
+        JSONObject subjectParam = new JSONObject();
+        subjectParam.set("type", "string");
+        subjectParam.set("description", "科目名称，如：数学、英语、物理");
+        properties.set("subject", subjectParam);
+
+        JSONObject gradeParam = new JSONObject();
+        gradeParam.set("type", "string");
+        gradeParam.set("description", "年级名称，如：初一、高二、小学");
+        properties.set("grade", gradeParam);
+
+        JSONObject teachModeParam = new JSONObject();
+        teachModeParam.set("type", "integer");
+        teachModeParam.set("description", "授课方式（1: 上门家教, 2: 在线网课）");
+        properties.set("teachMode", teachModeParam);
+
+        JSONObject locationParam = new JSONObject();
+        locationParam.set("type", "string");
+        locationParam.set("description", "上门家教的大致服务地址（如：北京市海淀区中关村大街）");
+        properties.set("location", locationParam);
+
+        JSONObject maxPriceParam = new JSONObject();
+        maxPriceParam.set("type", "integer");
+        maxPriceParam.set("description", "家长能接受的最高课时费（元/小时）");
+        properties.set("maxPrice", maxPriceParam);
+
+        JSONObject genderParam = new JSONObject();
+        genderParam.set("type", "integer");
+        genderParam.set("description", "期望的教员性别（1: 男的, 2: 女的）");
+        properties.set("gender", genderParam);
+
+        parameters.set("properties", properties);
+        parameters.set("required", new JSONArray().put("subject"));
+
+        function.set("parameters", parameters);
+        tool.set("function", function);
+
+        return new JSONArray().put(tool);
     }
 
     /**

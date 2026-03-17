@@ -8,11 +8,15 @@ import java.util.List;
  */
 public class ChatMessage {
 
-    @Schema(description = "角色: system, user, assistant")
+    @Schema(description = "角色: system, user, assistant, tool")
     private String role;
 
     @Schema(description = "消息内容")
     private String content;
+
+    private String toolCallId;
+
+    private cn.hutool.json.JSONArray toolCalls;
 
     public ChatMessage() {}
 
@@ -33,6 +37,18 @@ public class ChatMessage {
         return new ChatMessage("assistant", content);
     }
 
+    public static ChatMessage assistantWithTool(cn.hutool.json.JSONArray toolCalls) {
+        ChatMessage msg = new ChatMessage("assistant", null);
+        msg.setToolCalls(toolCalls);
+        return msg;
+    }
+
+    public static ChatMessage toolResult(String toolCallId, String content) {
+        ChatMessage msg = new ChatMessage("tool", content);
+        msg.setToolCallId(toolCallId);
+        return msg;
+    }
+
     public String getRole() {
         return role;
     }
@@ -47,5 +63,21 @@ public class ChatMessage {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getToolCallId() {
+        return toolCallId;
+    }
+
+    public void setToolCallId(String toolCallId) {
+        this.toolCallId = toolCallId;
+    }
+
+    public cn.hutool.json.JSONArray getToolCalls() {
+        return toolCalls;
+    }
+
+    public void setToolCalls(cn.hutool.json.JSONArray toolCalls) {
+        this.toolCalls = toolCalls;
     }
 }
