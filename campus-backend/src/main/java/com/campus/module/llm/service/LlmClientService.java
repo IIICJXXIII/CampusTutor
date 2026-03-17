@@ -37,6 +37,17 @@ public class LlmClientService {
      * @return 聊天响应
      */
     public ChatResponse chat(List<ChatMessage> messages) {
+        return chat(messages, null);
+    }
+
+    /**
+     * 发送聊天请求（带工具）
+     *
+     * @param messages 消息列表
+     * @param tools    工具列表
+     * @return 聊天响应
+     */
+    public ChatResponse chat(List<ChatMessage> messages, JSONArray tools) {
         if (!config.isEnabled()) {
             return ChatResponse.fail("LLM服务未启用");
         }
@@ -48,14 +59,14 @@ public class LlmClientService {
         try {
             switch (config.getProvider().toLowerCase()) {
                 case "deepseek":
-                    return callDeepSeek(messages);
+                    return callDeepSeek(messages, tools);
                 case "openai":
                 case "azure":
-                    return callOpenAI(messages);
+                    return callOpenAI(messages, tools);
                 case "qwen":
-                    return callQwen(messages);
+                    return callQwen(messages, tools);
                 default:
-                    return callDeepSeek(messages);
+                    return callDeepSeek(messages, tools);
             }
         } catch (Exception e) {
             log.error("LLM调用失败: {}", e.getMessage(), e);
@@ -67,7 +78,7 @@ public class LlmClientService {
      * 调用DeepSeek API
      * DeepSeek V3使用OpenAI兼容的API格式
      */
-    private ChatResponse callDeepSeek(List<ChatMessage> messages) {
+    private ChatResponse callDeepSeek(List<ChatMessage> messages, JSONArray tools) {
         String url = config.getBaseUrl() + "/chat/completions";
 
         JSONObject requestBody = new JSONObject();
@@ -79,10 +90,22 @@ public class LlmClientService {
         for (ChatMessage msg : messages) {
             JSONObject msgObj = new JSONObject();
             msgObj.set("role", msg.getRole());
-            msgObj.set("content", msg.getContent());
+            if (msg.getContent() != null) {
+                msgObj.set("content", msg.getContent());
+            }
+            if (msg.getToolCallId() != null) {
+                msgObj.set("tool_call_id", msg.getToolCallId());
+            }
+            if (msg.getToolCalls() != null) {
+                msgObj.set("tool_calls", msg.getToolCalls());
+            }
             messagesArray.add(msgObj);
         }
         requestBody.set("messages", messagesArray);
+
+        if (tools != null && !tools.isEmpty()) {
+            requestBody.set("tools", tools);
+        }
 
         log.debug("DeepSeek请求: {}", requestBody);
 
@@ -110,7 +133,12 @@ public class LlmClientService {
             JSONObject usage = jsonResponse.getJSONObject("usage");
             Integer tokensUsed = usage != null ? usage.getInt("total_tokens") : null;
 
-            return ChatResponse.success(content, tokensUsed);
+            ChatResponse chatResponse = ChatResponse.success(content, tokensUsed);
+            JSONArray toolCalls = message.getJSONArray("tool_calls");
+            if (toolCalls != null && !toolCalls.isEmpty()) {
+                chatResponse.setToolCalls(toolCalls);
+            }
+            return chatResponse;
         }
 
         return ChatResponse.fail("DeepSeek API响应格式错误");
@@ -119,7 +147,7 @@ public class LlmClientService {
     /**
      * 调用OpenAI兼容的API
      */
-    private ChatResponse callOpenAI(List<ChatMessage> messages) {
+    private ChatResponse callOpenAI(List<ChatMessage> messages, JSONArray tools) {
         String url = config.getBaseUrl() + "/chat/completions";
 
         JSONObject requestBody = new JSONObject();
@@ -131,10 +159,22 @@ public class LlmClientService {
         for (ChatMessage msg : messages) {
             JSONObject msgObj = new JSONObject();
             msgObj.set("role", msg.getRole());
-            msgObj.set("content", msg.getContent());
+            if (msg.getContent() != null) {
+                msgObj.set("content", msg.getContent());
+            }
+            if (msg.getToolCallId() != null) {
+                msgObj.set("tool_call_id", msg.getToolCallId());
+            }
+            if (msg.getToolCalls() != null) {
+                msgObj.set("tool_calls", msg.getToolCalls());
+            }
             messagesArray.add(msgObj);
         }
         requestBody.set("messages", messagesArray);
+
+        if (tools != null && !tools.isEmpty()) {
+            requestBody.set("tools", tools);
+        }
 
         log.debug("OpenAI请求: {}", requestBody);
 
@@ -162,7 +202,12 @@ public class LlmClientService {
             JSONObject usage = jsonResponse.getJSONObject("usage");
             Integer tokensUsed = usage != null ? usage.getInt("total_tokens") : null;
 
-            return ChatResponse.success(content, tokensUsed);
+            ChatResponse chatResponse = ChatResponse.success(content, tokensUsed);
+            JSONArray toolCalls = message.getJSONArray("tool_calls");
+            if (toolCalls != null && !toolCalls.isEmpty()) {
+                chatResponse.setToolCalls(toolCalls);
+            }
+            return chatResponse;
         }
 
         return ChatResponse.fail("API响应格式错误");
@@ -171,7 +216,7 @@ public class LlmClientService {
     /**
      * 调用通义千问API
      */
-    private ChatResponse callQwen(List<ChatMessage> messages) {
+    private ChatResponse callQwen(List<ChatMessage> messages, JSONArray tools) {
         String url = config.getBaseUrl();
         if (!url.contains("dashscope")) {
             url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation";
@@ -185,7 +230,15 @@ public class LlmClientService {
         for (ChatMessage msg : messages) {
             JSONObject msgObj = new JSONObject();
             msgObj.set("role", msg.getRole());
-            msgObj.set("content", msg.getContent());
+            if (msg.getContent() != null) {
+                msgObj.set("content", msg.getContent());
+            }
+            if (msg.getToolCallId() != null) {
+                msgObj.set("tool_call_id", msg.getToolCallId());
+            }
+            if (msg.getToolCalls() != null) {
+                msgObj.set("tool_calls", msg.getToolCalls());
+            }
             messagesArray.add(msgObj);
         }
         input.set("messages", messagesArray);
@@ -194,6 +247,10 @@ public class LlmClientService {
         JSONObject parameters = new JSONObject();
         parameters.set("max_tokens", config.getMaxTokens());
         parameters.set("temperature", config.getTemperature());
+        if (tools != null && !tools.isEmpty()) {
+            parameters.set("tools", tools);
+            parameters.set("result_format", "message");
+        }
         requestBody.set("parameters", parameters);
 
         log.debug("Qwen请求: {}", requestBody);
@@ -216,19 +273,25 @@ public class LlmClientService {
         JSONObject output = jsonResponse.getJSONObject("output");
         if (output != null) {
             String content = output.getStr("text");
+            JSONArray toolCalls = null;
             if (content == null) {
                 JSONArray choices = output.getJSONArray("choices");
                 if (choices != null && !choices.isEmpty()) {
                     JSONObject choice = choices.getJSONObject(0);
                     JSONObject message = choice.getJSONObject("message");
                     content = message.getStr("content");
+                    toolCalls = message.getJSONArray("tool_calls");
                 }
             }
 
             JSONObject usage = jsonResponse.getJSONObject("usage");
             Integer tokensUsed = usage != null ? usage.getInt("total_tokens") : null;
 
-            return ChatResponse.success(content, tokensUsed);
+            ChatResponse chatResponse = ChatResponse.success(content, tokensUsed);
+            if (toolCalls != null && !toolCalls.isEmpty()) {
+                chatResponse.setToolCalls(toolCalls);
+            }
+            return chatResponse;
         }
 
         return ChatResponse.fail("API响应格式错误");
