@@ -14,6 +14,9 @@
     "pages/teacher/findStudentList/findStudentList",
     "pages/teacher/lessonCheckIn/lessonCheckIn",
     "pages/teacher/lessonList/lessonList",
+    "pages/teacher/aiAssistant/aiHome",
+    "pages/teacher/aiAssistant/aiLessonPlan",
+    "pages/teacher/aiAssistant/aiComment",
     "pages/parent/publishDemand/step1-student/step1-student",
     "pages/parent/publishDemand/step2-teaching/step2-teaching",
     "pages/parent/publishDemand/step3-preference/step3-preference",
@@ -65,6 +68,12 @@
         "text": "首页",
         "iconPath": "static/icons/home.png",
         "selectedIconPath": "static/icons/home-active.png"
+      },
+      {
+        "pagePath": "pages/teacher/aiAssistant/aiHome",
+        "text": "AI助手",
+        "iconPath": "static/icons/examples.png",
+        "selectedIconPath": "static/icons/examples-active.png"
       },
       {
         "pagePath": "pages/common/messageList/messageList",

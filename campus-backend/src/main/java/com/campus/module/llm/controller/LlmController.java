@@ -54,4 +54,31 @@ public class LlmController {
         String answer = chatAssistantService.quickAnswer(question);
         return Result.success(answer);
     }
+
+    /**
+     * 生成教案
+     */
+    @Operation(summary = "生成教案", description = "根据学生情况和科目生成详细教案")
+    @PostMapping("/lesson/plan")
+    public Result<String> generateLessonPlan(
+            @RequestParam String subject,
+            @RequestParam String studentLevel,
+            @RequestParam String lessonDuration,
+            @RequestParam String studentInfo) {
+        String plan = chatAssistantService.generateLessonPlan(subject, studentLevel, lessonDuration, studentInfo);
+        return Result.success(plan);
+    }
+
+    /**
+     * 润色评语
+     */
+    @Operation(summary = "润色评语", description = "将简单评语润色为专业、温馨的反馈")
+    @PostMapping("/lesson/comment")
+    public Result<String> polishComment(
+            @RequestParam String rawComment,
+            @RequestParam String subject,
+            @RequestParam String studentInfo) {
+        String polished = chatAssistantService.polishComment(rawComment, subject, studentInfo);
+        return Result.success(polished);
+    }
 }
