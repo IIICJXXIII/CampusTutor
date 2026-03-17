@@ -167,45 +167,23 @@ const sendMessage = async () => {
   loading.value = true
   
   try {
-    // 使用流式响应
-    const assistantMessage = {
-      id: Date.now() + 1,
-      role: 'assistant',
-      content: ''
-    }
-    messages.value.push(assistantMessage)
-    
-    const response = await streamChat({
-      messages: messages.value.slice(0, -1).map(m => ({
+    const res = await chat({
+      scene: 'demand',
+      messages: messages.value.map(m => ({
         role: m.role,
         content: m.content
-      })),
-      question
+      }))
     })
     
-    const reader = response.body?.getReader()
-    const decoder = new TextDecoder()
-    
-    if (reader) {
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n').filter(line => line.startsWith('data: '))
-        
-        for (const line of lines) {
-          const data = line.slice(6)
-          if (data === '[DONE]') continue
-          
-          try {
-            const parsed = JSON.parse(data)
-            const content = parsed.choices?.[0]?.delta?.content || ''
-            assistantMessage.content += content
-            scrollToBottom()
-          } catch {}
-        }
-      }
+    if (res.code === 200) {
+      messages.value.push({
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: res.data.content || res.data.reply
+      })
+      scrollToBottom()
+    } else {
+      throw new Error(res.msg || '获取回复失败')
     }
     
     // 保存聊天记录
