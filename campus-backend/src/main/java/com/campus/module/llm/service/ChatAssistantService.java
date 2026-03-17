@@ -140,6 +140,7 @@ public class ChatAssistantService {
                         String location = arguments.getStr("location");
                         Integer maxPrice = arguments.getInt("maxPrice");
                         Integer gender = arguments.getInt("gender");
+                        String keyword = arguments.getStr("keyword");
 
                         try {
                             TutorSearchRequest request = new TutorSearchRequest();
@@ -154,6 +155,9 @@ public class ChatAssistantService {
                             if (maxPrice != null) {
                                 request.setMaxPrice(java.math.BigDecimal.valueOf(maxPrice));
                             }
+                            if (keyword != null && !keyword.trim().isEmpty()) {
+                                request.setKeyword(keyword);
+                            }
                             if (location != null && !location.trim().isEmpty()) {
                                 com.campus.module.map.dto.GeocoderResult geoResult = mapService.geocode(location);
                                 if (geoResult != null && geoResult.getStatus() != null && geoResult.getStatus() == 0) {
@@ -166,7 +170,8 @@ public class ChatAssistantService {
                             }
                             
                             request.setPage(1);
-                            request.setSize(3);
+                            // 如果有专门的细节要求，多查出几条数据给大模型做阅读理解和筛选
+                            request.setSize(keyword != null && !keyword.trim().isEmpty() ? 8 : 3);
 
                             IPage<TutorSearchResult> matchResult = matchService.searchTutors(request);
 
@@ -176,15 +181,35 @@ public class ChatAssistantService {
                                 obj.set("realName", result.getRealName());
                                 obj.set("universityName", result.getUniversityName());
                                 obj.set("major", result.getMajor());
+                                
+                                // 加入自我介绍，截断防止token超限
+                                String intro = result.getIntroduction();
+                                if (intro != null) {
+                                    if (intro.length() > 200) {
+                                        intro = intro.substring(0, 200) + "...";
+                                    }
+                                    obj.set("introduction", intro);
+                                }
+
                                 if (result instanceof com.campus.module.match.dto.MatchScoreResult scoreResult) {
                                     obj.set("matchScore", scoreResult.getMatchScore());
                                     obj.set("matchTags", scoreResult.getMatchTags());
                                 }
                                 simplifyResults.add(obj);
                             }
+                            
+                            String finalResultJson;
+                            if (keyword != null && !keyword.trim().isEmpty()) {
+                                JSONObject responseObj = new JSONObject();
+                                responseObj.set("system_instruction", "用户提出了额外的细节要求：'" + keyword + "'。请你仔细阅读以下候选教员的'introduction'(自我介绍)，依靠你的语义理解判断哪些教员的经历符合该要求（例如'辅导过高考'在语义上等于'高考经验'）。如果找到符合的，优先推荐他们；如果所有候选人的自我介绍都不符合，请如实说明'目前没有完全符合该细节要求的老师'，但依然推荐列表中最优秀的几位作为备选。");
+                                responseObj.set("results", simplifyResults);
+                                finalResultJson = responseObj.toString();
+                            } else {
+                                finalResultJson = JSONUtil.toJsonStr(simplifyResults);
+                            }
 
                             fullMessages.add(
-                                    ChatMessage.toolResult(toolCallId, JSONUtil.toJsonStr(simplifyResults)));
+                                    ChatMessage.toolResult(toolCallId, finalResultJson));
 
                         } catch (Exception e) {
                             log.error("执行本地工具search_tutors失败", e);
@@ -242,6 +267,11 @@ public class ChatAssistantService {
         genderParam.set("type", "integer");
         genderParam.set("description", "期望的教员性别（1: 男的, 2: 女的）");
         properties.set("gender", genderParam);
+
+        JSONObject keywordParam = new JSONObject();
+        keywordParam.set("type", "string");
+        keywordParam.set("description", "额外的细节要求（如果在用户描述中提及特殊的经验或背景，例如：高考辅导经验、耐心、考研等）。后端将为您提供多位优秀候选人的详细自我介绍，由您来做语义阅读理解并判断筛选。");
+        properties.set("keyword", keywordParam);
 
         parameters.set("properties", properties);
         parameters.set("required", new JSONArray().put("subject"));
