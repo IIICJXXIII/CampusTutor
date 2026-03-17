@@ -118,4 +118,99 @@ public class ChatAssistantService {
             return "抱歉，暂时无法回答您的问题。您可以联系人工客服获取帮助。";
         }
     }
+
+    /**
+     * 教案生成场景的系统提示词
+     */
+    private static final String LESSON_PLAN_SYSTEM_PROMPT = """
+            你是"校园智教"平台的AI教学赋能官，专业的教案生成助手。
+            你的任务是为大学生教员生成详细的课程教案。
+            
+            教案要求：
+            1. 结构清晰：包含热身、主要内容、练习、游戏、总结等环节
+            2. 时间合理：根据给定的课时时长分配时间
+            3. 针对性强：根据学生水平和科目特点设计内容
+            4. 实用性高：提供具体的教学方法和练习内容
+            5. 语言专业：使用专业的教学术语，但保持易懂
+            
+            输出格式：
+            - 教案标题
+            - 适用学生：[学生情况]
+            - 课时时长：[时长]
+            - 教学目标：[具体目标]
+            - 教学准备：[需要的器材/材料]
+            - 教学流程：
+              1. 环节一：[名称] - [时间]
+                 - 内容：[详细描述]
+                 - 方法：[教学方法]
+              2. 环节二：[名称] - [时间]
+                 ...
+            - 注意事项：[安全、教学重点等]
+            - 课后作业：[可选]
+            """;
+
+    /**
+     * 评语润色场景的系统提示词
+     */
+    private static final String COMMENT_POLISH_SYSTEM_PROMPT = """
+            你是"校园智教"平台的AI教学赋能官，专业的评语润色助手。
+            你的任务是将教员的简单评语润色为专业、温馨的家长反馈。
+            
+            润色要求：
+            1. 语言温暖：使用亲切、鼓励的语气
+            2. 专业表达：使用教育专业术语，体现专业性
+            3. 具体详细：将简单描述扩展为具体的观察和分析
+            4. 正面引导：突出学生的进步和优点
+            5. 建设性建议：提供具体的改进方向
+            6. 家长友好：让家长感受到教师的用心和专业
+            
+            输出格式：
+            - 开头：亲切的问候
+            - 主体：详细的学习情况反馈
+            - 优点：学生的进步和闪光点
+            - 建议：具体的改进方向
+            - 结尾：鼓励和期待
+            """;
+
+    /**
+     * 生成教案
+     *
+     * @param subject      教学科目
+     * @param studentLevel 学生水平
+     * @param lessonDuration 课时时长
+     * @param studentInfo  学生情况
+     * @return 教案内容
+     */
+    public String generateLessonPlan(String subject, String studentLevel, String lessonDuration, String studentInfo) {
+        List<ChatMessage> messages = new ArrayList<>();
+        messages.add(ChatMessage.system(LESSON_PLAN_SYSTEM_PROMPT));
+        messages.add(ChatMessage.user("请为以下情况生成详细教案：\n" +
+                "科目：" + subject + "\n" +
+                "学生水平：" + studentLevel + "\n" +
+                "课时时长：" + lessonDuration + "\n" +
+                "学生情况：" + studentInfo));
+        
+        ChatResponse response = llmClient.chat(messages);
+        return response.getContent();
+    }
+
+    /**
+     * 润色评语
+     *
+     * @param rawComment 原始评语
+     * @param subject    教学科目
+     * @param studentInfo 学生情况
+     * @return 润色后的评语
+     */
+    public String polishComment(String rawComment, String subject, String studentInfo) {
+        List<ChatMessage> messages = new ArrayList<>();
+        messages.add(ChatMessage.system(COMMENT_POLISH_SYSTEM_PROMPT));
+        messages.add(ChatMessage.user("请润色以下评语：\n" +
+                "原始评语：" + rawComment + "\n" +
+                "科目：" + subject + "\n" +
+                "学生情况：" + studentInfo));
+        
+        ChatResponse response = llmClient.chat(messages);
+        return response.getContent();
+    }
 }
