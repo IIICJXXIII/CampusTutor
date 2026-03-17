@@ -191,6 +191,9 @@ public class ChatAssistantService {
                 "学生情况：" + studentInfo));
         
         ChatResponse response = llmClient.chat(messages);
+        if (!response.getSuccess()) {
+            throw new RuntimeException("AI教案生成失败：" + response.getError());
+        }
         return response.getContent();
     }
 
@@ -211,6 +214,9 @@ public class ChatAssistantService {
                 "学生情况：" + studentInfo));
         
         ChatResponse response = llmClient.chat(messages);
+        if (!response.getSuccess()) {
+            throw new RuntimeException("AI评语润色失败：" + response.getError());
+        }
         return response.getContent();
     }
 }

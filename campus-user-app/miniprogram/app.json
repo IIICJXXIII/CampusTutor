@@ -37,7 +37,8 @@
     "pages/teacher/teacherSchedule/teacherSchedule",
     "pages/common/wrongBook/wrongBook",
     "pages/common/wrongBookDetail/wrongBookDetail",
-    "pages/common/userInfoView/userInfoView"
+    "pages/common/userInfoView/userInfoView",
+    "pages/common/aiEntry/aiEntry"
   ],
   "permission": {
     "scope.userLocation": {
@@ -70,7 +71,7 @@
         "selectedIconPath": "static/icons/home-active.png"
       },
       {
-        "pagePath": "pages/teacher/aiAssistant/aiHome",
+        "pagePath": "pages/common/aiEntry/aiEntry",
         "text": "AI助手",
         "iconPath": "static/icons/examples.png",
         "selectedIconPath": "static/icons/examples-active.png"
