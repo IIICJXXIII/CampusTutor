@@ -76,6 +76,11 @@ public class TutorSearchRequest {
     private String sortOrder;
 
     /**
+     * 关键词筛选（匹配自我介绍等细节补充）
+     */
+    private String keyword;
+
+    /**
      * 页码
      */
     private Integer page = 1;
@@ -144,5 +149,9 @@ public class TutorSearchRequest {
 
     public String getSortOrder() {
         return sortOrder;
+    }
+
+    public String getKeyword() {
+        return keyword;
     }
 }
