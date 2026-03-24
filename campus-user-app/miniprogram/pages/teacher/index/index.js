@@ -2,6 +2,7 @@
 const request = require('../../../utils/request.js');
 const apiConfig = require('../../../config/apiConfig.js');
 const storageUtil = require('../../../utils/storageUtil.js');
+const mapUtil = require('../../../utils/mapUtil.js');
 
 Page({
     data: {
@@ -13,7 +14,8 @@ Page({
             orderCount: 0,
             rating: '5.0'
         },
-        nearbyDemands: []
+        nearbyDemands: [],
+        locationSource: 'unknown' // 位置来源：gps, profile, none
     },
 
     onShow() {
@@ -91,18 +93,50 @@ Page({
     },
 
     // 获取当前位置
-    getCurrentLocation() {
+    async getCurrentLocation() {
         return new Promise((resolve) => {
             wx.getLocation({
                 type: 'gcj02',
                 success: (res) => {
-                    resolve({ longitude: res.longitude, latitude: res.latitude });
+                    // 验证坐标是否合理
+                    if (mapUtil.isValidCoordinate(res.latitude, res.longitude)) {
+                        this.setData({ locationSource: 'gps' });
+                        resolve({ longitude: res.longitude, latitude: res.latitude });
+                    } else {
+                        // 坐标不合理，使用教师档案位置
+                        console.warn('GPS坐标无效，使用档案位置');
+                        this.useProfileLocation().then(location => {
+                            resolve(location);
+                        }).catch(() => {
+                            resolve(null);
+                        });
+                    }
                 },
-                fail: () => {
-                    resolve(null);
+                fail: async () => {
+                    // 定位失败，使用教师档案位置
+                    const location = await this.useProfileLocation();
+                    resolve(location);
                 }
             });
         });
+    },
+
+    // 使用教师档案位置
+    async useProfileLocation() {
+        try {
+            const profileLocation = await mapUtil.getProfileLocation();
+            if (profileLocation) {
+                this.setData({ locationSource: 'profile' });
+                return profileLocation;
+            } else {
+                this.setData({ locationSource: 'none' });
+                return null;
+            }
+        } catch (err) {
+            console.error('获取档案位置失败:', err);
+            this.setData({ locationSource: 'none' });
+            return null;
+        }
     },
 
     // 导航方法
