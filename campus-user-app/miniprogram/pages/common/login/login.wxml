@@ -47,7 +47,8 @@
       <view class="line"></view>
     </view>
 
-    <button class="wx-login-btn" bindtap="handleWxLogin">
+    <!-- 微信一键登录按钮，使用官方getPhoneNumber能力 -->
+    <button class="wx-login-btn" open-type="getPhoneNumber" bindgetphonenumber="handleGetPhoneNumber">
       <text class="wx-icon">🟢</text> 微信一键登录
     </button>
 

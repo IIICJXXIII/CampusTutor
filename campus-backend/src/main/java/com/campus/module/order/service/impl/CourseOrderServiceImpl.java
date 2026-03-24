@@ -21,7 +21,7 @@ import com.campus.module.tutor.entity.TutorProfile;
 import com.campus.module.tutor.mapper.TutorProfileMapper;
 import com.campus.module.wallet.service.SysWalletService;
 import com.campus.module.wallet.entity.SysWallet;
-import com.campus.service.WechatPayService;
+import com.campus.service.RealWechatPayService;
 import com.campus.module.wallet.service.SysTransactionFlowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +50,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
     private final SysWalletService walletService;
     private final TeachingRecordMapper teachingRecordMapper;
     private final DemandPostMapper demandPostMapper;
-    private final WechatPayService wechatPayService;
+    private final RealWechatPayService wechatPayService;
     private final SysTransactionFlowService transactionFlowService;
 
     /**

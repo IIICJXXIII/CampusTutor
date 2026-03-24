@@ -16,7 +16,8 @@ const api = {
     login: `${API_HOST}/api/auth/login`,
     register: `${API_HOST}/api/auth/register`,
     sendCode: `${API_HOST}/api/auth/send-code`,
-    wxLogin: `${API_HOST}/api/auth/wx-login`
+    wxLogin: `${API_HOST}/api/auth/wx-login`,
+    wxPhoneLogin: `${API_HOST}/api/auth/wx-phone-login`
   },
   // 用户模块
   user: {
