@@ -162,6 +162,8 @@ CREATE TABLE `demand_post` (
   `title` varchar(128) DEFAULT NULL COMMENT '需求标题',
   `subject` varchar(32) NOT NULL COMMENT '需求科目',
   `grade` varchar(32) NOT NULL COMMENT '需求年级',
+  `skill_level` varchar(32) DEFAULT NULL COMMENT '基础水平：零基础、有基础、考级/比赛冲刺',
+  `venue_type` tinyint DEFAULT NULL COMMENT '场地类型：1教员上门 2学员上门 3公共场馆',
   `expect_price` decimal(10,2) DEFAULT NULL COMMENT '期望价格(元/小时)',
   `schedule_require` text DEFAULT NULL COMMENT '课时要求(JSON数组)',
   `teach_mode` tinyint DEFAULT '3' COMMENT '授课方式：1上门 2网课 3均可',

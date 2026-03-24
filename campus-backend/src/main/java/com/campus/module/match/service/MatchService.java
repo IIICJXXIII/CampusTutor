@@ -43,6 +43,7 @@ public class MatchService {
     private final com.campus.module.match.config.CFConfig cfConfig;
     private final RealtimeIntentService realtimeIntentService;
     private final TrafficPoolService trafficPoolService;
+    private final DeepFMInferenceService deepFMInferenceService;
 
     /**
      * 搜索教员
@@ -407,5 +408,321 @@ public class MatchService {
             resultPage.setTotal(profilePage.getTotal());
         }
         return resultPage;
+    }
+
+    // ========================================================================================
+    // LBS 召回 + DeepFM 深度学习精排 —— 级联推荐算法
+    // ========================================================================================
+
+    /** 离散特征 Hash 取模空间 */
+    private static final int HASH_MOD = 10000;
+
+    /** 连续特征归一化分母 */
+    private static final float PRICE_NORM = 500f;
+    private static final float RATING_NORM = 5.0f;
+    private static final float ORDER_NORM = 1000f;
+
+    /**
+     * 基于 "LBS 空间召回 + DeepFM 深度学习精排" 的级联推荐
+     *
+     * @param userId   当前家长用户 ID
+     * @param lng      家长所在经度
+     * @param lat      家长所在纬度
+     * @param radiusKm 搜索半径(公里)
+     * @return 按 matchScore 降序排列的推荐教员列表
+     */
+    public List<TutorSearchResult> getRecommendedTutors(Long userId,
+            double lng,
+            double lat,
+            double radiusKm,
+            String subject) {
+        // ==================== Step 1: 空间召回 (Recall Phase) ====================
+        log.info("[DeepFM推荐] 开始 LBS 召回, userId={}, lng={}, lat={}, radius={}km, subject={}",
+                userId, lng, lat, radiusKm, subject);
+
+        // 1-1. 从 Redis GEO 中捞出半径内的所有教员 ID 及距离
+        Map<Long, Double> nearbyWithDistance = geoService.searchNearbyTutorsWithDistance(lng, lat, radiusKm);
+
+        if (nearbyWithDistance.isEmpty()) {
+            log.warn("[DeepFM推荐] LBS 召回为空(Redis 无数据或无附近教员), 返回空列表");
+            return Collections.emptyList();
+        }
+
+        Set<Long> nearbyTutorIds = nearbyWithDistance.keySet();
+        log.info("[DeepFM推荐] LBS 召回教员数量: {}", nearbyTutorIds.size());
+
+        // 1-2. 根据 ID 批量查询教员详细信息（仅已认证教员，并按学科初步过滤）
+        LambdaQueryWrapper<TutorProfile> wrapper = new LambdaQueryWrapper<TutorProfile>()
+                .in(TutorProfile::getId, nearbyTutorIds)
+                .eq(TutorProfile::getCertStatus, 2);
+
+        if (org.springframework.util.StringUtils.hasText(subject)) {
+            wrapper.and(w -> w.like(TutorProfile::getTeachSubjects, subject)
+                    .or().isNull(TutorProfile::getTeachSubjects)
+                    .or().eq(TutorProfile::getTeachSubjects, "")
+                    .or().eq(TutorProfile::getTeachSubjects, "[]"));
+        }
+
+        List<TutorProfile> tutorProfiles = tutorProfileMapper.selectList(wrapper);
+
+        if (tutorProfiles.isEmpty()) {
+            log.warn("[DeepFM推荐] 召回教员全部未认证或查询为空, 返回空列表");
+            return Collections.emptyList();
+        }
+
+        log.info("[DeepFM推荐] 数据库查询到已认证教员: {} 位", tutorProfiles.size());
+
+        // ==================== Step 2: 特征工程 (Feature Engineering) ====================
+        int n = tutorProfiles.size();
+        float[][] features = new float[n][8];
+
+        for (int i = 0; i < n; i++) {
+            TutorProfile tp = tutorProfiles.get(i);
+            features[i] = buildFeatureVector(userId, tp);
+        }
+
+        log.debug("[DeepFM推荐] 特征矩阵构建完成, shape=[{}, 8]", n);
+
+        // ==================== Step 3: 深度学习推理 (Ranking Phase) ====================
+        float[] scores = null;
+        boolean inferenceFailed = false;
+
+        try {
+            if (deepFMInferenceService.isModelReady()) {
+                scores = deepFMInferenceService.predictScores(features);
+            }
+        } catch (Exception e) {
+            log.error("[DeepFM推荐] 模型推理异常: {}", e.getMessage(), e);
+        }
+
+        if (scores == null) {
+            inferenceFailed = true;
+            log.warn("[DeepFM推荐] 模型推理失败，启用降级排序策略：协同过滤 + 意图分 + 流量池机制");
+        }
+
+        // ==================== Step 4: 降级路径——预计算 CF 协同过滤得分 ====================
+        Map<Long, Double> cfScoresMap = new HashMap<>();
+        boolean cfEnabled = false;
+        double cfWeightVal = 0.0;
+
+        if (inferenceFailed && userId != null && userId > 0) {
+            try {
+                List<Long> candidateIds = tutorProfiles.stream()
+                        .map(TutorProfile::getId)
+                        .collect(Collectors.toList());
+
+                if (cfConfig.isEnableCache() && cfService.hasEnoughHistory(userId) && !candidateIds.isEmpty()) {
+                    cfScoresMap = cfService.batchPredictScores(userId, candidateIds);
+                    cfEnabled = !cfScoresMap.isEmpty();
+                    cfWeightVal = cfConfig.getCfWeight();
+                    log.info("[DeepFM降级] CF 协同过滤预测完成，有效得分教员数: {}", cfScoresMap.size());
+                }
+            } catch (Exception e) {
+                log.error("[DeepFM降级] CF 协同过滤预测异常，继续使用基础分: {}", e.getMessage());
+            }
+        }
+
+        // ==================== Step 5: 结果组装与排序 ====================
+        // 查询用户信息（获取头像等）
+        List<Long> userIds = tutorProfiles.stream()
+                .map(TutorProfile::getUserId)
+                .collect(Collectors.toList());
+        Map<Long, SysUser> userMap = new HashMap<>();
+        if (!userIds.isEmpty()) {
+            sysUserMapper.selectBatchIds(userIds).forEach(u -> userMap.put(u.getId(), u));
+        }
+
+        List<MatchScoreResult> results = new ArrayList<>(n);
+
+        for (int i = 0; i < n; i++) {
+            TutorProfile profile = tutorProfiles.get(i);
+            MatchScoreResult result = new MatchScoreResult();
+            List<String> tags = new ArrayList<>();
+
+            // ---------- 计算 matchScore ----------
+            double matchScore;
+            if (!inferenceFailed && scores != null) {
+                // ===== 主路径：使用 DeepFM 预估得分（转换到 0-100 区间）=====
+                matchScore = Math.min(100.0, Math.max(0.0, scores[i] * 100.0));
+                result.setDeepFmScore((double) scores[i]);
+                if (scores[i] >= 0.8f) {
+                    tags.add("AI精选");
+                }
+            } else {
+                // ===== 降级路径：协同过滤 + 意图流 + 流量池 三层级联 =====
+
+                // ----- 第一层：基础 Content Score（评分+订单量加权） -----
+                double ratingVal = profile.getRating() != null
+                        ? profile.getRating().doubleValue()
+                        : 0.0;
+                int orderVal = profile.getOrderCount() != null
+                        ? profile.getOrderCount()
+                        : 0;
+                matchScore = ratingVal / 5.0 * 60.0 + Math.min(orderVal / 1000.0, 1.0) * 40.0;
+
+                // ----- 第二层：混合 CF 协同过滤得分 -----
+                if (cfEnabled && cfScoresMap.containsKey(profile.getId())) {
+                    Double cfScore = cfScoresMap.get(profile.getId());
+                    if (cfScore != null) {
+                        double cfScoreNormalized = cfScore * 100.0; // 归一化到 0-100
+                        matchScore = (1 - cfWeightVal) * matchScore + cfWeightVal * cfScoreNormalized;
+                        result.setCfScore(cfScore);
+
+                        if (cfScore >= 0.7) {
+                            tags.add("相似家长推荐");
+                        } else if (cfScore >= 0.5) {
+                            tags.add("猜你喜欢");
+                        }
+                        log.debug("[DeepFM降级] 教员{} CF混合: contentBase={}, cf={}, hybrid={}",
+                                profile.getId(), ratingVal, cfScoreNormalized, matchScore);
+                    }
+                }
+
+                // ----- 第三层：实时意图加分 (Realtime Intent Boost) -----
+                try {
+                    double intentBoost = realtimeIntentService.calculateIntentBoost(userId, profile);
+                    if (intentBoost > 0) {
+                        matchScore = Math.min(100.0, matchScore + intentBoost);
+                        tags.add("系统推荐");
+                        log.debug("[DeepFM降级] 教员{} 意图加分: +{}, newScore={}",
+                                profile.getId(), intentBoost, matchScore);
+                    }
+                } catch (Exception e) {
+                    log.debug("[DeepFM降级] 意图加分失败(Redis不可用)，跳过: {}", e.getMessage());
+                }
+
+                // ----- 第四层：流量池赛马加分 (Traffic Pool Boost) -----
+                try {
+                    com.campus.module.match.dto.TrafficPoolLevel poolLevel = trafficPoolService
+                            .getPoolLevel(profile.getId());
+                    double poolBoost = trafficPoolService.getPoolBoostScore(poolLevel);
+                    if (poolBoost > 0) {
+                        matchScore = Math.min(100.0, matchScore + poolBoost);
+                        String poolTag = trafficPoolService.getPoolTag(poolLevel);
+                        if (poolTag != null) {
+                            tags.add(poolTag);
+                        }
+                        log.debug("[DeepFM降级] 教员{} 流量池加分: level={}, +{}, newScore={}",
+                                profile.getId(), poolLevel, poolBoost, matchScore);
+                    }
+                } catch (Exception e) {
+                    log.debug("[DeepFM降级] 流量池加分失败(Redis不可用)，跳过: {}", e.getMessage());
+                }
+            }
+
+            result.setMatchScore(matchScore);
+
+            // ---------- 填充基本信息 ----------
+            result.setId(profile.getId());
+            result.setUserId(profile.getUserId());
+
+            // 姓名脱敏
+            String name = profile.getRealName();
+            if (name != null && name.length() > 1) {
+                result.setRealName(name.charAt(0) + "**");
+            } else {
+                result.setRealName(name);
+            }
+
+            // 头像
+            SysUser user = userMap.get(profile.getUserId());
+            if (user != null) {
+                result.setAvatarUrl(user.getAvatarUrl());
+            }
+
+            result.setUniversityName(profile.getUniversityName());
+            result.setMajor(profile.getMajor());
+            result.setEducation(profile.getEducation());
+
+            // 解析 JSON 数组字段
+            if (org.springframework.util.StringUtils.hasText(profile.getTeachSubjects())) {
+                result.setTeachSubjects(JSONUtil.toList(profile.getTeachSubjects(), String.class));
+            }
+            if (org.springframework.util.StringUtils.hasText(profile.getTeachGrades())) {
+                result.setTeachGrades(JSONUtil.toList(profile.getTeachGrades(), String.class));
+            }
+
+            result.setTeachStyle(profile.getTeachStyle());
+            result.setIntroduction(profile.getIntroduction());
+            result.setExpectPrice(profile.getExpectPrice());
+            result.setCanVisit(profile.getCanVisit());
+            result.setCanOnline(profile.getCanOnline());
+            result.setRating(profile.getRating());
+            result.setOrderCount(profile.getOrderCount());
+            result.setDistance(nearbyWithDistance.get(profile.getId()));
+
+            // 添加通用标签
+            if (nearbyWithDistance.get(profile.getId()) != null
+                    && nearbyWithDistance.get(profile.getId()) <= 2.0) {
+                tags.add("距离近");
+            }
+            result.setMatchTags(tags);
+
+            results.add(result);
+        }
+
+        // 按 matchScore 从高到低排序
+        results.sort((a, b) -> {
+            Double sa = a.getMatchScore() != null ? a.getMatchScore() : 0.0;
+            Double sb = b.getMatchScore() != null ? b.getMatchScore() : 0.0;
+            return sb.compareTo(sa);
+        });
+
+        log.info("[DeepFM推荐] 推荐完成, 返回教员数: {}, 推理方式: {}",
+                results.size(), inferenceFailed ? "降级(协同过滤+意图流+流量池)" : "DeepFM模型");
+
+        return new ArrayList<>(results);
+    }
+
+    /**
+     * 构建单个教员的 DeepFM 特征向量
+     * 特征顺序: [user_id, tutor_id, university_name, teach_subjects,
+     * can_online, expect_price, rating, order_count]
+     *
+     * @param userId 家长用户 ID
+     * @param tp     教员档案
+     * @return 长度为 8 的 float 数组
+     */
+    private float[] buildFeatureVector(Long userId, TutorProfile tp) {
+        float[] vec = new float[8];
+
+        // ---- 离散特征：Hash 取模映射为数值索引 ----
+        // [0] user_id
+        vec[0] = 0f;
+
+        // [1] tutor_id
+        vec[1] = (float) (tp.getId().hashCode() & 0x7FFFFFFF) % HASH_MOD;
+
+        // [2] university_name
+        vec[2] = tp.getUniversityName() != null
+                ? (float) (tp.getUniversityName().hashCode() & 0x7FFFFFFF) % HASH_MOD
+                : 0f;
+
+        // [3] teach_subjects
+        vec[3] = tp.getTeachSubjects() != null
+                ? (float) (tp.getTeachSubjects().hashCode() & 0x7FFFFFFF) % HASH_MOD
+                : 0f;
+
+        // ---- 离散特征（二值型）----
+        // [4] can_online
+        vec[4] = tp.getCanOnline() != null ? tp.getCanOnline().floatValue() : 0f;
+
+        // ---- 连续特征：归一化处理 ----
+        // [5] expect_price / 500
+        vec[5] = tp.getExpectPrice() != null
+                ? Math.min(tp.getExpectPrice().floatValue() / PRICE_NORM, 1.0f)
+                : 0f;
+
+        // [6] rating / 5.0
+        vec[6] = tp.getRating() != null
+                ? tp.getRating().floatValue() / RATING_NORM
+                : 0f;
+
+        // [7] order_count / 1000
+        vec[7] = tp.getOrderCount() != null
+                ? tp.getOrderCount().floatValue() / ORDER_NORM
+                : 0f;
+
+        return vec;
     }
 }

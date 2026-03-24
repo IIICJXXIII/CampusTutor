@@ -75,6 +75,12 @@ public class MatchScoreResult extends TutorSearchResult {
     private Double cfScore;
 
     /**
+     * DeepFM 模型预估得分
+     * 基于深度学习模型的预估点击率
+     */
+    private Double deepFmScore;
+
+    /**
      * 匹配标签（如：科目匹配、距离近、评分高等）
      */
     private List<String> matchTags;
