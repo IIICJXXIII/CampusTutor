@@ -92,37 +92,16 @@ Page({
         radius: 10 // 搜索半径 10km
       });
 
-      // 【修复点】：后端如果因Redis挂了返回空，或者真没数据，res可能是空数组
+      // 【修复点】：后端已实现 Haversine 降级，不再出现 Redis 挂掉时返回空的情况
+      // 如果真的没有附近需求，直接显示空状态
       if (!res || res.length === 0) {
-        // 先显示诊断信息并尝试降级展示系统公开的需求（不基于 LBS）
         this.setData({
           demandList: [],
           markers: [],
           currentDemand: null,
           isLoading: false,
-          fallbackMessage: '未检索到附近需求（可能是未填写位置或位置索引暂不可用），显示系统推荐',
-          isFallback: true
+          isFallback: false
         });
-        console.log('附近暂无需求数据，尝试降级获取系统推荐');
-
-        // 请求公开列表作为降级方案
-        try {
-          const listRes = await request.get(api.demand.list, { page: 1, size: 20 });
-          const records = (listRes && listRes.records) ? listRes.records : [];
-          // 计算距离（如果条目有坐标）
-          const list = records.map(item => ({
-            ...item,
-            distance: (item.latitude && item.longitude) ? this.getDistance(this.data.latitude, this.data.longitude, item.latitude, item.longitude).toFixed(1) : ''
-          }));
-
-          const markers = list
-            .filter(i => i.latitude && i.longitude)
-            .map(item => ({ id: item.id, latitude: item.latitude, longitude: item.longitude, width: 30, height: 30, callout: { content: `¥${item.expectPrice}\n${item.subject} ${item.grade}`, padding: 8, borderRadius: 4, display: 'ALWAYS', textAlign: 'center' } }));
-
-          this.setData({ demandList: list, markers: markers, currentDemand: list[0] || null, isLoading: false });
-        } catch (err) {
-          console.error('降级获取公开需求失败', err);
-        }
         return;
       }
 
