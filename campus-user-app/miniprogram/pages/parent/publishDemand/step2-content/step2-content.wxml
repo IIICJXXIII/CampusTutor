@@ -28,7 +28,7 @@
       <view class="label">场地要求</view>
       <picker bindchange="handleVenueTypeChange" range="{{venueTypes}}">
         <view class="picker-val {{!form.venueType ? 'placeholder' : ''}}">
-          {{form.venueType || '请选择场地要求'}}
+          {{form.venueType ? venueTypes[form.venueType - 1] : '请选择场地要求'}}
         </view>
       </picker>
     </view>

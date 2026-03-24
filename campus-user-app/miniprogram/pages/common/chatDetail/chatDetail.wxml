@@ -68,11 +68,11 @@
       confirm-type="send"
       adjust-position="{{true}}"
     />
-    <button 
+    <view 
       class="send-btn {{inputValue ? 'active' : ''}}" 
       bindtap="sendMessage"
     >
       {{sending ? '...' : '发送'}}
-    </button>
+    </view>
   </view>
 </view>

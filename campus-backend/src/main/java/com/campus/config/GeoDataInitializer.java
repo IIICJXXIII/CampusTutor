@@ -8,7 +8,9 @@ import com.campus.module.tutor.mapper.TutorProfileMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.List;
 /**
  * GEO数据初始化器
  * 应用启动时将已认证教员和上架需求的位置信息同步到Redis
+ * 先清空旧数据再全量写入，避免历史残留数据污染搜索结果
  */
 @Slf4j
 @Component
@@ -25,6 +28,12 @@ public class GeoDataInitializer implements CommandLineRunner {
     private final TutorProfileMapper tutorProfileMapper;
     private final DemandPostMapper demandPostMapper;
     private final GeoService geoService;
+
+    @Autowired(required = false)
+    private StringRedisTemplate stringRedisTemplate;
+
+    private static final String TUTOR_GEO_KEY = "geo:tutor";
+    private static final String DEMAND_GEO_KEY = "geo:demand";
 
     @Override
     public void run(String... args) {
@@ -38,6 +47,12 @@ public class GeoDataInitializer implements CommandLineRunner {
     private void initTutorGeoData() {
         try {
             log.info("开始初始化教员GEO位置数据...");
+
+            // 先清空旧数据，避免历史残留
+            if (stringRedisTemplate != null) {
+                stringRedisTemplate.delete(TUTOR_GEO_KEY);
+                log.info("已清空教员GEO旧数据");
+            }
             
             List<TutorProfile> tutors = tutorProfileMapper.selectList(null);
             
@@ -66,6 +81,12 @@ public class GeoDataInitializer implements CommandLineRunner {
     private void initDemandGeoData() {
         try {
             log.info("开始初始化需求GEO位置数据...");
+
+            // 先清空旧数据，避免历史残留
+            if (stringRedisTemplate != null) {
+                stringRedisTemplate.delete(DEMAND_GEO_KEY);
+                log.info("已清空需求GEO旧数据");
+            }
             
             // 查询所有上架且有位置信息的需求 (status=1表示上架)
             LambdaQueryWrapper<DemandPost> wrapper = new LambdaQueryWrapper<>();
@@ -90,3 +111,4 @@ public class GeoDataInitializer implements CommandLineRunner {
         }
     }
 }
+

@@ -76,7 +76,7 @@ Page({
                 const result = await request.get(apiConfig.demand.nearby, {
                     longitude: location.longitude,
                     latitude: location.latitude,
-                    radius: 5000,
+                    radius: 10,
                     page: 1,
                     size: 5
                 });

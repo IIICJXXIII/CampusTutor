@@ -93,7 +93,8 @@ Page({
 
   handleVenueTypeChange(e) {
     const idx = e.detail.value;
-    this.setData({ 'form.venueType': this.data.venueTypes[idx] });
+    // 后端 venueType 为 Integer：1教员上门 2学员上门 3公共场馆
+    this.setData({ 'form.venueType': parseInt(idx) + 1 });
   },
 
   setTeachMode(e) {
