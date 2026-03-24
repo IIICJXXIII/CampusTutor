@@ -21,4 +21,7 @@ public class LessonPlanRequest {
 
     @Schema(description = "学生情况", example = "基础较差")
     private String studentInfo;
+
+    @Schema(description = "用户ID（用于个性化）", example = "1001")
+    private Long userId;
 }
