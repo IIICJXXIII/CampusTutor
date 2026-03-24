@@ -296,6 +296,16 @@ class ChatWebSocket {
     }
 
     /**
+     * 停止心跳检测
+     */
+    stopHeartbeat() {
+        if (this.heartbeatTimer) {
+            clearInterval(this.heartbeatTimer);
+            this.heartbeatTimer = null;
+        }
+    }
+
+    /**
      * 断开连接
      */
     disconnect() {
