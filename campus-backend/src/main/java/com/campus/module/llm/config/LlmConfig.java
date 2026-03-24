@@ -56,6 +56,21 @@ public class LlmConfig {
      */
     private Integer timeout = 30;
 
+    /**
+     * 上下文窗口大小（保留最近N条消息原文）
+     */
+    private Integer contextWindowSize = 20;
+
+    /**
+     * 是否启用超窗口历史摘要
+     */
+    private boolean enableSummary = true;
+
+    /**
+     * 摘要最大字符数
+     */
+    private Integer summaryMaxLength = 500;
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -126,5 +141,29 @@ public class LlmConfig {
 
     public void setTimeout(Integer timeout) {
         this.timeout = timeout;
+    }
+
+    public Integer getContextWindowSize() {
+        return contextWindowSize;
+    }
+
+    public void setContextWindowSize(Integer contextWindowSize) {
+        this.contextWindowSize = contextWindowSize;
+    }
+
+    public boolean isEnableSummary() {
+        return enableSummary;
+    }
+
+    public void setEnableSummary(boolean enableSummary) {
+        this.enableSummary = enableSummary;
+    }
+
+    public Integer getSummaryMaxLength() {
+        return summaryMaxLength;
+    }
+
+    public void setSummaryMaxLength(Integer summaryMaxLength) {
+        this.summaryMaxLength = summaryMaxLength;
     }
 }

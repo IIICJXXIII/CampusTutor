@@ -15,6 +15,7 @@ Component({
     unreadCount: 0,
     showQuickQuestions: true,
     scrollToView: '',
+    contextSummary: '',
     quickQuestions: [
       '如何发布家教需求？',
       '如何成为认证教师？',
@@ -96,8 +97,8 @@ Component({
 
     // 调用AI接口
     callAiApi(content) {
-      // 获取最近10条历史记录构建上下文
-      const historyContext = this.data.messages.slice(-10).map(msg => ({
+      // 将全部历史记录发送给后端，由后端进行上下文窗口管理和摘要压缩
+      const historyContext = this.data.messages.map(msg => ({
         role: msg.sender === 'user' ? 'user' : 'assistant',
         content: msg.content
       }));
@@ -108,7 +109,8 @@ Component({
         method: 'POST',
         data: {
           messages: historyContext,
-          scene: 'general'
+          scene: 'general',
+          summary: this.data.contextSummary || ''
         },
         header: {
           'Content-Type': 'application/json',
@@ -134,6 +136,13 @@ Component({
                 } else {
                   // 处理没有content字段的情况
                   aiResponse = JSON.stringify(aiResponseData);
+                }
+
+                // 存储后端返回的最新摘要
+                if (aiResponseData.summary !== undefined && aiResponseData.summary !== null) {
+                  this.setData({
+                    contextSummary: aiResponseData.summary
+                  });
                 }
               } else {
                 // 处理其他数据类型

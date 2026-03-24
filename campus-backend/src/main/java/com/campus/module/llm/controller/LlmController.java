@@ -38,7 +38,8 @@ public class LlmController {
     @Operation(summary = "智能对话", description = "与AI助手进行对话，获取家教相关帮助")
     @PostMapping("/chat")
     public Result<ChatResponse> chat(@Valid @RequestBody ChatRequest request) {
-        ChatResponse response = chatAssistantService.chat(request.getMessages(), request.getScene());
+        ChatResponse response = chatAssistantService.chat(
+                request.getMessages(), request.getScene(), request.getSummary());
         if (response.getSuccess()) {
             return Result.success(response);
         }

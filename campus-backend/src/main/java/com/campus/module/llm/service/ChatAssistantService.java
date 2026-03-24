@@ -30,6 +30,7 @@ public class ChatAssistantService {
     private final LlmClientService llmClient;
     private final MatchService matchService;
     private final MapService mapService;
+    private final ChatContextManager contextManager;
 
     /**
      * 需求咨询场景的系统提示词
@@ -92,11 +93,12 @@ public class ChatAssistantService {
     /**
      * 智能对话
      *
-     * @param messages 历史消息
-     * @param scene    场景: demand, tutor, general
+     * @param messages        历史消息
+     * @param scene           场景: demand, tutor, general
+     * @param previousSummary 上一次的历史摘要（可选）
      * @return 回复
      */
-    public ChatResponse chat(List<ChatMessage> messages, String scene) {
+    public ChatResponse chat(List<ChatMessage> messages, String scene, String previousSummary) {
         // 根据场景选择系统提示词
         String systemPrompt = switch (scene) {
             case "demand" -> DEMAND_SYSTEM_PROMPT;
@@ -104,10 +106,21 @@ public class ChatAssistantService {
             default -> GENERAL_SYSTEM_PROMPT;
         };
 
+        // 使用上下文管理器处理历史消息（滑动窗口 + 摘要压缩）
+        ChatContextManager.ManagedContext managedContext =
+                contextManager.manageContext(messages, previousSummary);
+
         // 构建完整消息列表
         List<ChatMessage> fullMessages = new ArrayList<>();
         fullMessages.add(ChatMessage.system(systemPrompt));
-        fullMessages.addAll(messages);
+
+        // 如果有历史摘要，作为系统消息注入，为LLM提供长期记忆
+        if (managedContext.hasSummary()) {
+            fullMessages.add(ChatMessage.system(
+                    "【之前的对话摘要】" + managedContext.getSummary()));
+        }
+
+        fullMessages.addAll(managedContext.getMessages());
 
         JSONArray tools = null;
         if ("tutor".equals(scene) || "general".equals(scene)) {
@@ -119,6 +132,8 @@ public class ChatAssistantService {
             ChatResponse response = llmClient.chat(fullMessages, tools);
 
             if (!response.getSuccess() || !response.hasToolCalls()) {
+                // 将最新的摘要附加到响应中，供前端存储
+                response.setSummary(managedContext.getSummary());
                 return response;
             }
 
@@ -288,7 +303,9 @@ public class ChatAssistantService {
             }
         }
 
-        return ChatResponse.fail("已达到最大工具调用次数限制，请明确您的需求。");
+        ChatResponse limitResponse = ChatResponse.fail("已达到最大工具调用次数限制，请明确您的需求。");
+        limitResponse.setSummary(managedContext.getSummary());
+        return limitResponse;
     }
 
     private JSONArray buildTutorSearchTool() {
@@ -393,7 +410,7 @@ public class ChatAssistantService {
         List<ChatMessage> messages = new ArrayList<>();
         messages.add(ChatMessage.user(question));
 
-        ChatResponse response = chat(messages, "general");
+        ChatResponse response = chat(messages, "general", null);
         if (response.getSuccess()) {
             return response.getContent();
         } else {
