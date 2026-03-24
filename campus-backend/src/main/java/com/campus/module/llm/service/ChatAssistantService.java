@@ -10,6 +10,7 @@ import com.campus.module.map.service.MapService;
 import com.campus.module.match.dto.TutorSearchRequest;
 import com.campus.module.match.dto.TutorSearchResult;
 import com.campus.module.match.service.MatchService;
+import com.campus.common.context.UserContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -215,6 +216,70 @@ public class ChatAssistantService {
                             log.error("执行本地工具search_tutors失败", e);
                             fullMessages.add(ChatMessage.toolResult(toolCallId, "{\"error\": \"内部执行失败\"}"));
                         }
+                    } else if ("recommend_nearby_tutors".equals(functionName)) {
+                        String argumentsStr = function.getStr("arguments");
+                        JSONObject arguments = JSONUtil.parseObj(argumentsStr);
+                        String location = arguments.getStr("location");
+                        String subject = arguments.getStr("subject");
+
+                        try {
+                            double lat = 39.90923; // 默认北京
+                            double lng = 116.397428;
+
+                            if (location != null && !location.trim().isEmpty()) {
+                                com.campus.module.map.dto.GeocoderResult geoResult = mapService.geocode(location);
+                                if (geoResult != null && geoResult.getStatus() != null && geoResult.getStatus() == 0) {
+                                    if (geoResult.getResultData() != null && geoResult.getResultData().getLocation() != null) {
+                                        lat = geoResult.getResultData().getLocation().getLat();
+                                        lng = geoResult.getResultData().getLocation().getLng();
+                                    }
+                                }
+                            }
+
+                            Long userId = UserContext.getUserId();
+                            if (userId == null) {
+                                userId = 0L;
+                            }
+
+                            List<TutorSearchResult> recommendedTutors = matchService.getRecommendedTutors(userId, lng, lat, 15.0, subject);
+
+                            if (recommendedTutors.size() > 5) {
+                                recommendedTutors = recommendedTutors.subList(0, 5);
+                            }
+
+                            List<JSONObject> simplifyResults = new ArrayList<>();
+                            for (TutorSearchResult result : recommendedTutors) {
+                                JSONObject obj = new JSONObject();
+                                obj.set("realName", result.getRealName());
+                                obj.set("universityName", result.getUniversityName());
+                                obj.set("major", result.getMajor());
+                                
+                                String intro = result.getIntroduction();
+                                if (intro != null) {
+                                    if (intro.length() > 200) {
+                                        intro = intro.substring(0, 200) + "...";
+                                    }
+                                    obj.set("introduction", intro);
+                                }
+
+                                if (result instanceof com.campus.module.match.dto.MatchScoreResult scoreResult) {
+                                    obj.set("matchScore", scoreResult.getMatchScore());
+                                    obj.set("deepFmScore", scoreResult.getDeepFmScore());
+                                    obj.set("matchTags", scoreResult.getMatchTags());
+                                }
+                                simplifyResults.add(obj);
+                            }
+
+                            JSONObject responseObj = new JSONObject();
+                            responseObj.set("system_instruction", "这是基于平台最新版 DeepFM 深度学习算法为您推荐的附近优质教员。请你向用户友善地解释：'我已经利用基于深度学习的智能推荐算法(DeepFM)，结合您的地理位置（" + (location != null ? location : "默认") + "）和科目需求找到了以下几位非常符合您的优质老师...' 然后再简单介绍。");
+                            responseObj.set("results", simplifyResults);
+
+                            fullMessages.add(ChatMessage.toolResult(toolCallId, responseObj.toString()));
+
+                        } catch (Exception e) {
+                            log.error("执行本地工具recommend_nearby_tutors失败", e);
+                            fullMessages.add(ChatMessage.toolResult(toolCallId, "{\"error\": \"内部执行失败\"}"));
+                        }
                     } else {
                         log.warn("大模型调用了未定义的工具: {}", functionName);
                         fullMessages.add(ChatMessage.toolResult(toolCallId, "{\"error\": \"未找到该工具，请使用已定义的工具或直接回复文本\"}"));
@@ -227,59 +292,95 @@ public class ChatAssistantService {
     }
 
     private JSONArray buildTutorSearchTool() {
-        JSONObject tool = new JSONObject();
-        tool.set("type", "function");
+        JSONArray toolsArray = new JSONArray();
 
-        JSONObject function = new JSONObject();
-        function.set("name", "search_tutors");
-        function.set("description", "根据科目和年级搜索合适的家教老师");
+        // 原本的 search_tutors
+        JSONObject tool1 = new JSONObject();
+        tool1.set("type", "function");
 
-        JSONObject parameters = new JSONObject();
-        parameters.set("type", "object");
+        JSONObject function1 = new JSONObject();
+        function1.set("name", "search_tutors");
+        function1.set("description", "当用户提出了明确的筛选条件（如明确指定了性别、期望价格、授课方式等）时使用此工具过滤匹配的家教老师。");
 
-        JSONObject properties = new JSONObject();
-        JSONObject subjectParam = new JSONObject();
-        subjectParam.set("type", "string");
-        subjectParam.set("description", "科目名称，如：数学、英语、物理");
-        properties.set("subject", subjectParam);
+        JSONObject parameters1 = new JSONObject();
+        parameters1.set("type", "object");
 
-        JSONObject gradeParam = new JSONObject();
-        gradeParam.set("type", "string");
-        gradeParam.set("description", "年级名称，如：初一、高二、小学");
-        properties.set("grade", gradeParam);
+        JSONObject properties1 = new JSONObject();
+        JSONObject subjectParam1 = new JSONObject();
+        subjectParam1.set("type", "string");
+        subjectParam1.set("description", "科目名称，如：数学、英语、物理");
+        properties1.set("subject", subjectParam1);
 
-        JSONObject teachModeParam = new JSONObject();
-        teachModeParam.set("type", "integer");
-        teachModeParam.set("description", "授课方式（1: 上门家教, 2: 在线网课）");
-        properties.set("teachMode", teachModeParam);
+        JSONObject gradeParam1 = new JSONObject();
+        gradeParam1.set("type", "string");
+        gradeParam1.set("description", "年级名称，如：初一、高二、小学");
+        properties1.set("grade", gradeParam1);
 
-        JSONObject locationParam = new JSONObject();
-        locationParam.set("type", "string");
-        locationParam.set("description", "上门家教的大致服务地址（如：北京市海淀区中关村大街）");
-        properties.set("location", locationParam);
+        JSONObject teachModeParam1 = new JSONObject();
+        teachModeParam1.set("type", "integer");
+        teachModeParam1.set("description", "授课方式（1: 上门家教, 2: 在线网课）");
+        properties1.set("teachMode", teachModeParam1);
 
-        JSONObject maxPriceParam = new JSONObject();
-        maxPriceParam.set("type", "integer");
-        maxPriceParam.set("description", "家长能接受的最高课时费（元/小时）");
-        properties.set("maxPrice", maxPriceParam);
+        JSONObject locationParam1 = new JSONObject();
+        locationParam1.set("type", "string");
+        locationParam1.set("description", "上门家教的大致服务地址（如：北京市海淀区中关村大街）");
+        properties1.set("location", locationParam1);
 
-        JSONObject genderParam = new JSONObject();
-        genderParam.set("type", "integer");
-        genderParam.set("description", "期望的教员性别（1: 男的, 2: 女的）");
-        properties.set("gender", genderParam);
+        JSONObject maxPriceParam1 = new JSONObject();
+        maxPriceParam1.set("type", "integer");
+        maxPriceParam1.set("description", "家长能接受的最高课时费（元/小时）");
+        properties1.set("maxPrice", maxPriceParam1);
 
-        JSONObject keywordParam = new JSONObject();
-        keywordParam.set("type", "string");
-        keywordParam.set("description", "额外的细节要求（如果在用户描述中提及特殊的经验或背景，例如：高考辅导经验、耐心、考研等）。后端将为您提供多位优秀候选人的详细自我介绍，由您来做语义阅读理解并判断筛选。");
-        properties.set("keyword", keywordParam);
+        JSONObject genderParam1 = new JSONObject();
+        genderParam1.set("type", "integer");
+        genderParam1.set("description", "期望的教员性别（1: 男的, 2: 女的）");
+        properties1.set("gender", genderParam1);
 
-        parameters.set("properties", properties);
-        parameters.set("required", new JSONArray().put("subject"));
+        JSONObject keywordParam1 = new JSONObject();
+        keywordParam1.set("type", "string");
+        keywordParam1.set("description", "额外的细节要求（如果在用户描述中提及特殊的经验或背景，例如：高考辅导经验、耐心、考研等）。");
+        properties1.set("keyword", keywordParam1);
 
-        function.set("parameters", parameters);
-        tool.set("function", function);
+        parameters1.set("properties", properties1);
+        parameters1.set("required", new JSONArray().put("subject"));
 
-        return new JSONArray().put(tool);
+        function1.set("parameters", parameters1);
+        tool1.set("function", function1);
+        
+        toolsArray.put(tool1);
+
+        // 新增的 recommend_nearby_tutors
+        JSONObject tool2 = new JSONObject();
+        tool2.set("type", "function");
+        JSONObject function2 = new JSONObject();
+        function2.set("name", "recommend_nearby_tutors");
+        function2.set("description", "当用户的需求比较模糊（如：推荐、看看、好老师、附近的），或者用户没有给出具体的筛选条件时，优先使用此工具。此算法基于深度学习模型，使用用户的地理位置召回附近的优秀老师并进行隐式兴趣排分。");
+        
+        JSONObject params2 = new JSONObject();
+        params2.set("type", "object");
+        
+        JSONObject props2 = new JSONObject();
+        
+        JSONObject locParam = new JSONObject();
+        locParam.set("type", "string");
+        locParam.set("description", "用户当前地理位置（如：北京市海淀区中关村）。这是一个硬性要求，如果用户没提供，大模型必须主动在对话中询问用户的位置。");
+        props2.set("location", locParam);
+
+        JSONObject subParam = new JSONObject();
+        subParam.set("type", "string");
+        subParam.set("description", "想找的辅导学科（如：数学、物理）。这是一个硬性要求，如果用户没提供，大模型必须主动在对话中询问用户的学科需求。");
+        props2.set("subject", subParam);
+
+        params2.set("properties", props2);
+        // 通过设置 required 强制 LLM 在由于缺失这两个参数而无法调用工具时，主动追问用户
+        params2.set("required", new JSONArray().put("location").put("subject"));
+        
+        function2.set("parameters", params2);
+        tool2.set("function", function2);
+        
+        toolsArray.put(tool2);
+
+        return toolsArray;
     }
 
     /**
