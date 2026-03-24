@@ -3,6 +3,8 @@ package com.campus.module.auth.service;
 import com.campus.module.auth.dto.LoginRequest;
 import com.campus.module.auth.dto.LoginResponse;
 import com.campus.module.auth.dto.RegisterRequest;
+import com.campus.module.auth.dto.WxLoginRequest;
+import com.campus.module.auth.dto.WxPhoneLoginRequest;
 
 /**
  * 认证服务接口
@@ -24,6 +26,22 @@ public interface AuthService {
      * @return 注册成功后的登录响应
      */
     LoginResponse register(RegisterRequest request);
+
+    /**
+     * 微信登录
+     *
+     * @param request 微信登录请求
+     * @return 登录响应
+     */
+    LoginResponse wxLogin(WxLoginRequest request);
+
+    /**
+     * 微信手机号一键登录
+     *
+     * @param request 微信手机号登录请求
+     * @return 登录响应
+     */
+    LoginResponse wxPhoneLogin(WxPhoneLoginRequest request);
 
     /**
      * 发送验证码

@@ -1,6 +1,6 @@
 package com.campus.module.order.controller;
 
-import com.campus.service.WechatPayService;
+import com.campus.service.RealWechatPayService;
 import com.campus.module.order.service.CourseOrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -17,10 +17,10 @@ import java.io.IOException;
 @RequestMapping("/api/pay/notify")
 public class PayNotifyController {
 
-    private final WechatPayService wechatPayService;
+    private final RealWechatPayService wechatPayService;
     private final CourseOrderService orderService;
 
-    public PayNotifyController(WechatPayService wechatPayService, CourseOrderService orderService) {
+    public PayNotifyController(RealWechatPayService wechatPayService, CourseOrderService orderService) {
         this.wechatPayService = wechatPayService;
         this.orderService = orderService;
     }
