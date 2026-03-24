@@ -135,6 +135,51 @@ const mapUtil = {
         }
       });
     });
+  },
+
+  /**
+   * 验证坐标是否在中国境内
+   * @param {number} latitude 纬度
+   * @param {number} longitude 经度
+   * @returns {boolean} 是否有效
+   */
+  isValidCoordinate(latitude, longitude) {
+    if (latitude === null || longitude === null || 
+        latitude === undefined || longitude === undefined) {
+      return false;
+    }
+    
+    // 中国大致边界坐标
+    const CHINA_MIN_LAT = 3.86;
+    const CHINA_MAX_LAT = 53.55;
+    const CHINA_MIN_LNG = 73.66;
+    const CHINA_MAX_LNG = 135.05;
+    
+    // 检查是否在中国境内
+    return longitude >= CHINA_MIN_LNG && longitude <= CHINA_MAX_LNG &&
+           latitude >= CHINA_MIN_LAT && latitude <= CHINA_MAX_LAT;
+  },
+
+  /**
+   * 获取教师档案位置（当定位失败时使用）
+   * @returns {Promise} 位置信息 {latitude, longitude} 或 null
+   */
+  async getProfileLocation() {
+    try {
+      const api = require('../config/apiConfig.js');
+      const request = require('./request.js');
+      const profile = await request.get(api.tutor.profile);
+      if (profile && profile.latitude && profile.longitude) {
+        return {
+          latitude: profile.latitude,
+          longitude: profile.longitude
+        };
+      }
+      return null;
+    } catch (err) {
+      console.error('获取教师档案位置失败:', err);
+      return null;
+    }
   }
 };
 

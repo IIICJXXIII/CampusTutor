@@ -1,10 +1,11 @@
 const request = require('../../../utils/request.js');
 const api = require('../../../config/apiConfig.js');
+const mapUtil = require('../../../utils/mapUtil.js');
 
 Page({
   data: {
-    latitude: 39.9088, // 默认北京坐标，防止未授权时地图白屏
-    longitude: 116.3975,
+    latitude: null, // 不再使用默认北京坐标
+    longitude: null,
     currentAddress: '', // 当前位置地址（通过高德API获取）
     markers: [],
     demandList: [],
@@ -12,7 +13,8 @@ Page({
     isLoading: false,
     // 降级与诊断信息
     isFallback: false,
-    fallbackMessage: ''
+    fallbackMessage: '',
+    locationSource: 'unknown' // 位置来源：gps, profile, none
   },
 
   onLoad() {
@@ -60,24 +62,70 @@ Page({
   },
 
   // 获取位置并加载数据
-  getLocationAndFetch() {
+  async getLocationAndFetch() {
     const that = this;
     wx.getLocation({
       type: 'gcj02',
       success(res) {
-        that.setData({
-          latitude: res.latitude,
-          longitude: res.longitude
-        });
-        that.fetchNearbyDemands();
+        // 验证坐标是否合理
+        if (mapUtil.isValidCoordinate(res.latitude, res.longitude)) {
+          that.setData({
+            latitude: res.latitude,
+            longitude: res.longitude,
+            locationSource: 'gps'
+          });
+          that.fetchNearbyDemands();
+        } else {
+          // 坐标不合理，使用教师档案位置
+          console.warn('GPS坐标无效，使用档案位置');
+          that.useProfileLocation();
+        }
       },
       fail(err) {
         console.error('定位失败', err);
-        wx.showToast({ title: '定位失败，使用默认位置', icon: 'none' });
-        // 使用默认坐标
-        that.fetchNearbyDemands();
+        // 不使用默认北京坐标，而是使用教师档案位置
+        that.useProfileLocation();
       }
     });
+  },
+
+  // 使用教师档案位置
+  async useProfileLocation() {
+    wx.showLoading({ title: '获取位置中...' });
+    try {
+      const profileLocation = await mapUtil.getProfileLocation();
+      if (profileLocation) {
+        this.setData({
+          latitude: profileLocation.latitude,
+          longitude: profileLocation.longitude,
+          locationSource: 'profile'
+        });
+        wx.showToast({ 
+          title: '使用档案位置', 
+          icon: 'none',
+          duration: 2000
+        });
+        this.fetchNearbyDemands();
+      } else {
+        // 档案中无位置，提示用户手动设置
+        wx.hideLoading();
+        wx.showModal({
+          title: '位置信息缺失',
+          content: '请在个人资料中设置您的位置，或开启定位权限',
+          confirmText: '去设置',
+          cancelText: '取消',
+          success(res) {
+            if (res.confirm) {
+              wx.navigateTo({ url: '/pages/teacher/profile/edit' });
+            }
+          }
+        });
+      }
+    } catch (err) {
+      console.error('获取档案位置失败', err);
+      wx.hideLoading();
+      wx.showToast({ title: '获取位置失败', icon: 'none' });
+    }
   },
 
   // 2. 获取附近需求 (核心修复)
