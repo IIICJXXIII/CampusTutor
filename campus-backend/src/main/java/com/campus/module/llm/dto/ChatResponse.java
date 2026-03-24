@@ -23,6 +23,9 @@ public class ChatResponse {
     @Schema(description = "工具调用")
     private cn.hutool.json.JSONArray toolCalls;
 
+    @Schema(description = "对话历史摘要（前端需存储，下次请求时回传）")
+    private String summary;
+
     public static ChatResponse success(String content, Integer tokens) {
         ChatResponse response = new ChatResponse();
         response.setSuccess(true);
@@ -80,5 +83,13 @@ public class ChatResponse {
 
     public void setToolCalls(cn.hutool.json.JSONArray toolCalls) {
         this.toolCalls = toolCalls;
+    }
+
+    public String getSummary() {
+        return summary;
+    }
+
+    public void setSummary(String summary) {
+        this.summary = summary;
     }
 }

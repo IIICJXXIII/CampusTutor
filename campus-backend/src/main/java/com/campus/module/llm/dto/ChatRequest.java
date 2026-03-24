@@ -19,6 +19,9 @@ public class ChatRequest {
     @Schema(description = "对话场景: demand-需求咨询, tutor-教员推荐, general-通用问答", example = "demand")
     private String scene = "general";
 
+    @Schema(description = "上一次对话的历史摘要（由后端生成，前端存储后回传）")
+    private String summary;
+
     @Schema(description = "是否流式返回", example = "false")
     private Boolean stream = false;
 }
