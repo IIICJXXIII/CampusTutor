@@ -18,7 +18,4 @@ public class PolishCommentRequest {
 
     @Schema(description = "学生情况", example = "初中一年级，基础一般")
     private String studentInfo;
-
-    @Schema(description = "用户ID（用于个性化）", example = "1001")
-    private Long userId;
 }
