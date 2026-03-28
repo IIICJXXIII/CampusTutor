@@ -12,6 +12,4 @@ import org.apache.ibatis.annotations.Param;
 public interface SysUserMapper extends BaseMapper<SysUser> {
 
     SysUser selectByUsername(@Param("username") String username);
-
-    SysUser selectByOpenid(@Param("openid") String openid);
 }

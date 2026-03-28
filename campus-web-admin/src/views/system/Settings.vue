@@ -205,11 +205,11 @@ const activeMenu = ref('basic')
 
 // 基础设置
 const basicForm = reactive({
-  platformName: '校园家教平台',
+  platformName: '素质教育平台',
   contactPhone: '400-123-4567',
   customerWechat: 'campus_tutor',
-  announcement: '欢迎使用校园家教平台，我们致力于为学生提供优质的家教服务。',
-  welcomeMessage: '您好，欢迎加入校园家教平台！',
+  announcement: '欢迎使用素质教育平台，我们致力于为孩子提供优质的艺术、体育、科创STEAM教育服务。',
+  welcomeMessage: '您好，欢迎加入素质教育平台！',
   maintenanceMode: false
 })
 

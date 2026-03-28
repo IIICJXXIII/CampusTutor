@@ -65,7 +65,7 @@
     
     <div class="input-bar">
       <el-button circle @click="showEmojiPicker = !showEmojiPicker">
-        <el-icon><Smile /></el-icon>
+        <el-icon><Sunny /></el-icon>
       </el-button>
       
       <el-upload
@@ -108,9 +108,11 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@shared/stores'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, User, Loading, Smile, Picture } from '@element-plus/icons-vue'
+import { ArrowLeft, User, Loading, Sunny, Picture } from '@element-plus/icons-vue'
 import { getChatHistory, sendMessage as sendApi } from '@shared/api/chat'
 import { uploadFile } from '@shared/api/file'
+import { recordChat } from '@shared/api/behavior'
+import { formatTimeDivider } from '@shared/utils'
 import dayjs from 'dayjs'
 
 const router = useRouter()
@@ -141,7 +143,7 @@ const goBack = () => {
 }
 
 const showUserInfo = () => {
-  router.push(`/teachers/${route.params.targetUserId}`)
+  router.push(`/teachers/${route.params.id}`)
 }
 
 const loadMessages = async (loadMore = false) => {
@@ -149,7 +151,7 @@ const loadMessages = async (loadMore = false) => {
   
   loadingMore.value = true
   try {
-    const res = await getChatHistory(route.params.targetUserId, {
+    const res = await getChatHistory(route.params.id, {
       page: loadMore ? page.value + 1 : 1,
       size: 20
     })
@@ -191,7 +193,7 @@ const sendMessage = async () => {
   
   try {
     const res = await sendApi({
-      targetUserId: route.params.targetUserId,
+      targetUserId: route.params.id,
       type: 'text',
       content: inputText.value.trim()
     })
@@ -209,7 +211,7 @@ const sendMessage = async () => {
       scrollToBottom()
     }
   } catch (error) {
-    console.error('发送消息失败:', error)
+    console.error('发送消息失败', error)
     ElMessage.error('发送失败')
   }
 }
@@ -219,7 +221,7 @@ const handleUploadImage = async (file) => {
     const res = await uploadFile(file)
     if (res.code === 200) {
       await sendApi({
-        targetUserId: route.params.targetUserId,
+        targetUserId: route.params.id,
         type: 'image',
         content: res.data.url
       })
@@ -250,20 +252,6 @@ const showTimeDivider = (index) => {
   return current.diff(prev, 'minute') > 5
 }
 
-const formatTimeDivider = (time) => {
-  const msgTime = dayjs(time)
-  const now = dayjs()
-  
-  if (now.isSame(msgTime, 'day')) {
-    return msgTime.format('HH:mm')
-  } else if (now.subtract(1, 'day').isSame(msgTime, 'day')) {
-    return `昨天 ${msgTime.format('HH:mm')}`
-  } else if (now.isSame(msgTime, 'year')) {
-    return msgTime.format('MM-DD HH:mm')
-  }
-  return msgTime.format('YYYY-MM-DD HH:mm')
-}
-
 // WebSocket 连接
 let ws = null
 
@@ -273,7 +261,7 @@ const connectWebSocket = () => {
   
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data)
-    if (data.senderId === parseInt(route.params.targetUserId)) {
+    if (data.senderId === parseInt(route.params.id)) {
       messages.value.push(data)
       scrollToBottom()
     }
@@ -294,6 +282,8 @@ onMounted(() => {
   if (userId.value) {
     connectWebSocket()
   }
+  // 记录发起聊天行为
+  recordChat(route.params.id).catch(() => {})
 })
 
 onUnmounted(() => {

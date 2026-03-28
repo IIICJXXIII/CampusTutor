@@ -116,12 +116,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, User, Reading, Money, Location, UserFilled } from '@element-plus/icons-vue'
 import { getMyDemands, publishDemand as publishApi, withdrawDemand as withdrawApi } from '@shared/api/demand'
-import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
-import 'dayjs/locale/zh-cn'
-
-dayjs.extend(relativeTime)
-dayjs.locale('zh-cn')
+import { relativeFromNow } from '@shared/utils'
 
 const router = useRouter()
 const loading = ref(false)
@@ -141,9 +136,7 @@ const getStatusText = (status) => {
   return texts[status] || '未知'
 }
 
-const formatTime = (time) => {
-  return dayjs(time).fromNow()
-}
+const formatTime = (time) => relativeFromNow(time)
 
 const loadDemands = async () => {
   loading.value = true

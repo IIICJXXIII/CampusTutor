@@ -72,15 +72,15 @@
         
         <el-form-item label="需辅导科目" prop="subjects">
           <el-checkbox-group v-model="form.subjects">
-            <el-checkbox value="语文">语文</el-checkbox>
-            <el-checkbox value="数学">数学</el-checkbox>
-            <el-checkbox value="英语">英语</el-checkbox>
-            <el-checkbox value="物理">物理</el-checkbox>
-            <el-checkbox value="化学">化学</el-checkbox>
-            <el-checkbox value="生物">生物</el-checkbox>
-            <el-checkbox value="历史">历史</el-checkbox>
-            <el-checkbox value="地理">地理</el-checkbox>
-            <el-checkbox value="政治">政治</el-checkbox>
+            <el-checkbox value="钢琴/乐器陪练">钢琴/乐器陪练</el-checkbox>
+            <el-checkbox value="美术/书法">美术/书法</el-checkbox>
+            <el-checkbox value="声乐/视唱练耳">声乐/视唱练耳</el-checkbox>
+            <el-checkbox value="中考体育专项">中考体育专项</el-checkbox>
+            <el-checkbox value="羽毛球/网球陪练">羽毛球/网球陪练</el-checkbox>
+            <el-checkbox value="篮球/足球指导">篮球/足球指导</el-checkbox>
+            <el-checkbox value="少儿编程(Scratch/Python)">少儿编程(Scratch/Python)</el-checkbox>
+            <el-checkbox value="机器人/3D打印">机器人/3D打印</el-checkbox>
+            <el-checkbox value="科学实验/航模">科学实验/航模</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
       </div>

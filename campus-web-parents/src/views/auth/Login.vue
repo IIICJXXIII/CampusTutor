@@ -3,8 +3,8 @@
     <div class="login-container">
       <div class="login-header">
         <img src="@/assets/logo.svg" alt="Logo" class="logo" />
-        <h1>校园家教 · 家长端</h1>
-        <p>为孩子找到最合适的老师</p>
+        <h1>素质教育 · 家长端</h1>
+        <p>为孩子找到最合适的素质教育老师</p>
       </div>
       
       <el-form :model="form" :rules="rules" ref="formRef" class="login-form">
@@ -47,16 +47,6 @@
           <router-link to="/register">立即注册</router-link>
         </p>
         
-        <div class="divider">
-          <span>其他登录方式</span>
-        </div>
-        
-        <div class="social-login">
-          <el-button circle size="large" @click="wechatLogin">
-            <el-icon :size="24" style="color: #07c160"><ChatDotRound /></el-icon>
-          </el-button>
-        </div>
-        
         <p class="agreement">
           登录即表示同意
           <a href="#">《用户协议》</a>和
@@ -71,7 +61,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Phone, Lock, ChatDotRound } from '@element-plus/icons-vue'
+import { Phone, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@shared/stores'
 import { login } from '@shared/api/auth'
 
@@ -130,9 +120,6 @@ const handleLogin = async () => {
   }
 }
 
-const wechatLogin = () => {
-  ElMessage.info('微信登录功能开发中')
-}
 </script>
 
 <style lang="scss" scoped>
@@ -199,29 +186,6 @@ const wechatLogin = () => {
         text-decoration: underline;
       }
     }
-  }
-  
-  .divider {
-    display: flex;
-    align-items: center;
-    margin: 24px 0;
-    
-    &::before, &::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: #ebeef5;
-    }
-    
-    span {
-      padding: 0 16px;
-      font-size: 13px;
-      color: #909399;
-    }
-  }
-  
-  .social-login {
-    margin-bottom: 24px;
   }
   
   .agreement {

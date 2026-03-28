@@ -371,6 +371,8 @@ public class MatchService {
             scoreResult.setRating(profile.getRating());
             scoreResult.setOrderCount(profile.getOrderCount());
             scoreResult.setDistance(finalDistanceMap.get(profile.getId()));
+            if (profile.getLongitude() != null) scoreResult.setLongitude(profile.getLongitude().doubleValue());
+            if (profile.getLatitude() != null) scoreResult.setLatitude(profile.getLatitude().doubleValue());
 
             return (TutorSearchResult) scoreResult;
         }).collect(Collectors.toList());

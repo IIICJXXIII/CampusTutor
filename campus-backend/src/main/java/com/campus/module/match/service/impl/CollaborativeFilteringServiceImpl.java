@@ -214,8 +214,12 @@ public class CollaborativeFilteringServiceImpl implements CollaborativeFiltering
 
         // 缓存结果
         if (cfConfig.isEnableCache() && redisTemplate != null && !similarities.isEmpty()) {
-            redisTemplate.opsForValue().set(cacheKey, similarities,
-                    cfConfig.getCacheExpireSeconds(), TimeUnit.SECONDS);
+            try {
+                redisTemplate.opsForValue().set(cacheKey, similarities,
+                        cfConfig.getCacheExpireSeconds(), TimeUnit.SECONDS);
+            } catch (Exception e) {
+                log.warn("Failed to write similarity cache for user {}: {}", userId, e.getMessage());
+            }
         }
 
         return similarities.stream().limit(topK).collect(Collectors.toList());
@@ -327,15 +331,19 @@ public class CollaborativeFilteringServiceImpl implements CollaborativeFiltering
             return;
         }
 
-        if (userId != null) {
-            String cacheKey = CACHE_KEY_PREFIX + userId;
-            redisTemplate.delete(cacheKey);
-        } else {
-            // 刷新全部缓存
-            Set<String> keys = redisTemplate.keys(CACHE_KEY_PREFIX + "*");
-            if (keys != null && !keys.isEmpty()) {
-                redisTemplate.delete(keys);
+        try {
+            if (userId != null) {
+                String cacheKey = CACHE_KEY_PREFIX + userId;
+                redisTemplate.delete(cacheKey);
+            } else {
+                // 刷新全部缓存
+                Set<String> keys = redisTemplate.keys(CACHE_KEY_PREFIX + "*");
+                if (keys != null && !keys.isEmpty()) {
+                    redisTemplate.delete(keys);
+                }
             }
+        } catch (Exception e) {
+            // Redis操作失败不影响业务
         }
     }
 

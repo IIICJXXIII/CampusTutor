@@ -2,7 +2,9 @@ package com.campus.module.order.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.campus.common.context.UserContext;
+import com.campus.common.exception.BusinessException;
 import com.campus.common.result.Result;
+import com.campus.common.result.ResultCode;
 import com.campus.module.order.dto.AcceptDemandRequest;
 import com.campus.module.order.dto.CreateOrderRequest;
 import com.campus.module.order.dto.PayOrderRequest;
@@ -85,7 +87,19 @@ public Result<Void> complete(@PathVariable Long id) {
     @Operation(summary = "订单详情")
     @GetMapping("/{id}")
     public Result<CourseOrder> detail(@PathVariable Long id) {
+        Long userId = UserContext.getUserId();
+        Integer role = UserContext.getRole();
         CourseOrder order = orderService.getById(id);
+        if (order == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
+        }
+
+        boolean isAdmin = role != null && role == 0;
+        boolean isOwner = order.getParentId().equals(userId) || order.getTutorId().equals(userId);
+        if (!isAdmin && !isOwner) {
+            throw new BusinessException(ResultCode.FORBIDDEN.getCode(), "无权查看该订单");
+        }
+
         return Result.success(order);
     }
 
@@ -109,16 +123,6 @@ public Result<Void> complete(@PathVariable Long id) {
         Long tutorId = UserContext.getUserId();
         IPage<CourseOrder> result = orderService.listTutorOrders(tutorId, status, page, size);
         return Result.success(result);
-    }
-
-    @Operation(summary = "创建微信支付参数")
-    @PostMapping("/wechat-pay")
-    public Result<java.util.Map<String, String>> createWechatPay(
-            @RequestParam Long orderId,
-            @RequestParam String openid) {
-        Long userId = UserContext.getUserId();
-        var payParams = orderService.createWechatPayParams(userId, orderId, openid);
-        return Result.success(payParams);
     }
 
     @Operation(summary = "申请退款")

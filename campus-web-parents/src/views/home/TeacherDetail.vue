@@ -141,6 +141,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, ChatDotRound } from '@element-plus/icons-vue'
 import { getPublicTutorProfile } from '@shared/api/tutor'
+import { recordView } from '@shared/api/behavior'
 import dayjs from 'dayjs'
 
 const router = useRouter()
@@ -214,13 +215,13 @@ const chatWithTutor = () => {
 }
 
 const bookTutor = () => {
-  // TODO: 实现预约流程
-  ElMessage.info('预约功能开发中')
-  // router.push(`/book/${route.params.id}`)
+  router.push(`/demands/create?tutorId=${route.params.id}`)
 }
 
 onMounted(() => {
   loadTutor()
+  // 记录浏览行为
+  recordView(route.params.id).catch(() => {})
 })
 </script>
 

@@ -16,6 +16,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
         private final JwtAuthenticationFilter jwtAuthenticationFilter;
         private final OptionalJwtAuthenticationInterceptor optionalJwtInterceptor;
+        private final AdminRoleInterceptor adminRoleInterceptor;
 
         @Value("${file.upload.path:./uploads}")
         private String uploadPath;
@@ -47,6 +48,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
                                                 "/api/demand/nearby",
                                                 "/api/demand/list-with-match",
                                                 "/api/tutor/public/**");
+
+                // 3. 管理员角色鉴权
+                registry.addInterceptor(adminRoleInterceptor)
+                                .addPathPatterns("/api/admin/**")
+                                .excludePathPatterns("/api/admin/auth/**");
         }
 
         /**

@@ -28,7 +28,6 @@ public class SysUserController {
         SysUser user = sysUserService.getById(userId);
         if (user != null) {
             user.setPassword(null);
-            user.setOpenid(null);
         }
         return Result.success(user);
     }
@@ -57,7 +56,6 @@ public class SysUserController {
     @PutMapping
     public Result<Boolean> update(@RequestBody SysUser user) {
         user.setPassword(null);
-        user.setOpenid(null);
         boolean result = sysUserService.updateById(user);
         return Result.success(result);
     }
@@ -77,7 +75,6 @@ public class SysUserController {
         Long userId = UserContext.getUserId();
         user.setId(userId);
         user.setPassword(null);  // 不允许通过此接口修改密码
-        user.setOpenid(null);
         user.setRole(null);      // 不允许修改角色
         user.setStatus(null);    // 不允许修改状态
         boolean result = sysUserService.updateById(user);

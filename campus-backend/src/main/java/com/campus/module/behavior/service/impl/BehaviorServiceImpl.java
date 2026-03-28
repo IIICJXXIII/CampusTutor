@@ -45,7 +45,7 @@ public class BehaviorServiceImpl implements BehaviorService {
 
     @Override
     public void recordAction(Long userId, Long targetId, Integer actionType, Integer duration) {
-        if (userId == null || actionType == null) {
+        if (userId == null || actionType == null || targetId == null) {
             return;
         }
 

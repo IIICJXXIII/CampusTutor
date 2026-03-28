@@ -37,8 +37,25 @@ public class GeoDataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        if (!isRedisAvailable()) {
+            log.warn("Redis不可用，跳过GEO位置数据初始化（不影响主业务，将降级使用数据库距离计算）");
+            return;
+        }
         initTutorGeoData();
         initDemandGeoData();
+    }
+
+    /**
+     * 检查 Redis 是否真正可用
+     */
+    private boolean isRedisAvailable() {
+        if (stringRedisTemplate == null) return false;
+        try {
+            stringRedisTemplate.getConnectionFactory().getConnection().ping();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
