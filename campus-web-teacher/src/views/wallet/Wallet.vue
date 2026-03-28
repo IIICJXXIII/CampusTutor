@@ -74,7 +74,7 @@ import { ElMessage } from 'element-plus'
 import { Plus, Minus } from '@element-plus/icons-vue'
 import { useWalletStore } from '@shared/stores'
 import { getWalletInfo, getTransactions } from '@shared/api/wallet'
-import dayjs from 'dayjs'
+import { formatDate } from '@shared/utils'
 
 const router = useRouter()
 const walletStore = useWalletStore()
@@ -91,7 +91,7 @@ const filter = reactive({
   type: null
 })
 
-const formatTime = (time) => dayjs(time).format('YYYY-MM-DD HH:mm')
+const formatTime = (time) => formatDate(time, 'YYYY-MM-DD HH:mm')
 
 const loadWalletInfo = async () => {
   try {

@@ -7,19 +7,17 @@ import com.campus.common.utils.JwtUtils;
 import com.campus.module.auth.dto.LoginRequest;
 import com.campus.module.auth.dto.LoginResponse;
 import com.campus.module.auth.dto.RegisterRequest;
-import com.campus.module.auth.dto.WxLoginRequest;
-import com.campus.module.auth.dto.WxPhoneLoginRequest;
 import com.campus.module.auth.service.AuthService;
 import com.campus.module.user.entity.SysUser;
 import com.campus.module.user.service.SysUserService;
 import com.campus.module.wallet.entity.SysWallet;
 import com.campus.module.wallet.service.SysWalletService;
-import com.campus.service.WechatService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -36,7 +34,6 @@ public class AuthServiceImpl implements AuthService {
     private final SysUserService sysUserService;
     private final SysWalletService sysWalletService;
     private final JwtUtils jwtUtils;
-    private final WechatService wechatService;
     
     // Redis 可选注入
     @Autowired(required = false)
@@ -50,12 +47,11 @@ public class AuthServiceImpl implements AuthService {
     /** 验证码有效期 (分钟) */
     private static final long CODE_EXPIRE_MINUTES = 5;
     
-    public AuthServiceImpl(SysUserService sysUserService, SysWalletService sysWalletService, 
-                          JwtUtils jwtUtils, WechatService wechatService) {
+    public AuthServiceImpl(SysUserService sysUserService, SysWalletService sysWalletService,
+            JwtUtils jwtUtils) {
         this.sysUserService = sysUserService;
         this.sysWalletService = sysWalletService;
         this.jwtUtils = jwtUtils;
-        this.wechatService = wechatService;
     }
 
     @Override
@@ -83,10 +79,26 @@ public class AuthServiceImpl implements AuthService {
             }
         } else {
             // 密码登录（账号或手机号）
-        String encryptPassword = cn.hutool.crypto.SecureUtil.md5(request.getPassword());
-        if (!encryptPassword.equals(user.getPassword())) {
-            throw new BusinessException(5004, "密码错误");
-        }
+            String storedPassword = user.getPassword();
+            boolean verified = false;
+            boolean shouldUpgrade = false;
+
+            if (StrUtil.isNotBlank(storedPassword) && storedPassword.startsWith("$2")) {
+                verified = BCrypt.checkpw(request.getPassword(), storedPassword);
+            } else {
+                String md5Password = cn.hutool.crypto.SecureUtil.md5(request.getPassword());
+                verified = md5Password.equals(storedPassword);
+                shouldUpgrade = verified;
+            }
+
+            if (!verified) {
+                throw new BusinessException(5004, "密码错误");
+            }
+
+            if (shouldUpgrade) {
+                user.setPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
+                sysUserService.updateById(user);
+            }
         }
 
         // 生成 Token
@@ -119,8 +131,8 @@ public class AuthServiceImpl implements AuthService {
         // 创建用户
         SysUser user = new SysUser();
         user.setUsername(request.getPhone());
-        // 密码加密存储 (MD5)
-        user.setPassword(cn.hutool.crypto.SecureUtil.md5(request.getPassword()));
+        // 密码加密存储 (BCrypt)
+        user.setPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
         user.setNickname(request.getNickname() != null ? request.getNickname() : "用户" + RandomUtil.randomNumbers(6));
         user.setRole(request.getRole());
         user.setStatus(1);
@@ -207,11 +219,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public boolean verifyCode(String phone, String code) {
-        // 开发环境: 允许使用万能验证码 123456
-        if ("123456".equals(code)) {
-            return true;
-        }
-
         String key = CODE_PREFIX + phone;
         String cachedCode = null;
         
@@ -238,169 +245,4 @@ public class AuthServiceImpl implements AuthService {
         return false;
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public LoginResponse wxLogin(WxLoginRequest request) {
-        // 1. 调用微信API获取openid和session_key
-        Map<String, String> wxResult = wechatService.code2Session(request.getCode());
-        String openid = wxResult.get("openid");
-        String sessionKey = wxResult.get("session_key");
-        
-        if (StrUtil.isBlank(openid)) {
-            throw new BusinessException("微信登录失败，无法获取用户标识");
-        }
-        
-        // 2. 查询是否已注册
-        SysUser user = sysUserService.getByOpenid(openid);
-        
-        if (user == null) {
-            // 3. 新用户，需要注册
-            if (StrUtil.isBlank(request.getEncryptedData()) || 
-                StrUtil.isBlank(request.getIv())) {
-                // 返回需要用户授权获取更多信息
-                // 创建一个响应，表示需要绑定
-                return LoginResponse.builder()
-                        .token(null)
-                        .userId(null)
-                        .username(null)
-                        .nickname(null)
-                        .avatar(null)
-                        .role(null)
-                        .needBind(true)  // 添加needBind字段
-                        .build();
-            }
-            
-            // 解密用户信息
-            Map<String, String> userInfo = wechatService.decryptUserInfo(
-                request.getEncryptedData(), request.getIv(), sessionKey);
-            
-            // 创建新用户
-            user = new SysUser();
-            user.setOpenid(openid);
-            user.setUsername("wx_" + openid.substring(0, 8));
-            user.setNickname(userInfo.get("nickName"));
-            user.setAvatarUrl(userInfo.get("avatarUrl")); // 注意：使用setAvatarUrl而不是setAvatar
-            user.setGender(Integer.parseInt(userInfo.getOrDefault("gender", "0")));
-            user.setRole(1); // 默认教师角色，后续可修改
-            user.setStatus(1);
-            sysUserService.save(user);
-            
-            // 初始化钱包
-            SysWallet wallet = new SysWallet();
-            wallet.setUserId(user.getId());
-            wallet.setBalance(BigDecimal.ZERO);
-            wallet.setFrozenAmount(BigDecimal.ZERO);
-            sysWalletService.save(wallet);
-        }
-        
-        // 4. 检查账号状态
-        if (user.getStatus() == 0) {
-            throw new BusinessException(5002, "账号已被禁用");
-        }
-        
-        // 5. 生成JWT token
-        String token = jwtUtils.generateToken(user.getId(), user.getRole());
-        
-        return LoginResponse.builder()
-                .token(token)
-                .userId(user.getId())
-                .username(user.getUsername())
-                .nickname(user.getNickname())
-                .avatar(user.getAvatarUrl()) // 注意：使用getAvatarUrl而不是getAvatar
-                .role(user.getRole())
-                .needBind(false)  // 已绑定，不需要绑定
-                .build();
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public LoginResponse wxPhoneLogin(WxPhoneLoginRequest request) {
-        log.info("开始微信手机号一键登录，loginCode: {}, phoneCode: {}", 
-                request.getLoginCode().substring(0, Math.min(10, request.getLoginCode().length())) + "...",
-                request.getPhoneCode().substring(0, Math.min(10, request.getPhoneCode().length())) + "...");
-
-        // 1. 使用login_code获取openid
-        Map<String, String> wxResult = wechatService.code2Session(request.getLoginCode());
-        String openid = wxResult.get("openid");
-        String sessionKey = wxResult.get("session_key");
-        
-        if (StrUtil.isBlank(openid)) {
-            throw new BusinessException("微信登录失败，无法获取用户标识");
-        }
-        
-        // 2. 使用phone_code获取手机号
-        String phoneNumber = wechatService.getPhoneNumber(request.getPhoneCode());
-        if (StrUtil.isBlank(phoneNumber)) {
-            throw new BusinessException("获取手机号失败");
-        }
-        
-        // 3. 查询是否已注册（通过openid或手机号）
-        SysUser user = sysUserService.getByOpenid(openid);
-        if (user == null) {
-            // 通过手机号查询
-            user = sysUserService.getByUsername(phoneNumber);
-        }
-        
-        if (user == null) {
-            // 4. 新用户，自动注册
-            log.info("新用户注册，openid: {}, phone: {}", openid, phoneNumber);
-            
-            user = new SysUser();
-            user.setOpenid(openid);
-            user.setUsername(phoneNumber); // 手机号作为用户名
-            user.setNickname("微信用户_" + RandomUtil.randomNumbers(6));
-            user.setRole(1); // 默认教师角色
-            user.setStatus(1);
-            sysUserService.save(user);
-            
-            // 初始化钱包
-            SysWallet wallet = new SysWallet();
-            wallet.setUserId(user.getId());
-            wallet.setBalance(BigDecimal.ZERO);
-            wallet.setFrozenAmount(BigDecimal.ZERO);
-            sysWalletService.save(wallet);
-            
-            log.info("新用户注册成功，userId: {}", user.getId());
-        } else {
-            // 5. 老用户，更新openid（如果未绑定）
-            // 注意：手机号已经存储在username字段中，不需要单独存储
-            boolean updated = false;
-            if (StrUtil.isBlank(user.getOpenid())) {
-                user.setOpenid(openid);
-                updated = true;
-            }
-            // 如果用户名不是手机号，可以更新用户名（可选）
-            if (!phoneNumber.equals(user.getUsername())) {
-                // 检查手机号是否已被其他用户使用
-                SysUser existingUser = sysUserService.getByUsername(phoneNumber);
-                if (existingUser == null || existingUser.getId().equals(user.getId())) {
-                    user.setUsername(phoneNumber);
-                    updated = true;
-                }
-            }
-            if (updated) {
-                sysUserService.updateById(user);
-                log.info("用户信息更新成功，userId: {}", user.getId());
-            }
-        }
-        
-        // 6. 检查账号状态
-        if (user.getStatus() == 0) {
-            throw new BusinessException(5002, "账号已被禁用");
-        }
-        
-        // 7. 生成JWT token
-        String token = jwtUtils.generateToken(user.getId(), user.getRole());
-        
-        // 8. 返回登录响应
-        return LoginResponse.builder()
-                .token(token)
-                .userId(user.getId())
-                .username(user.getUsername())
-                .nickname(user.getNickname())
-                .avatar(user.getAvatarUrl())
-                .role(user.getRole())
-                .needBind(false)  // 一键登录不需要绑定
-                .build();
-    }
 }

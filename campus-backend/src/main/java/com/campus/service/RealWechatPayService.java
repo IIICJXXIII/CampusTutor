@@ -4,7 +4,6 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.campus.common.exception.BusinessException;
-import com.campus.config.WechatPayConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -30,7 +29,6 @@ import java.util.*;
 public class RealWechatPayService {
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private final WechatPayConfig wechatPayConfig;
 
     @Value("${wechat.pay.enabled:false}")
     private boolean enabled;
@@ -46,10 +44,6 @@ public class RealWechatPayService {
 
     @Value("${wechat.pay.notify-url:}")
     private String notifyUrl;
-
-    public RealWechatPayService(WechatPayConfig wechatPayConfig) {
-        this.wechatPayConfig = wechatPayConfig;
-    }
 
     @PostConstruct
     public void init() {
@@ -238,7 +232,7 @@ public class RealWechatPayService {
                 orderNo, amount, description, openid);
         
         Map<String, String> payParams = new HashMap<>();
-        payParams.put("appId", wechatPayConfig.getAppId());
+        payParams.put("appId", appId);
         payParams.put("timeStamp", String.valueOf(System.currentTimeMillis() / 1000));
         payParams.put("nonceStr", "mock_nonce_" + System.currentTimeMillis());
         payParams.put("package", "prepay_id=mock_prepay_" + System.currentTimeMillis());

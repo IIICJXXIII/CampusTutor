@@ -4,7 +4,7 @@
     <aside class="sidebar" :class="{ 'is-collapse': isCollapse }">
       <div class="logo">
         <img src="@/assets/logo.svg" alt="Logo" v-if="!isCollapse">
-        <span v-if="!isCollapse">家教平台管理</span>
+        <span v-if="!isCollapse">素质教育管理</span>
         <el-icon v-else><Management /></el-icon>
       </div>
       

@@ -123,7 +123,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ChatDotRound, Wallet, CreditCard } from '@element-plus/icons-vue'
 import { getWalletInfo, applyWithdraw, getWithdrawals } from '@shared/api/wallet'
-import dayjs from 'dayjs'
+import { formatDate } from '@shared/utils'
 
 const router = useRouter()
 const formRef = ref(null)
@@ -174,7 +174,7 @@ const getStatusText = (status) => {
   return map[status] || '未知'
 }
 
-const formatTime = (time) => dayjs(time).format('MM-DD HH:mm')
+const formatTime = (time) => formatDate(time, 'MM-DD HH:mm')
 
 const loadWalletInfo = async () => {
   try {

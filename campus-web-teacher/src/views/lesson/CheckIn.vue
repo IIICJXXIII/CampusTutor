@@ -40,6 +40,27 @@
         <div id="checkin-map" class="map-container"></div>
       </div>
       
+      <!-- 签到拍照 -->
+      <div class="photo-card">
+        <h4>签到拍照 <el-tag type="danger" size="small">必填</el-tag></h4>
+        <el-upload
+          class="photo-upload"
+          :auto-upload="false"
+          accept="image/*"
+          capture="environment"
+          :show-file-list="false"
+          :on-change="handlePhotoChange"
+        >
+          <div v-if="photoPreview" class="photo-preview">
+            <img :src="photoPreview" alt="签到照片" />
+          </div>
+          <div v-else class="photo-placeholder">
+            <el-icon :size="32"><Camera /></el-icon>
+            <span>拍照 / 选择图片</span>
+          </div>
+        </el-upload>
+      </div>
+
       <!-- 签到按钮 -->
       <div class="checkin-action">
         <el-button
@@ -47,7 +68,7 @@
           type="primary"
           size="large"
           :loading="submitting"
-          :disabled="!currentLocation"
+          :disabled="!currentLocation || !photoUrl"
           @click="handleCheckIn"
         >
           <el-icon><Check /></el-icon>
@@ -105,8 +126,9 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Clock, Location, Check, Loading, WarningFilled } from '@element-plus/icons-vue'
+import { Clock, Location, Check, Loading, WarningFilled, Camera } from '@element-plus/icons-vue'
 import { getLessonDetail, checkIn, checkOut } from '@shared/api/teaching'
+import { uploadFile } from '@shared/api/file'
 import AMapLoader from '@amap/amap-jsapi-loader'
 
 const route = useRoute()
@@ -118,6 +140,8 @@ const locationError = ref('')
 const currentLocation = ref(null)
 const submitting = ref(false)
 const checkoutVisible = ref(false)
+const photoUrl = ref('')
+const photoPreview = ref('')
 
 let map = null
 let marker = null

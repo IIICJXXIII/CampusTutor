@@ -30,7 +30,7 @@ public class ChatServiceImpl implements ChatService {
     private final SysUserMapper sysUserMapper;
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public ChatMessage sendMessage(Long senderId, Long receiverId, String content, Integer msgType) {
         ChatMessage message = new ChatMessage();
         message.setSenderId(senderId);
@@ -72,7 +72,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void markAsRead(Long senderId, Long receiverId) {
         int count = chatMessageMapper.markAsRead(senderId, receiverId);
         log.info("标记已读: {} -> {}, 共 {} 条消息", senderId, receiverId, count);

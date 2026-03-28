@@ -10,15 +10,15 @@ USE `campus_tutor_db`;
 -- 1. 数据字典 (sys_dict)
 -- ----------------------------
 INSERT INTO `sys_dict` (type_code, label, value, sort) VALUES 
-('subject', '数学', 'math', 1),
-('subject', '语文', 'chinese', 2),
-('subject', '英语', 'english', 3),
-('subject', '物理', 'physics', 4),
-('subject', '化学', 'chemistry', 5),
-('subject', '生物', 'biology', 6),
-('subject', '历史', 'history', 7),
-('subject', '地理', 'geography', 8),
-('subject', '政治', 'politics', 9),
+('subject', '钢琴/乐器陪练', 'piano_instrument', 1),
+('subject', '美术/书法', 'art_calligraphy', 2),
+('subject', '声乐/视唱练耳', 'vocal_solfege', 3),
+('subject', '中考体育专项', 'pe_exam', 4),
+('subject', '羽毛球/网球陪练', 'badminton_tennis', 5),
+('subject', '篮球/足球指导', 'basketball_football', 6),
+('subject', '少儿编程(Scratch/Python)', 'kids_coding', 7),
+('subject', '机器人/3D打印', 'robot_3dprint', 8),
+('subject', '科学实验/航模', 'science_aeromodel', 9),
 ('grade', '小学一年级', 'primary_1', 1),
 ('grade', '小学二年级', 'primary_2', 2),
 ('grade', '小学三年级', 'primary_3', 3),
@@ -43,15 +43,15 @@ INSERT INTO `sys_user` (id, username, password, nickname, role, status, gender) 
 -- 教员 id: 101-120 (20名)
 INSERT INTO `sys_user` (id, username, password, nickname, role, status, gender, avatar) VALUES 
 (101, '13800138101', '47ec2dd791e31e2ef2076caf64ed9b3d', '张学霸', 1, 1, 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'),
-(102, '13800138102', '47ec2dd791e31e2ef2076caf64ed9b3d', '李英语', 1, 1, 2, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka'),
-(103, '13800138103', '47ec2dd791e31e2ef2076caf64ed9b3d', '王物理', 1, 1, 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob'),
-(104, '13800138104', '47ec2dd791e31e2ef2076caf64ed9b3d', '赵化学', 1, 1, 2, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Cathy'),
+(102, '13800138102', '47ec2dd791e31e2ef2076caf64ed9b3d', '李音音', 1, 1, 2, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka'),
+(103, '13800138103', '47ec2dd791e31e2ef2076caf64ed9b3d', '王科创', 1, 1, 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob'),
+(104, '13800138104', '47ec2dd791e31e2ef2076caf64ed9b3d', '赵画画', 1, 1, 2, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Cathy'),
 (105, '13800138105', '47ec2dd791e31e2ef2076caf64ed9b3d', '孙全科', 1, 1, 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=David'),
-(106, '13800138106', '47ec2dd791e31e2ef2076caf64ed9b3d', '周数学', 1, 1, 2, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Eva'),
-(107, '13800138107', '47ec2dd791e31e2ef2076caf64ed9b3d', '吴语文', 1, 1, 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Frank'),
-(108, '13800138108', '47ec2dd791e31e2ef2076caf64ed9b3d', '郑历史', 1, 1, 2, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Grace'),
-(109, '13800138109', '47ec2dd791e31e2ef2076caf64ed9b3d', '冯地理', 1, 1, 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Harry'),
-(110, '13800138110', '47ec2dd791e31e2ef2076caf64ed9b3d', '陈生物', 1, 1, 2, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ivy'),
+(106, '13800138106', '47ec2dd791e31e2ef2076caf64ed9b3d', '周编程', 1, 1, 2, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Eva'),
+(107, '13800138107', '47ec2dd791e31e2ef2076caf64ed9b3d', '吴书法', 1, 1, 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Frank'),
+(108, '13800138108', '47ec2dd791e31e2ef2076caf64ed9b3d', '郑声乐', 1, 1, 2, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Grace'),
+(109, '13800138109', '47ec2dd791e31e2ef2076caf64ed9b3d', '冯体育', 1, 1, 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Harry'),
+(110, '13800138110', '47ec2dd791e31e2ef2076caf64ed9b3d', '陈实验', 1, 1, 2, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ivy'),
 (111, '13800138111', '47ec2dd791e31e2ef2076caf64ed9b3d', '林清华', 1, 1, 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack'),
 (112, '13800138112', '47ec2dd791e31e2ef2076caf64ed9b3d', '黄北大', 1, 1, 2, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Kate'),
 (113, '13800138113', '47ec2dd791e31e2ef2076caf64ed9b3d', '刘复旦', 1, 1, 1, 'https://api.dicebear.com/7.x/avataaars/svg?seed=Leo'),
@@ -99,24 +99,24 @@ UPDATE `sys_wallet` SET balance = 5000.00 WHERE user_id BETWEEN 201 AND 210;
 -- 4. 教员档案 (tutor_profile)
 -- ----------------------------
 INSERT INTO `tutor_profile` (user_id, real_name, university_name, major, education, teach_subjects, teach_grades, expect_price, longitude, latitude, address, cert_status, rating, introduction, teach_style, can_visit, can_online) VALUES
-(101, '张伟', '北京大学', '数学系', 2, '["数学","物理"]', '["初一","初二","初三","高一"]', 150.00, 116.310003, 39.991957, '北京市海淀区颐和园路5号', 2, 4.9, '数学奥赛金牌得主，擅长逻辑思维培养', '严谨细致，深入浅出', 1, 1),
-(102, '李娜', '北京外国语大学', '英语', 3, '["英语"]', '["小学一年级","小学二年级","小学三年级","小学四年级","小学五年级","小学六年级","初一","初二"]', 120.00, 116.315055, 39.957583, '北京市海淀区西三环北路2号', 2, 4.8, '专八水平，口语流利，有两年少儿英语教学经验', '活泼生动，寓教于乐', 1, 1),
-(103, '王强', '清华大学', '物理', 5, '["物理","数学"]', '["高一","高二","高三"]', 200.00, 116.326759, 40.003304, '北京市海淀区双清路30号', 2, 5.0, '物理系博士在读，擅长高考冲刺辅导', '重点突出，解题技巧丰富', 0, 1),
-(104, '赵敏', '北京师范大学', '化学', 2, '["化学","生物"]', '["初三","高一"]', 100.00, 116.372551, 39.965874, '北京市海淀区新街口外大街19号', 2, 4.7, '耐心细致，善于引导学生建立知识体系', '亲切随和，循循善诱', 1, 0),
-(105, '孙浩', '中国人民大学', '经济学', 3, '["数学","英语"]', '["小学一年级","小学二年级","小学三年级","小学四年级","小学五年级","小学六年级"]', 90.00, 116.316833, 39.971556, '北京市海淀区中关村大街59号', 1, 4.5, '喜欢孩子，有耐心，善于沟通', '轻松愉快', 1, 1),
-(106, '周婷', '北京理工大学', '应用数学', 3, '["数学"]', '["初一","初二","高一","高二"]', 130.00, 116.321111, 39.960000, '北京市海淀区中关村南大街5号', 2, 4.8, '逻辑清晰，善于总结考点', '注重基础，稳扎稳打', 1, 1),
-(107, '吴刚', '北京复旦大学', '汉语言文学', 4, '["语文","历史"]', '["小学一年级","小学二年级","小学三年级","小学四年级","小学五年级","小学六年级","初一"]', 110.00, 116.300000, 39.980000, '北京市海淀区', 2, 4.6, '文学功底深厚，作文辅导经验丰富', '文采飞扬，启发式教学', 1, 1),
-(108, '郑洁', '中国政法大学', '法学', 3, '["政治","历史"]', '["初三","高三"]', 140.00, 116.350000, 39.970000, '北京市昌平区', 2, 4.9, '善于梳理知识脉络，记忆技巧传授', '条理清晰', 0, 1),
-(109, '冯涛', '北京航空航天大学', '地理信息', 4, '["地理"]', '["初一","初二","高一"]', 120.00, 116.340000, 39.985000, '北京市海淀区学院路', 2, 4.7, '善于结合实际案例教学', '图文并茂，生动有趣', 1, 0),
-(110, '陈静', '中国农业大学', '生物科学', 3, '["生物","化学"]', '["高一","高二"]', 110.00, 116.360000, 40.010000, '北京市海淀区清华东路', 2, 4.8, '实验能力强，知识点讲解透彻', '细致入微', 1, 1);
+(101, '张伟', '北京大学', '计算机科学', 2, '["少儿编程(Scratch/Python)","机器人/3D打印"]', '["初一","初二","初三","高一"]', 150.00, 116.310003, 39.991957, '北京市海淀区颐和园路5号', 2, 4.9, '编程竞赛金牌得主，擅长逻辑思维培养', '严谨细致，深入浅出', 1, 1),
+(102, '李娜', '中央音乐学院', '钢琴表演', 3, '["钢琴/乐器陪练"]', '["小学一年级","小学二年级","小学三年级","小学四年级","小学五年级","小学六年级","初一","初二"]', 120.00, 116.315055, 39.957583, '北京市海淀区西三环北路2号', 2, 4.8, '钢琴十级，有两年少儿钢琴教学经验', '活泼生动，寓教于乐', 1, 1),
+(103, '王强', '清华大学', '机械工程', 5, '["科学实验/航模","少儿编程(Scratch/Python)"]', '["高一","高二","高三"]', 200.00, 116.326759, 40.003304, '北京市海淀区双清路30号', 2, 5.0, '科创竞赛指导老师，擅长项目式教学', '重点突出，动手能力培养', 0, 1),
+(104, '赵敏', '中央美术学院', '国画', 2, '["美术/书法","声乐/视唱练耳"]', '["初三","高一"]', 100.00, 116.372551, 39.965874, '北京市海淀区新街口外大街19号', 2, 4.7, '美院硕士，擅长国画书法启蒙和考级辅导', '亲切随和，循循善诱', 1, 0),
+(105, '孙浩', '北京体育大学', '体育教育', 3, '["篮球/足球指导","羽毛球/网球陪练"]', '["小学一年级","小学二年级","小学三年级","小学四年级","小学五年级","小学六年级"]', 90.00, 116.316833, 39.971556, '北京市海淀区中关村大街59号', 1, 4.5, '喜欢孩子，有耐心，善于沟通', '轻松愉快', 1, 1),
+(106, '周婷', '北京理工大学', '软件工程', 3, '["少儿编程(Scratch/Python)"]', '["初一","初二","高一","高二"]', 130.00, 116.321111, 39.960000, '北京市海淀区中关村南大街5号', 2, 4.8, '信息学奥赛辅导经验丰富，Scratch/Python教学', '注重基础，稳扎稳打', 1, 1),
+(107, '吴刚', '中央美术学院', '书法', 4, '["美术/书法","钢琴/乐器陪练"]', '["小学一年级","小学二年级","小学三年级","小学四年级","小学五年级","小学六年级","初一"]', 110.00, 116.300000, 39.980000, '北京市海淀区', 2, 4.6, '书法功底深厚，硬笔软笔均可教学', '耐心引导，兴趣激发', 1, 1),
+(108, '郑洁', '中国音乐学院', '声乐', 3, '["声乐/视唱练耳","美术/书法"]', '["初三","高三"]', 140.00, 116.350000, 39.970000, '北京市昌平区', 2, 4.9, '声乐专业硕士，视唱练耳考级辅导专家', '条理清晰', 0, 1),
+(109, '冯涛', '北京体育大学', '运动训练', 4, '["中考体育专项"]', '["初一","初二","高一"]', 120.00, 116.340000, 39.985000, '北京市海淀区学院路', 2, 4.7, '中考体育满分指导，专项训练经验丰富', '因材施教，科学训练', 1, 0),
+(110, '陈静', '北京航空航天大学', '航空宇航', 3, '["科学实验/航模","机器人/3D打印"]', '["高一","高二"]', 110.00, 116.360000, 40.010000, '北京市海淀区清华东路', 2, 4.8, '航模竞赛获奖者，科学实验教学能力强', '细致入微', 1, 1);
 
 -- 更多教员数据，模拟不同状态 (待审核, 拒绝等)
-INSERT INTO `tutor_profile` (user_id, real_name, university_name, major, education, teach_subjects, teach_grades, expect_price, cert_status, rating) VALUES
-(111, '林风', '清华大学', '计算机', 3, '["数学","编程"]', '["初一","初二","初三"]', 180.00, 0, 0.0), -- 待提交
-(112, '黄芸', '北京大学', '新闻', 2, '["语文","英语"]', '["小学一年级","小学二年级","小学三年级","小学四年级","小学五年级","小学六年级"]', 100.00, 1, 0.0), -- 待审核
-(113, '刘星', '复旦大学', '物理', 4, '["物理"]', '["高一","高二","高三"]', 200.00, 3, 0.0), -- 已拒绝
-(114, '张月', '上海交大', '英语', 3, '["英语"]', '["初一","初二","初三"]', 120.00, 2, 5.0),
-(115, '徐阳', '浙江大学', '数学', 4, '["数学"]', '["高一","高二","高三"]', 160.00, 2, 4.8);
+INSERT INTO `tutor_profile` (user_id, real_name, university_name, major, education, teach_subjects, teach_grades, expect_price, longitude, latitude, address, cert_status, rating) VALUES
+(111, '林风', '清华大学', '计算机', 3, '["少儿编程(Scratch/Python)","机器人/3D打印"]', '["初一","初二","初三"]', 180.00, 116.335000, 39.992000, '北京市海淀区五道口', 0, 0.0), -- 待提交
+(112, '黄芸', '中央音乐学院', '音乐教育', 2, '["钢琴/乐器陪练","声乐/视唱练耳"]', '["小学一年级","小学二年级","小学三年级","小学四年级","小学五年级","小学六年级"]', 100.00, 116.348000, 39.978000, '北京市西城区西直门', 1, 0.0), -- 待审核
+(113, '刘星', '同济大学', '机械工程', 4, '["科学实验/航模"]', '["高一","高二","高三"]', 200.00, 116.355000, 39.968000, '北京市朝阳区望京', 3, 0.0), -- 已拒绝
+(114, '张月', '中央音乐学院', '钢琴', 3, '["钢琴/乐器陪练"]', '["初一","初二","初三"]', 120.00, 116.380000, 39.940000, '北京市朝阳区国贸', 2, 5.0),
+(115, '徐阳', '浙江大学', '计算机', 4, '["少儿编程(Scratch/Python)"]', '["高一","高二","高三"]', 160.00, 116.290000, 39.960000, '北京市海淀区苏州街', 2, 4.8);
 
 
 -- ----------------------------
@@ -132,57 +132,57 @@ INSERT INTO `tutor_schedule_config` (tutor_id, day_of_week, start_time, end_time
 -- 6. 家长学生 (parent_student)
 -- ----------------------------
 INSERT INTO `parent_student` (parent_id, student_name, gender, grade, school_name, weak_subjects, study_desc) VALUES
-(201, '子涵', 1, '初二', '北大附中', '数学,物理', '理科基础较弱，需要加强概念理解'),
-(202, '浩宇', 1, '高一', '清华附中', '英语', '词汇量不足，阅读理解有困难'),
-(203, '欣怡', 0, '小学三年级', '中关村一小', '奥数', '想拓展数学思维，备战竞赛'),
-(204, '俊杰', 1, '初三', '人大附中', '化学', '临近中考，化学实验题丢分严重'),
-(205, '梓涵', 0, '高二', '101中学', '物理', '力学部分掌握不好'),
-(206, '宇轩', 1, '小学五年级', '实验二小', '英语', '口语不敢开口'),
-(207, '雨桐', 0, '初一', '八一学校', '地理,历史', '文科背诵困难'),
-(208, '子轩', 1, '高三', '十一学校', '数学', '冲刺140分'),
-(209, '晨曦', 0, '小学四年级', '史家小学', '语文', '作文流水账'),
-(210, '浩然', 1, '初二', '四中', '生物', '对此学科不感兴趣');
+(201, '子涵', 1, '初二', '北大附中', '少儿编程(Scratch/Python),机器人/3D打印', '对编程很感兴趣，想系统学习'),
+(202, '浩宇', 1, '高一', '清华附中', '钢琴/乐器陪练', '学钢琴两年，准备考级'),
+(203, '欣怡', 0, '小学三年级', '中关村一小', '美术/书法', '喜欢画画，想学国画和书法'),
+(204, '俊杰', 1, '初三', '人大附中', '中考体育专项', '临近中考，体育项目需要专项训练'),
+(205, '梓涵', 0, '高二', '101中学', '科学实验/航模', '对航模和科学实验很感兴趣'),
+(206, '宇轩', 1, '小学五年级', '实验二小', '篮球/足球指导', '想提高篮球技术'),
+(207, '雨桐', 0, '初一', '八一学校', '声乐/视唱练耳,美术/书法', '想发展艺术特长'),
+(208, '子轩', 1, '高三', '十一学校', '少儿编程(Scratch/Python)', '准备信息学竞赛'),
+(209, '晨曦', 0, '小学四年级', '史家小学', '钢琴/乐器陪练', '刚开始学钢琴，需要陪练'),
+(210, '浩然', 1, '初二', '四中', '羽毛球/网球陪练', '想培养运动爱好');
 
 -- ----------------------------
 -- 7. 需求发布 (demand_post)
 -- ----------------------------
 INSERT INTO `demand_post` (publisher_id, student_id, title, subject, grade, expect_price, teach_mode, longitude, latitude, address, detail, status) VALUES
 -- 待匹配
-(201, 1, '初二数学急需辅导', '数学', '初二', 150.00, 1, 116.310000, 39.990000, '北京市海淀区中关村', '孩子数学基础薄弱，希望找有耐心的老师', 1),
-(202, 2, '高一英语提分', '英语', '高一', 120.00, 2, 116.320000, 39.980000, '北京市海淀区清华园', '主要辅导阅读和写作', 1),
-(203, 3, '小学奥数启蒙', '数学', '小学三年级', 100.00, 3, 116.330000, 39.970000, '北京市海淀区知春路', '寻找有奥数经验的老师', 1),
-(204, 4, '中考化学冲刺', '化学', '初三', 180.00, 1, 116.340000, 39.960000, '北京市海淀区万柳', '针对模考错题讲解', 1),
-(205, 5, '高二物理力学', '物理', '高二', 200.00, 2, 116.350000, 39.950000, '北京市海淀区五棵松', '物理成绩一直提不上来', 1),
+(201, 1, '初二编程入门辅导', '少儿编程(Scratch/Python)', '初二', 150.00, 1, 116.310000, 39.990000, '北京市海淀区中关村', '孩子对编程感兴趣，希望系统学习Python', 1),
+(202, 2, '高一钢琴考级陪练', '钢琴/乐器陪练', '高一', 120.00, 2, 116.320000, 39.980000, '北京市海淀区清华园', '准备钢琴八级考试，需要陪练指导', 1),
+(203, 3, '小学美术书法启蒙', '美术/书法', '小学三年级', 100.00, 3, 116.330000, 39.970000, '北京市海淀区知春路', '寻找有国画书法教学经验的老师', 1),
+(204, 4, '中考体育专项冲刺', '中考体育专项', '初三', 180.00, 1, 116.340000, 39.960000, '北京市海淀区万柳', '针对中考体育各项目专项训练', 1),
+(205, 5, '高二科学实验航模', '科学实验/航模', '高二', 200.00, 2, 116.350000, 39.950000, '北京市海淀区五棵松', '想参加航模比赛，需要指导', 1),
 -- 已匹配 (模拟 historic data)
-(206, 6, '小学英语口语', '英语', '小学五年级', 80.00, 2, 116.360000, 39.940000, '北京市西城区', '练习口语对话', 2),
-(207, 7, '初一地理辅导', '地理', '初一', 90.00, 1, 116.370000, 39.930000, '北京市东城区', '帮助理解地理图像', 2),
-(208, 8, '高三数学拔高', '数学', '高三', 250.00, 1, 116.380000, 39.920000, '北京市朝阳区', '目标清北', 2);
+(206, 6, '小学篮球启蒙', '篮球/足球指导', '小学五年级', 80.00, 2, 116.360000, 39.940000, '北京市西城区', '培养篮球兴趣和基本功', 2),
+(207, 7, '初一声乐入门', '声乐/视唱练耳', '初一', 90.00, 1, 116.370000, 39.930000, '北京市东城区', '零基础学习声乐和视唱练耳', 2),
+(208, 8, '高三编程竞赛冲刺', '少儿编程(Scratch/Python)', '高三', 250.00, 1, 116.380000, 39.920000, '北京市朝阳区', '目标信息学竞赛省一', 2);
 
 -- 绑定匹配教员 (demand_post id 6, 7, 8)
 UPDATE `demand_post` SET matched_tutor_id = 101 WHERE id = 8;
-UPDATE `demand_post` SET matched_tutor_id = 102 WHERE id = 6;
-UPDATE `demand_post` SET matched_tutor_id = 109 WHERE id = 7;
+UPDATE `demand_post` SET matched_tutor_id = 105 WHERE id = 6;
+UPDATE `demand_post` SET matched_tutor_id = 108 WHERE id = 7;
 
 -- ----------------------------
 -- 8. 课程订单 (course_order)
 -- ----------------------------
 -- 订单1：已完成 (张学霸 教 子轩 数学)
 INSERT INTO `course_order` (order_no, parent_id, student_id, tutor_id, tutor_profile_id, demand_id, subject, grade, teach_mode, unit_price, total_hours, total_amount, service_fee, tutor_amount, used_hours, status, pay_time, pay_type) VALUES
-('ORD20260101001', 208, 8, 101, 1, 8, '数学', '高三', 1, 250.00, 10, 2500.00, 250.00, 2250.00, 10, 3, DATE_SUB(NOW(), INTERVAL 10 DAY), 1);
+('ORD20260101001', 208, 8, 101, 1, 8, '少儿编程(Scratch/Python)', '高三', 1, 250.00, 10, 2500.00, 250.00, 2250.00, 10, 3, DATE_SUB(NOW(), INTERVAL 10 DAY), 1);
 
 -- 订单2：进行中 (李娜 教 宇轩 英语)
 INSERT INTO `course_order` (order_no, parent_id, student_id, tutor_id, tutor_profile_id, demand_id, subject, grade, teach_mode, unit_price, total_hours, total_amount, service_fee, tutor_amount, used_hours, status, pay_time, pay_type) VALUES
-('ORD20260101002', 206, 6, 102, 2, 6, '英语', '小学五年级', 2, 80.00, 20, 1600.00, 160.00, 1440.00, 5, 2, DATE_SUB(NOW(), INTERVAL 5 DAY), 2);
+('ORD20260101002', 206, 6, 105, 5, 6, '篮球/足球指导', '小学五年级', 2, 80.00, 20, 1600.00, 160.00, 1440.00, 5, 2, DATE_SUB(NOW(), INTERVAL 5 DAY), 2);
 
 -- 订单3：待支付 (冯涛 教 雨桐 地理)
 INSERT INTO `course_order` (order_no, parent_id, student_id, tutor_id, tutor_profile_id, demand_id, subject, grade, teach_mode, unit_price, total_hours, total_amount, service_fee, tutor_amount, used_hours, status) VALUES
-('ORD20260101003', 207, 7, 109, 9, 7, '地理', '初一', 1, 90.00, 10, 900.00, 90.00, 810.00, 0, 0);
+('ORD20260101003', 207, 7, 108, 8, 7, '声乐/视唱练耳', '初一', 1, 90.00, 10, 900.00, 90.00, 810.00, 0, 0);
 
 -- ----------------------------
 -- 9. 评价 (sys_comment)
 -- ----------------------------
 INSERT INTO `sys_comment` (order_id, from_user_id, to_user_id, score, content, tags) VALUES
-(1, 208, 101, 5, '张老师非常有水平，孩子数学成绩提高很快！', '知识渊博,教学严谨');
+(1, 208, 101, 5, '张老师非常有水平，孩子编程能力提高很快！', '知识渊博,教学严谨');
 
 -- ----------------------------
 -- 10. 给钱包充值和流水
@@ -200,6 +200,101 @@ INSERT INTO `sys_transaction_flow` (user_id, amount, balance_after, flow_type, o
 -- 11. 教学记录 (teaching_record)
 -- ----------------------------
 INSERT INTO `teaching_record` (order_id, lesson_index, start_time, end_time, content_summary, status) VALUES
-(1, 1, DATE_SUB(NOW(), INTERVAL 10 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 10 DAY), INTERVAL 2 HOUR), '导数基础', 1),
-(1, 2, DATE_SUB(NOW(), INTERVAL 9 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 9 DAY), INTERVAL 2 HOUR), '导数应用', 1),
-(2, 1, DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 4 DAY), INTERVAL 1 HOUR), '一般现在时讲解', 1);
+(1, 1, DATE_SUB(NOW(), INTERVAL 10 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 10 DAY), INTERVAL 2 HOUR), 'Python基础语法', 1),
+(1, 2, DATE_SUB(NOW(), INTERVAL 9 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 9 DAY), INTERVAL 2 HOUR), 'Python函数与模块', 1),
+(1, 3, DATE_SUB(NOW(), INTERVAL 8 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 8 DAY), INTERVAL 2 HOUR), 'Python列表和字典', 1),
+(1, 4, DATE_SUB(NOW(), INTERVAL 7 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 7 DAY), INTERVAL 2 HOUR), 'Python面向对象', 1),
+(1, 5, DATE_SUB(NOW(), INTERVAL 6 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 6 DAY), INTERVAL 2 HOUR), 'Python文件操作', 1),
+(2, 1, DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 4 DAY), INTERVAL 1 HOUR), '篮球运球基本功', 1),
+(2, 2, DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 3 DAY), INTERVAL 1 HOUR), '篮球投篮技巧', 1),
+(2, 3, DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 2 DAY), INTERVAL 1 HOUR), '篮球传球配合', 1);
+
+-- ----------------------------
+-- 12. 更多课程订单 (丰富数据展示DeepFM推荐效果)
+-- ----------------------------
+-- 订单4：已完成 (李娜 教 晨曦 钢琴陪练)
+INSERT INTO `course_order` (order_no, parent_id, student_id, tutor_id, tutor_profile_id, demand_id, subject, grade, teach_mode, unit_price, total_hours, total_amount, service_fee, tutor_amount, used_hours, status, pay_time, pay_type) VALUES
+('ORD20260115001', 209, 9, 102, 2, NULL, '钢琴/乐器陪练', '小学四年级', 1, 120.00, 8, 960.00, 96.00, 864.00, 8, 3, DATE_SUB(NOW(), INTERVAL 20 DAY), 1);
+
+-- 订单5：已完成 (赵敏 教 欣怡 美术书法)
+INSERT INTO `course_order` (order_no, parent_id, student_id, tutor_id, tutor_profile_id, demand_id, subject, grade, teach_mode, unit_price, total_hours, total_amount, service_fee, tutor_amount, used_hours, status, pay_time, pay_type) VALUES
+('ORD20260120001', 203, 3, 104, 4, 3, '美术/书法', '小学三年级', 1, 100.00, 12, 1200.00, 120.00, 1080.00, 12, 3, DATE_SUB(NOW(), INTERVAL 15 DAY), 2);
+
+-- 订单6：进行中 (冯涛 教 俊杰 中考体育)
+INSERT INTO `course_order` (order_no, parent_id, student_id, tutor_id, tutor_profile_id, demand_id, subject, grade, teach_mode, unit_price, total_hours, total_amount, service_fee, tutor_amount, used_hours, status, pay_time, pay_type) VALUES
+('ORD20260201001', 204, 4, 109, 9, 4, '中考体育专项', '初三', 1, 120.00, 20, 2400.00, 240.00, 2160.00, 8, 2, DATE_SUB(NOW(), INTERVAL 7 DAY), 1);
+
+-- 订单7：已完成 (王科创 教 梓涵 科学实验)
+INSERT INTO `course_order` (order_no, parent_id, student_id, tutor_id, tutor_profile_id, demand_id, subject, grade, teach_mode, unit_price, total_hours, total_amount, service_fee, tutor_amount, used_hours, status, pay_time, pay_type) VALUES
+('ORD20260205001', 205, 5, 103, 3, 5, '科学实验/航模', '高二', 2, 200.00, 6, 1200.00, 120.00, 1080.00, 6, 3, DATE_SUB(NOW(), INTERVAL 12 DAY), 1);
+
+-- 订单8：进行中 (周编程 教 子涵 少儿编程)
+INSERT INTO `course_order` (order_no, parent_id, student_id, tutor_id, tutor_profile_id, demand_id, subject, grade, teach_mode, unit_price, total_hours, total_amount, service_fee, tutor_amount, used_hours, status, pay_time, pay_type) VALUES
+('ORD20260210001', 201, 1, 106, 6, 1, '少儿编程(Scratch/Python)', '初二', 1, 130.00, 15, 1950.00, 195.00, 1755.00, 4, 2, DATE_SUB(NOW(), INTERVAL 3 DAY), 2);
+
+-- 订单9：已完成 (吴书法 教 203欣怡 书法)
+INSERT INTO `course_order` (order_no, parent_id, student_id, tutor_id, tutor_profile_id, demand_id, subject, grade, teach_mode, unit_price, total_hours, total_amount, service_fee, tutor_amount, used_hours, status, pay_time, pay_type) VALUES
+('ORD20260212001', 203, 3, 107, 7, NULL, '美术/书法', '小学三年级', 1, 110.00, 10, 1100.00, 110.00, 990.00, 10, 3, DATE_SUB(NOW(), INTERVAL 25 DAY), 1);
+
+-- 订单10：已完成 (陈实验 教 205梓涵 机器人3D打印)
+INSERT INTO `course_order` (order_no, parent_id, student_id, tutor_id, tutor_profile_id, demand_id, subject, grade, teach_mode, unit_price, total_hours, total_amount, service_fee, tutor_amount, used_hours, status, pay_time, pay_type) VALUES
+('ORD20260215001', 205, 5, 110, 10, NULL, '机器人/3D打印', '高二', 2, 110.00, 8, 880.00, 88.00, 792.00, 8, 3, DATE_SUB(NOW(), INTERVAL 18 DAY), 1);
+
+-- ----------------------------
+-- 13. 更多评价 (丰富推荐系统数据源)
+-- ----------------------------
+INSERT INTO `sys_comment` (order_id, from_user_id, to_user_id, score, content, tags) VALUES
+(4, 209, 102, 5, '李老师非常专业，孩子钢琴进步很快！', '耐心,专业,有经验'),
+(5, 203, 104, 5, '赵老师教国画特别好，孩子很喜欢！', '亲切,专业,寓教于乐'),
+(7, 205, 103, 5, '王老师科学实验课太棒了，孩子爱上了科创！', '知识渊博,动手能力强,课程有趣'),
+(9, 203, 107, 4, '吴老师书法功底深厚，孩子进步明显', '功底扎实,教学认真'),
+(10, 205, 110, 5, '陈老师3D打印课程很有创意', '课程新颖,有耐心');
+
+-- 补充教员订单计数和钱包
+UPDATE `tutor_profile` SET order_count = 2 WHERE user_id = 101;
+UPDATE `tutor_profile` SET order_count = 1 WHERE user_id = 102;
+UPDATE `tutor_profile` SET order_count = 2 WHERE user_id = 103;
+UPDATE `tutor_profile` SET order_count = 1 WHERE user_id = 104;
+UPDATE `tutor_profile` SET order_count = 1 WHERE user_id = 105;
+UPDATE `tutor_profile` SET order_count = 1 WHERE user_id = 106;
+UPDATE `tutor_profile` SET order_count = 1 WHERE user_id = 107;
+UPDATE `tutor_profile` SET order_count = 1 WHERE user_id = 108;
+UPDATE `tutor_profile` SET order_count = 1 WHERE user_id = 109;
+UPDATE `tutor_profile` SET order_count = 1 WHERE user_id = 110;
+
+-- 补充更多教学记录
+INSERT INTO `teaching_record` (order_id, lesson_index, start_time, end_time, content_summary, status) VALUES
+(4, 1, DATE_SUB(NOW(), INTERVAL 20 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 20 DAY), INTERVAL 1 HOUR), '钢琴基础指法练习', 1),
+(4, 2, DATE_SUB(NOW(), INTERVAL 19 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 19 DAY), INTERVAL 1 HOUR), '简易乐曲演奏', 1),
+(5, 1, DATE_SUB(NOW(), INTERVAL 15 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 15 DAY), INTERVAL 2 HOUR), '国画基础: 笔墨纸砚', 1),
+(5, 2, DATE_SUB(NOW(), INTERVAL 14 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 14 DAY), INTERVAL 2 HOUR), '山水画入门', 1),
+(6, 1, DATE_SUB(NOW(), INTERVAL 7 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 7 DAY), INTERVAL 1 HOUR), '中考体育: 跑步热身与技巧', 1),
+(6, 2, DATE_SUB(NOW(), INTERVAL 6 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 6 DAY), INTERVAL 1 HOUR), '中考体育: 引体向上训练', 1),
+(7, 1, DATE_SUB(NOW(), INTERVAL 12 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 12 DAY), INTERVAL 2 HOUR), '航模原理与结构', 1),
+(7, 2, DATE_SUB(NOW(), INTERVAL 11 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 11 DAY), INTERVAL 2 HOUR), '航模组装实操', 1),
+(8, 1, DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 3 DAY), INTERVAL 2 HOUR), 'Scratch图形化编程入门', 1),
+(8, 2, DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_ADD(DATE_SUB(NOW(), INTERVAL 2 DAY), INTERVAL 2 HOUR), 'Scratch动画与游戏制作', 1);
+
+-- ----------------------------
+-- 14. 更多需求 (让教师端"找学生"页面有丰富数据)
+-- ----------------------------
+INSERT INTO `demand_post` (publisher_id, student_id, title, subject, grade, expect_price, teach_mode, longitude, latitude, address, detail, status) VALUES
+(209, 9, '小学钢琴启蒙', '钢琴/乐器陪练', '小学四年级', 100.00, 1, 116.325000, 39.975000, '北京市东城区东直门', '孩子刚开始学钢琴，需要有耐心的老师', 1),
+(210, 10, '初二羽毛球训练', '羽毛球/网球陪练', '初二', 80.00, 1, 116.345000, 39.980000, '北京市海淀区中关村', '培养运动特长，每周2-3次', 1),
+(211, NULL, '声乐考级辅导', '声乐/视唱练耳', '初三', 130.00, 3, 116.362000, 39.955000, '北京市西城区金融街', '准备声乐考级，需要有经验的老师', 1),
+(212, NULL, '中考体育训练', '中考体育专项', '初三', 100.00, 1, 116.318000, 39.998000, '北京市海淀区北大', '体育分不理想，急需提升', 1),
+(213, NULL, '机器人编程入门', '机器人/3D打印', '初一', 150.00, 2, 116.370000, 39.945000, '北京市朝阳区三里屯', '对机器人充满兴趣', 1),
+(214, NULL, '篮球基本功训练', '篮球/足球指导', '小学六年级', 70.00, 1, 116.310000, 39.965000, '北京市海淀区万泉河路', '培养孩子运动习惯', 1),
+(215, NULL, '书法硬笔入门', '美术/书法', '小学二年级', 80.00, 1, 116.395000, 39.920000, '北京市朝阳区望京', '写字不好看，想练硬笔', 1);
+
+-- ----------------------------
+-- 15. 补充排课数据 (让更多教师有排课展示)
+-- ----------------------------
+INSERT INTO `tutor_schedule_config` (tutor_id, day_of_week, start_time, end_time, available) VALUES
+(4, 1, '14:00', '17:00', 1), (4, 3, '14:00', '17:00', 1), (4, 6, '09:00', '17:00', 1), -- 赵敏
+(5, 2, '16:00', '18:00', 1), (5, 4, '16:00', '18:00', 1), (5, 6, '08:00', '12:00', 1), (5, 7, '08:00', '12:00', 1), -- 孙浩
+(6, 1, '19:00', '21:00', 1), (6, 3, '19:00', '21:00', 1), (6, 5, '19:00', '21:00', 1), -- 周婷
+(7, 2, '15:00', '18:00', 1), (7, 4, '15:00', '18:00', 1), (7, 7, '09:00', '12:00', 1), -- 吴刚
+(8, 6, '10:00', '12:00', 1), (8, 6, '14:00', '17:00', 1), (8, 7, '10:00', '17:00', 1), -- 郑洁
+(9, 1, '06:00', '08:00', 1), (9, 3, '06:00', '08:00', 1), (9, 5, '06:00', '08:00', 1), (9, 6, '06:00', '10:00', 1), -- 冯涛
+(10, 2, '18:00', '21:00', 1), (10, 4, '18:00', '21:00', 1), (10, 7, '14:00', '18:00', 1); -- 陈静
