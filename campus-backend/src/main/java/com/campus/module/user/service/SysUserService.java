@@ -10,8 +10,6 @@ public interface SysUserService extends IService<SysUser> {
 
     SysUser getByUsername(String username);
 
-    SysUser getByOpenid(String openid);
-
     boolean existsByUsername(String username);
 
     boolean register(SysUser user);

@@ -5,7 +5,7 @@
       <div class="header-container">
         <div class="logo" @click="goHome">
           <img src="@/assets/logo.svg" alt="Logo" />
-          <span>校园家教 · 家长端</span>
+          <span>素质教育 · 家长端</span>
         </div>
         
         <nav class="nav-menu">
@@ -13,6 +13,9 @@
           <router-link to="/demands" class="nav-item">我的需求</router-link>
           <router-link to="/orders" class="nav-item">我的订单</router-link>
           <router-link to="/chat" class="nav-item">消息</router-link>
+          <router-link to="/ai" class="nav-item ai-nav">
+            <el-icon><ChatDotRound /></el-icon>AI助手
+          </router-link>
         </nav>
         
         <div class="header-actions">
@@ -37,7 +40,7 @@
     
     <!-- 移动端顶部 -->
     <header v-else class="mobile-header">
-      <div class="header-title">{{ route.meta.title || '校园家教' }}</div>
+      <div class="header-title">{{ route.meta.title || '素质教育平台' }}</div>
     </header>
     
     <!-- 主内容区 -->
@@ -75,6 +78,7 @@
     <!-- AI 悬浮按钮 -->
     <div v-if="showAiButton" class="ai-float-btn" @click="openAiChat">
       <el-icon><ChatDotRound /></el-icon>
+      <span class="ai-label">AI助手</span>
     </div>
   </div>
 </template>
@@ -316,26 +320,38 @@ onUnmounted(() => {
   position: fixed;
   bottom: 80px;
   right: 20px;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
+  height: 44px;
+  padding: 0 16px 0 12px;
+  border-radius: 22px;
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: #fff;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
   transition: transform 0.2s;
   z-index: 99;
+  animation: ai-pulse 2s ease-in-out infinite;
   
   .el-icon {
-    font-size: 24px;
+    font-size: 20px;
+  }
+
+  .ai-label {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
   }
   
   &:hover {
-    transform: scale(1.1);
+    transform: scale(1.05);
   }
+}
+
+@keyframes ai-pulse {
+  0%, 100% { box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4); }
+  50% { box-shadow: 0 4px 24px rgba(102, 126, 234, 0.7); }
 }
 
 // 响应式
@@ -349,7 +365,7 @@ onUnmounted(() => {
   }
   
   .ai-float-btn {
-    bottom: 140px;
+    bottom: 80px;
   }
 }
 </style>

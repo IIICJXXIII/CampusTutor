@@ -20,8 +20,10 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src')
-    }
+      '@': path.resolve(__dirname, 'src'),
+      '@shared': path.resolve(__dirname, '../campus-web-shared')
+    },
+    dedupe: ['vue', 'axios', 'pinia', 'vue-router']
   },
   server: {
     port: 3001,
@@ -29,6 +31,21 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true
+      },
+      '/ws': {
+        target: 'ws://localhost:8080',
+        ws: true,
+        changeOrigin: true
+      }
+    }
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: `
+          @use "@shared/styles/variables" as *;
+          @use "@shared/styles/mixins" as *;
+        `
       }
     }
   }

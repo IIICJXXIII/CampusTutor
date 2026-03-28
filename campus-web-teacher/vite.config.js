@@ -21,9 +21,11 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
-      '@shared': path.resolve(__dirname, '../campus-web-shared')
+      '@shared': path.resolve(__dirname, '../campus-web-shared'),
+      'dayjs': path.resolve(__dirname, 'node_modules/dayjs'),
+      'axios': path.resolve(__dirname, 'node_modules/axios')
     },
-    dedupe: ['vue', 'axios', 'pinia', 'vue-router']
+    dedupe: ['vue', 'axios', 'pinia', 'vue-router', 'dayjs']
   },
   optimizeDeps: {
     include: ['axios', 'marked', 'element-plus', 'pinia', 'vue-router', 'echarts']

@@ -131,15 +131,15 @@
         <template v-if="editType === 'teaching'">
           <el-form-item label="擅长科目">
             <el-checkbox-group v-model="editForm.subjects">
-              <el-checkbox label="语文" />
-              <el-checkbox label="数学" />
-              <el-checkbox label="英语" />
-              <el-checkbox label="物理" />
-              <el-checkbox label="化学" />
-              <el-checkbox label="生物" />
-              <el-checkbox label="历史" />
-              <el-checkbox label="地理" />
-              <el-checkbox label="政治" />
+              <el-checkbox label="钢琴/乐器陪练" />
+              <el-checkbox label="美术/书法" />
+              <el-checkbox label="声乐/视唱练耳" />
+              <el-checkbox label="中考体育专项" />
+              <el-checkbox label="羽毛球/网球陪练" />
+              <el-checkbox label="篮球/足球指导" />
+              <el-checkbox label="少儿编程(Scratch/Python)" />
+              <el-checkbox label="机器人/3D打印" />
+              <el-checkbox label="科学实验/航模" />
             </el-checkbox-group>
           </el-form-item>
           <el-form-item label="可教年级">

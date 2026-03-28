@@ -43,12 +43,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getConversations } from '@shared/api/chat'
-import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
-import 'dayjs/locale/zh-cn'
-
-dayjs.extend(relativeTime)
-dayjs.locale('zh-cn')
+import { smartTime } from '@shared/utils'
 
 const router = useRouter()
 
@@ -56,20 +51,7 @@ const loading = ref(false)
 const conversations = ref([])
 let refreshTimer = null
 
-const formatTime = (time) => {
-  if (!time) return ''
-  const now = dayjs()
-  const msgTime = dayjs(time)
-  
-  if (now.isSame(msgTime, 'day')) {
-    return msgTime.format('HH:mm')
-  } else if (now.subtract(1, 'day').isSame(msgTime, 'day')) {
-    return '昨天'
-  } else if (now.isSame(msgTime, 'year')) {
-    return msgTime.format('MM-DD')
-  }
-  return msgTime.format('YYYY-MM-DD')
-}
+const formatTime = (time) => smartTime(time)
 
 const loadConversations = async () => {
   loading.value = true

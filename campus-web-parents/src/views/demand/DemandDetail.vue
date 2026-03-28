@@ -217,9 +217,7 @@ const viewTutor = (userId) => {
 const acceptApplicant = async (applicant) => {
   try {
     await ElMessageBox.confirm(`确定选择 ${applicant.name} 作为老师吗？`, '选择老师')
-    // TODO: 调用选择老师的接口
-    ElMessage.success('选择成功，即将跳转到订单页面')
-    // router.push(`/orders/create?demandId=${route.params.id}&tutorId=${applicant.tutorUserId}`)
+    router.push(`/orders/create?demandId=${route.params.id}&tutorId=${applicant.tutorUserId}`)
   } catch (e) { /* cancelled */ }
 }
 

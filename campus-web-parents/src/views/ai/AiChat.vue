@@ -190,10 +190,11 @@ const sendMessage = async () => {
     localStorage.setItem('ai_chat_history', JSON.stringify(messages.value))
   } catch (error) {
     console.error('AI回复失败:', error)
+    const errMsg = error?.message || '服务暂时不可用，请稍后再试'
     messages.value.push({
       id: Date.now() + 1,
       role: 'assistant',
-      content: '抱歉，我暂时无法回答您的问题，请稍后再试。'
+      content: `抱歉，请求失败：${errMsg}`
     })
   } finally {
     loading.value = false

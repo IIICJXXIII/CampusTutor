@@ -14,7 +14,7 @@
             <el-tag :type="getStatusType(demand.status)">{{ getStatusText(demand.status) }}</el-tag>
           </div>
           <div class="price-row">
-            <span class="price">¥{{ demand.salary }}</span>
+            <span class="price">¥{{ demand.expectPrice }}</span>
             <span class="unit">/小时</span>
           </div>
         </div>
@@ -24,18 +24,18 @@
         <el-descriptions :column="2" border>
           <el-descriptions-item label="科目">{{ demand.subject }}</el-descriptions-item>
           <el-descriptions-item label="年级">{{ demand.grade }}</el-descriptions-item>
-          <el-descriptions-item label="上课频率">{{ demand.frequency }}</el-descriptions-item>
-          <el-descriptions-item label="每次时长">{{ demand.duration }}小时</el-descriptions-item>
+          <el-descriptions-item label="上课频率" :span="2">{{ demand.scheduleRequire || '面议' }}</el-descriptions-item>
           <el-descriptions-item label="上课地址" :span="2">
             <el-icon><Location /></el-icon>
             {{ demand.address }}
           </el-descriptions-item>
-          <el-descriptions-item label="期望时间" :span="2">{{ demand.preferTime || '面议' }}</el-descriptions-item>
+          <el-descriptions-item label="技能水平">{{ demand.skillLevel || '不限' }}</el-descriptions-item>
+          <el-descriptions-item label="授课方式">{{ demand.teachMode === 1 ? '线上' : demand.teachMode === 2 ? '线下' : '均可' }}</el-descriptions-item>
         </el-descriptions>
         
         <div class="section">
           <h3>需求描述</h3>
-          <p class="description">{{ demand.description || '暂无详细描述' }}</p>
+          <p class="description">{{ demand.detail || '暂无详细描述' }}</p>
         </div>
         
         <div class="section">
@@ -59,7 +59,7 @@
           <el-avatar :size="48" :src="demand.parentAvatar" />
           <div class="info">
             <p class="name">{{ demand.parentName || '家长' }}</p>
-            <p class="desc">发布于 {{ formatDate(demand.createdAt) }}</p>
+            <p class="desc">发布于 {{ formatDate(demand.createTime) }}</p>
           </div>
           <el-button @click="goToChat">
             <el-icon><ChatDotRound /></el-icon>私聊
@@ -131,8 +131,8 @@ const goBack = () => {
 }
 
 const goToChat = () => {
-  if (demand.value.parentId) {
-    router.push(`/chat/${demand.value.parentId}`)
+  if (demand.value.publisherId) {
+    router.push(`/chat/${demand.value.publisherId}`)
   }
 }
 

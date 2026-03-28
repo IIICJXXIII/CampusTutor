@@ -25,9 +25,4 @@ public class PayOrderRequest {
      * 支付密码(钱包支付时需要)
      */
     private String payPassword;
-    
-    /**
-     * 微信支付时的用户标识
-     */
-    private String openid;
 }

@@ -4,6 +4,20 @@
  */
 import axios from 'axios';
 
+// 全局错误提示回调，由各 App 在 main.js 中注入
+let _showError = (msg) => console.error('[API]', msg);
+
+// 防止多个 401 同时触发重复跳转
+let _isRedirecting = false;
+
+/**
+ * 注入全局错误提示函数（在 App 入口调用）
+ * @param {(msg: string) => void} handler
+ */
+export function setRequestErrorHandler(handler) {
+  _showError = handler;
+}
+
 // 创建 axios 实例
 const request = axios.create({
   baseURL: '/api',
@@ -40,6 +54,7 @@ request.interceptors.response.use(
     
     // 业务失败
     console.warn('业务异常:', res.message);
+    _showError(res.message || '请求失败');
     return Promise.reject(new Error(res.message || '请求失败'));
   },
   error => {
@@ -49,25 +64,32 @@ request.interceptors.response.use(
       
       switch (status) {
         case 401:
-          // Token 失效，清除登录状态
-          localStorage.removeItem('token');
-          localStorage.removeItem('userInfo');
-          window.location.href = '/login';
+          // Token 失效，清除登录状态，防止多个请求重复跳转
+          if (!_isRedirecting) {
+            _isRedirecting = true;
+            localStorage.removeItem('token');
+            localStorage.removeItem('userInfo');
+            localStorage.removeItem('userRole');
+            _showError('登录已过期，请重新登录');
+            setTimeout(() => {
+              window.location.href = '/login';
+            }, 100);
+          }
           break;
         case 403:
-          console.error('没有权限访问');
+          _showError('没有权限访问');
           break;
         case 404:
-          console.error('请求资源不存在');
+          _showError('请求资源不存在');
           break;
         case 500:
-          console.error('服务器内部错误');
+          _showError('服务器内部错误');
           break;
         default:
-          console.error(`HTTP错误 ${status}`);
+          _showError(`请求失败 (${status})`);
       }
     } else if (error.request) {
-      console.error('网络异常，请检查网络连接');
+      _showError('网络异常，请检查网络连接');
     }
     
     return Promise.reject(error);

@@ -115,12 +115,12 @@
     <el-dialog v-model="aboutVisible" title="关于我们" width="400px">
       <div class="about-content">
         <div class="app-logo">
-          <img src="@/assets/logo.png" alt="logo" />
+          <img src="@/assets/logo.svg" alt="logo" />
         </div>
-        <h3>校园家教平台</h3>
-        <p>版本: v1.0.0</p>
+        <h3>素质教育平台</h3>
+        <p>版本: v2.0.0</p>
         <p class="desc">
-          连接优质大学生家教与家长的平台，为孩子提供专业的辅导服务
+          连接优质素质教育教师与家长的平台，涵盖艺术、体育、科创STEAM
         </p>
       </div>
     </el-dialog>
