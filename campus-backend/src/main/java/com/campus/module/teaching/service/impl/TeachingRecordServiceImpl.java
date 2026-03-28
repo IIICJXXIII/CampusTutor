@@ -14,12 +14,14 @@ import com.campus.module.teaching.mapper.TeachingRecordMapper;
 import com.campus.module.teaching.service.TeachingRecordService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -34,11 +36,25 @@ public class TeachingRecordServiceImpl extends ServiceImpl<TeachingRecordMapper,
     private final TeachingRecordMapper teachingRecordMapper;
     private final CourseOrderMapper courseOrderMapper;
     private final CourseOrderService courseOrderService;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    // 【关键修复】加上 synchronized 关键字，防止前端手抖连点导致瞬间生成多条记录
-    public synchronized Long checkIn(Long tutorId, CheckInRequest request) {
+    public Long checkIn(Long tutorId, CheckInRequest request) {
+        // 分布式锁：防止前端连点导致重复打卡
+        String lockKey = "checkin:order:" + request.getOrderId();
+        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(lockKey, "1", 10, TimeUnit.SECONDS);
+        if (acquired == null || !acquired) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "操作过于频繁，请稍后再试");
+        }
+        try {
+            return doCheckIn(tutorId, request);
+        } finally {
+            redisTemplate.delete(lockKey);
+        }
+    }
+
+    private Long doCheckIn(Long tutorId, CheckInRequest request) {
         // 1. 获取订单信息
         CourseOrder order = courseOrderMapper.selectById(request.getOrderId());
         if (order == null) {

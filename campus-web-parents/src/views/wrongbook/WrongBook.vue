@@ -11,11 +11,15 @@
     <!-- 筛选 -->
     <div class="filter-bar">
       <el-select v-model="filter.subject" placeholder="科目" clearable @change="loadQuestions">
-        <el-option label="语文" value="语文" />
-        <el-option label="数学" value="数学" />
-        <el-option label="英语" value="英语" />
-        <el-option label="物理" value="物理" />
-        <el-option label="化学" value="化学" />
+        <el-option label="钢琴/乐器陪练" value="钢琴/乐器陪练" />
+        <el-option label="美术/书法" value="美术/书法" />
+        <el-option label="声乐/视唱练耳" value="声乐/视唱练耳" />
+        <el-option label="中考体育专项" value="中考体育专项" />
+        <el-option label="羽毛球/网球陪练" value="羽毛球/网球陪练" />
+        <el-option label="篮球/足球指导" value="篮球/足球指导" />
+        <el-option label="少儿编程(Scratch/Python)" value="少儿编程(Scratch/Python)" />
+        <el-option label="机器人/3D打印" value="机器人/3D打印" />
+        <el-option label="科学实验/航模" value="科学实验/航模" />
       </el-select>
       <el-select v-model="filter.studentId" placeholder="学生" clearable @change="loadQuestions">
         <el-option

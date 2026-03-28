@@ -104,6 +104,12 @@ const routes = [
         component: () => import('@/views/order/OrderReview.vue'),
         meta: { title: '评价订单' }
       },
+      {
+        path: 'orders/:id/sign',
+        name: 'ElectronicSign',
+        component: () => import('@/views/order/ElectronicSign.vue'),
+        meta: { title: '电子合同签署' }
+      },
       
       // 课程管理
       {
@@ -239,7 +245,7 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   // 设置页面标题
-  document.title = to.meta.title ? `${to.meta.title} - 校园家教` : '校园家教'
+  document.title = to.meta.title ? `${to.meta.title} - 素质教育平台` : '素质教育平台'
   
   // 白名单
   const whiteList = ['/login', '/register']

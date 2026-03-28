@@ -55,8 +55,8 @@ class DemandServiceTest {
     @Transactional
     void testPublishDemand() {
         DemandPostRequest request = new DemandPostRequest();
-        request.setTitle("初二数学辅导");
-        request.setSubject("数学");
+        request.setTitle("初二编程辅导");
+        request.setSubject("少儿编程(Scratch/Python)");
         request.setGrade("初二");
         request.setExpectPrice(new BigDecimal("120.00"));
         request.setTeachMode(1);
@@ -70,7 +70,7 @@ class DemandServiceTest {
 
         DemandPost demand = demandPostService.getById(demandId);
         assertNotNull(demand, "需求应存在");
-        assertEquals("数学", demand.getSubject());
+        assertEquals("少儿编程(Scratch/Python)", demand.getSubject());
 
         System.out.println("✅ 需求发布成功，ID: " + demandId);
     }
@@ -83,7 +83,7 @@ class DemandServiceTest {
         for (int i = 1; i <= 3; i++) {
             DemandPostRequest request = new DemandPostRequest();
             request.setTitle("测试需求" + i);
-            request.setSubject("数学");
+            request.setSubject("少儿编程(Scratch/Python)");
             request.setGrade("高一");
             request.setExpectPrice(new BigDecimal("100"));
             request.setTeachMode(1);
@@ -103,13 +103,13 @@ class DemandServiceTest {
     void testPageList() {
         DemandPostRequest request = new DemandPostRequest();
         request.setTitle("分页测试");
-        request.setSubject("化学");
+        request.setSubject("美术/书法");
         request.setGrade("高二");
         request.setExpectPrice(new BigDecimal("150"));
         request.setTeachMode(2);
         demandPostService.publishDemand(testUserId, request);
 
-        IPage<DemandPost> page = demandPostService.pageList("化学", null, 1, 10);
+        IPage<DemandPost> page = demandPostService.pageList("美术/书法", null, 1, 10);
 
         assertNotNull(page);
         System.out.println("✅ 分页查询成功，总数: " + page.getTotal());

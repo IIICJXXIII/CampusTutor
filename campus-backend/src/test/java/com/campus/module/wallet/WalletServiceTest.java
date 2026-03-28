@@ -75,18 +75,19 @@ class WalletServiceTest {
 
     @Test
     @Order(3)
-    @DisplayName("3. 冻结金额测试")
+    @DisplayName("3. 从余额冻结金额测试")
     @Transactional
     void testFreeze() {
         walletService.createWallet(testUserId);
         walletService.recharge(testUserId, new BigDecimal("200.00"));
 
-        boolean result = walletService.freeze(testUserId, new BigDecimal("80.00"));
+        boolean result = walletService.freezeFromBalance(testUserId, new BigDecimal("80.00"));
 
         assertTrue(result, "冻结应成功");
 
         SysWallet wallet = walletService.getByUserId(testUserId);
         assertEquals(0, wallet.getBalance().compareTo(new BigDecimal("120.00")), "可用余额应为120");
+        assertEquals(0, wallet.getFrozenAmount().compareTo(new BigDecimal("80.00")), "冻结金额应为80");
 
         System.out.println("✅ 冻结成功");
     }
@@ -117,7 +118,7 @@ class WalletServiceTest {
         walletService.createWallet(testUserId);
         walletService.recharge(testUserId, new BigDecimal("50.00"));
 
-        boolean result = walletService.freeze(testUserId, new BigDecimal("100.00"));
+        boolean result = walletService.freezeFromBalance(testUserId, new BigDecimal("100.00"));
 
         assertFalse(result, "余额不足时冻结应失败");
 

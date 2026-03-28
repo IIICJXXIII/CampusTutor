@@ -108,7 +108,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTutorOrders, confirmStartOrder as confirmStartOrderApi } from '@shared/api/order'
-import dayjs from 'dayjs'
+import { formatDate } from '@shared/utils'
 
 const router = useRouter()
 
@@ -137,9 +137,7 @@ const getStatusText = (status) => {
   return map[status] || '未知'
 }
 
-const formatTime = (time) => {
-  return dayjs(time).format('YYYY-MM-DD HH:mm')
-}
+const formatTime = (time) => formatDate(time, 'YYYY-MM-DD HH:mm')
 
 const loadOrders = async () => {
   loading.value = true

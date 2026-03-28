@@ -64,14 +64,14 @@ class MatchServiceTest {
     @DisplayName("2. 科目筛选测试")
     void testSubjectFilter() {
         TutorSearchRequest request = new TutorSearchRequest();
-        request.setSubject("数学");
+        request.setSubject("少儿编程(Scratch/Python)");
         request.setPage(1);
         request.setSize(10);
 
         IPage<TutorSearchResult> result = matchService.searchTutors(request);
 
         assertNotNull(result);
-        System.out.println("✅ 科目筛选成功，数学教员: " + result.getTotal());
+        System.out.println("✅ 科目筛选成功，编程教员: " + result.getTotal());
     }
 
     @Test
@@ -114,7 +114,7 @@ class MatchServiceTest {
     @DisplayName("5. 组合条件搜索")
     void testCombinedSearch() {
         TutorSearchRequest request = new TutorSearchRequest();
-        request.setSubject("数学");
+        request.setSubject("少儿编程(Scratch/Python)");
         request.setGrade("初二");
         request.setMinPrice(new BigDecimal("100"));
         request.setMaxPrice(new BigDecimal("200"));
@@ -134,13 +134,13 @@ class MatchServiceTest {
         TutorProfile profile = new TutorProfile();
         profile.setId(1L);
         profile.setUserId(1L);
-        profile.setTeachSubjects("[\"数学\", \"物理\"]");
+        profile.setTeachSubjects("[\"少儿编程(Scratch/Python)\", \"机器人/3D打印\"]");
         profile.setTeachGrades("[\"初一\", \"初二\", \"初三\"]");
         profile.setExpectPrice(new BigDecimal("120"));
         profile.setCertStatus(2);
 
         DemandPost demand = new DemandPost();
-        demand.setSubject("数学");
+        demand.setSubject("少儿编程(Scratch/Python)");
         demand.setGrade("初二");
         demand.setExpectPrice(new BigDecimal("120"));
 
@@ -272,7 +272,7 @@ class MatchServiceTest {
         TutorProfile profile = new TutorProfile();
         profile.setId(1L);
         profile.setUserId(1L);
-        profile.setTeachSubjects("[\"数学\", \"物理\"]");
+        profile.setTeachSubjects("[\"少儿编程(Scratch/Python)\", \"机器人/3D打印\"]");
         profile.setTeachGrades("[\"初一\", \"初二\", \"初三\"]");
         profile.setExpectPrice(new BigDecimal("120"));
         profile.setRating(new BigDecimal("4.8"));
@@ -285,7 +285,7 @@ class MatchServiceTest {
 
         MatchScoreResult score = scoreCalculator.calculateScoreWithBehavior(
                 profile,
-                "数学",
+                "少儿编程(Scratch/Python)",
                 "初二",
                 2.0,
                 new BigDecimal("150"),
@@ -318,7 +318,7 @@ class MatchServiceTest {
         // 新用户搜索
         TutorSearchRequest newUserRequest = new TutorSearchRequest();
         newUserRequest.setUserId(99999L); // 假设这是新用户
-        newUserRequest.setSubject("数学");
+        newUserRequest.setSubject("少儿编程(Scratch/Python)");
         newUserRequest.setPage(1);
         newUserRequest.setSize(10);
 

@@ -6,30 +6,30 @@
     
     <div class="schedule-container">
       <div class="schedule-card">
-        <p class="tip">设置您每周可授课的时间段，方便家长预约</p>
+        <p class="tip">点击格子选择您每周可授课的时间段，方便家长预约</p>
         
         <div class="schedule-grid">
-          <div v-for="day in 7" :key="day" class="day-row">
-            <div class="day-header">
-              <el-checkbox 
-                v-model="scheduleData[day].enabled"
-                @change="toggleDay(day)"
-              >
-                {{ getDayName(day) }}
-              </el-checkbox>
-            </div>
-            
-            <div v-if="scheduleData[day].enabled" class="time-slots">
-              <el-checkbox-group v-model="scheduleData[day].slots">
-                <el-checkbox label="上午" />
-                <el-checkbox label="下午" />
-                <el-checkbox label="晚上" />
-              </el-checkbox-group>
-            </div>
-            <div v-else class="time-slots disabled">
-              休息
-            </div>
+          <!-- 表头 -->
+          <div class="grid-header">
+            <div class="time-label"></div>
+            <div v-for="day in 7" :key="day" class="day-label">{{ getDayName(day) }}</div>
           </div>
+          <!-- 时段行 -->
+          <div v-for="(slot, si) in timeSlots" :key="si" class="grid-row">
+            <div class="time-label">{{ slot }}</div>
+            <div
+              v-for="day in 7"
+              :key="day"
+              class="grid-cell"
+              :class="{ active: isSelected(day, slot) }"
+              @click="toggleSlot(day, slot)"
+            />
+          </div>
+        </div>
+        
+        <div class="legend">
+          <span class="legend-item"><span class="dot active"></span>可授课</span>
+          <span class="legend-item"><span class="dot"></span>不可用</span>
         </div>
         
         <div class="actions">
@@ -52,27 +52,28 @@ import { getScheduleConfig, saveScheduleConfig } from '@shared/api/tutor'
 const router = useRouter()
 const saving = ref(false)
 
-// 初始化7天的排课数据
-const scheduleData = reactive({
-  1: { enabled: false, slots: [] },
-  2: { enabled: false, slots: [] },
-  3: { enabled: false, slots: [] },
-  4: { enabled: false, slots: [] },
-  5: { enabled: false, slots: [] },
-  6: { enabled: false, slots: [] },
-  7: { enabled: false, slots: [] }
-})
+const timeSlots = [
+  '08:00-08:40', '08:50-09:30', '09:40-10:20', '10:30-11:10', '11:20-12:00',
+  '14:00-14:40', '14:50-15:30', '15:40-16:20', '16:30-17:10',
+  '18:30-19:10', '19:20-20:00', '20:10-20:50', '21:00-21:40'
+]
+
+// day -> Set of selected slot strings
+const scheduleData = reactive({})
+for (let d = 1; d <= 7; d++) scheduleData[d] = new Set()
 
 const getDayName = (day) => {
   const names = { 1: '周一', 2: '周二', 3: '周三', 4: '周四', 5: '周五', 6: '周六', 7: '周日' }
   return names[day]
 }
 
-const toggleDay = (day) => {
-  if (!scheduleData[day].enabled) {
-    scheduleData[day].slots = []
+const isSelected = (day, slot) => scheduleData[day].has(slot)
+
+const toggleSlot = (day, slot) => {
+  if (scheduleData[day].has(slot)) {
+    scheduleData[day].delete(slot)
   } else {
-    scheduleData[day].slots = ['上午', '下午', '晚上']
+    scheduleData[day].add(slot)
   }
 }
 
@@ -81,9 +82,8 @@ const loadSchedule = async () => {
     const res = await getScheduleConfig()
     if (res.code === 200 && res.data) {
       res.data.forEach(item => {
-        if (scheduleData[item.dayOfWeek]) {
-          scheduleData[item.dayOfWeek].enabled = true
-          scheduleData[item.dayOfWeek].slots = item.timeSlots || []
+        if (scheduleData[item.dayOfWeek] && item.timeSlots) {
+          item.timeSlots.forEach(s => scheduleData[item.dayOfWeek].add(s))
         }
       })
     }
@@ -94,12 +94,11 @@ const loadSchedule = async () => {
 
 const handleSave = async () => {
   const schedules = []
-  
   for (let day = 1; day <= 7; day++) {
-    if (scheduleData[day].enabled && scheduleData[day].slots.length > 0) {
+    if (scheduleData[day].size > 0) {
       schedules.push({
         dayOfWeek: day,
-        timeSlots: scheduleData[day].slots
+        timeSlots: [...scheduleData[day]]
       })
     }
   }
@@ -129,7 +128,7 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .schedule-page {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
   
   .schedule-container {
@@ -150,27 +149,79 @@ onMounted(() => {
   }
   
   .schedule-grid {
-    .day-row {
+    overflow-x: auto;
+    
+    .grid-header, .grid-row {
       display: flex;
       align-items: center;
-      padding: 16px 0;
-      border-bottom: 1px solid #ebeef5;
+    }
+    
+    .grid-header {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 4px;
       
-      &:last-child {
-        border-bottom: none;
-      }
-      
-      .day-header {
-        width: 100px;
-      }
-      
-      .time-slots {
+      .day-label {
         flex: 1;
-        
-        &.disabled {
-          color: #c0c4cc;
-          font-size: 14px;
-        }
+        min-width: 52px;
+        text-align: center;
+      }
+    }
+    
+    .time-label {
+      width: 100px;
+      min-width: 100px;
+      font-size: 12px;
+      color: #606266;
+      text-align: right;
+      padding-right: 8px;
+    }
+    
+    .grid-row {
+      margin-bottom: 3px;
+    }
+    
+    .grid-cell {
+      flex: 1;
+      min-width: 52px;
+      height: 28px;
+      margin: 0 2px;
+      border-radius: 4px;
+      background: #f0f2f5;
+      cursor: pointer;
+      transition: background 0.15s;
+      
+      &:hover {
+        background: #d9ecff;
+      }
+      
+      &.active {
+        background: #409eff;
+      }
+    }
+  }
+  
+  .legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: #606266;
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      background: #f0f2f5;
+      
+      &.active {
+        background: #409eff;
       }
     }
   }

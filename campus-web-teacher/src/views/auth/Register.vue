@@ -4,7 +4,7 @@
       <div class="register-header">
         <img src="@/assets/logo.svg" alt="Logo" class="logo" />
         <h1>教师注册</h1>
-        <p class="subtitle">加入校园智教，成为优秀教员</p>
+        <p class="subtitle">加入素质教育平台，成为优秀教员</p>
       </div>
       
       <el-form 

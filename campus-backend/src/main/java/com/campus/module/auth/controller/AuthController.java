@@ -4,15 +4,12 @@ import com.campus.common.result.Result;
 import com.campus.module.auth.dto.LoginRequest;
 import com.campus.module.auth.dto.LoginResponse;
 import com.campus.module.auth.dto.RegisterRequest;
-import com.campus.module.auth.dto.WxLoginRequest;
-import com.campus.module.auth.dto.WxPhoneLoginRequest;
 import com.campus.module.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.campus.common.exception.BusinessException;
 import com.campus.module.user.service.SysUserService;
@@ -26,11 +23,8 @@ import com.campus.module.user.service.SysUserService;
 @RequiredArgsConstructor
 public class AuthController {
 
-    @Autowired  // <--- 1. 关键：加这个
-    private AuthService authService;
-    
-    @Autowired
-    private SysUserService sysUserService;
+    private final AuthService authService;
+    private final SysUserService sysUserService;
 
     @Operation(summary = "用户登录", description = "支持密码登录和验证码登录")
     @PostMapping("/login")
@@ -81,20 +75,4 @@ public class AuthController {
         return Result.success("密码重置成功");
     }
 
-    @Operation(summary = "微信小程序登录", description = "使用微信code登录")
-    @PostMapping("/wx-login")
-    public Result<LoginResponse> wxLogin(@Valid @RequestBody WxLoginRequest request) {
-        LoginResponse response = authService.wxLogin(request);
-        if (response.getToken() == null) {
-            return Result.success("需要用户授权获取更多信息", response);
-        }
-        return Result.success("微信登录成功", response);
-    }
-
-    @Operation(summary = "微信手机号一键登录", description = "使用微信login_code和phone_code一键登录")
-    @PostMapping("/wx-phone-login")
-    public Result<LoginResponse> wxPhoneLogin(@Valid @RequestBody WxPhoneLoginRequest request) {
-        LoginResponse response = authService.wxPhoneLogin(request);
-        return Result.success("微信一键登录成功", response);
-    }
 }

@@ -59,7 +59,7 @@ class RecommendImprovementTest {
     @DisplayName("2. 教员标签构建测试")
     void testBuildTutorTags() {
         TutorProfile tutor = new TutorProfile();
-        tutor.setTeachSubjects("[\"数学\", \"物理\"]");
+        tutor.setTeachSubjects("[\"少儿编程(Scratch/Python)\", \"机器人/3D打印\"]");
         tutor.setTeachGrades("[\"初一\", \"初二\"]");
         tutor.setUniversityName("北京大学");
         tutor.setExpectPrice(new BigDecimal("120"));
@@ -73,8 +73,8 @@ class RecommendImprovementTest {
         assertFalse(tags.isEmpty(), "标签列表不应为空");
 
         // 验证各维度标签存在
-        assertTrue(tags.contains("科目:数学"), "应包含科目标签");
-        assertTrue(tags.contains("科目:物理"), "应包含科目标签");
+        assertTrue(tags.contains("科目:少儿编程(Scratch/Python)"), "应包含科目标签");
+        assertTrue(tags.contains("科目:机器人/3D打印"), "应包含科目标签");
         assertTrue(tags.contains("大学:北京大学"), "应包含大学标签");
         assertTrue(tags.contains("价格带:100-150"), "应包含价格带标签");
         assertTrue(tags.contains("学历:本科"), "应包含学历标签");

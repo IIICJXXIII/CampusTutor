@@ -33,12 +33,10 @@ CREATE TABLE `sys_user` (
   `avatar` varchar(255) DEFAULT NULL COMMENT '头像URL',
   `gender` tinyint DEFAULT NULL COMMENT '性别: 1-男, 2-女',
   `role` tinyint NOT NULL COMMENT '角色: 0-管理员, 1-教员, 2-家长',
-  `openid` varchar(64) DEFAULT NULL COMMENT '微信OpenID (小程序用)',
   `status` tinyint DEFAULT '1' COMMENT '状态: 1-正常, 0-禁用',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_username` (`username`),
-  UNIQUE KEY `uk_openid` (`openid`)
+  UNIQUE KEY `uk_username` (`username`)
 ) ENGINE=InnoDB COMMENT='系统用户表';
 
 -- 1.2 钱包表 (资金托管与结算)

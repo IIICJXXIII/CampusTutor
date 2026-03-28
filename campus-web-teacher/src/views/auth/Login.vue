@@ -3,7 +3,7 @@
     <div class="login-container">
       <div class="login-header">
         <img src="@/assets/logo.svg" alt="Logo" class="logo" />
-        <h1>校园智教</h1>
+        <h1>素质教育平台</h1>
         <p class="subtitle">教师端登录</p>
       </div>
       
@@ -51,10 +51,6 @@
           <router-link to="/register">立即注册</router-link>
         </div>
       </el-form>
-      
-      <div class="login-tips">
-        <p>测试账号：13800000002 / 123456</p>
-      </div>
     </div>
   </div>
 </template>

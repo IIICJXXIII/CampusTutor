@@ -9,26 +9,18 @@
         <result column="nickname" property="nickname"/>
         <result column="avatar" property="avatarUrl"/>
         <result column="role" property="role"/>
-        <result column="openid" property="openid"/>
         <result column="status" property="status"/>
         <result column="create_time" property="createTime"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, username, password, nickname, avatar, role, openid, status, create_time
+        id, username, password, nickname, avatar, role, status, create_time
     </sql>
 
     <select id="selectByUsername" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List"/>
         FROM sys_user
         WHERE username = #{username}
-        LIMIT 1
-    </select>
-
-    <select id="selectByOpenid" resultMap="BaseResultMap">
-        SELECT <include refid="Base_Column_List"/>
-        FROM sys_user
-        WHERE openid = #{openid}
         LIMIT 1
     </select>
 

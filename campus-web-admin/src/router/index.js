@@ -93,7 +93,7 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
-  document.title = `${to.meta.title || '管理后台'} - 家教平台`
+  document.title = `${to.meta.title || '管理后台'} - 素质教育平台`
   
   const token = localStorage.getItem('admin_token')
   

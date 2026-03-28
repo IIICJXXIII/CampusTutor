@@ -128,7 +128,7 @@ const routes = [
         meta: { title: '消息中心' }
       },
       {
-        path: 'chat/:targetUserId',
+        path: 'chat/:id',
         name: 'ChatRoom',
         component: () => import('@/views/chat/ChatRoom.vue'),
         meta: { title: '私聊' }
@@ -140,6 +140,24 @@ const routes = [
         name: 'AiChat',
         component: () => import('@/views/ai/AiChat.vue'),
         meta: { title: 'AI助手' }
+      },
+      {
+        path: 'ai/hub',
+        name: 'AiHub',
+        component: () => import('@/views/ai/AiHub.vue'),
+        meta: { title: 'AI工具中心' }
+      },
+      {
+        path: 'ai/lesson-plan',
+        name: 'AiLessonPlan',
+        component: () => import('@/views/ai/AiLessonPlan.vue'),
+        meta: { title: 'AI课程规划' }
+      },
+      {
+        path: 'ai/comment-polish',
+        name: 'AiCommentPolish',
+        component: () => import('@/views/ai/AiCommentPolish.vue'),
+        meta: { title: 'AI评语润色' }
       },
 
       // 个人中心
@@ -175,7 +193,7 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   // 设置页面标题
-  document.title = `${to.meta.title || '校园智教'} - 教师端`
+  document.title = `${to.meta.title || '素质教育平台'} - 教师端`
   
   // 检查登录状态
   const token = localStorage.getItem('token')
