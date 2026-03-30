@@ -14,7 +14,6 @@
 | `avatar` | varchar(255) | YES | | 头像URL |
 | `gender` | tinyint | YES | | 性别: 1-男, 2-女 |
 | `role` | tinyint | NO | | 角色: 0-管理员, 1-教员, 2-家长 |
-| `openid` | varchar(64) | YES | | 微信OpenID (小程序用) |
 | `status` | tinyint | YES | `1` | 状态: 1-正常, 0-禁用 |
 | `create_time` | datetime | YES | CURRENT_TIMESTAMP | 创建时间 |
 
