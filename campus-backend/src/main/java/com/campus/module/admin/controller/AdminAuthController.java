@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.DigestUtils;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -40,10 +40,24 @@ public class AdminAuthController {
             return Result.fail("用户名或密码错误");
         }
 
-        // 验证密码 (MD5)
-        String encryptedPassword = DigestUtils.md5DigestAsHex(request.getPassword().getBytes());
-        if (!encryptedPassword.equals(user.getPassword())) {
+        // 验证密码 (优先 BCrypt，兼容 MD5 并自动升级)
+        String storedPassword = user.getPassword();
+        boolean verified;
+        boolean shouldUpgrade = false;
+        if (storedPassword != null && storedPassword.startsWith("$2")) {
+            verified = BCrypt.checkpw(request.getPassword(), storedPassword);
+        } else {
+            String md5Password = cn.hutool.crypto.SecureUtil.md5(request.getPassword());
+            verified = md5Password.equals(storedPassword);
+            shouldUpgrade = verified;
+        }
+        if (!verified) {
             return Result.fail("用户名或密码错误");
+        }
+
+        if (shouldUpgrade) {
+            user.setPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
+            sysUserMapper.updateById(user);
         }
 
         // 检查是否为管理员角色 (role = 0 或 username = 'admin')

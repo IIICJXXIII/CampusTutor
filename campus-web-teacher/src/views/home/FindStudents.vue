@@ -5,15 +5,21 @@
       <el-form :inline="true" :model="searchForm" class="search-form">
         <el-form-item label="科目">
           <el-select v-model="searchForm.subject" placeholder="选择科目" clearable>
-            <el-option label="语文" value="语文" />
-            <el-option label="数学" value="数学" />
-            <el-option label="英语" value="英语" />
-            <el-option label="物理" value="物理" />
-            <el-option label="化学" value="化学" />
-            <el-option label="生物" value="生物" />
-            <el-option label="历史" value="历史" />
-            <el-option label="地理" value="地理" />
-            <el-option label="政治" value="政治" />
+            <el-option-group label="艺术素养">
+              <el-option label="钢琴/乐器陪练" value="钢琴/乐器陪练" />
+              <el-option label="美术/书法" value="美术/书法" />
+              <el-option label="声乐/视唱练耳" value="声乐/视唱练耳" />
+            </el-option-group>
+            <el-option-group label="体育健康">
+              <el-option label="中考体育" value="中考体育" />
+              <el-option label="羽毛球/网球" value="羽毛球/网球" />
+              <el-option label="篮球/足球" value="篮球/足球" />
+            </el-option-group>
+            <el-option-group label="科创STEAM">
+              <el-option label="少儿编程(Scratch/Python)" value="少儿编程(Scratch/Python)" />
+              <el-option label="机器人/3D打印" value="机器人/3D打印" />
+              <el-option label="科学实验/航模" value="科学实验/航模" />
+            </el-option-group>
           </el-select>
         </el-form-item>
         <el-form-item label="年级">
@@ -72,6 +78,7 @@
             </el-descriptions>
             <div class="popup-actions">
               <el-button @click="viewDetail(selectedDemand)">查看详情</el-button>
+              <el-button @click="contactParent(selectedDemand)">联系家长</el-button>
               <el-button type="primary" @click="handleAccept(selectedDemand)">立即接单</el-button>
             </div>
           </div>
@@ -150,11 +157,15 @@ const searchForm = reactive({
 
 const getSubjectType = (subject) => {
   const typeMap = {
-    '语文': '',
-    '数学': 'success',
-    '英语': 'warning',
-    '物理': 'danger',
-    '化学': 'info'
+    '钢琴/乐器陪练': '',
+    '美术/书法': 'success',
+    '声乐/视唱练耳': 'warning',
+    '中考体育': 'danger',
+    '羽毛球/网球': 'info',
+    '篮球/足球': 'danger',
+    '少儿编程(Scratch/Python)': 'success',
+    '机器人/3D打印': 'warning',
+    '科学实验/航模': 'info'
   }
   return typeMap[subject] || ''
 }
@@ -162,7 +173,7 @@ const getSubjectType = (subject) => {
 const initMap = async () => {
   try {
     const AMap = await AMapLoader.load({
-      key: 'YOUR_AMAP_KEY', // 替换为实际的高德地图 Key
+      key: import.meta.env.VITE_AMAP_KEY || 'YOUR_AMAP_KEY',
       version: '2.0',
       plugins: ['AMap.Geolocation', 'AMap.Marker']
     })
@@ -260,7 +271,8 @@ const addMarkersToMap = (list) => {
     if (demand.longitude && demand.latitude) {
       const marker = new AMap.Marker({
         position: [demand.longitude, demand.latitude],
-        title: demand.title || demand.subject
+        title: demand.title || demand.subject,
+        content: `<div style="background:#409eff;color:#fff;padding:2px 8px;border-radius:10px;font-size:12px;white-space:nowrap;">¥${demand.salary || '?'} ${demand.subject} ${demand.grade || ''}</div>`
       })
       
       marker.on('click', () => {
@@ -297,6 +309,14 @@ const loadMore = () => {
 
 const viewDetail = (demand) => {
   router.push(`/demand/${demand.id}`)
+}
+
+const contactParent = (demand) => {
+  if (demand.parentId) {
+    router.push(`/chat/${demand.parentId}`)
+  } else {
+    ElMessage.info('暂无家长联系信息，请通过查看详情联系')
+  }
 }
 
 const handleAccept = async (demand) => {

@@ -1,6 +1,0 @@
-{
-    "navigationBarTitleText": "首页",
-    "usingComponents": {
-        "ai-assistant": "/components/aiAssistant/aiAssistant"
-    }
-}

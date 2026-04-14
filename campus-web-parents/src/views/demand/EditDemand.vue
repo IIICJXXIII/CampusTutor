@@ -35,21 +35,26 @@
         </el-form-item>
         
         <el-form-item label="需求标题" prop="title">
-          <el-input v-model="form.title" placeholder="如：初三数学一对一辅导" maxlength="50" show-word-limit />
+          <el-input v-model="form.title" placeholder="如：钢琴陪练一对一辅导" maxlength="50" show-word-limit />
         </el-form-item>
         
         <el-form-item label="辅导科目" prop="subject">
           <el-select v-model="form.subject" placeholder="请选择科目">
-            <el-option label="语文" value="语文" />
-            <el-option label="数学" value="数学" />
-            <el-option label="英语" value="英语" />
-            <el-option label="物理" value="物理" />
-            <el-option label="化学" value="化学" />
-            <el-option label="生物" value="生物" />
-            <el-option label="历史" value="历史" />
-            <el-option label="地理" value="地理" />
-            <el-option label="政治" value="政治" />
-            <el-option label="综合" value="综合" />
+            <el-option-group label="艺术素养">
+              <el-option label="钢琴/乐器陪练" value="钢琴/乐器陪练" />
+              <el-option label="美术/书法" value="美术/书法" />
+              <el-option label="声乐/视唱练耳" value="声乐/视唱练耳" />
+            </el-option-group>
+            <el-option-group label="体育健康">
+              <el-option label="中考体育专项" value="中考体育专项" />
+              <el-option label="羽毛球/网球陪练" value="羽毛球/网球陪练" />
+              <el-option label="篮球/足球指导" value="篮球/足球指导" />
+            </el-option-group>
+            <el-option-group label="科创STEAM">
+              <el-option label="少儿编程(Scratch/Python)" value="少儿编程(Scratch/Python)" />
+              <el-option label="机器人/3D打印" value="机器人/3D打印" />
+              <el-option label="科学实验/航模" value="科学实验/航模" />
+            </el-option-group>
           </el-select>
         </el-form-item>
         

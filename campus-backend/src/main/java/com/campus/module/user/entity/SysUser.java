@@ -34,9 +34,6 @@ public class SysUser implements Serializable {
     /** 角色: 0-管理员, 1-教员, 2-家长 */
     private Integer role;
 
-    /** 微信OpenID */
-    private String openid;
-
     /** 状态: 1-正常, 0-禁用 */
     private Integer status;
 

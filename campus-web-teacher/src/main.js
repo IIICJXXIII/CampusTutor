@@ -1,12 +1,13 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
 import router from './router'
+import { setRequestErrorHandler } from '@shared/api/request'
 import '@shared/styles/index.scss'
 import './styles/teacher.scss'
 
@@ -20,5 +21,9 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 app.use(createPinia())
 app.use(router)
 app.use(ElementPlus, { locale: zhCn })
+
+// 注入全局请求错误提示
+import { ElMessage } from 'element-plus'
+setRequestErrorHandler((msg) => ElMessage.error(msg))
 
 app.mount('#app')

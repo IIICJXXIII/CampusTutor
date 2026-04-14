@@ -34,10 +34,16 @@ public class GeoService {
     private static final String DEMAND_GEO_KEY = "geo:demand";
     
     /**
-     * 检查 Redis 是否可用
+     * 检查 Redis 是否可用（含实际连通性检查）
      */
     private boolean isRedisAvailable() {
-        return redisTemplate != null;
+        if (redisTemplate == null) return false;
+        try {
+            redisTemplate.getConnectionFactory().getConnection().ping();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**

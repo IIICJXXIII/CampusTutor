@@ -88,12 +88,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, ChatDotRound } from '@element-plus/icons-vue'
 import { getDemandDetail } from '@shared/api/demand'
-import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
-import 'dayjs/locale/zh-cn'
-
-dayjs.extend(relativeTime)
-dayjs.locale('zh-cn')
+import { relativeFromNow } from '@shared/utils'
 
 const router = useRouter()
 const route = useRoute()
@@ -102,9 +97,7 @@ const loading = ref(false)
 const demand = ref(null)
 const applicants = ref([])
 
-const formatTime = (time) => {
-  return dayjs(time).fromNow()
-}
+const formatTime = (time) => relativeFromNow(time)
 
 const loadData = async () => {
   loading.value = true
@@ -140,9 +133,7 @@ const selectTutor = async (applicant) => {
       '选择老师',
       { confirmButtonText: '确定选择', cancelButtonText: '再看看' }
     )
-    // TODO: 调用创建订单接口
-    ElMessage.success('选择成功')
-    // router.push(`/orders/create?demandId=${route.params.id}&tutorId=${applicant.tutorUserId}`)
+    router.push(`/orders/create?demandId=${route.params.id}&tutorId=${applicant.tutorUserId}`)
   } catch (error) {
     // cancelled
   }

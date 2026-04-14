@@ -1,6 +1,7 @@
 package com.campus.module.auth.service.impl;
 
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import com.campus.common.exception.BusinessException;
 import com.campus.common.utils.JwtUtils;
 import com.campus.module.auth.dto.LoginRequest;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -45,7 +47,8 @@ public class AuthServiceImpl implements AuthService {
     /** 验证码有效期 (分钟) */
     private static final long CODE_EXPIRE_MINUTES = 5;
     
-    public AuthServiceImpl(SysUserService sysUserService, SysWalletService sysWalletService, JwtUtils jwtUtils) {
+    public AuthServiceImpl(SysUserService sysUserService, SysWalletService sysWalletService,
+            JwtUtils jwtUtils) {
         this.sysUserService = sysUserService;
         this.sysWalletService = sysWalletService;
         this.jwtUtils = jwtUtils;
@@ -76,10 +79,26 @@ public class AuthServiceImpl implements AuthService {
             }
         } else {
             // 密码登录（账号或手机号）
-        String encryptPassword = cn.hutool.crypto.SecureUtil.md5(request.getPassword());
-        if (!encryptPassword.equals(user.getPassword())) {
-            throw new BusinessException(5004, "密码错误");
-        }
+            String storedPassword = user.getPassword();
+            boolean verified = false;
+            boolean shouldUpgrade = false;
+
+            if (StrUtil.isNotBlank(storedPassword) && storedPassword.startsWith("$2")) {
+                verified = BCrypt.checkpw(request.getPassword(), storedPassword);
+            } else {
+                String md5Password = cn.hutool.crypto.SecureUtil.md5(request.getPassword());
+                verified = md5Password.equals(storedPassword);
+                shouldUpgrade = verified;
+            }
+
+            if (!verified) {
+                throw new BusinessException(5004, "密码错误");
+            }
+
+            if (shouldUpgrade) {
+                user.setPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
+                sysUserService.updateById(user);
+            }
         }
 
         // 生成 Token
@@ -92,6 +111,7 @@ public class AuthServiceImpl implements AuthService {
                 .nickname(user.getNickname())
                 .avatar(user.getAvatarUrl())
                 .role(user.getRole())
+                .needBind(false)
                 .build();
     }
 
@@ -111,8 +131,8 @@ public class AuthServiceImpl implements AuthService {
         // 创建用户
         SysUser user = new SysUser();
         user.setUsername(request.getPhone());
-        // 密码加密存储 (MD5)
-        user.setPassword(cn.hutool.crypto.SecureUtil.md5(request.getPassword()));
+        // 密码加密存储 (BCrypt)
+        user.setPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
         user.setNickname(request.getNickname() != null ? request.getNickname() : "用户" + RandomUtil.randomNumbers(6));
         user.setRole(request.getRole());
         user.setStatus(1);
@@ -134,6 +154,7 @@ public class AuthServiceImpl implements AuthService {
                 .username(user.getUsername())
                 .nickname(user.getNickname())
                 .role(user.getRole())
+                .needBind(false)
                 .build();
     }
 
@@ -198,11 +219,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public boolean verifyCode(String phone, String code) {
-        // 开发环境: 允许使用万能验证码 123456
-        if ("123456".equals(code)) {
-            return true;
-        }
-
         String key = CODE_PREFIX + phone;
         String cachedCode = null;
         
@@ -228,4 +244,5 @@ public class AuthServiceImpl implements AuthService {
         }
         return false;
     }
+
 }

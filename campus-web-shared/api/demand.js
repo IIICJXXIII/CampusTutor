@@ -56,7 +56,7 @@ export function getMyDemands(params) {
  * @param {number} id - 需求ID
  */
 export function getDemandDetail(id) {
-  return request.get(`/demand/${id}`);
+  return request.get(`/demand/detail/${id}`);
 }
 
 /**
