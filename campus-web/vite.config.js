@@ -20,15 +20,15 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src')
-    }
+      '@': path.resolve(__dirname, 'src'),
+      '@shared': path.resolve(__dirname, '../campus-web-shared'),
+      'dayjs': path.resolve(__dirname, 'node_modules/dayjs'),
+      'axios': path.resolve(__dirname, 'node_modules/axios')
+    },
+    dedupe: ['vue', 'axios', 'pinia', 'vue-router', 'dayjs']
   },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        additionalData: `@use "@/styles/variables.scss" as *;`
-      }
-    }
+  optimizeDeps: {
+    include: ['axios', 'dayjs', 'marked', 'element-plus', 'pinia', 'vue-router', 'echarts']
   },
   server: {
     port: 5173,
@@ -41,6 +41,16 @@ export default defineConfig({
         target: 'ws://localhost:8080',
         ws: true,
         changeOrigin: true
+      }
+    }
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: `
+          @use "@shared/styles/variables" as *;
+          @use "@shared/styles/mixins" as *;
+        `
       }
     }
   }
