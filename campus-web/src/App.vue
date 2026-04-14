@@ -1,29 +1,28 @@
-<script setup>
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import MainLayout from '@/layout/MainLayout.vue'
-
-const route = useRoute()
-
-// 不使用布局的页面
-const noLayoutPaths = ['/login', '/register']
-const useLayout = computed(() => !noLayoutPaths.includes(route.path))
-</script>
-
 <template>
-  <el-config-provider :locale="zhCn">
-    <MainLayout v-if="useLayout">
-      <router-view />
-    </MainLayout>
-    <router-view v-else />
-  </el-config-provider>
+  <router-view />
 </template>
 
-<script>
-import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
-export default {
-  data() {
-    return { zhCn }
-  }
+<script setup>
+import { watchEffect } from 'vue'
+import { useUserStore } from '@shared/stores'
+
+const userStore = useUserStore()
+
+// 恢复登录状态
+const token = localStorage.getItem('token')
+if (token) {
+  userStore.setToken(token)
 }
+
+// 根据角色动态切换主题
+watchEffect(() => {
+  const theme = userStore.userRole === 'tutor' ? 'teacher' : 'parent'
+  document.documentElement.setAttribute('data-theme', theme)
+})
 </script>
+
+<style>
+#app {
+  min-height: 100vh;
+}
+</style>
