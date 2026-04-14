@@ -20,4 +20,12 @@ app.use(createPinia())
 app.use(router)
 app.use(ElementPlus, { locale: zhCn })
 
+// 全局未捕获错误处理
+import { ElMessage } from 'element-plus'
+app.config.errorHandler = (err, vm, info) => {
+  console.error('Unhandled error:', err, info)
+  ElMessage.error('系统异常，请稍后重试')
+}
+
 app.mount('#app')
+

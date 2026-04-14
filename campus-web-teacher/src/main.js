@@ -26,4 +26,11 @@ app.use(ElementPlus, { locale: zhCn })
 import { ElMessage } from 'element-plus'
 setRequestErrorHandler((msg) => ElMessage.error(msg))
 
+// 全局未捕获错误处理
+app.config.errorHandler = (err, vm, info) => {
+  console.error('Unhandled error:', err, info)
+  ElMessage.error('系统异常，请稍后重试')
+}
+
 app.mount('#app')
+

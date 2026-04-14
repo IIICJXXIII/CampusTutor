@@ -53,12 +53,7 @@
 
 ### 3.2 推荐链路（主备双通道）
 
-1. 候选召回：优先 Redis GEO，失败则数据库距离降级计算。
-2. 规则分：科目、年级、距离、价格、评分、经验等因子。
-3. CF 混排：用户行为达到阈值时注入协同过滤分值。
-4. 意图加分：依据近期行为标签实时加权。
-5. 流量池加分：按 BASIC/WARM/HOT 提供曝光倾斜。
-6. DeepFM 精排：模型可用则输出深度学习分；不可用则继续规则/CF链路。
+整个工作区分为后端 + 三个前端应用 + 共享模块。以下为过滤了编译产物和临时文件后的核心架构树及职责说明：
 
 ### 3.3 AI 服务链路
 
@@ -95,8 +90,22 @@ cd campus-web-teacher && npm run dev
 cd campus-web-admin && npm run dev
 ```
 
-## 6. 当前文档状态说明
+---
 
-- 本文档描述的是当前仓库可见结构与能力，不再包含已移除的小程序目录说明。
-- `campus-web` 已标记弃用，请勿作为新功能开发入口。
-- 涉及推荐细节请配合 `docs/deepfm_architecture.md` 一并阅读。
+## 5. 开发规范总结
+
+通过扫描后端源码（如 `DemandController.java`, `GlobalExceptionHandler.java` 等），总结出本项目已实施的以下开发规约：
+
+1. **命名规约**
+   - **类名及分层**：严格遵循 `Controller` -> `Service` (接口与实现 `ServiceImpl`) -> `Mapper` -> `Entity` 的层级命名。
+   - **数据传输对象 (DTO)**：前后端交互的对象必须封装，请求入参一般命名为 `XxxRequest` (如 `DemandPostRequest`)，绝不直接对外暴露数据库 Entity 进行接收。
+2. **RESTful API 风格**
+   - 路径全小写并支持复数/资源概念定语（如 `/api/demand/publish`，`/api/demand/{id}/match`）。
+   - 严格区分 HTTP Method：`@GetMapping` (查询)，`@PostMapping` (新建/执行动作)，`@PutMapping` (更新)，`@DeleteMapping` (删除)。
+3. **统一异常处理与响应拆包机制**
+   - 包含基于 `@RestControllerAdvice` 注入的 `GlobalExceptionHandler`，它能拦截系统级异常或自定义 `BusinessException`。
+   - 所有的 API 响应强制约束为 `Result<T>` 泛型包装结构，包含 `code`, `msg`, `data`, `timestamp`四大字段。业务异常被捕获后优雅转化为带自定义 Code 和明文错误提示（不抛出 HTTP 500）。
+   - 参数校验强依赖 JSR-380 (`@Valid`)，违反校验规则同样能在全局被捕获为格式化文本返回。
+4. **部署与环境配置**
+   - 遵循 `application.properties` 统一管理，所有敏感值均通过 `${ENV_VAR:默认值}` 环境变量占位符注入，抽离了 DB、Redis、LLM AI-Key、地图 API Key 以及推荐系统的核心算法权重阈值。
+   - 项目根路径提供 `Dockerfile` 和 `docker-compose.yml`，符合容器化一键编排要求。
