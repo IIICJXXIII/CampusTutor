@@ -1,158 +1,253 @@
 <template>
-  <div class="main-layout">
-    <header class="header">
-      <div class="header-left">
+  <div class="main-layout" :class="layoutClass">
+    <!-- 桌面端顶部导航 -->
+    <header v-if="!isMobile" class="desktop-header">
+      <div class="header-container">
+        <!-- Logo -->
         <div class="logo" @click="goHome">
           <img src="@/assets/logo.svg" alt="Logo" />
           <span class="logo-text">校园智教</span>
-        </div>
-      </div>
-      
-      <div class="header-center">
-        <el-menu 
-          :default-active="activeMenu" 
-          mode="horizontal" 
-          :ellipsis="false"
-          @select="handleMenuSelect"
-        >
-          <el-menu-item v-if="isParent" index="/parent/demand">发布需求</el-menu-item>
-          <el-menu-item v-if="isParent" index="/teacher/list">找老师</el-menu-item>
-          <el-menu-item v-if="isParent" index="/parent/tutors">智能推荐</el-menu-item>
-          <el-menu-item v-if="isTutor" index="/teacher/students">找学生</el-menu-item>
-          <el-menu-item v-if="isTutor" index="/teacher/resume">我的简历</el-menu-item>
-          <el-menu-item index="/mine/orders">我的订单</el-menu-item>
-          <el-menu-item index="/process/record">课时记录</el-menu-item>
-        </el-menu>
-      </div>
-      
-      <div class="header-right">
-        <!-- 消息通知图标 -->
-        <div class="icon-btn" @click="goToChat">
-          <el-badge :value="unreadCount" :max="99" :hidden="unreadCount === 0" class="item">
-            <el-icon :size="20"><ChatDotRound /></el-icon>
-          </el-badge>
-        </div>
-        
-        <div class="icon-btn" @click="showNotifications">
-          <el-badge is-dot :hidden="true" class="item">
-            <el-icon :size="20"><Bell /></el-icon>
-          </el-badge>
+          <el-tag size="small" :type="isTeacher ? 'primary' : 'warning'" class="role-tag">
+            {{ isTeacher ? '教师端' : '家长端' }}
+          </el-tag>
         </div>
 
-        <el-dropdown class="role-switch" @command="handleRoleSwitch">
-          <span class="role-label">
-            <el-icon><User /></el-icon>
-            {{ isParent ? '家长模式' : '教师模式' }}
-            <el-icon><ArrowDown /></el-icon>
-          </span>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="parent" :disabled="userStore.userRole === 'parent'">
-                <el-icon><User /></el-icon>切换为家长
-              </el-dropdown-item>
-              <el-dropdown-item command="tutor" :disabled="userStore.userRole === 'tutor'">
-                <el-icon><Reading /></el-icon>切换为教师
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-        
-        <el-dropdown @command="handleUserCommand">
-          <div class="user-info">
-            <el-avatar :size="36" :src="userStore.avatar || 'https://api.dicebear.com/7.x/adventurer/svg?seed=User'" />
-            <span class="username">{{ userStore.nickname || '用户' }}</span>
+        <!-- 导航菜单 -->
+        <nav class="nav-menu">
+          <el-menu
+            :default-active="activeMenu"
+            mode="horizontal"
+            :ellipsis="false"
+            @select="handleMenuSelect"
+          >
+            <!-- 家长端菜单 -->
+            <template v-if="!isTeacher">
+              <el-menu-item index="/parent/home">
+                <el-icon><Search /></el-icon>找老师
+              </el-menu-item>
+              <el-menu-item index="/parent/demands">
+                <el-icon><List /></el-icon>我的需求
+              </el-menu-item>
+              <el-menu-item index="/parent/orders">
+                <el-icon><Document /></el-icon>我的订单
+              </el-menu-item>
+              <el-menu-item index="/parent/lessons">
+                <el-icon><Clock /></el-icon>课程记录
+              </el-menu-item>
+            </template>
+            <!-- 教师端菜单 -->
+            <template v-else>
+              <el-menu-item index="/teacher/home">
+                <el-icon><Location /></el-icon>找学生
+              </el-menu-item>
+              <el-menu-item index="/teacher/orders">
+                <el-icon><Document /></el-icon>我的订单
+              </el-menu-item>
+              <el-menu-item index="/teacher/lessons">
+                <el-icon><Clock /></el-icon>课时记录
+              </el-menu-item>
+              <el-menu-item index="/teacher/resume">
+                <el-icon><User /></el-icon>我的简历
+              </el-menu-item>
+              <el-menu-item index="/teacher/ai/hub">
+                <el-icon><Service /></el-icon>AI助手
+              </el-menu-item>
+            </template>
+          </el-menu>
+        </nav>
+
+        <!-- 右侧操作区 -->
+        <div class="header-actions">
+          <!-- 发布需求按钮（家长端独有） -->
+          <el-button v-if="!isTeacher" type="primary" @click="createDemand">发布需求</el-button>
+
+          <!-- 消息通知 -->
+          <div class="icon-btn" @click="goToChat">
+            <el-badge :value="unreadCount" :max="99" :hidden="unreadCount === 0">
+              <el-icon :size="20"><ChatDotRound /></el-icon>
+            </el-badge>
           </div>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="profile">
-                <el-icon><UserFilled /></el-icon>个人中心
-              </el-dropdown-item>
-              <el-dropdown-item v-if="isTutor" command="auth">
-                <el-icon><Medal /></el-icon>资质认证
-              </el-dropdown-item>
-              <el-dropdown-item divided command="logout">
-                <el-icon><SwitchButton /></el-icon>退出登录
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+
+          <!-- 用户下拉 -->
+          <el-dropdown @command="handleUserCommand">
+            <div class="user-info">
+              <el-avatar :size="36" :src="userStore.avatar">
+                {{ userStore.nickname?.charAt(0) }}
+              </el-avatar>
+              <span class="username">{{ userStore.nickname }}</span>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="mine">
+                  <el-icon><User /></el-icon>个人中心
+                </el-dropdown-item>
+                <el-dropdown-item v-if="isTeacher" command="auth">
+                  <el-icon><Medal /></el-icon>资质认证
+                </el-dropdown-item>
+                <el-dropdown-item v-if="!isTeacher" command="students">
+                  <el-icon><UserFilled /></el-icon>我的孩子
+                </el-dropdown-item>
+                <el-dropdown-item command="wallet">
+                  <el-icon><Wallet /></el-icon>我的钱包
+                </el-dropdown-item>
+                <el-dropdown-item command="settings">
+                  <el-icon><Setting /></el-icon>设置
+                </el-dropdown-item>
+                <el-dropdown-item divided command="logout">
+                  <el-icon><SwitchButton /></el-icon>退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
       </div>
     </header>
-    
-    <main class="main-content">
+
+    <!-- 移动端顶部 -->
+    <header v-else class="mobile-header">
+      <div class="header-title">{{ route.meta.title || '校园智教' }}</div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main-content" :class="{ 'with-tabbar': isMobile }">
       <router-view v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
+        <keep-alive :include="cachedViews">
           <component :is="Component" />
-        </transition>
+        </keep-alive>
       </router-view>
     </main>
 
-    <div class="ai-float-btn" @click="goToAiChat">
-      <el-tooltip content="AI 智能助手 (DeepSeek)" placement="left">
-        <div class="btn-content">
-          <img src="https://api.dicebear.com/7.x/bottts/svg?seed=DeepSeek" alt="AI" />
-        </div>
-      </el-tooltip>
+    <!-- 移动端底部导航 -->
+    <nav v-if="isMobile" class="mobile-tabbar">
+      <div
+        v-for="item in mobileTabItems"
+        :key="item.path"
+        class="tab-item"
+        :class="{ active: isTabActive(item.path), 'publish-btn': item.isPublish }"
+        @click="item.isPublish ? createDemand() : router.push(item.path)"
+      >
+        <el-icon><component :is="item.icon" /></el-icon>
+        <span v-if="!item.isPublish">{{ item.label }}</span>
+      </div>
+    </nav>
+
+    <!-- AI 悬浮按钮 -->
+    <div v-if="showAiButton" class="ai-float-btn" @click="openAiChat">
+      <el-icon><ChatDotRound /></el-icon>
+      <span class="ai-label">AI助手</span>
     </div>
-    
-    <footer class="footer">
+
+    <!-- 页脚 (桌面端) -->
+    <footer v-if="!isMobile" class="footer">
       <p>© 2026 校园智教 CampusTutor - 大学生家教智能服务平台</p>
     </footer>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useUserStore } from '@/stores/index'
-// 补充图标引入，防止报错
-import { 
-  User, ArrowDown, Reading, UserFilled, Medal, SwitchButton,
-  Bell, ChatDotRound
+import {
+  Search, List, Plus, Document, User, ChatDotRound,
+  Location, Clock, Service, Medal, Wallet, SwitchButton,
+  UserFilled, Setting
 } from '@element-plus/icons-vue'
+import { useUserStore, useChatStore } from '@shared/stores'
+import { getUnreadCount } from '@shared/api/chat'
 
-const router = useRouter()
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
+const chatStore = useChatStore()
 
-const isParent = computed(() => userStore.isParent)
-const isTutor = computed(() => userStore.isTutor)
+const isMobile = ref(false)
+const unreadCount = ref(0)
+let pollTimer = null
+
+// 角色判断
+const isTeacher = computed(() => userStore.userRole === 'tutor')
+
+// 布局样式类
+const layoutClass = computed(() => isTeacher.value ? 'teacher-theme' : 'parent-theme')
+
+// 缓存的视图
+const cachedViews = ['ParentHome', 'ParentDemandList', 'ParentOrderList', 'TeacherHome', 'TeacherOrderList', 'Mine']
+
+// 激活菜单
 const activeMenu = computed(() => route.path)
-const unreadCount = ref(0) // 未读消息数
+
+// AI按钮显示
+const showAiButton = computed(() => {
+  return route.name !== 'AiChat' && route.name !== 'ChatRoom'
+})
+
+// 移动端 Tab 配置
+const mobileTabItems = computed(() => {
+  if (isTeacher.value) {
+    return [
+      { path: '/teacher/home', label: '找学生', icon: Location },
+      { path: '/teacher/orders', label: '订单', icon: Document },
+      { path: '/teacher/ai/hub', label: 'AI', icon: Service },
+      { path: '/teacher/wallet', label: '钱包', icon: Wallet },
+      { path: '/mine', label: '我的', icon: User }
+    ]
+  } else {
+    return [
+      { path: '/parent/home', label: '找老师', icon: Search },
+      { path: '/parent/demands', label: '需求', icon: List },
+      { path: '#publish', label: '', icon: Plus, isPublish: true },
+      { path: '/parent/orders', label: '订单', icon: Document },
+      { path: '/mine', label: '我的', icon: User }
+    ]
+  }
+})
+
+const isTabActive = (path) => {
+  if (path === '#publish') return false
+  return route.path === path || route.path.startsWith(path + '/')
+}
+
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
 
 const goHome = () => {
-  if (isParent.value) {
-    router.push('/parent/tutors')
-  } else {
-    router.push('/teacher/students')
-  }
+  router.push(isTeacher.value ? '/teacher/home' : '/parent/home')
+}
+
+const createDemand = () => {
+  router.push('/parent/demands/create')
+}
+
+const openAiChat = () => {
+  router.push('/ai')
+}
+
+const goToChat = () => {
+  router.push('/chat')
 }
 
 const handleMenuSelect = (index) => {
   router.push(index)
 }
 
-const handleRoleSwitch = (role) => {
-  // 这里保留您原本的逻辑
-  userStore.setRole(role)
-  ElMessage.success(`已切换为${role === 'parent' ? '家长' : '教师'}模式`)
-  
-  // 切换后跳转到对应首页
-  if (role === 'parent') {
-    router.push('/parent/tutors')
-  } else {
-    router.push('/teacher/students')
-  }
-}
-
 const handleUserCommand = async (command) => {
   switch (command) {
-    case 'profile':
+    case 'mine':
       router.push('/mine')
       break
     case 'auth':
       router.push('/teacher/auth')
+      break
+    case 'students':
+      router.push('/parent/students')
+      break
+    case 'wallet':
+      router.push(isTeacher.value ? '/teacher/wallet' : '/parent/wallet')
+      break
+    case 'settings':
+      router.push('/settings')
       break
     case 'logout':
       try {
@@ -164,23 +259,12 @@ const handleUserCommand = async (command) => {
         userStore.logout()
         router.push('/login')
         ElMessage.success('已退出登录')
-      } catch(e) {
-        // 取消逻辑
+      } catch (e) {
+        // 用户取消
       }
       break
   }
 }
-
-// === 【新增】跳转 AI 聊天方法 ===
-const goToAiChat = () => {
-  router.push('/service/chat')
-}
-
-// === 【新增】获取未读消息数 ===
-import { getUnreadCount } from '@/api/chat'
-import { onMounted, onUnmounted } from 'vue'
-
-let pollTimer = null
 
 const fetchUnreadCount = async () => {
   if (!userStore.token) return
@@ -188,229 +272,285 @@ const fetchUnreadCount = async () => {
     const res = await getUnreadCount()
     if (res.code === 200) {
       unreadCount.value = res.data || 0
+      chatStore.setUnreadCount(res.data || 0)
     }
   } catch (error) {
     console.error('获取未读数失败', error)
   }
 }
 
-const goToChat = () => {
-  router.push('/chat')
-}
-
-const showNotifications = () => {
-  ElMessage.info('暂无新通知')
-}
-
 onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
   fetchUnreadCount()
-  // 简单的轮询，每30秒更新一次
   pollTimer = setInterval(fetchUnreadCount, 30000)
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
   if (pollTimer) clearInterval(pollTimer)
 })
 </script>
 
 <style lang="scss" scoped>
-/* 为了确保不报错，这里定义一下您原本使用的 SCSS 变量 */
-/* 如果您全局已经有 variables.scss，这些可以删除 */
-$bg-color: #f5f7fa;
-$bg-white: #ffffff;
-$primary-color: #409eff;
-$primary-light: #ecf5ff;
-$text-primary: #303133;
-$text-secondary: #909399;
-$border-lighter: #ebeef5;
-$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
-$header-height: 60px;
-$spacing-sm: 8px;
-$spacing-md: 16px;
-$spacing-lg: 24px;
-$radius-md: 4px;
-$breakpoint-md: 768px;
-
 .main-layout {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: $bg-color;
+  background: #f5f7fa;
 }
 
-.header {
-  height: $header-height;
-  background: $bg-white;
-  box-shadow: $shadow-sm;
-  display: flex;
-  align-items: center;
-  padding: 0 $spacing-lg;
+// ===================== 桌面端头部 =====================
+.desktop-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  
-  .header-left {
-    .logo {
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-      
-      img {
-        width: 36px;
-        height: 36px;
-      }
-      
-      .logo-text {
-        font-size: 18px;
-        font-weight: 600;
-        color: $primary-color;
-        margin-left: $spacing-sm;
-      }
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  .header-container {
+    max-width: 1400px;
+    height: 60px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    img {
+      width: 32px;
+      height: 32px;
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 600;
+      color: #303133;
+    }
+
+    .role-tag {
+      font-size: 11px;
     }
   }
-  
-  .header-center {
+
+  .nav-menu {
     flex: 1;
     display: flex;
     justify-content: center;
-    
+
     :deep(.el-menu) {
       border-bottom: none;
       background: transparent;
-      
+
       .el-menu-item {
+        height: 60px;
+        line-height: 60px;
         font-size: 15px;
-        
+
         &.is-active {
           font-weight: 600;
         }
       }
     }
   }
-  
-  .header-right {
+
+  .header-actions {
     display: flex;
     align-items: center;
-    gap: $spacing-lg;
+    gap: 16px;
+    flex-shrink: 0;
 
     .icon-btn {
       cursor: pointer;
-      color: $text-secondary;
-      display: flex;
-      align-items: center;
-      transition: color 0.3s;
-      
+      padding: 8px;
+      border-radius: 8px;
+      transition: background 0.2s;
+
       &:hover {
-        color: $primary-color;
+        background: #f5f7fa;
       }
     }
-    
-    .role-switch {
-      .role-label {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        padding: 6px 12px;
-        background: $primary-light;
-        color: $primary-color;
-        border-radius: $radius-md;
-        font-size: 13px;
-        cursor: pointer;
-      }
-    }
-    
+
     .user-info {
       display: flex;
       align-items: center;
-      gap: $spacing-sm;
+      gap: 8px;
       cursor: pointer;
-      
+
       .username {
         font-size: 14px;
-        color: $text-primary;
+        color: #606266;
       }
     }
   }
 }
 
+// ===================== 移动端头部 =====================
+.mobile-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  z-index: 100;
+
+  .header-title {
+    font-size: 17px;
+    font-weight: 600;
+  }
+}
+
+// ===================== 主内容区 =====================
 .main-content {
   flex: 1;
-  padding: 32px 40px;
-  max-width: 1600px;
-  width: 100%;
-  margin: 0 auto;
-}
+  padding: 24px;
 
-.footer {
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: $bg-white;
-  border-top: 1px solid $border-lighter;
-  
-  p {
-    font-size: 13px;
-    color: $text-secondary;
+  > * {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  &.with-tabbar {
+    padding-top: 60px;
+    padding-bottom: 80px;
   }
 }
 
-/* === 【新增】AI 悬浮按钮样式 === */
+// ===================== 移动端底部导航 =====================
+.mobile-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.06);
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: #909399;
+    font-size: 11px;
+    cursor: pointer;
+    transition: color 0.2s;
+
+    .el-icon {
+      font-size: 22px;
+    }
+
+    &.active {
+      color: var(--el-color-primary);
+    }
+
+    &.publish-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--el-color-primary), var(--el-color-primary-light-3));
+      color: #fff;
+      justify-content: center;
+      margin-top: -20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+      .el-icon {
+        font-size: 26px;
+      }
+    }
+  }
+}
+
+// ===================== AI 悬浮按钮 =====================
 .ai-float-btn {
   position: fixed;
-  bottom: 40px;
-  right: 40px;
-  width: 56px;
-  height: 56px;
-  background: #fff;
-  border-radius: 50%;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-  cursor: pointer;
-  z-index: 999;
+  bottom: 80px;
+  right: 20px;
+  height: 44px;
+  padding: 0 16px 0 12px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
   display: flex;
-  justify-content: center;
   align-items: center;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+  transition: transform 0.2s;
+  z-index: 99;
+  animation: ai-pulse 2s ease-in-out infinite;
 
-  &:hover {
-    transform: scale(1.1) translateY(-5px);
-    box-shadow: 0 8px 24px rgba(64, 158, 255, 0.35);
+  .el-icon {
+    font-size: 20px;
   }
 
-  .btn-content img {
-    width: 36px;
-    height: 36px;
+  .ai-label {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  &:hover {
+    transform: scale(1.05);
   }
 }
 
-@media (max-width: $breakpoint-md) {
-  .header {
-    padding: 0 $spacing-md;
-    
-    .header-center {
-      display: none;
-    }
-    
-    .logo-text {
-      display: none;
-    }
-  }
-  
+@keyframes ai-pulse {
+  0%, 100% { box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4); }
+  50% { box-shadow: 0 4px 24px rgba(102, 126, 234, 0.7); }
+}
+
+// ===================== 页脚 =====================
+.footer {
+  padding: 16px;
+  text-align: center;
+  color: #909399;
+  font-size: 12px;
+  background: #fff;
+  border-top: 1px solid #ebeef5;
+}
+
+// ===================== 页面切换动画 =====================
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+// ===================== 响应式 =====================
+@media (max-width: 768px) {
   .main-content {
-    padding: $spacing-md;
+    padding: 16px;
+
+    > * {
+      padding: 0;
+    }
   }
 
-  /* 移动端调整 AI 按钮位置 */
   .ai-float-btn {
-    bottom: 20px;
-    right: 20px;
-    width: 48px;
-    height: 48px;
-    
-    .btn-content img {
-      width: 28px;
-      height: 28px;
-    }
+    bottom: 80px;
+    right: 16px;
   }
 }
 </style>
