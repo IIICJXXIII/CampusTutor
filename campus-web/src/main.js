@@ -1,28 +1,36 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
+import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 
 import App from './App.vue'
 import router from './router'
-import './styles/index.scss'
+import { setRequestErrorHandler } from '@shared/api/request'
+import '@shared/styles/index.scss'
+import './styles/parent.scss'
+import './styles/teacher.scss'
 
 const app = createApp(App)
-
-// 注册 Pinia
-app.use(createPinia())
-
-// 注册 Element Plus
-app.use(ElementPlus, { locale: zhCn })
 
 // 注册所有图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
 
-// 注册路由
+app.use(createPinia())
 app.use(router)
+app.use(ElementPlus, { locale: zhCn })
+
+// 注入全局请求错误提示
+setRequestErrorHandler((msg) => ElMessage.error(msg))
+
+// 全局未捕获错误处理
+app.config.errorHandler = (err, vm, info) => {
+  console.error('Unhandled error:', err, info)
+  ElMessage.error('系统异常，请稍后重试')
+}
 
 app.mount('#app')
