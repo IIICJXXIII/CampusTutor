@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="find-teachers-page">
     <div class="page-header">
       <h1 class="page-title">找老师</h1>
@@ -47,8 +47,8 @@
       </el-select>
       
       <el-select v-model="filters.gender" placeholder="性别" clearable @change="loadTutors">
-        <el-option label="男" value="1" />
-        <el-option label="女" value="2" />
+        <el-option label="男" :value="1" />
+        <el-option label="女" :value="2" />
       </el-select>
       
       <el-select v-model="filters.sort" placeholder="排序" @change="loadTutors">
@@ -181,6 +181,7 @@
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { Search, Star, Clock, Location, List, Aim, Close, MagicStick } from '@element-plus/icons-vue'
 import { getTutorList } from '@shared/api/match'
 import { recordSearch } from '@shared/api/behavior'
@@ -244,7 +245,24 @@ const loadTutors = async () => {
     
     const res = await getTutorList(params)
     if (res.code === 200) {
-      tutors.value = res.data?.records || []
+      const rawRecords = res.data?.records || []
+      // 后端字段 -> 前端展示字段映射
+      tutors.value = rawRecords.map(t => ({
+        ...t,
+        name: t.realName || t.name,
+        avatar: t.avatarUrl || t.avatar,
+        university: t.universityName || t.university,
+        subjects: t.teachSubjects || t.subjects || [],
+        grades: t.teachGrades || t.grades || [],
+        minPrice: t.expectPrice || t.minPrice || 60,
+        maxPrice: t.expectPrice || t.maxPrice || 120,
+        verified: t.certStatus === 2 || t.verified,
+        totalHours: t.totalHours || 0,
+        rating: t.rating || 5,
+        gender: t.gender,
+        matchScore: t.matchScore,
+        matchTags: t.matchTags
+      }))
       total.value = res.data?.total || 0
     }
   } catch (error) {
@@ -292,10 +310,16 @@ const initMap = async () => {
     addMarkersToMap()
     return
   }
+  const amapKey = import.meta.env.VITE_AMAP_KEY
+  if (!amapKey || amapKey === 'YOUR_AMAP_KEY') {
+    ElMessage.warning('地图功能需要配置高德地图 Key，请在 .env 文件中设置 VITE_AMAP_KEY')
+    viewMode.value = 'list'
+    return
+  }
   try {
     const AMapLoader = (await import('@amap/amap-jsapi-loader')).default
     AMap = await AMapLoader.load({
-      key: import.meta.env.VITE_AMAP_KEY || 'YOUR_AMAP_KEY',
+      key: amapKey,
       version: '2.0',
       plugins: ['AMap.Geolocation', 'AMap.Marker']
     })
@@ -313,6 +337,8 @@ const initMap = async () => {
     addMarkersToMap()
   } catch (e) {
     console.error('地图加载失败:', e)
+    ElMessage.error('地图加载失败，请检查网络或地图 Key 配置')
+    viewMode.value = 'list'
   }
 }
 

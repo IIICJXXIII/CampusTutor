@@ -92,6 +92,12 @@ const routes = [
         meta: { title: '添加孩子', role: 'parent' }
       },
       {
+        path: 'parent/students/:id/edit',
+        name: 'ParentEditStudent',
+        component: () => import('@/views/parent/student/AddStudent.vue'),
+        meta: { title: '编辑孩子', role: 'parent' }
+      },
+      {
         path: 'parent/students/:id',
         name: 'ParentStudentDetail',
         component: () => import('@/views/parent/student/StudentDetail.vue'),
@@ -330,6 +336,24 @@ const routes = [
         name: 'EditProfile',
         component: () => import('@/views/common/settings/EditProfile.vue'),
         meta: { title: '编辑资料' }
+      },
+      {
+        path: 'settings/password',
+        name: 'ChangePassword',
+        component: () => import('@/views/common/settings/ChangePassword.vue'),
+        meta: { title: '修改密码' }
+      },
+      {
+        path: 'settings/privacy',
+        name: 'PrivacyPolicy',
+        component: () => import('@/views/common/settings/PrivacyPolicy.vue'),
+        meta: { title: '隐私政策' }
+      },
+      {
+        path: 'settings/agreement',
+        name: 'UserAgreement',
+        component: () => import('@/views/common/settings/UserAgreement.vue'),
+        meta: { title: '用户协议' }
       }
     ]
   },
