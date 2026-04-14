@@ -67,7 +67,7 @@ temp/
 # Sensitive Information
 .env
 .env.*
-! .env.example
+!.env.example
 *-prod.properties
 *-prod.yml
 *-prod.yaml
@@ -75,7 +75,6 @@ temp/
 *-local.yml
 *-local.yaml
 local.properties
-*.properties
 *.jks
 *.p12
 *.key
@@ -83,14 +82,7 @@ local.properties
 credentials.json
 auth.json
 
-# WeChat Mini Program
-project.private.config.json
-miniprogram_npm/
-node_modules/
-.swan/
-
-
+# 后端环境相关配置（application.properties 仅含占位符，允许提交）
 campus-backend/src/main/resources/application-dev.properties
 campus-backend/src/main/resources/application-prod.properties
 campus-backend/src/main/resources/application-local.properties
-campus-backend/src/main/resources/application.properties
