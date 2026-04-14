@@ -53,9 +53,9 @@ request.interceptors.response.use(
     }
     
     // 业务失败
-    console.warn('业务异常:', res.message);
-    _showError(res.message || '请求失败');
-    return Promise.reject(new Error(res.message || '请求失败'));
+    console.warn('业务异常:', res.msg);
+    _showError(res.msg || '请求失败');
+    return Promise.reject(new Error(res.msg || '请求失败'));
   },
   error => {
     // HTTP 错误处理
