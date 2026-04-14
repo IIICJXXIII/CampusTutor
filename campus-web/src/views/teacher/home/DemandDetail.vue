@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="demand-detail">
     <el-page-header @back="goBack">
       <template #content>
@@ -145,7 +145,12 @@ const handleAccept = async () => {
     )
     
     accepting.value = true
-    const res = await acceptOrder(demand.value.orderId || demand.value.id)
+    // 后端 AcceptDemandRequest 需要 { demandId, totalHours, remark }
+    const res = await acceptOrder({
+      demandId: parseInt(route.params.id),
+      totalHours: 10,
+      remark: ''
+    })
     if (res.code === 200) {
       ElMessage.success('接单成功！等待家长确认')
       router.push('/teacher/orders')

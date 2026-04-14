@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="student-list-page">
     <div class="page-header">
       <h1 class="page-title">我的孩子</h1>
@@ -28,12 +28,12 @@
       >
         <div class="student-avatar">
           <el-avatar :size="56" :src="student.avatar">
-            {{ student.name?.charAt(0) }}
+            {{ (student.studentName || student.name)?.charAt(0) }}
           </el-avatar>
         </div>
         <div class="student-info">
           <div class="student-name">
-            {{ student.name }}
+            {{ student.studentName || student.name }}
             <el-tag size="small" :type="student.gender === 1 ? 'primary' : 'danger'">
               {{ student.gender === 1 ? '男' : '女' }}
             </el-tag>
@@ -109,7 +109,7 @@ const editStudent = (id) => {
 const deleteStudent = async (student) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除"${student.name}"的信息吗？删除后相关需求将无法关联此孩子。`,
+      `确定要删除"${student.studentName || student.name}"的信息吗？删除后相关需求将无法关联此孩子。`,
       '删除确认',
       { type: 'warning' }
     )

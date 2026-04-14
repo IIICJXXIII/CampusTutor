@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="teacher-detail-page">
     <div class="page-header">
       <el-button link @click="goBack">
@@ -127,21 +127,49 @@
           <el-icon><ChatDotRound /></el-icon>
           联系老师
         </el-button>
-        <el-button size="large" type="primary" @click="bookTutor">
+        <el-button size="large" type="primary" @click="showBookingDialog">
           预约老师
         </el-button>
       </div>
     </template>
+    
+    <!-- 预约弹窗 -->
+    <el-dialog v-model="bookingVisible" title="预约老师" width="500px">
+      <el-form :model="bookingForm" label-width="90px">
+        <el-form-item label="辅导科目">
+          <el-select v-model="bookingForm.subject" placeholder="请选择科目">
+            <el-option
+              v-for="s in (tutor?.subjects || [])"
+              :key="s"
+              :label="s"
+              :value="s"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="期望课时">
+          <el-input-number v-model="bookingForm.totalHours" :min="1" :max="100" :step="1" />
+          <span style="margin-left:8px;color:#999">小时</span>
+        </el-form-item>
+        <el-form-item label="留言备注">
+          <el-input v-model="bookingForm.remark" type="textarea" :rows="3" placeholder="如：希望周末上课" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="bookingVisible = false">取消</el-button>
+        <el-button type="primary" :loading="bookingLoading" @click="submitBooking">确认预约</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, ChatDotRound } from '@element-plus/icons-vue'
 import { getPublicTutorProfile } from '@shared/api/tutor'
 import { recordView } from '@shared/api/behavior'
+import { createOrder } from '@shared/api/order'
 import dayjs from 'dayjs'
 
 const router = useRouter()
@@ -150,6 +178,14 @@ const route = useRoute()
 const loading = ref(false)
 const tutor = ref(null)
 const reviews = ref([])
+const bookingVisible = ref(false)
+const bookingLoading = ref(false)
+
+const bookingForm = reactive({
+  subject: '',
+  totalHours: 10,
+  remark: ''
+})
 
 const formatDate = (date) => {
   return dayjs(date).format('YYYY-MM-DD')
@@ -188,6 +224,10 @@ const loadTutor = async () => {
         verified: data.certStatus === 2
       }
       reviews.value = data.reviews || []
+      // 默认选中第一个科目
+      if (subjects.length > 0) {
+        bookingForm.subject = subjects[0]
+      }
     }
   } catch (error) {
     console.error('加载教师信息失败:', error)
@@ -214,8 +254,34 @@ const chatWithTutor = () => {
   router.push(`/chat/${route.params.id}`)
 }
 
-const bookTutor = () => {
-  router.push(`/parent/demands/create?tutorId=${route.params.id}`)
+const showBookingDialog = () => {
+  bookingVisible.value = true
+}
+
+const submitBooking = async () => {
+  if (!bookingForm.subject) {
+    ElMessage.warning('请选择辅导科目')
+    return
+  }
+  bookingLoading.value = true
+  try {
+    const res = await createOrder({
+      tutorId: parseInt(route.params.id),
+      subject: bookingForm.subject,
+      totalHours: bookingForm.totalHours,
+      unitPrice: tutor.value?.minPrice || 100,
+      remark: bookingForm.remark
+    })
+    if (res.code === 200) {
+      ElMessage.success('预约成功！请等待教师确认')
+      bookingVisible.value = false
+      router.push('/parent/orders')
+    }
+  } catch (error) {
+    ElMessage.error(error.message || '预约失败')
+  } finally {
+    bookingLoading.value = false
+  }
 }
 
 onMounted(() => {

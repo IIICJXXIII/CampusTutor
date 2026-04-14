@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="student-detail-page">
     <div class="page-header">
       <el-button link @click="goBack">
@@ -21,10 +21,10 @@
       <div class="info-card">
         <div class="card-header">
           <el-avatar :size="72" :src="student.avatar">
-            {{ student.name?.charAt(0) }}
+            {{ (student.studentName || student.name)?.charAt(0) }}
           </el-avatar>
           <div class="header-info">
-            <h2>{{ student.name }}</h2>
+            <h2>{{ student.studentName || student.name }}</h2>
             <div class="tags">
               <el-tag :type="student.gender === 1 ? 'primary' : 'danger'">
                 {{ student.gender === 1 ? '男' : '女' }}
@@ -168,7 +168,7 @@ const viewDemand = (id) => {
 const handleDelete = async () => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除"${student.value.name}"的信息吗？删除后相关需求将无法关联此孩子。`,
+      `确定要删除"${student.value.studentName || student.value.name}"的信息吗？删除后相关需求将无法关联此孩子。`,
       '删除确认',
       { type: 'warning' }
     )
