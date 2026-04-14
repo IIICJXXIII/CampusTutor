@@ -1,8 +1,8 @@
-# CampusTutor
+﻿# CampusTutor
 
-# 🎓 CampusTutor (校园智教)
+## 项目简介
 
-<div align="center">
+CampusTutor 是一个面向家长、教员与管理员的校园家教服务平台，采用前后端分离架构。
 
 **一个基于 Spring Boot 3 + Vue 3 的大学生家教智能服务平台**
 
@@ -12,23 +12,31 @@
 [![Element Plus](https://img.shields.io/badge/Element%20Plus-2.5.6-409eff.svg)](https://element-plus.org/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-</div>
+项目已从单体前端演进为多 Web 应用形态：
 
----
+- `campus-web-parents`：家长端
+- `campus-web-teacher`：教员端
+- `campus-web-admin`：管理后台
+- `campus-web-shared`：共享 API、样式、工具、状态
+- `campus-web`：历史单体前端，已废弃，仅保留参考
 
-## 📖 项目简介
+## 主要能力
 
-**CampusTutor (校园智教)** 是一个专为解决家庭教育需求与大学生兼职需求不匹配问题而打造的**O2O 家教服务平台**，旨在连接优质大学生教员与有需求的家长，提供高效、透明、安全的家教匹配服务。
+### 1. 需求与订单闭环
 
-通过数字化手段，我们解决了传统家教中介**信息不透明**、**中介费高昂**、**信任建立难**三大痛点，构建了一个**“认证严、匹配准、服务全”**的家教生态闭环。
+- 家长发布需求、管理需求状态
+- 教员接单、家长确认、支付、开课、完课、退款
+- 管理端执行审核、仲裁、资金处理
 
-### 🧩 核心业务流程
-系统围绕六大关键节点构建全链路业务闭环：
-> **教师认证** (OCR验证) → **需求发布** (LBS定位) → **智能匹配** (AI算法) → **在线签约** (电子协议) → **教学管理** (打卡/错题) → **资金结算** (担保交易)
+### 2. 推荐与匹配
 
----
+- 基础多维打分（科目、年级、距离、价格、评分等）
+- 协同过滤（CF）混合评分
+- 实时意图加分（Redis ZSET / Stream）
+- 教员流量池赛马加分
+- DeepFM ONNX 推理精排（不可用时自动降级）
 
-## ✨ 系统功能详解
+### 3. AI 能力
 
 系统包含 **家长端**、**教师端** 和 **管理端** 三个 Web 应用，服务于 **家长**、**教员** 和 **管理员** 三类角色。
 
@@ -39,18 +47,12 @@
 - **教学监控**：查看教员上课打卡记录，确认课时，保障服务质量。
 - **错题本**：支持拍照上传错题 (OCR)，构建专属的错题知识库。
 
-### 🧑‍🏫 教员端 (服务方)
-- **极速认证**：通过 OCR 技术自动识别身份证和学生证，快速完成实名与学历双重认证。
-- **LBS 接单**：基于地理位置查看附近的家教需求，地图/列表双模式展示，支持一键抢单。
-- **课时管理**：自动生成的课程表，上课签到/签退功能，支持拍照打卡。
-- **收入管理**：透明的资金流水记录，支持课时费提现（模拟）。
-- **个人名片**：自定义教学优势、试讲视频、成功案例，打造个人 IP。
+- 逆地理编码：`GET /api/map/geocoder/reverse`
+- 地理编码：`GET /api/map/geocoder`
+- 路径规划：`POST /api/map/direction`
+- 距离计算：`GET /api/map/distance`
 
-### 👨‍💻 管理端 (总控中心)
-- **全流程审核**：对教员入驻、需求发布、资金提现进行人工/系统双重审核。
-- **数据仪表盘**：实时监控用户增长、订单成交、资金流水等核心业务指标。
-- **订单仲裁**：处理家长与教员的交易纠纷，管理退款流程。
-- **系统配置**：管理基础数据字典（科目、年级）、广告轮播图等。
+## 项目目录
 
 ---
 
@@ -120,9 +122,7 @@ CampusTutor/
 └── campus-web/              # [已废弃] 旧版单体前端
 ```
 
----
-
-## 🚀 快速开始 (开发环境)
+## 本地启动
 
 ### 1. 环境准备
 - **JDK**: 17+
@@ -300,69 +300,50 @@ git commit -m "fix: 修复订单状态更新异常的问题"
 ```bash
 # 后端单元测试
 cd campus-backend
-mvn test
-
-# 前端测试
-cd campus-web
-npm run test
+mvn spring-boot:run
 ```
 
----
+默认端口 `8080`，接口文档：`http://localhost:8080/doc.html`
 
-## 📦 部署
-
-### Docker 部署 (推荐)
+### 2) 前端
 
 ```bash
-# 构建镜像
-docker-compose build
+# 家长端
+cd campus-web-parents
+npm install
+npm run dev
 
-# 启动服务
-docker-compose up -d
+# 教员端
+cd ../campus-web-teacher
+npm install
+npm run dev
+
+# 管理端
+cd ../campus-web-admin
+npm install
+npm run dev
 ```
 
-### 传统部署
+默认端口：
 
-1. 后端打包
-```bash
-cd campus-backend
-mvn clean package -DskipTests
-java -jar target/campus-backend-1.0.0.jar
-```
+- 家长端：`5175`
+- 教员端：`5174`
+- 管理端：`3001`
 
-2. 前端打包
-```bash
-cd campus-web
-npm run build
-# 将 dist 目录部署到 Nginx
-```
+## 环境建议
 
----
+- JDK 17+
+- Node.js 18+
+- MySQL 8.0+
+- Redis 7+
 
-## 🤝 贡献指南
+## 文档说明
 
-我们欢迎所有形式的贡献！
+- 架构总览见 `ARCHITECTURE.md`
+- 数据库结构见 `docs/DATABASE_SCHEMA.md`
+- 推荐算法细节见 `docs/deepfm_architecture.md`
+- RAG/提示词说明见 `docs/RAG_Prompt_实现文档.md`
 
-1. Fork 本仓库
-2. 创建你的特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交你的改动 (`git commit -m 'feat: Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 打开一个 Pull Request
+## 备注
 
----
-
-## 📄 开源协议
-
-本项目采用 [MIT License](LICENSE) 开源协议
-
----
-
-
-<div align="center">
-
-**如果这个项目对你有帮助，请给我们一个 ⭐️ Star！**
-
-Made with ❤️ by CampusTutor Team
-
-</div>
-
+`campus-backend/src/main/resources/application.properties` 当前包含本地开发配置与示例密钥。建议在团队协作中逐步迁移为环境变量注入，避免敏感信息进入仓库。
