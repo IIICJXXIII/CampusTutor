@@ -4,12 +4,11 @@
 
 <div align="center">
 
-**一个基于 Spring Boot 3 + Vue 3 + 微信小程序的大学生家教智能服务平台**
+**一个基于 Spring Boot 3 + Vue 3 的大学生家教智能服务平台**
 
 [![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.1-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Vue](https://img.shields.io/badge/Vue-3.4.21-42b883.svg)](https://vuejs.org/)
-[![WeChat MiniProgram](https://img.shields.io/badge/WeChat-Native-07c160.svg)](https://developers.weixin.qq.com/miniprogram/dev/framework/)
 [![Element Plus](https://img.shields.io/badge/Element%20Plus-2.5.6-409eff.svg)](https://element-plus.org/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -31,12 +30,12 @@
 
 ## ✨ 系统功能详解
 
-系统包含 **Web 管理端**、**Web 用户端** 和 **微信小程序端**，服务于 **家长**、**教员** 和 **管理员** 三类角色。
+系统包含 **家长端**、**教师端** 和 **管理端** 三个 Web 应用，服务于 **家长**、**教员** 和 **管理员** 三类角色。
 
 ### 👨‍👩‍👧 家长端 (需求方)
 - **智能推荐**：根据学科、年级、距离、价格期望，智能匹配最合适的大学生家教。
 - **透明选师**：查看教员的详细档案，包括实名认证、学历认证 (OCR识别)、历史评价、教学风格等。
-- **课程及订单**：在线发布家教需求，管理课程订单，支持微信支付及退款申请。
+- **课程及订单**：在线发布家教需求，管理课程订单，支持钱包支付及退款申请。
 - **教学监控**：查看教员上课打卡记录，确认课时，保障服务质量。
 - **错题本**：支持拍照上传错题 (OCR)，构建专属的错题知识库。
 
@@ -66,23 +65,24 @@
 
 ### 前端技术栈
 
-#### 🌐 Web 用户端 (campus-web)
-与管理后台采用一致的技术底座，面向 PC 端家长和教员用户。
+#### 🏠 家长端 (campus-web-parents)
 - **框架**: Vue 3.4.21 + Vite 5.1.4
 - **UI 组件**: Element Plus 2.5.6 (SCSS 定制主题)
-- **状态管理**: Pinia 2.1.7 (User, Tutor, Order, Demand Stores)
-- **可视化**: ECharts 5.5.0 (数据分析图表)
+- **状态管理**: Pinia 2.1.7
+- **地图**: 高德地图 JS API
 
-#### 🖥️ Web 管理后台 (campus-web-admin)
+#### 🧑‍🏫 教师端 (campus-web-teacher)
+- **框架**: Vue 3.4.21 + Vite 5.1.4
+- **UI 组件**: Element Plus 2.5.6 (SCSS 定制主题)
+- **可视化**: ECharts 5.5.0
+- **AI 工具**: 教案生成、评语润色
+
+#### 🖥️ 管理后台 (campus-web-admin)
 - **架构**: 标准的后台管理系统 (Admin Dashboard)
 - **特性**: 动态路由, 权限控制, 响应式布局
 
-#### 📱 移动端 (campus-user-app)
-- **平台**: 微信小程序原生开发 (Native)
-- **能力**: 
-  - 调用微信登录、支付能力
-  - 集成高德地图 SDK 实现 LBS 定位
-  - 使用相机 API 实现 OCR 拍照上传
+#### 📦 共享模块 (campus-web-shared)
+- **定位**: 跨端复用的 API 封装、工具函数和公共样式
 
 ---
 
@@ -90,35 +90,34 @@
 
 ```
 CampusTutor/
-├── campus-backend/          # 后端 API 服务
+├── campus-backend/          # 后端 API 服务 (Spring Boot 3)
 │   ├── src/main/java/com/campus/
 │   │   ├── module/          # 垂直业务模块
-│   │   │   ├── auth/        # 认证 (JWT, 微信登录)
+│   │   │   ├── auth/        # 认证 (JWT + BCrypt)
 │   │   │   ├── demand/      # 需求 (CRUD, 状态流转)
-│   │   │   ├── match/       # 匹配 (推荐算法)
-│   │   │   ├── order/       # 订单 (支付, 退款)
-│   │   │   ├── user/        # 用户 (档案, 接单及钱包)
+│   │   │   ├── match/       # 匹配 (DeepFM + 协同过滤)
+│   │   │   ├── order/       # 订单 (钱包支付, 担保交易)
+│   │   │   ├── user/        # 用户 (档案, 钱包)
+│   │   │   ├── llm/         # AI 大模型 (教案/评语/对话)
 │   │   │   └── ...
 │   │   └── ...
-│   └── initdatabase.sql     # 数据库初始化脚本 (包含 测试数据)
+│   └── sql/                 # 数据库初始化脚本
 │
-├── campus-web/              # Web 用户端 (Vue3 + Element Plus)
-│   ├── src/
-│   │   ├── views/           # 业务视图 (Home, TeacherList, Profile...)
-│   │   ├── stores/          # 全局状态 (Pinia)
-│   │   └── api/             # 后端接口定义
-│   └── ...
+├── campus-web-parents/      # 家长端 (Vue3 + Element Plus)
+│   └── src/views/           # 需求、订单、课时、聊天等
 │
-├── campus-web-admin/        # Web 管理后台 (Vue3 + Element Plus)
-│   ├── src/views/           # 后台视图 (Audit, Dashboard, UserMgr...)
-│   └── ...
+├── campus-web-teacher/      # 教师端 (Vue3 + Element Plus)
+│   └── src/views/           # 接单、课时、AI工具、钱包等
 │
-└── campus-user-app/         # 微信小程序端
-    ├── miniprogram/
-    │   ├── pages/           # 页面 (home, mine, teacher-detail...)
-    │   ├── components/      # 组件 (teacher-card, rate...)
-    │   └── utils/           # 工具 (request, format...)
-    └── ...
+├── campus-web-admin/        # 管理后台 (Vue3 + Element Plus)
+│   └── src/views/           # 审核、仪表盘、用户管理等
+│
+├── campus-web-shared/       # 前端共享模块
+│   ├── api/                 # 统一 API 封装
+│   ├── utils/               # 工具函数 (format, status, parse)
+│   └── styles/              # 公共样式
+│
+└── campus-web/              # [已废弃] 旧版单体前端
 ```
 
 ---
@@ -130,38 +129,39 @@ CampusTutor/
 - **Node.js**: 18+
 - **MySQL**: 8.0+
 - **Redis**: 7.0+
-- **IDE**: IntelliJ IDEA / VS Code / 微信开发者工具
+- **IDE**: IntelliJ IDEA / VS Code
 
 ### 2. 后端部署
-1. 创建数据库 `campus_tutor_db` 并导入 `initdatabase.sql`。
-2. 修改 `application.properties` 配置数据库连接和 Redis 地址。
-3. 运行 `CampusApplication.java`。
+1. 创建数据库 `campus_tutor_db` 并导入 `sql/schema.sql`。
+2. 复制 `.env.example` 为 `.env` 并填写数据库、Redis 等连接信息。
+3. 运行 `CampusApplication.java` (使用 `--spring.profiles.active=dev` 开启开发模式)。
 4. 访问 `http://localhost:8080/doc.html` 查看 API 文档。
 
 ### 3. Web 端启动
 ```bash
-# 进入目录
-cd campus-web  # 或 campus-web-admin
+# 家长端
+cd campus-web-parents && npm install && npm run dev
 
-# 安装依赖
-npm install
+# 教师端
+cd campus-web-teacher && npm install && npm run dev
 
-# 启动开发服务器
-npm run dev
+# 管理端
+cd campus-web-admin && npm install && npm run dev
 ```
-
-### 4. 小程序端调试
-1. 打开微信开发者工具，导入 `campus-user-app` 目录。
-2. 修改 `miniprogram/config/apiConfig.js` 中的 `BASE_URL` 指向你的后端地址。
-3. 编译运行 (需配置 AppID 或使用测试号)。
 
 ---
 
 ## 📅 版本记录
 
+- **v2.0.0 (Web 聚焦版)**
+  - 移除微信小程序，聚焦 Web 端
+  - 拆分为家长端、教师端、管理端三个独立应用
+  - 密码安全升级为 BCrypt
+  - 事务安全加固（乐观锁、分布式锁）
+  - 新增 AI 工具（教案生成、评语润色、AI 对话）
+
 - **v1.0.0 (MVP)**
   - 完成核心业务闭环：认证、发布、匹配、支付、结算
-  - 实现 Web 端与小程序端的互通
   - 集成 Knife4j 接口文档
 
 ---

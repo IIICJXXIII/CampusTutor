@@ -10,15 +10,13 @@
 环境依赖：JDK 17+, Node.js 18+, MySQL 8.0+, Redis 7.0+
 
 1. **后端启动 (campus-backend)**
-   - **DB准备**：创建 `campus_tutor_db` MySQL 数据库并导入 `initdatabase.sql`。
-   - **配置修改**：修改 `src/main/resources/application.properties` 中的 DB 密码 (`spring.datasource.password`) 及 Redis 连接。
-   - **运行**：在 IDE 中运行 `CampusApplication.java`。API文档访问地址：`http://localhost:8080/doc.html`。
-2. **Web 前端启动 (campus-web / campus-web-admin)**
-   - 进入目录：`cd campus-web` (家长/教员端) 或 `cd campus-web-admin` (管理端)。
-   - 安装与运行：`npm install` -> `npm run dev`。
-3. **小程序端启动 (campus-user-app)**
-   - 将 `campus-user-app` 导入微信开发者工具。
-   - 修改 `miniprogram/config/apiConfig.js` 中的 `BASE_URL`，编译运行。
+   - **DB准备**：创建 `campus_tutor_db` MySQL 数据库并导入 `sql/schema.sql`。
+   - **配置修改**：复制 `.env.example` 为 `.env` 并填写 DB 密码及 Redis 连接。`application.properties` 已通过环境变量占位符外部化。
+   - **运行**：在 IDE 中运行 `CampusApplication.java` (使用 `--spring.profiles.active=dev` 开启开发模式)。API文档访问地址：`http://localhost:8080/doc.html`。
+2. **Web 前端启动**
+   - 家长端：`cd campus-web-parents && npm install && npm run dev`
+   - 教师端：`cd campus-web-teacher && npm install && npm run dev`
+   - 管理端：`cd campus-web-admin && npm install && npm run dev`
 
 ---
 
@@ -42,7 +40,7 @@
 
 ## 3. 代码目录与模块职责
 
-整个工作区分为四大系统端。以下为过滤了编译产物和临时文件后的核心架构树及职责说明：
+整个工作区分为后端 + 三个前端应用 + 共享模块。以下为过滤了编译产物和临时文件后的核心架构树及职责说明：
 
 ```text
 CampusTutor/
@@ -63,14 +61,21 @@ CampusTutor/
 │   │       └── ... (admin, ocr, map, parent, tutor, student)
 │   └── src/main/resources/         # 属性配置 (application.properties)、MyBatis XML (mapper)
 │
-├── campus-web/                     # [用户侧] Web 消费者前端 (Vue 3)
-│   └── src/ (views, stores, api)   # 包含家长找教员、教员接单的大型 Web 门户
+├── campus-web-parents/               # [家长端] Web 前端 (Vue 3)
+│   └── src/ (views, router)            # 需求管理、订单支付、课时确认、IM 聊天
 │
-├── campus-web-admin/               # [管理侧] Web 总控后台后台 (Vue 3)
+├── campus-web-teacher/               # [教师端] Web 前端 (Vue 3)
+│   └── src/ (views, router)            # LBS 接单、课时管理、AI 工具、钱包提现
+│
+├── campus-web-admin/               # [管理侧] Web 总控后台 (Vue 3)
 │   └── src/views/                  # 包含审核模块、数据大屏、配置下发等运营职能
 │
-└── campus-user-app/                # [移动侧] 微信小程序原生前端
-    └── miniprogram/ (pages, components) # 提供 LBS 地图接单、移动端认证等便捷入口
+├── campus-web-shared/              # [共享模块] 跨端复用代码
+│   ├── api/                        # 统一的 API 封装层 (request, order, demand, teaching 等)
+│   ├── utils/                      # 工具函数 (format, status, parse)
+│   └── styles/                     # 公共样式
+│
+└── campus-web/                     # [已废弃] 旧版单体前端，参见 DEPRECATED.md
 ```
 
 ---
@@ -140,5 +145,5 @@ flowchart TD
    - 所有的 API 响应强制约束为 `Result<T>` 泛型包装结构，包含 `code`, `msg`, `data`, `timestamp`四大字段。业务异常被捕获后优雅转化为带自定义 Code 和明文错误提示（不抛出 HTTP 500）。
    - 参数校验强依赖 JSR-380 (`@Valid`)，违反校验规则同样能在全局被捕获为格式化文本返回。
 4. **部署与环境配置**
-   - 遵循 `application.properties` 统一管理，抽离了 DB、Redis、微信支付密钥、LLM AI-Key 以及推荐系统的核心算法权重阈值（权重因子均开放为 properties 便于实施期调整）。
+   - 遵循 `application.properties` 统一管理，所有敏感值均通过 `${ENV_VAR:默认值}` 环境变量占位符注入，抽离了 DB、Redis、LLM AI-Key、地图 API Key 以及推荐系统的核心算法权重阈值。
    - 项目根路径提供 `Dockerfile` 和 `docker-compose.yml`，符合容器化一键编排要求。
