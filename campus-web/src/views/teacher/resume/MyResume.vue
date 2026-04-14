@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="my-resume">
     <div class="page-header">
       <h1 class="page-title">我的简历</h1>
@@ -258,7 +258,30 @@ const loadProfile = async () => {
   try {
     const res = await getTutorProfile()
     if (res.code === 200) {
-      profile.value = res.data || {}
+      const data = res.data || {}
+      // 后端字段 -> 前端展示字段映射
+      const parseJson = (val, fallback) => {
+        if (!val) return fallback
+        if (Array.isArray(val)) return val
+        try { return JSON.parse(val) } catch { return fallback }
+      }
+      profile.value = {
+        ...data,
+        realName: data.realName,
+        school: data.universityName,
+        universityName: data.universityName,
+        major: data.major,
+        avatar: data.avatarUrl || data.avatar,
+        subjects: parseJson(data.teachSubjects, []),
+        grades: parseJson(data.teachGrades, []),
+        experience: data.teachStyle || data.experience,
+        expectedSalary: data.expectPrice,
+        teachingArea: data.address,
+        introduction: data.introduction,
+        achievements: data.achievements,
+        certStatus: data.certStatus,
+        teachStyle: data.teachStyle
+      }
       tutorStore.setProfile(res.data)
     }
   } catch (error) {
@@ -306,10 +329,22 @@ const editSection = (type) => {
 const saveProfile = async () => {
   saving.value = true
   try {
-    const res = await updateTutorProfile({
-      ...profile.value,
-      ...editForm
-    })
+    // 将前端字段名映射为后端 TutorProfileUpdateRequest 字段名
+    const data = {
+      realName: editForm.nickname || profile.value.realName,
+      universityName: profile.value.school || profile.value.universityName,
+      major: profile.value.major,
+      teachSubjects: editForm.subjects,          // 后端: teachSubjects
+      teachGrades: editForm.grades,              // 后端: teachGrades
+      teachStyle: profile.value.teachStyle,
+      introduction: editForm.introduction,
+      expectPrice: editForm.expectedSalary,       // 后端: expectPrice
+      canVisit: 1,
+      canOnline: 1,
+      address: editForm.teachingArea
+    }
+    
+    const res = await updateTutorProfile(data)
     
     if (res.code === 200) {
       ElMessage.success('保存成功')

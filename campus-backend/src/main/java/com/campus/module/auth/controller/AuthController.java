@@ -43,7 +43,12 @@ public class AuthController {
     @Operation(summary = "发送验证码", description = "发送短信验证码 (Mock)")
     @PostMapping("/send-code")
     public Result<Void> sendCode(
-            @Parameter(description = "手机号") @RequestParam String phone) {
+            @Parameter(description = "手机号") @RequestParam String phone,
+            @Parameter(description = "用途: register/reset") @RequestParam(required = false, defaultValue = "register") String purpose) {
+        // 注册场景：检查手机号是否已注册
+        if ("register".equals(purpose) && sysUserService.existsByUsername(phone)) {
+            throw new BusinessException(5003, "该手机号已注册，请直接登录");
+        }
         authService.sendCode(phone);
         return Result.success("验证码已发送");
     }

@@ -28,9 +28,9 @@ export function register(data) {
  * 发送验证码
  * @param {string} phone - 手机号
  */
-export function sendCode(phone) {
+export function sendCode(phone, purpose = 'register') {
   return request.post('/auth/send-code', null, {
-    params: { phone }
+    params: { phone, purpose }
   });
 }
 

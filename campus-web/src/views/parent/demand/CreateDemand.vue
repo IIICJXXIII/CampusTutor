@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="create-demand-page">
     <div class="page-header">
       <el-button link @click="goBack">
@@ -26,7 +26,7 @@
               <el-option
                 v-for="student in students"
                 :key="student.id"
-                :label="`${student.name} (${student.grade})`"
+                :label="`${student.studentName || student.name} (${student.grade})`"
                 :value="student.id"
               />
             </el-select>
@@ -41,7 +41,7 @@
           <h3 class="section-title">辅导信息</h3>
           
           <el-form-item label="需求标题" prop="title">
-            <el-input v-model="form.title" placeholder="如：初三数学一对一辅导" maxlength="50" show-word-limit />
+            <el-input v-model="form.title" placeholder="如：钢琴陪练一对一教学" maxlength="50" show-word-limit />
           </el-form-item>
           
           <el-form-item label="辅导科目" prop="subject">
@@ -314,7 +314,7 @@ const loadStudents = async () => {
 
 const getStudentName = (id) => {
   const student = students.value.find(s => s.id === id)
-  return student ? student.name : '未关联'
+  return student ? (student.studentName || student.name) : '未关联'
 }
 
 const goBack = () => {
