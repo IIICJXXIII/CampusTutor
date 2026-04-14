@@ -1,131 +1,93 @@
-# CampusTutor (校园智教) - 项目全景指南 (ARCHITECTURE)
+﻿# 素质教育匹配平台 架构总览
 
-## 1. 项目基本信息
+## 1. 项目定位
 
-### 核心定位
-**CampusTutor (校园智教)** 是一个专为家长和大学生打造的 O2O 家教匹配平台。平台的核心目标是消除传统家教中介信息不透明和高昂费用的痛点，通过**数字化认证、智能匹配算法（协同过滤+意图流）**以及**LBS定位**，构建一个“认证严、匹配准、服务全”的去中介化教育匹配生态。
-> **⚠️ 业务合规说明**：平台已全面转型**素质教育**领域，在需求发布环节已硬性拦截并禁止任何学科类辅导（如数学、英语、物理等）的发布。
+素质教育匹配平台是一个 Web 多端素质教育服务平台，围绕家长找服务提供者、服务提供者接单授课、管理员运营审核三类核心角色运行。
 
-### 快速启动指南
-环境依赖：JDK 17+, Node.js 18+, MySQL 8.0+, Redis 7.0+
+当前技术主线：
 
-1. **后端启动 (campus-backend)**
-   - **DB准备**：创建 `campus_tutor_db` MySQL 数据库并导入 `sql/schema.sql`。
-   - **配置修改**：复制 `.env.example` 为 `.env` 并填写 DB 密码及 Redis 连接。`application.properties` 已通过环境变量占位符外部化。
-   - **运行**：在 IDE 中运行 `CampusApplication.java` (使用 `--spring.profiles.active=dev` 开启开发模式)。API文档访问地址：`http://localhost:8080/doc.html`。
-2. **Web 前端启动**
-   - 家长端：`cd campus-web-parents && npm install && npm run dev`
-   - 教师端：`cd campus-web-teacher && npm install && npm run dev`
-   - 管理端：`cd campus-web-admin && npm install && npm run dev`
+- 前端多应用拆分：家长端、服务提供者端、管理端 + shared 共享层
+- 后端单体服务：Spring Boot 模块化分层
+- 推荐链路：规则打分 + CF + 实时意图 + 流量池 + DeepFM
+- AI 能力：需求解析、对话助手、教案生成、评语润色
+- 地图能力：地理编码、逆地理编码、距离计算、路径规划
 
----
+## 2. 代码结构
 
-## 2. 技术栈全景
+```text
+素质教育匹配平台/
+├── campus-backend/
+│   ├── src/main/java/com/campus/
+│   │   ├── common/                  # 公共能力（上下文、异常、统一返回）
+│   │   ├── config/                  # 安全、拦截器、Swagger、跨域等配置
+│   │   └── module/
+│   │       ├── auth/                # 登录注册、验证码、JWT
+│   │       ├── demand/              # 需求发布、状态流转、附近需求
+│   │       ├── order/               # 接单、确认、支付、退款、订单状态
+│   │       ├── tutor/ parent/       # 服务提供者档案与家长侧数据
+│   │       ├── teaching/            # 上下课打卡与课时记录
+│   │       ├── match/               # 搜索匹配、综合评分、DeepFM 推理
+│   │       ├── recommend/           # 协同过滤推荐接口
+│   │       ├── behavior/            # 用户行为采集
+│   │       ├── llm/                 # AI 对话、需求解析、教案与评语
+│   │       ├── map/                 # 地图能力封装
+│   │       └── admin/               # 运营管理接口
+│   └── src/main/resources/          # application.properties、mapper XML、模型文件
+│
+├── campus-web-parents/              # 家长端 Web（Vite:5175）
+├── campus-web-teacher/              # 服务提供者端 Web（Vite:5174）
+├── campus-web-admin/                # 管理端 Web（Vite:3001）
+├── campus-web-shared/               # 共享 API/样式/工具
+├── campus-web/                      # 已废弃历史单体前端（仅参考）
+└── docs/                            # 项目文档
+```
 
-本项目采用前后端分离架构，核心依赖及用途如下：
+## 3. 关键业务流
 
-| 技术及框架 | 版本 | 在本项目中的具体用途 |
-| :--- | :--- | :--- |
-| **Spring Boot** | 3.2.1 | 后端核心微服务框架，提供自动化配置和 IoC/AOP 容器。 |
-| **MyBatis-Plus** | 3.5.5 | 数据持久层框架，处理 MySQL 8.0 中的实体映射及 CRUD 操作。设置了统一的逻辑删除（`deleted=1`）规范。 |
-| **MySQL** | 8.0 | 存储核心业务数据（如用户信息、教员资质、订单流水、需求记录等）。 |
-| **Redis** | 7.0+ | 承担四大核心职责：1) 高速缓存；2) Session/Token 验证；3) **LBS 教员空间召回**（Redis GEO 存储教员经纬度，用于 DeepFM 主路径的半径检索）；4) **降级路径的数据流转**（Redis Stream `intent:actions` 追踪用户实时意图，存储 CF 算法缓存及教员流量池数据）。 |
-| **JJWT** | 0.12.5 | 用于生成并验证无状态的 API 认证令牌（Bearer Token），负责身份鉴权。 |
-| **Knife4j** | 4.4.0 | 基于 OpenAPI 3 的 Swagger 增强 UI，用于自动生成易读的后端接口文档。 |
-| **Vue & Vite** | 3.4 / 5.1 | Web 端核心视图框架构建工具，使用 **Pinia** 2.x 做状态管理，**Element Plus** 2.5 构建后台和 PC 端 UI。 |
-| **DeepSeek LLM** | API接入 | 后端配置了 DeepSeek 大模型（参数 `llm.provider=deepseek`），用于平台内的 AI 智能问答/聊天功能，内置 `recommend_nearby_tutors` 深度学习推荐工具供 Function Calling 调度。 |
-| **ONNX Runtime** | 1.17.0 | 加载 Python 侧训练导出的 DeepFM 深度学习模型 (`campus_deepfm.onnx`)，完成教员与家长的特征预估精排。 |
+### 3.1 需求发布与接单
 
----
+1. 家长发布需求（`/api/demand/publish`），可携带经纬度。
+2. 服务提供者通过附近需求或匹配接口发现需求。
+3. 服务提供者调用 `/api/order/accept` 接单，系统创建待确认订单。
+4. 家长确认订单（`/api/order/{id}/confirm`）后进入支付和服务阶段。
 
-## 3. 代码目录与模块职责
+### 3.2 推荐链路（主备双通道）
 
 整个工作区分为后端 + 三个前端应用 + 共享模块。以下为过滤了编译产物和临时文件后的核心架构树及职责说明：
 
-```text
-CampusTutor/
-├── campus-backend/                 # [核心] 后端 Spring Boot 接口微服务
-│   ├── src/main/java/com/campus/
-│   │   ├── common/                 # 全局公共组件
-│   │   │   ├── context/            # ThreadLocal 用户上下文封装 (UserContext)
-│   │   │   ├── exception/          # 统一异常处理定义 (BusinessException, GlobalExceptionHandler)
-│   │   │   ├── result/             # 统一响应包装体 (Result<T>)
-│   │   │   └── utils/              # 通用工具类
-│   │   ├── config/                 # 框架级别配置 (Swagger, WebMvc等)
-│   │   └── module/                 # 垂直业务模块 (按特性分包 Package by Feature)
-│   │       ├── auth/               # 认证模块 (登录、注册、JWT鉴权)
-│   │       ├── demand/             # 需求模块 (素质教育需求发布、上下架、黑名单过滤)
-│   │       ├── match/ & recommend/ # 推荐匹配模块 (DeepFM精排 → 降级:协同过滤+意图分+流量池)
-│   │       ├── order/ & wallet/    # 订单与资金模块 (订单流转状态机、结算与流水)
-│   │       ├── llm/ & chat/        # 智能对话模块 (大模型 API 交互及实时聊天)
-│   │       └── ... (admin, ocr, map, parent, tutor, student)
-│   └── src/main/resources/         # 属性配置 (application.properties)、MyBatis XML (mapper)
-│
-├── campus-web-parents/               # [家长端] Web 前端 (Vue 3)
-│   └── src/ (views, router)            # 需求管理、订单支付、课时确认、IM 聊天
-│
-├── campus-web-teacher/               # [教师端] Web 前端 (Vue 3)
-│   └── src/ (views, router)            # LBS 接单、课时管理、AI 工具、钱包提现
-│
-├── campus-web-admin/               # [管理侧] Web 总控后台 (Vue 3)
-│   └── src/views/                  # 包含审核模块、数据大屏、配置下发等运营职能
-│
-├── campus-web-shared/              # [共享模块] 跨端复用代码
-│   ├── api/                        # 统一的 API 封装层 (request, order, demand, teaching 等)
-│   ├── utils/                      # 工具函数 (format, status, parse)
-│   └── styles/                     # 公共样式
-│
-└── campus-web/                     # [已废弃] 旧版单体前端，参见 DEPRECATED.md
+### 3.3 AI 服务链路
+
+- `POST /api/llm/chat`：多轮对话，支持函数调用检索服务提供者。
+- `POST /api/llm/demand/parse`：自然语言需求转结构化字段。
+- `POST /api/llm/lesson/plan`：生成教学计划。
+- `POST /api/llm/lesson/comment`：润色评语。
+
+## 4. 地图服务能力
+
+`/api/map` 提供统一抽象接口，包含：
+
+- `/geocoder` 地址转坐标
+- `/geocoder/reverse` 坐标转地址
+- `/direction` 路径规划（步行/驾车/公交）
+- `/distance` 两点距离与耗时估算
+
+同时，需求与服务提供者的坐标会进入 Redis GEO 以支持附近检索。
+
+## 5. 运行与调试
+
+### 后端
+
+```bash
+cd campus-backend
+mvn spring-boot:run
 ```
 
----
+### 前端
 
-## 4. 核心业务流程分析
-
-### 4.1 核心流程一：家长需求发布与教员 LBS 抢单
-家长端发布素质教育需求（系统屏蔽学科词汇）；教员端通过 LBS 接口（距离半径）或算法接口寻源，最终发起接单匹配。
-
-```mermaid
-sequenceDiagram
-    participant P as 家长 (Parent)
-    participant S as 后端服务 (demand/match)
-    participant T as 教员 (Tutor)
-    
-    P->>S: 1. 提交需求 (DemandPostRequest) 附带经纬度
-    S->>S: 2. 敏感词拦截 (过滤学科辅导词汇)
-    S->>S: 3. 保存需求记录并标定 LBS 位置
-    S-->>P: 4. 需求发布成功 (上架)
-    
-    T->>S: 5. 发起周边检索 (/api/demand/nearby)
-    S-->>T: 6. 返回半径内排序后的需求列表
-    T->>S: 7. 发起接单请求 (/{id}/match)
-    S->>S: 8. 创建待确认订单 (状态机流转)
-    S-->>T: 9. 返回 OrderId
-```
-
-### 4.2 核心流程二：智能推荐双路径架构（DeepFM主路径 + 旧版降级路径）
-平台采用 "主-备" 双路径级联推荐架构：主路径使用 LBS 空间召回 + DeepFM 深度学习精排；当 DeepFM 模型加载/推理失败时，系统自动降级至旧版「协同过滤 + 实时意图 + 流量池」推荐引擎，确保推荐服务的高可用性。
-
-```mermaid
-flowchart TD
-    A[家长请求 / LLM AI 助手工具调度] -->|传入经纬度+学科| B(LBS 空间召回)
-    B -->|Redis GEO 半径检索| C[近区候选教员集]
-    C --> D[硬性过滤: 认证状态+学科匹配]
-    D --> E[特征工程: 构建 float N x 8 矩阵]
-    E --> F{DeepFM 模型推理}
-
-    F -->|成功| G["主路径: CTR 预估精排分 (0-100)"]
-    G --> H[打标 AI精选 Tag]
-
-    F -->|失败/熔断| I["降级路径: 旧版三层级联"]
-    I --> J[第一层: 基础分 rating+orders]
-    J --> K[第二层: CF 协同过滤混合]
-    K --> L[第三层: 实时意图 Intent Boost]
-    L --> M[第四层: 流量池赛马 Pool Boost]
-    M --> N[打标 相似家长推荐/猜你喜欢/系统推荐]
-
-    H --> O[最终排序 → 返回 Top N]
-    N --> O
+```bash
+cd campus-web-parents && npm run dev
+cd campus-web-teacher && npm run dev
+cd campus-web-admin && npm run dev
 ```
 
 ---
