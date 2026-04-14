@@ -5,7 +5,7 @@
       <div class="header-left">
         <div class="logo" @click="goHome">
           <img src="@/assets/logo.svg" alt="Logo" />
-          <span class="logo-text">校园智教</span>
+          <span class="logo-text">素质教育</span>
           <el-tag size="small" type="primary" class="role-tag">教师端</el-tag>
         </div>
       </div>
@@ -28,6 +28,9 @@
           </el-menu-item>
           <el-menu-item index="/resume">
             <el-icon><User /></el-icon>我的简历
+          </el-menu-item>
+          <el-menu-item index="/ai/hub">
+            <el-icon><Service /></el-icon>AI助手
           </el-menu-item>
         </el-menu>
       </nav>
@@ -78,7 +81,10 @@
     <!-- AI 浮动按钮 -->
     <div class="ai-float-btn" @click="goToAi">
       <el-tooltip content="AI 智能助手" placement="left">
-        <el-icon :size="24"><Service /></el-icon>
+        <div class="ai-btn-inner">
+          <el-icon :size="20"><Service /></el-icon>
+          <span class="ai-label">AI助手</span>
+        </div>
       </el-tooltip>
     </div>
     
@@ -98,7 +104,7 @@
     
     <!-- 页脚 (桌面端) -->
     <footer class="footer hide-mobile">
-      <p>© 2026 校园智教 CampusTutor - 教师端</p>
+      <p>© 2026 素质教育平台 - 教师端</p>
     </footer>
   </div>
 </template>
@@ -126,7 +132,7 @@ let pollTimer = null
 const bottomNavItems = [
   { path: '/home', label: '找学生', icon: Location },
   { path: '/orders', label: '订单', icon: Document },
-  { path: '/lessons', label: '课时', icon: Clock },
+  { path: '/ai/hub', label: 'AI', icon: Service },
   { path: '/wallet', label: '钱包', icon: Wallet },
   { path: '/mine', label: '我的', icon: User }
 ]
@@ -313,10 +319,8 @@ onUnmounted(() => {
   position: fixed;
   right: 24px;
   bottom: 100px;
-  width: 56px;
-  height: 56px;
   background: linear-gradient(135deg, #409eff 0%, #337ecc 100%);
-  border-radius: 50%;
+  border-radius: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -325,18 +329,36 @@ onUnmounted(() => {
   box-shadow: 0 4px 16px rgba(64, 158, 255, 0.4);
   transition: all 0.3s;
   z-index: 99;
+  animation: ai-pulse 2s ease-in-out infinite;
+
+  .ai-btn-inner {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px 10px 12px;
+    color: #fff;
+  }
+
+  .ai-label {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
   
   &:hover {
-    transform: scale(1.1);
+    transform: scale(1.05);
     box-shadow: 0 6px 24px rgba(64, 158, 255, 0.5);
   }
   
   @media (max-width: 768px) {
     right: 16px;
-    bottom: 140px;
-    width: 48px;
-    height: 48px;
+    bottom: 80px;
   }
+}
+
+@keyframes ai-pulse {
+  0%, 100% { box-shadow: 0 4px 16px rgba(64, 158, 255, 0.4); }
+  50% { box-shadow: 0 4px 24px rgba(64, 158, 255, 0.7); }
 }
 
 .bottom-nav {

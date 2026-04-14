@@ -38,3 +38,19 @@ export function streamChat(data) {
     responseType: 'stream'
   });
 }
+
+/**
+ * AI生成课程规划
+ * @param {Object} data - { subject, studentLevel, totalHours, studentInfo }
+ */
+export function generateLessonPlan(data) {
+  return request.post('/llm/lesson/plan', data);
+}
+
+/**
+ * AI评语润色
+ * @param {Object} data - { originalComment, subject, studentName }
+ */
+export function polishComment(data) {
+  return request.post('/llm/lesson/comment', data);
+}

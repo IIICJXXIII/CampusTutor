@@ -96,14 +96,6 @@ public interface CourseOrderService extends IService<CourseOrder> {
     void confirmOrder(Long parentId, Long orderId);
 
     /**
-     * 处理支付成功
-     * 
-     * @param orderNo       订单号
-     * @param transactionId 交易ID
-     */
-    void handlePaySuccess(String orderNo, String transactionId);
-
-    /**
      * 申请退款
      * 
      * @param userId     用户ID
@@ -114,16 +106,6 @@ public interface CourseOrderService extends IService<CourseOrder> {
      */
     String applyRefund(Long userId, Long orderId, java.math.BigDecimal refundAmount, String reason);
 
-    /**
-     * 创建微信支付参数
-     * 
-     * @param userId  用户ID
-     * @param orderId 订单ID
-     * @param openid  用户openid
-     * @return 支付参数
-     */
-    Map<String, String> createWechatPayParams(Long userId, Long orderId, String openid);
-    
     /**
      * 从预约请求创建订单
      * 

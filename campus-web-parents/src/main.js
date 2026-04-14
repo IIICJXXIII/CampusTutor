@@ -7,6 +7,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
 import router from './router'
+import { setRequestErrorHandler } from '@shared/api/request'
 import '@shared/styles/index.scss'
 import './styles/parent.scss'
 
@@ -20,5 +21,9 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 app.use(createPinia())
 app.use(router)
 app.use(ElementPlus, { locale: zhCn })
+
+// 注入全局请求错误提示
+import { ElMessage } from 'element-plus'
+setRequestErrorHandler((msg) => ElMessage.error(msg))
 
 app.mount('#app')

@@ -49,10 +49,6 @@
           </el-button>
         </el-form-item>
       </el-form>
-      
-      <div class="login-footer">
-        <p>演示账号: admin / admin123</p>
-      </div>
     </div>
   </div>
 </template>

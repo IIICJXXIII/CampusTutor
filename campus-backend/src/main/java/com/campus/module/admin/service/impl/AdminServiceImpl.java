@@ -19,6 +19,7 @@ import com.campus.module.wallet.entity.SysWallet;
 import com.campus.module.wallet.entity.SysTransactionFlow;
 import com.campus.module.wallet.mapper.SysWalletMapper;
 import com.campus.module.wallet.mapper.SysTransactionFlowMapper;
+import com.campus.module.wallet.service.SysWalletService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,7 @@ public class AdminServiceImpl implements AdminService {
     private final TeachingRecordMapper teachingRecordMapper;
     private final SysWalletMapper sysWalletMapper;
     private final SysTransactionFlowMapper transactionFlowMapper;
+    private final SysWalletService walletService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -151,7 +153,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void updateUser(Long id, SysUser user) {
         SysUser existing = sysUserMapper.selectById(id);
         if (existing == null) {
@@ -162,7 +164,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void updateUserStatus(Long id, Integer status) {
         SysUser user = sysUserMapper.selectById(id);
         if (user == null) {
@@ -173,7 +175,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void deleteUser(Long id) {
         sysUserMapper.deleteById(id);
     }
@@ -235,7 +237,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void approveTutor(Long id) {
         TutorProfile tutor = tutorProfileMapper.selectById(id);
         if (tutor == null) {
@@ -250,7 +252,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void rejectTutor(Long id, String reason) {
         TutorProfile tutor = tutorProfileMapper.selectById(id);
         if (tutor == null) {
@@ -301,7 +303,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void updateDemandStatus(Long id, Integer status) {
         DemandPost demand = demandPostMapper.selectById(id);
         if (demand == null) {
@@ -312,7 +314,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void deleteDemand(Long id) {
         demandPostMapper.deleteById(id);
     }
@@ -351,7 +353,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void updateOrderStatus(Long id, Integer status) {
         CourseOrder order = courseOrderMapper.selectById(id);
         if (order == null) {
@@ -362,19 +364,26 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void releaseEscrow(Long id) {
         CourseOrder order = courseOrderMapper.selectById(id);
         if (order == null) {
             throw new BusinessException("订单不存在");
         }
-        order.setStatus(4); // 已完成
+
+        // 实际资金释放：解冻教员收益
+        boolean success = walletService.unfreeze(order.getTutorId(), order.getTutorAmount());
+        if (!success) {
+            throw new BusinessException("解冻教员收益失败");
+        }
+
+        order.setStatus(3); // 已完成
         courseOrderMapper.updateById(order);
-        log.info("订单 {} 托管资金已释放", id);
+        log.info("订单 {} 托管资金已释放，教员 {} 收到 {}", id, order.getTutorId(), order.getTutorAmount());
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void refundOrder(Long id, String reason) {
         CourseOrder order = courseOrderMapper.selectById(id);
         if (order == null) {
@@ -405,7 +414,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void confirmLesson(Long id) {
         TeachingRecord record = teachingRecordMapper.selectById(id);
         if (record == null) {
@@ -416,7 +425,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void rejectLesson(Long id, String reason) {
         TeachingRecord record = teachingRecordMapper.selectById(id);
         if (record == null) {
@@ -446,7 +455,7 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void adjustBalance(Long id, BigDecimal amount, String reason) {
         SysWallet wallet = sysWalletMapper.selectById(id);
         if (wallet == null) {

@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.campus.common.exception.BusinessException;
 import com.campus.module.user.service.SysUserService;
@@ -24,11 +23,8 @@ import com.campus.module.user.service.SysUserService;
 @RequiredArgsConstructor
 public class AuthController {
 
-    @Autowired  // <--- 1. 关键：加这个
-    private AuthService authService;
-    
-    @Autowired
-    private SysUserService sysUserService;
+    private final AuthService authService;
+    private final SysUserService sysUserService;
 
     @Operation(summary = "用户登录", description = "支持密码登录和验证码登录")
     @PostMapping("/login")
@@ -78,4 +74,5 @@ public class AuthController {
         sysUserService.resetPassword(phone, newPassword);
         return Result.success("密码重置成功");
     }
+
 }

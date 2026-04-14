@@ -7,6 +7,7 @@ import com.campus.module.user.entity.SysUser;
 import com.campus.module.user.mapper.SysUserMapper;
 import com.campus.module.user.service.SysUserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,11 +26,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     @Override
-    public SysUser getByOpenid(String openid) {
-        return sysUserMapper.selectByOpenid(openid);
-    }
-
-    @Override
     public boolean existsByUsername(String username) {
         return getByUsername(username) != null;
     }
@@ -40,7 +36,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (existsByUsername(user.getUsername())) {
             throw new BusinessException(5003, "用户名已存在");
         }
-        String encryptPassword = SecureUtil.md5(user.getPassword());
+        String encryptPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
         user.setPassword(encryptPassword);
         if (user.getStatus() == null) {
             user.setStatus(1);
@@ -67,7 +63,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             throw new BusinessException(5001, "用户不存在");
         }
         // 密码加密
-        String encryptedPassword = SecureUtil.md5(newPassword);
+        String encryptedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
         user.setPassword(encryptedPassword);
         updateById(user);
     }
@@ -80,13 +76,20 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         }
 
         // 验证旧密码
-        String encryptedOldPassword = SecureUtil.md5(oldPassword);
-        if (!encryptedOldPassword.equals(user.getPassword())) {
+        String storedPassword = user.getPassword();
+        boolean validOldPassword;
+        if (storedPassword != null && storedPassword.startsWith("$2")) {
+            validOldPassword = BCrypt.checkpw(oldPassword, storedPassword);
+        } else {
+            String encryptedOldPassword = SecureUtil.md5(oldPassword);
+            validOldPassword = encryptedOldPassword.equals(storedPassword);
+        }
+        if (!validOldPassword) {
             throw new BusinessException(5004, "密码错误");
         }
 
         // 密码加密
-        String encryptedNewPassword = SecureUtil.md5(newPassword);
+        String encryptedNewPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
         user.setPassword(encryptedNewPassword);
         updateById(user);
     }
