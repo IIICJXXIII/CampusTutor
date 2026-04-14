@@ -25,7 +25,7 @@ public class DoubaoVisionService {
 
     private static final Logger log = LoggerFactory.getLogger(DoubaoVisionService.class);
 
-    @Value("${doubao.vision.api-key:0134f705-9ea1-42e6-99ec-5d9156af5cac}")
+    @Value("${doubao.vision.api-key:}")
     private String apiKey;
 
     @Value("${doubao.vision.model:doubao-seed-1-8-251228}")

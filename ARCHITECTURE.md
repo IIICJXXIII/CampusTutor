@@ -6,11 +6,14 @@ CampusTutor 是一个 Web 多端家教服务平台，围绕家长找教员、教
 
 当前技术主线：
 
-- 前端多应用拆分：家长端、教员端、管理端 + shared 共享层
-- 后端单体服务：Spring Boot 模块化分层
-- 推荐链路：规则打分 + CF + 实时意图 + 流量池 + DeepFM
-- AI 能力：需求解析、对话助手、教案生成、评语润色
-- 地图能力：地理编码、逆地理编码、距离计算、路径规划
+1. **后端启动 (campus-backend)**
+   - **DB准备**：创建 `campus_tutor_db` MySQL 数据库并导入 `sql/schema.sql`。
+   - **配置修改**：复制 `.env.example` 为 `.env` 并填写 DB 密码及 Redis 连接。`application.properties` 已通过环境变量占位符外部化。
+   - **运行**：在 IDE 中运行 `CampusApplication.java` (使用 `--spring.profiles.active=dev` 开启开发模式)。API文档访问地址：`http://localhost:8080/doc.html`。
+2. **Web 前端启动**
+   - 家长端：`cd campus-web-parents && npm install && npm run dev`
+   - 教师端：`cd campus-web-teacher && npm install && npm run dev`
+   - 管理端：`cd campus-web-admin && npm install && npm run dev`
 
 ## 2. 代码结构
 
@@ -53,28 +56,43 @@ CampusTutor/
 
 ### 3.2 推荐链路（主备双通道）
 
-1. 候选召回：优先 Redis GEO，失败则数据库距离降级计算。
-2. 规则分：科目、年级、距离、价格、评分、经验等因子。
-3. CF 混排：用户行为达到阈值时注入协同过滤分值。
-4. 意图加分：依据近期行为标签实时加权。
-5. 流量池加分：按 BASIC/WARM/HOT 提供曝光倾斜。
-6. DeepFM 精排：模型可用则输出深度学习分；不可用则继续规则/CF链路。
+整个工作区分为后端 + 三个前端应用 + 共享模块。以下为过滤了编译产物和临时文件后的核心架构树及职责说明：
 
-### 3.3 AI 服务链路
-
-- `POST /api/llm/chat`：多轮对话，支持函数调用检索教员。
-- `POST /api/llm/demand/parse`：自然语言需求转结构化字段。
-- `POST /api/llm/lesson/plan`：生成教学计划。
-- `POST /api/llm/lesson/comment`：润色评语。
-
-## 4. 地图服务能力
-
-`/api/map` 提供统一抽象接口，包含：
-
-- `/geocoder` 地址转坐标
-- `/geocoder/reverse` 坐标转地址
-- `/direction` 路径规划（步行/驾车/公交）
-- `/distance` 两点距离与耗时估算
+```text
+CampusTutor/
+├── campus-backend/                 # [核心] 后端 Spring Boot 接口微服务
+│   ├── src/main/java/com/campus/
+│   │   ├── common/                 # 全局公共组件
+│   │   │   ├── context/            # ThreadLocal 用户上下文封装 (UserContext)
+│   │   │   ├── exception/          # 统一异常处理定义 (BusinessException, GlobalExceptionHandler)
+│   │   │   ├── result/             # 统一响应包装体 (Result<T>)
+│   │   │   └── utils/              # 通用工具类
+│   │   ├── config/                 # 框架级别配置 (Swagger, WebMvc等)
+│   │   └── module/                 # 垂直业务模块 (按特性分包 Package by Feature)
+│   │       ├── auth/               # 认证模块 (登录、注册、JWT鉴权)
+│   │       ├── demand/             # 需求模块 (素质教育需求发布、上下架、黑名单过滤)
+│   │       ├── match/ & recommend/ # 推荐匹配模块 (DeepFM精排 → 降级:协同过滤+意图分+流量池)
+│   │       ├── order/ & wallet/    # 订单与资金模块 (订单流转状态机、结算与流水)
+│   │       ├── llm/ & chat/        # 智能对话模块 (大模型 API 交互及实时聊天)
+│   │       └── ... (admin, ocr, map, parent, tutor, student)
+│   └── src/main/resources/         # 属性配置 (application.properties)、MyBatis XML (mapper)
+│
+├── campus-web-parents/               # [家长端] Web 前端 (Vue 3)
+│   └── src/ (views, router)            # 需求管理、订单支付、课时确认、IM 聊天
+│
+├── campus-web-teacher/               # [教师端] Web 前端 (Vue 3)
+│   └── src/ (views, router)            # LBS 接单、课时管理、AI 工具、钱包提现
+│
+├── campus-web-admin/               # [管理侧] Web 总控后台 (Vue 3)
+│   └── src/views/                  # 包含审核模块、数据大屏、配置下发等运营职能
+│
+├── campus-web-shared/              # [共享模块] 跨端复用代码
+│   ├── api/                        # 统一的 API 封装层 (request, order, demand, teaching 等)
+│   ├── utils/                      # 工具函数 (format, status, parse)
+│   └── styles/                     # 公共样式
+│
+└── campus-web/                     # [已废弃] 旧版单体前端，参见 DEPRECATED.md
+```
 
 同时，需求与教员的坐标会进入 Redis GEO 以支持附近检索。
 
@@ -95,8 +113,22 @@ cd campus-web-teacher && npm run dev
 cd campus-web-admin && npm run dev
 ```
 
-## 6. 当前文档状态说明
+---
 
-- 本文档描述的是当前仓库可见结构与能力，不再包含已移除的小程序目录说明。
-- `campus-web` 已标记弃用，请勿作为新功能开发入口。
-- 涉及推荐细节请配合 `docs/deepfm_architecture.md` 一并阅读。
+## 5. 开发规范总结
+
+通过扫描后端源码（如 `DemandController.java`, `GlobalExceptionHandler.java` 等），总结出本项目已实施的以下开发规约：
+
+1. **命名规约**
+   - **类名及分层**：严格遵循 `Controller` -> `Service` (接口与实现 `ServiceImpl`) -> `Mapper` -> `Entity` 的层级命名。
+   - **数据传输对象 (DTO)**：前后端交互的对象必须封装，请求入参一般命名为 `XxxRequest` (如 `DemandPostRequest`)，绝不直接对外暴露数据库 Entity 进行接收。
+2. **RESTful API 风格**
+   - 路径全小写并支持复数/资源概念定语（如 `/api/demand/publish`，`/api/demand/{id}/match`）。
+   - 严格区分 HTTP Method：`@GetMapping` (查询)，`@PostMapping` (新建/执行动作)，`@PutMapping` (更新)，`@DeleteMapping` (删除)。
+3. **统一异常处理与响应拆包机制**
+   - 包含基于 `@RestControllerAdvice` 注入的 `GlobalExceptionHandler`，它能拦截系统级异常或自定义 `BusinessException`。
+   - 所有的 API 响应强制约束为 `Result<T>` 泛型包装结构，包含 `code`, `msg`, `data`, `timestamp`四大字段。业务异常被捕获后优雅转化为带自定义 Code 和明文错误提示（不抛出 HTTP 500）。
+   - 参数校验强依赖 JSR-380 (`@Valid`)，违反校验规则同样能在全局被捕获为格式化文本返回。
+4. **部署与环境配置**
+   - 遵循 `application.properties` 统一管理，所有敏感值均通过 `${ENV_VAR:默认值}` 环境变量占位符注入，抽离了 DB、Redis、LLM AI-Key、地图 API Key 以及推荐系统的核心算法权重阈值。
+   - 项目根路径提供 `Dockerfile` 和 `docker-compose.yml`，符合容器化一键编排要求。
