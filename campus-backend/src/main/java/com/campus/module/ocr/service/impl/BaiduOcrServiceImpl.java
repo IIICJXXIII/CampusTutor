@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,8 +28,6 @@ import java.util.Map;
 @Service
 public class BaiduOcrServiceImpl implements OcrService {
 
-    private static final Logger log = LoggerFactory.getLogger(BaiduOcrServiceImpl.class);
-
     @Autowired
     private DoubaoVisionService doubaoVisionService;
 
@@ -40,6 +39,9 @@ public class BaiduOcrServiceImpl implements OcrService {
 
     @Value("${baidu.ocr.enabled:false}")
     private boolean enabled;
+    
+    @Value("${file.upload.path:./uploads}")
+    private String uploadPath;
 
     // Access Token 缓存
     private String accessToken;
@@ -54,8 +56,19 @@ public class BaiduOcrServiceImpl implements OcrService {
     public OcrResultDTO recognizeStudentCard(String imageUrl) {
         OcrResultDTO result = new OcrResultDTO();
 
+        // 检查imageUrl是否为空
+        if (StrUtil.isBlank(imageUrl)) {
+            result.setSuccess(false);
+            result.setErrorMsg("图片URL不能为空");
+            log.error("识别学生证失败: 图片URL为空");
+            return result;
+        }
+
         if (!enabled) {
-            return mockStudentCardResult();
+            result.setSuccess(false);
+            result.setErrorMsg("OCR服务未启用");
+            log.warn("OCR服务未启用，无法识别图片: {}", imageUrl);
+            return result;
         }
 
         try {
@@ -84,26 +97,65 @@ public class BaiduOcrServiceImpl implements OcrService {
     public OcrResultDTO recognizeIdCardFront(String imageUrl) {
         OcrResultDTO result = new OcrResultDTO();
 
+        // 检查imageUrl是否为空
+        if (StrUtil.isBlank(imageUrl)) {
+            result.setSuccess(false);
+            result.setErrorMsg("图片URL不能为空");
+            log.error("识别身份证正面失败: 图片URL为空");
+            return result;
+        }
+
+        log.info("开始识别身份证正面，图片URL: {}", imageUrl);
+
         if (!enabled) {
-            return mockIdCardFrontResult();
+            result.setSuccess(false);
+            result.setErrorMsg("OCR服务未启用");
+            log.warn("OCR服务未启用，无法识别身份证正面: {}", imageUrl);
+            return result;
         }
 
         try {
             String token = getAccessToken();
+            if (token == null) {
+                log.error("无法获取Access Token，OCR服务不可用");
+                result.setSuccess(false);
+                result.setErrorMsg("OCR服务不可用");
+                return result;
+            }
+            
+            // 使用Base64方式，避免百度OCR服务器无法访问本地URL
+            log.info("使用Base64方式处理身份证正面图片: {}", imageUrl);
+            String base64Image = downloadImageToBase64(imageUrl);
+            if (base64Image == null) {
+                log.error("下载图片失败: {}", imageUrl);
+                result.setSuccess(false);
+                result.setErrorMsg("图片下载失败");
+                return result;
+            }
+            
             String url = IDCARD_URL + "?access_token=" + token;
 
+            // 处理Base64数据
+            String base64Data = base64Image.trim();
+            if (base64Data.startsWith("\"")) base64Data = base64Data.substring(1);
+            if (base64Data.endsWith("\"")) base64Data = base64Data.substring(0, base64Data.length() - 1);
+            if (base64Data.contains(",")) base64Data = base64Data.substring(base64Data.indexOf(",") + 1);
+
             Map<String, Object> params = new HashMap<>();
-            params.put("url", imageUrl);
+            params.put("image", base64Data);
             params.put("id_card_side", "front");
 
             HttpResponse response = HttpRequest.post(url)
                     .form(params)
+                    .timeout(15000)
                     .execute();
 
             JSONObject json = JSONUtil.parseObj(response.body());
             if (json.containsKey("error_code")) {
+                String errorMsg = json.getStr("error_msg");
+                log.error("身份证正面OCR API错误: {}", errorMsg);
                 result.setSuccess(false);
-                result.setErrorMsg(json.getStr("error_msg"));
+                result.setErrorMsg("OCR识别失败: " + errorMsg);
                 return result;
             }
 
@@ -136,23 +188,53 @@ public class BaiduOcrServiceImpl implements OcrService {
     @Override
     public String recognizeGeneral(String imageUrl) {
         if (!enabled) {
-            return "模拟识别结果\n姓名：张三\n学校：北京大学";
+            log.error("OCR服务未启用");
+            return null;
         }
 
         try {
             String token = getAccessToken();
+            if (token == null) {
+                log.error("无法获取Access Token，OCR服务不可用");
+                return null;
+            }
+            
+            // 直接使用Base64方式，避免URL方式的参数问题
+            log.info("使用Base64方式处理图片: {}", imageUrl);
+            String base64Image = downloadImageToBase64(imageUrl);
+            if (base64Image != null) {
+                String text = recognizeGeneralByBase64(base64Image, token);
+                if (text != null) {
+                    return text;
+                }
+            }
+            
+            log.error("Base64方式OCR识别失败");
+            return null;
+            
+        } catch (Exception e) {
+            log.error("通用OCR识别请求失败", e);
+            return null;
+        }
+    }
+    
+    /**
+     * 通过URL方式识别通用文字
+     */
+    private String recognizeGeneralByUrl(String imageUrl, String token) {
+        try {
             String url = GENERAL_URL + "?access_token=" + token;
-
             Map<String, Object> params = new HashMap<>();
             params.put("url", imageUrl);
 
             HttpResponse response = HttpRequest.post(url)
+                    .timeout(15000)
                     .form(params)
                     .execute();
 
             JSONObject json = JSONUtil.parseObj(response.body());
             if (json.containsKey("error_code")) {
-                log.error("OCR API错误: {}", json.getStr("error_msg"));
+                log.error("OCR URL方式错误: {}", json.getStr("error_msg"));
                 return null;
             }
 
@@ -164,7 +246,77 @@ public class BaiduOcrServiceImpl implements OcrService {
 
             return sb.toString();
         } catch (Exception e) {
-            log.error("通用OCR识别请求失败", e);
+            log.error("URL方式OCR识别失败", e);
+            return null;
+        }
+    }
+    
+    /**
+     * 通过Base64方式识别通用文字
+     */
+    private String recognizeGeneralByBase64(String base64Image, String token) {
+        try {
+            String url = GENERAL_URL + "?access_token=" + token;
+            
+            // 处理Base64数据
+            String base64Data = base64Image.trim();
+            if (base64Data.startsWith("\"")) base64Data = base64Data.substring(1);
+            if (base64Data.endsWith("\"")) base64Data = base64Data.substring(0, base64Data.length() - 1);
+            if (base64Data.contains(",")) base64Data = base64Data.substring(base64Data.indexOf(",") + 1);
+
+            HttpResponse response = HttpRequest.post(url)
+                    .form("image", base64Data)
+                    .timeout(15000)
+                    .execute();
+
+            JSONObject json = JSONUtil.parseObj(response.body());
+            if (json.containsKey("error_code")) {
+                log.error("OCR Base64方式错误: {}", json.getStr("error_msg"));
+                return null;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            json.getJSONArray("words_result").forEach(item -> {
+                JSONObject obj = (JSONObject) item;
+                sb.append(obj.getStr("words")).append("\n");
+            });
+
+            return sb.toString();
+        } catch (Exception e) {
+            log.error("Base64方式OCR识别失败", e);
+            return null;
+        }
+    }
+    
+    /**
+     * 下载图片并转换为Base64
+     */
+    private String downloadImageToBase64(String imageUrl) {
+        try {
+            // 如果是本地URL，需要处理一下
+            if (imageUrl.contains("localhost") || imageUrl.contains("127.0.0.1")) {
+                // 本地文件，直接读取
+                String filePath = imageUrl.replace("http://localhost:8080/uploads", uploadPath);
+                File file = new File(filePath);
+                if (file.exists()) {
+                    byte[] fileBytes = java.nio.file.Files.readAllBytes(file.toPath());
+                    return java.util.Base64.getEncoder().encodeToString(fileBytes);
+                }
+            }
+            
+            // 远程URL，下载
+            HttpResponse response = HttpRequest.get(imageUrl)
+                    .timeout(10000)
+                    .execute();
+            
+            if (response.getStatus() == 200) {
+                byte[] imageBytes = response.bodyBytes();
+                return java.util.Base64.getEncoder().encodeToString(imageBytes);
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.error("下载图片失败: {}", imageUrl, e);
             return null;
         }
     }
@@ -174,7 +326,10 @@ public class BaiduOcrServiceImpl implements OcrService {
         OcrResultDTO result = new OcrResultDTO();
 
         if (!enabled) {
-            return mockStudentCardResult();
+            result.setSuccess(false);
+            result.setErrorMsg("OCR服务未启用");
+            log.warn("OCR服务未启用，无法识别学生证(Base64)");
+            return result;
         }
 
         try {
@@ -205,11 +360,17 @@ public class BaiduOcrServiceImpl implements OcrService {
      */
     private String recognizeGeneralByBase64(String imageBase64) {
         if (!enabled) {
-            return "模拟识别结果\n姓名：张三\n学校：北京大学";
+            log.error("OCR服务未启用");
+            return null;
         }
 
         try {
             String token = getAccessToken();
+            if (token == null) {
+                log.error("无法获取Access Token，OCR服务不可用");
+                return null;
+            }
+            
             String url = GENERAL_URL + "?access_token=" + token;
 
             String base64Data = imageBase64.trim();
@@ -218,10 +379,9 @@ public class BaiduOcrServiceImpl implements OcrService {
             if (base64Data.endsWith("\"")) base64Data = base64Data.substring(0, base64Data.length() - 1);
             if (base64Data.contains(",")) base64Data = base64Data.substring(base64Data.indexOf(",") + 1);
 
-            // 百度API要求 base64 必须进行 URLEncode (Hutool 的 form 方法通常会自动处理，但直接传 String 比较保险)
-            // 这里直接用 hutool 的 form 发送，key 为 image
             HttpResponse response = HttpRequest.post(url)
                     .form("image", base64Data)
+                    .timeout(15000)
                     .execute();
 
             String body = response.body();
@@ -248,23 +408,47 @@ public class BaiduOcrServiceImpl implements OcrService {
      * 获取百度 Access Token
      */
     private String getAccessToken() {
+        // 检查API Key和Secret Key是否配置
+        if (StrUtil.isBlank(apiKey) || StrUtil.isBlank(secretKey)) {
+            log.warn("百度OCR API Key或Secret Key未配置，使用模拟模式");
+            enabled = false;
+            return null;
+        }
+        
         if (accessToken != null && System.currentTimeMillis() < tokenExpireTime) {
             return accessToken;
         }
 
-        String url = TOKEN_URL + "?grant_type=client_credentials&client_id=" + apiKey + "&client_secret=" + secretKey;
+        try {
+            String url = TOKEN_URL + "?grant_type=client_credentials&client_id=" + apiKey + "&client_secret=" + secretKey;
 
-        HttpResponse response = HttpRequest.post(url).execute();
-        JSONObject json = JSONUtil.parseObj(response.body());
+            HttpResponse response = HttpRequest.post(url)
+                    .timeout(10000) // 10秒超时
+                    .execute();
+            
+            if (response.getStatus() != 200) {
+                log.error("获取Access Token失败，HTTP状态码: {}", response.getStatus());
+                throw new RuntimeException("获取Access Token失败: HTTP " + response.getStatus());
+            }
+            
+            JSONObject json = JSONUtil.parseObj(response.body());
 
-        if (json.containsKey("error")) {
-            throw new RuntimeException("获取Access Token失败: " + json.getStr("error_description"));
+            if (json.containsKey("error")) {
+                String errorMsg = json.getStr("error_description");
+                log.error("获取Access Token失败: {}", errorMsg);
+                throw new RuntimeException("获取Access Token失败: " + errorMsg);
+            }
+
+            accessToken = json.getStr("access_token");
+            int expiresIn = json.getInt("expires_in", 2592000); // 默认30天
+            tokenExpireTime = System.currentTimeMillis() + (expiresIn - 60) * 1000L;
+            log.info("获取Access Token成功，有效期: {}秒", expiresIn);
+            return accessToken;
+        } catch (Exception e) {
+            log.error("获取Access Token异常，降级到模拟模式", e);
+            enabled = false; // 禁用OCR服务，使用模拟数据
+            return null;
         }
-
-        accessToken = json.getStr("access_token");
-        int expiresIn = json.getInt("expires_in");
-        tokenExpireTime = System.currentTimeMillis() + (expiresIn - 60) * 1000L;
-        return accessToken;
     }
 
     private String getWordsValue(JSONObject wordsResult, String key) {

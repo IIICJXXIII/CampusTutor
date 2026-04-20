@@ -31,7 +31,8 @@ public class LocalFileServiceImpl implements FileService {
 
     /** 允许的文件类型 */
     private static final List<String> ALLOWED_TYPES = Arrays.asList(
-            "image/jpeg", "image/png", "image/gif", "image/webp",
+            "image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp",
+            "image/x-ms-bmp", "image/tiff", "image/svg+xml",
             "application/pdf"
     );
 
