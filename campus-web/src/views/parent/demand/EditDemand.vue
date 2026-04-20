@@ -28,7 +28,7 @@
             <el-option
               v-for="student in students"
               :key="student.id"
-              :label="`${student.name} (${student.grade})`"
+              :label="`${student.studentName || student.name} (${student.grade})`"
               :value="student.id"
             />
           </el-select>
@@ -212,21 +212,36 @@ const loadData = async () => {
     
     if (demandRes.code === 200 && demandRes.data) {
       const data = demandRes.data
-      // 后端字段名与前端表单字段名的映射
       form.id = data.id
       form.studentId = data.studentId
       form.title = data.title || ''
       form.subject = data.subject || ''
       form.grade = data.grade || ''
       form.salary = data.expectPrice || data.salary || 80
-      form.frequency = data.frequency || ''
-      form.duration = data.duration || 2
-      // teachMode: 1=上门, 2=网课, 3=均可 -> 前端字符串
-      const teachModeMap = { 1: '线下', 2: '线上', 3: '均可' }
-      form.teachingMode = teachModeMap[data.teachMode] || data.teachingMode || '线下'
+      
+      // 解包 scheduleRequire JSON
+      let schedule = {}
+      try {
+        if (data.scheduleRequire) {
+          schedule = JSON.parse(data.scheduleRequire)
+        }
+      } catch (e) {
+        console.warn('解析 scheduleRequire 失败:', e)
+      }
+      
+      form.frequency = schedule.frequency || ''
+      form.duration = schedule.duration || 2
+      form.genderRequirement = schedule.genderRequirement || '不限'
+      
+      // 记录一下原始的 JSON 数据，防止把可用时段(availableTime)等未编辑的字段弄丢
+      form._originalSchedule = schedule
+
+      // 统一授课方式的枚举值，将'均可'改为'都可以'以匹配单选框
+      const teachModeMap = { 1: '线下', 2: '线上', 3: '都可以' }
+      form.teachingMode = teachModeMap[data.teachMode] || '线下'
+      
       form.address = data.address || ''
       form.district = data.district || ''
-      form.genderRequirement = data.genderRequirement || '不限'
       form.requirements = data.detail || data.requirements || ''
     }
     
@@ -241,29 +256,31 @@ const loadData = async () => {
   }
 }
 
-const goBack = () => {
-  router.back()
-}
-
 const handleSubmit = async () => {
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
   
   submitting.value = true
   try {
-    // 将前端表单字段转换为后端期望的字段名
-    const teachModeMap = { '线下': 1, '线上': 2, '均可': 3 }
+    const teachModeMap = { '线下': 1, '线上': 2, '都可以': 3 }
     const submitData = {
       id: form.id,
       studentId: form.studentId,
       title: form.title,
       subject: form.subject,
       grade: form.grade,
-      expectPrice: form.salary,
+      expectPrice: form.salary, // 后端字段名
       teachMode: teachModeMap[form.teachingMode] || 1,
       address: form.address,
-      detail: form.requirements,
-      genderRequirement: form.genderRequirement
+      detail: form.requirements, // 后端字段名
+      
+      // 打包存回 JSON
+      scheduleRequire: {
+        ...(form._originalSchedule || {}),
+        frequency: form.frequency,
+        duration: form.duration,
+        genderRequirement: form.genderRequirement
+      }
     }
     
     const res = await updateDemand(submitData)
@@ -276,6 +293,10 @@ const handleSubmit = async () => {
   } finally {
     submitting.value = false
   }
+}
+
+const goBack = () => {
+  router.back()
 }
 
 onMounted(() => {

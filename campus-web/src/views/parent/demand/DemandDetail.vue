@@ -50,33 +50,32 @@
             {{ demand.grade }}
           </el-descriptions-item>
           <el-descriptions-item label="期望薪资">
-            <span class="salary">{{ demand.salary }}元/小时</span>
+            <span class="salary">{{ demand.expectPrice }}元/小时</span>
           </el-descriptions-item>
           <el-descriptions-item label="授课方式">
-            {{ demand.teachingMode }}
+            {{ demand.teachMode === 1 ? '线下上门' : (demand.teachMode === 2 ? '线上授课' : '均可') }}
           </el-descriptions-item>
           <el-descriptions-item label="上课频率">
-            {{ demand.frequency }}
+            {{ parsedSchedule.frequency || '面议' }}
           </el-descriptions-item>
           <el-descriptions-item label="每次时长">
-            {{ demand.duration }}小时
+            {{ parsedSchedule.duration || 2 }}小时
           </el-descriptions-item>
           <el-descriptions-item label="性别要求">
-            {{ demand.genderRequirement }}
+            {{ parsedSchedule.genderRequirement || '不限' }}
           </el-descriptions-item>
           <el-descriptions-item label="关联学生">
-            {{ demand.studentName || '未关联' }}
+            {{ getStudentName(demand.studentId) }}
           </el-descriptions-item>
           <el-descriptions-item v-if="demand.address" label="上课地址" :span="2">
-            {{ demand.district }} {{ demand.address }}
+            {{ demand.address }}
           </el-descriptions-item>
         </el-descriptions>
       </div>
       
-      <!-- 其他要求 -->
-      <div v-if="demand.requirements" class="info-card">
-        <h3 class="card-title">其他要求</h3>
-        <div class="requirements-text">{{ demand.requirements }}</div>
+      <div v-if="demand.detail" class="info-card">
+        <h3 class="card-title">对教师的其它要求</h3>
+        <div class="requirements-text">{{ demand.detail }}</div>
       </div>
       
       <!-- 申请列表 -->
@@ -120,12 +119,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, MoreFilled } from '@element-plus/icons-vue'
 import { getDemandDetail, publishDemand, withdrawDemand, deleteDemand } from '@shared/api/demand'
 import dayjs from 'dayjs'
+import { getStudentList } from '@shared/api/parent'
 
 const router = useRouter()
 const route = useRoute()
@@ -133,6 +133,32 @@ const route = useRoute()
 const loading = ref(false)
 const demand = ref(null)
 const applicants = ref([])
+const students = ref([])
+
+// 定义一个计算属性，自动解析后端的 JSON 字符串
+const parsedSchedule = computed(() => {
+  if (!demand.value?.scheduleRequire) return {}
+  try {
+    // 处理可能已经被后端 JSONUtil 处理过的转义字符
+    return JSON.parse(demand.value.scheduleRequire)
+  } catch (e) {
+    console.warn('解析 scheduleRequire 失败:', e)
+    return {}
+  }
+})
+
+// 加载学生列表用于翻译名字
+const loadStudents = async () => {
+  const res = await getStudentList()
+  if (res.code === 200) students.value = res.data || []
+}
+
+// 翻译函数
+const getStudentName = (id) => {
+  if (!id) return '未关联'
+  const s = students.value.find(item => item.id === id)
+  return s ? (s.studentName || s.name) : '未关联'
+}
 
 const getStatusType = (status) => {
   const types = { 0: 'info', 1: 'success', 2: 'warning', 3: '' }
@@ -146,6 +172,17 @@ const getStatusText = (status) => {
 
 const formatDate = (date) => {
   return dayjs(date).format('YYYY-MM-DD HH:mm')
+}
+
+// 解析后端返回的 scheduleRequire JSON 字符串
+const parseSchedule = (scheduleStr) => {
+  if (!scheduleStr) return {}
+  try {
+    const parsed = JSON.parse(scheduleStr)
+    return typeof parsed === 'object' ? parsed : {}
+  } catch (e) {
+    return {}
+  }
 }
 
 const loadDemand = async () => {
@@ -199,7 +236,7 @@ const handleCommand = async (command) => {
         const res = await deleteDemand(route.params.id)
         if (res.code === 200) {
           ElMessage.success('删除成功')
-          router.replace('/demands')
+          router.replace('/parent/demands')
         }
       } catch (e) { /* cancelled */ }
       break
@@ -222,6 +259,7 @@ const acceptApplicant = async (applicant) => {
 }
 
 onMounted(() => {
+  loadStudents()
   loadDemand()
 })
 </script>

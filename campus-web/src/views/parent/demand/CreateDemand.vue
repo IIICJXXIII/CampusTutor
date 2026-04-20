@@ -8,19 +8,39 @@
       <h1 class="page-title">发布需求</h1>
     </div>
     
-    <!-- 步骤条 -->
     <el-steps :active="currentStep" align-center class="step-bar">
       <el-step title="基本信息" />
       <el-step title="详细要求" />
       <el-step title="确认发布" />
     </el-steps>
     
-    <!-- 步骤1：基本信息 -->
+    <div v-show="currentStep === 0" class="form-container ai-assist-card">
+      <div class="ai-header">
+        <el-icon><MagicStick /></el-icon>
+        <span>AI 智能识别需求</span>
+      </div>
+      <div class="ai-desc">
+        懒得逐个填表？请直接用大白话描述需求，AI 将为您自动提取并填充表单！
+      </div>
+      <el-input
+        v-model="aiInputText"
+        type="textarea"
+        :rows="3"
+        placeholder="例如：我家孩子上小学四年级，想找个老师教少儿编程，最好周末能线下上门，预算大概150一小时。"
+        maxlength="200"
+        show-word-limit
+      />
+      <div class="ai-actions">
+        <el-button type="success" @click="aiParseDemand" :loading="aiParsing">
+          <el-icon><MagicStick style="margin-right: 4px;"/></el-icon> 智能解析并填充
+        </el-button>
+      </div>
+    </div>
+    
     <div v-show="currentStep === 0" class="form-container">
       <el-form ref="step1Ref" :model="form" :rules="rules1" label-width="100px">
         <div class="form-section">
           <h3 class="section-title">选择孩子</h3>
-          
           <el-form-item label="关联学生" prop="studentId">
             <el-select v-model="form.studentId" placeholder="请选择要辅导的孩子">
               <el-option
@@ -30,7 +50,7 @@
                 :value="student.id"
               />
             </el-select>
-            <el-button type="primary" link @click="addStudent">
+            <el-button type="primary" link @click="addStudent" style="margin-left: 12px;">
               <el-icon><Plus /></el-icon>
               添加孩子
             </el-button>
@@ -39,7 +59,6 @@
         
         <div class="form-section">
           <h3 class="section-title">辅导信息</h3>
-          
           <el-form-item label="需求标题" prop="title">
             <el-input v-model="form.title" placeholder="如：钢琴陪练一对一教学" maxlength="50" show-word-limit />
           </el-form-item>
@@ -95,12 +114,10 @@
       </el-form>
     </div>
     
-    <!-- 步骤2：详细要求 -->
     <div v-show="currentStep === 1" class="form-container">
       <el-form ref="step2Ref" :model="form" :rules="rules2" label-width="100px">
         <div class="form-section">
           <h3 class="section-title">上课时间</h3>
-          
           <el-form-item label="上课频率" prop="frequency">
             <el-select v-model="form.frequency" placeholder="请选择上课频率">
               <el-option label="每周1次" value="每周1次" />
@@ -133,7 +150,6 @@
         
         <div class="form-section">
           <h3 class="section-title">上课地点</h3>
-          
           <el-form-item label="授课方式" prop="teachingMode">
             <el-radio-group v-model="form.teachingMode">
               <el-radio value="线下">线下上门</el-radio>
@@ -153,7 +169,6 @@
         
         <div class="form-section">
           <h3 class="section-title">教师要求</h3>
-          
           <el-form-item label="性别要求">
             <el-radio-group v-model="form.genderRequirement">
               <el-radio value="不限">不限</el-radio>
@@ -173,51 +188,22 @@
             />
           </el-form-item>
         </div>
-        
-        <!-- AI 解析 -->
-        <div class="ai-assist">
-          <el-button type="success" plain @click="aiParseDemand" :loading="aiParsing">
-            <el-icon><MagicStick /></el-icon>
-            AI 智能填写
-          </el-button>
-          <span class="ai-tip">输入需求描述，AI 帮您智能填充表单</span>
-        </div>
       </el-form>
     </div>
     
-    <!-- 步骤3：确认发布 -->
     <div v-show="currentStep === 2" class="form-container">
       <div class="confirm-section">
         <h3 class="section-title">需求确认</h3>
-        
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="需求标题" :span="2">
-            {{ form.title }}
-          </el-descriptions-item>
-          <el-descriptions-item label="关联学生">
-            {{ getStudentName(form.studentId) }}
-          </el-descriptions-item>
-          <el-descriptions-item label="辅导科目">
-            {{ form.subject }}
-          </el-descriptions-item>
-          <el-descriptions-item label="学生年级">
-            {{ form.grade }}
-          </el-descriptions-item>
-          <el-descriptions-item label="期望薪资">
-            {{ form.salary }}元/小时
-          </el-descriptions-item>
-          <el-descriptions-item label="上课频率">
-            {{ form.frequency }}
-          </el-descriptions-item>
-          <el-descriptions-item label="每次时长">
-            {{ form.duration }}小时
-          </el-descriptions-item>
-          <el-descriptions-item label="授课方式">
-            {{ form.teachingMode }}
-          </el-descriptions-item>
-          <el-descriptions-item label="性别要求">
-            {{ form.genderRequirement }}
-          </el-descriptions-item>
+          <el-descriptions-item label="需求标题" :span="2">{{ form.title }}</el-descriptions-item>
+          <el-descriptions-item label="关联学生">{{ getStudentName(form.studentId) }}</el-descriptions-item>
+          <el-descriptions-item label="辅导科目">{{ form.subject }}</el-descriptions-item>
+          <el-descriptions-item label="学生年级">{{ form.grade }}</el-descriptions-item>
+          <el-descriptions-item label="期望薪资">{{ form.salary }}元/小时</el-descriptions-item>
+          <el-descriptions-item label="上课频率">{{ form.frequency }}</el-descriptions-item>
+          <el-descriptions-item label="每次时长">{{ form.duration }}小时</el-descriptions-item>
+          <el-descriptions-item label="授课方式">{{ form.teachingMode }}</el-descriptions-item>
+          <el-descriptions-item label="性别要求">{{ form.genderRequirement }}</el-descriptions-item>
           <el-descriptions-item v-if="form.address" label="上课地址" :span="2">
             {{ form.district }} {{ form.address }}
           </el-descriptions-item>
@@ -233,7 +219,6 @@
       </div>
     </div>
     
-    <!-- 底部按钮 -->
     <div class="form-actions">
       <el-button v-if="currentStep > 0" @click="prevStep">上一步</el-button>
       <el-button v-if="currentStep < 2" type="primary" @click="nextStep">下一步</el-button>
@@ -263,6 +248,9 @@ const submitting = ref(false)
 const aiParsing = ref(false)
 const publishImmediately = ref(true)
 const students = ref([])
+
+// 独立抽离：专供 AI 识别输入的内容
+const aiInputText = ref('')
 
 const form = reactive({
   studentId: null,
@@ -340,29 +328,64 @@ const nextStep = async () => {
   currentStep.value++
 }
 
+// ================= 重构的 AI 解析方法 =================
 const aiParseDemand = async () => {
-  const description = form.requirements
-  if (!description || description.length < 10) {
-    ElMessage.warning('请先在"其他要求"中输入需求描述')
+  const description = aiInputText.value // 刚才我们已经改为读取这个独立的 AI 输入框了
+  
+  if (!description || description.trim().length < 5) {
+    ElMessage.warning('请输入至少 5 个字的需求描述让 AI 进行分析')
     return
   }
   
   aiParsing.value = true
   try {
-    // 后端API参数为 text 字符串
+    // 调用后端接口
     const res = await parseDemand(description)
     if (res.code === 200 && res.data) {
       const parsed = res.data
+      
+      // 填充第一页：基本信息 (字段对齐)
       if (parsed.subject) form.subject = parsed.subject
       if (parsed.grade) form.grade = parsed.grade
-      if (parsed.salary) form.salary = parsed.salary
-      if (parsed.frequency) form.frequency = parsed.frequency
-      if (parsed.teachingMode) form.teachingMode = parsed.teachingMode
-      ElMessage.success('AI 解析完成，请检查填充的内容')
+      // 这里的后端字段是 expectPrice，前端是 salary
+      if (parsed.expectPrice) form.salary = Number(parsed.expectPrice)
+
+      
+      // 授课方式映射 (后端: 1=上门, 2=网课, 3=均可 -> 前端: "线下", "线上", "都可以")
+      if (parsed.teachMode) {
+        const modeMap = { 1: '线下', 2: '线上', 3: '都可以' }
+        form.teachingMode = modeMap[parsed.teachMode] || '线下'
+      }
+
+      // 性别要求映射 (后端: 1=男, 2=女, null=不限 -> 前端: "男", "女", "不限")
+      if (parsed.preferGender === 1) {
+        form.genderRequirement = '男'
+      } else if (parsed.preferGender === 2) {
+        form.genderRequirement = '女'
+      } else {
+        form.genderRequirement = '不限'
+      }
+
+      // 上课频率映射 (后端 scheduleRequire 为文本，尝试匹配前端下拉框选项)
+      if (parsed.scheduleRequire) {
+        const freqOptions = ["每周1次", "每周2次", "每周3次", "每周4-5次"]
+        const matched = freqOptions.find(opt => parsed.scheduleRequire.includes(opt.replace("每周", "")))
+        form.frequency = matched || '面议' // 如果匹配不到具体次数，默认设为“面议”
+      }
+
+      // 配合我们刚刚修改的后端 Prompt，只有当 AI 识别出除了性别以外的要求时，detail 才会有值
+      if (parsed.detail && parsed.detail.trim() !== '' && parsed.detail !== 'null') {
+        form.requirements = parsed.detail
+      } else {
+        // 如果 AI 判断没有额外要求，清空“其它要求”，避免误填
+        form.requirements = ''
+      }
+
+      ElMessage.success('AI 识别成功，已为您填充全量表单！')
     }
   } catch (error) {
     console.error('AI 解析失败:', error)
-    ElMessage.error('AI 解析失败，请手动填写')
+    ElMessage.error('AI 解析异常，请尝试手动选择')
   } finally {
     aiParsing.value = false
   }
@@ -371,34 +394,39 @@ const aiParseDemand = async () => {
 const handleSubmit = async () => {
   submitting.value = true
   try {
-    // 转换 teachingMode 为后端需要的 teachMode 整数
     const teachModeMap = { '线下': 1, '线上': 2, '都可以': 3 }
     
-    const res = await createDemand({
+    // 核心逻辑：将前端分散的表单项打包成后端需要的结构
+    const submitData = {
       studentId: form.studentId,
       title: form.title,
       subject: form.subject,
       grade: form.grade,
-      expectPrice: form.salary,                              // 后端字段名是 expectPrice
-      scheduleRequire: form.availableTime,                   // 后端字段名是 scheduleRequire (数组)
-      teachMode: teachModeMap[form.teachingMode] || 1,       // 后端字段名是 teachMode (Integer)
+      expectPrice: form.salary,  // 后端字段是 expectPrice
+      teachMode: teachModeMap[form.teachingMode] || 1,
       longitude: form.longitude,
       latitude: form.latitude,
       address: `${form.district || ''} ${form.address || ''}`.trim(),
-      detail: form.requirements                               // 后端字段名是 detail
-    })
+      detail: form.requirements, // 前端的“其他要求”对应后端的 detail 字段
+      // 将额外信息打包存入 scheduleRequire 字符串
+      scheduleRequire: {
+        frequency: form.frequency,
+        duration: form.duration,
+        genderRequirement: form.genderRequirement,
+        availableTime: form.availableTime
+      }
+    }
     
+    const res = await createDemand(submitData)
     if (res.code === 200) {
       const demandId = res.data?.id || res.data
-      
       if (publishImmediately.value && demandId) {
         await publishDemand(demandId)
         ElMessage.success('需求发布成功')
       } else {
         ElMessage.success('需求保存成功')
       }
-      
-      router.replace('/demands')
+      router.replace('/parent/demands')
     }
   } catch (error) {
     console.error('创建需求失败:', error)
@@ -417,6 +445,7 @@ onMounted(() => {
   padding: 20px;
   max-width: 800px;
   margin: 0 auto;
+  padding-bottom: 40px;
 }
 
 .page-header {
@@ -441,6 +470,36 @@ onMounted(() => {
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+/* ================= AI 专属样式 ================= */
+.ai-assist-card {
+  border: 1px solid #e1f3d8;
+  background: #f0f9eb;
+  padding: 20px 24px;
+  
+  .ai-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #67c23a;
+    margin-bottom: 8px;
+  }
+
+  .ai-desc {
+    font-size: 13px;
+    color: #606266;
+    margin-bottom: 16px;
+  }
+  
+  .ai-actions {
+    margin-top: 16px;
+    display: flex;
+    justify-content: flex-end;
+  }
 }
 
 .form-section {
@@ -458,20 +517,6 @@ onMounted(() => {
 .unit {
   margin-left: 8px;
   color: #666;
-}
-
-.ai-assist {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  background: #f0f9eb;
-  border-radius: 8px;
-  
-  .ai-tip {
-    font-size: 13px;
-    color: #67c23a;
-  }
 }
 
 .confirm-section {
