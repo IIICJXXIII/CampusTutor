@@ -47,7 +47,7 @@
         <div class="demand-info">
           <div class="info-item">
             <el-icon><User /></el-icon>
-            <span>{{ demand.studentName || '未关联学生' }}</span>
+            <span>{{ getStudentName(demand.studentId) }}</span>
           </div>
           <div class="info-item">
             <el-icon><Reading /></el-icon>
@@ -55,7 +55,7 @@
           </div>
           <div class="info-item">
             <el-icon><Money /></el-icon>
-            <span>{{ demand.salary }}元/小时</span>
+            <span>{{ demand.expectPrice }}元/小时</span>
           </div>
           <div class="info-item">
             <el-icon><Location /></el-icon>
@@ -73,25 +73,19 @@
         
         <div class="demand-actions" @click.stop>
           <template v-if="demand.status === 0">
-            <el-button size="small" type="primary" @click="publishDemand(demand)">
-              上架
-            </el-button>
-            <el-button size="small" @click="editDemand(demand.id)">
-              编辑
-            </el-button>
+            <el-button size="small" type="primary" @click="publishDemand(demand)">上架</el-button>
+            <el-button size="small" @click="editDemand(demand.id)">编辑</el-button>
+            <el-button size="small" type="danger" plain @click="deleteDemandRow(demand)">删除</el-button>
           </template>
+          
           <template v-else-if="demand.status === 1">
-            <el-button size="small" @click="viewApplicants(demand.id)">
-              查看申请
-            </el-button>
-            <el-button size="small" type="warning" @click="withdrawDemand(demand)">
-              下架
-            </el-button>
+            <el-button size="small" @click="viewApplicants(demand.id)">查看申请</el-button>
+            <el-button size="small" type="warning" @click="withdrawDemand(demand)">下架</el-button>
           </template>
+          
           <template v-else-if="demand.status === 2">
-            <el-button size="small" type="primary" @click="publishDemand(demand)">
-              重新上架
-            </el-button>
+            <el-button size="small" type="primary" @click="publishDemand(demand)">重新上架</el-button>
+            <el-button size="small" type="danger" plain @click="deleteDemandRow(demand)">删除</el-button>
           </template>
         </div>
       </div>
@@ -115,8 +109,9 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, User, Reading, Money, Location, UserFilled } from '@element-plus/icons-vue'
-import { getMyDemands, publishDemand as publishApi, withdrawDemand as withdrawApi } from '@shared/api/demand'
+import { getMyDemands, publishDemand as publishApi, withdrawDemand as withdrawApi, deleteDemand as deleteApi } from '@shared/api/demand'
 import { relativeFromNow } from '@shared/utils'
+import { getStudentList } from '@shared/api/parent'
 
 const router = useRouter()
 const loading = ref(false)
@@ -125,6 +120,24 @@ const statusFilter = ref('all')
 const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const students = ref([])
+
+const loadStudents = async () => {
+  try {
+    const res = await getStudentList()
+    if (res.code === 200) {
+      students.value = res.data || []
+    }
+  } catch (error) {
+    console.error('加载学生列表失败:', error)
+  }
+}
+
+const getStudentName = (id) => {
+  if (!id) return '未关联学生'
+  const student = students.value.find(s => s.id === id)
+  return student ? (student.studentName || student.name) : '未关联学生'
+}
 
 const getStatusType = (status) => {
   const types = { 0: 'info', 1: 'success', 2: 'warning', 3: '' }
@@ -212,7 +225,29 @@ const withdrawDemand = async (demand) => {
   }
 }
 
+// 删除需求的逻辑
+const deleteDemandRow = async (demand) => {
+  try {
+    await ElMessageBox.confirm('确定要彻底删除此需求吗？删除后无法恢复。', '删除确认', { 
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'warning' 
+    })
+    
+    const res = await deleteApi(demand.id)
+    if (res.code === 200) {
+      ElMessage.success('需求已删除')
+      loadDemands() // 重新刷新列表
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除失败:', error)
+    }
+  }
+}
+
 onMounted(() => {
+  loadStudents()
   loadDemands()
 })
 </script>

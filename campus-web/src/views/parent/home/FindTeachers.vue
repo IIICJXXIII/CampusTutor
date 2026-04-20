@@ -311,11 +311,19 @@ const initMap = async () => {
     return
   }
   const amapKey = import.meta.env.VITE_AMAP_KEY
+  const securityCode = import.meta.env.VITE_AMAP_SECURITY_CODE // 👈 新增：读取安全密钥
+
   if (!amapKey || amapKey === 'YOUR_AMAP_KEY') {
     ElMessage.warning('地图功能需要配置高德地图 Key，请在 .env 文件中设置 VITE_AMAP_KEY')
     viewMode.value = 'list'
     return
   }
+
+  // 🚨 核心修复：在真正加载高德 SDK 之前，必须在全局注入安全密钥！
+  window._AMapSecurityConfig = {
+    securityJsCode: securityCode,
+  }
+
   try {
     const AMapLoader = (await import('@amap/amap-jsapi-loader')).default
     AMap = await AMapLoader.load({

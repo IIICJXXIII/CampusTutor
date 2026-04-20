@@ -172,6 +172,11 @@ const getSubjectType = (subject) => {
 
 const initMap = async () => {
   try {
+    // 🚨 核心修复：在加载地图前，全局注入安全密钥
+    window._AMapSecurityConfig = {
+      securityJsCode: import.meta.env.VITE_AMAP_SECURITY_CODE,
+    }
+
     const AMap = await AMapLoader.load({
       key: import.meta.env.VITE_AMAP_KEY || 'YOUR_AMAP_KEY',
       version: '2.0',
