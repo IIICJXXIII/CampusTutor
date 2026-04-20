@@ -68,7 +68,38 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public List<ChatSessionVO> getSessionList(Long userId) {
-        return chatMessageMapper.findSessionsByUserId(userId);
+        List<ChatSessionVO> sessions = chatMessageMapper.findSessionsByUserId(userId);
+
+        // 🚨 核心修复：遍历会话列表，获取最新一条消息的具体类型进行文案兜底
+        for (ChatSessionVO session : sessions) {
+            LambdaQueryWrapper<ChatMessage> wrapper = new LambdaQueryWrapper<>();
+            wrapper.and(w -> w
+                    .and(inner -> inner.eq(ChatMessage::getSenderId, userId).eq(ChatMessage::getReceiverId,
+                            session.getTargetUserId()))
+                    .or(inner -> inner.eq(ChatMessage::getSenderId, session.getTargetUserId())
+                            .eq(ChatMessage::getReceiverId, userId)));
+            wrapper.orderByDesc(ChatMessage::getCreateTime);
+
+            // 仅查询最新的一条消息
+            Page<ChatMessage> pageResult = chatMessageMapper.selectPage(new Page<>(1, 1), wrapper);
+            if (pageResult.getRecords() != null && !pageResult.getRecords().isEmpty()) {
+                ChatMessage lastMsg = pageResult.getRecords().get(0);
+
+                // 根据实体类中定义的 msgType 进行翻译映射
+                if (lastMsg.getMsgType() == 2) {
+                    session.setLastMessage("[图片]");
+                } else if (lastMsg.getMsgType() == 3) {
+                    session.setLastMessage("[简历卡片]");
+                } else if (lastMsg.getMsgType() == 4) {
+                    session.setLastMessage("[订单邀约]");
+                } else {
+                    // 如果是普通文本（1），正常显示文本内容
+                    session.setLastMessage(lastMsg.getContent());
+                }
+            }
+        }
+
+        return sessions;
     }
 
     @Override
@@ -117,13 +148,14 @@ public class ChatServiceImpl implements ChatService {
         } else if ("file".equals(type)) {
             msgType = 3;
         }
-        
+
         ChatMessage message = sendMessage(senderId, receiverId, content, msgType);
         return message != null ? message.getId() : null;
     }
 
     @Override
-    public List<ChatMessageVO> getMessagesByConversationId(Long conversationId, Long userId, Integer page, Integer size) {
+    public List<ChatMessageVO> getMessagesByConversationId(Long conversationId, Long userId, Integer page,
+            Integer size) {
         // 简单实现：conversationId 可以是对方用户ID
         // 实际生产中应该有会话表来管理
         return getChatHistory(userId, conversationId, page, size);

@@ -17,7 +17,6 @@
     </div>
     
     <template v-else-if="student">
-      <!-- 基本信息 -->
       <div class="info-card">
         <div class="card-header">
           <el-avatar :size="72" :src="student.avatar">
@@ -34,14 +33,11 @@
           </div>
         </div>
         
-        <el-descriptions :column="2" border>
+        <el-descriptions :column="1" border>
           <el-descriptions-item label="就读学校">
             {{ student.school || '未填写' }}
           </el-descriptions-item>
-          <el-descriptions-item label="出生年月">
-            {{ student.birthday || '未填写' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="需辅导科目" :span="2">
+          <el-descriptions-item label="需辅导科目">
             <template v-if="student.subjects?.length">
               <el-tag 
                 v-for="subject in student.subjects" 
@@ -56,7 +52,6 @@
         </el-descriptions>
       </div>
       
-      <!-- 学习情况 -->
       <div class="info-card">
         <h3 class="card-title">学习情况</h3>
         <div class="description-text">
@@ -64,15 +59,6 @@
         </div>
       </div>
       
-      <!-- 性格特点 -->
-      <div class="info-card">
-        <h3 class="card-title">性格特点</h3>
-        <div class="description-text">
-          {{ student.character || '暂无描述' }}
-        </div>
-      </div>
-      
-      <!-- 相关需求 -->
       <div class="info-card">
         <div class="card-title-row">
           <h3 class="card-title">相关需求</h3>
@@ -97,7 +83,9 @@
               <div class="demand-title">{{ demand.title }}</div>
               <div class="demand-meta">
                 <span>{{ demand.subject }}</span>
-                <span>{{ demand.status === 1 ? '已上架' : '未上架' }}</span>
+                <el-tag size="small" :type="demand.status === 1 ? 'success' : 'info'">
+                  {{ demand.status === 1 ? '已上架' : (demand.status === 0 ? '草稿' : '已下架') }}
+                </el-tag>
               </div>
             </div>
             <el-icon><ArrowRight /></el-icon>
@@ -105,7 +93,6 @@
         </div>
       </div>
       
-      <!-- 删除按钮 -->
       <div class="danger-zone">
         <el-button type="danger" plain @click="handleDelete">
           <el-icon><Delete /></el-icon>
@@ -122,6 +109,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, ArrowRight, Edit, Delete } from '@element-plus/icons-vue'
 import { getStudentDetail, deleteStudent } from '@shared/api/parent'
+import { getMyDemands } from '@shared/api/demand' 
 
 const router = useRouter()
 const route = useRoute()
@@ -130,192 +118,80 @@ const loading = ref(false)
 const student = ref(null)
 const demands = ref([])
 
-const loadStudent = async () => {
+const loadData = async () => {
   loading.value = true
   try {
-    const res = await getStudentDetail(route.params.id)
-    if (res.code === 200) {
-      student.value = res.data
-      demands.value = res.data?.demands || []
+    const [studentRes, demandsRes] = await Promise.all([
+      getStudentDetail(route.params.id),
+      getMyDemands({ page: 1, size: 100 }) 
+    ])
+    
+    if (studentRes.code === 200 && studentRes.data) {
+      const data = studentRes.data
+      
+      let parsedSubjects = []
+      if (Array.isArray(data.weakSubjects)) {
+        parsedSubjects = data.weakSubjects
+      } else if (typeof data.weakSubjects === 'string') {
+        try { parsedSubjects = JSON.parse(data.weakSubjects) } catch (e) {}
+      }
+      
+      student.value = {
+        ...data,
+        school: data.schoolName || data.school,
+        subjects: parsedSubjects.length ? parsedSubjects : (data.subjects || []),
+        description: data.studyDesc || data.description
+      }
+    }
+    
+    if (demandsRes.code === 200) {
+      const allDemands = demandsRes.data?.records ?? demandsRes.data ?? []
+      demands.value = allDemands.filter(d => String(d.studentId) === String(route.params.id))
     }
   } catch (error) {
-    console.error('加载学生信息失败:', error)
+    console.error('加载详情失败:', error)
     ElMessage.error('加载信息失败')
   } finally {
     loading.value = false
   }
 }
 
-const goBack = () => {
-  router.back()
-}
-
-const editStudent = () => {
-  router.push(`/parent/students/${route.params.id}/edit`)
-}
-
-const createDemand = () => {
-  router.push({
-    path: '/parent/demands/create',
-    query: { studentId: route.params.id }
-  })
-}
-
-const viewDemand = (id) => {
-  router.push(`/parent/demands/${id}`)
-}
+const goBack = () => router.back()
+const editStudent = () => router.push(`/parent/students/${route.params.id}/edit`)
+const createDemand = () => router.push({ path: '/parent/demands/create', query: { studentId: route.params.id } })
+const viewDemand = (id) => router.push(`/parent/demands/${id}`)
 
 const handleDelete = async () => {
   try {
-    await ElMessageBox.confirm(
-      `确定要删除"${student.value.studentName || student.value.name}"的信息吗？删除后相关需求将无法关联此孩子。`,
-      '删除确认',
-      { type: 'warning' }
-    )
+    await ElMessageBox.confirm(`确定要删除"${student.value.studentName || student.value.name}"的信息吗？`, '删除确认', { type: 'warning' })
     const res = await deleteStudent(route.params.id)
     if (res.code === 200) {
       ElMessage.success('删除成功')
-      router.replace('/students')
+      router.replace('/parent/students')
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除失败:', error)
-    }
-  }
+  } catch (error) { /* cancelled */ }
 }
 
-onMounted(() => {
-  loadStudent()
-})
+onMounted(() => loadData())
 </script>
 
 <style lang="scss" scoped>
-.student-detail-page {
-  padding: 20px;
-  max-width: 800px;
-  margin: 0 auto;
+.student-detail-page { padding: 20px; max-width: 800px; margin: 0 auto; }
+.page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; .page-title { flex: 1; font-size: 20px; font-weight: 600; margin: 0; } }
+.loading-container { padding: 40px; background: #fff; border-radius: 12px; }
+.info-card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  .card-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; .header-info { h2 { font-size: 20px; margin: 0 0 8px; } .tags { display: flex; gap: 8px; } } }
+  .card-title { font-size: 16px; font-weight: 600; margin: 0 0 16px; }
+  .card-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; .card-title { margin: 0; } }
 }
-
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-  
-  .page-title {
-    flex: 1;
-    font-size: 20px;
-    font-weight: 600;
-    margin: 0;
-  }
+.subject-tag { margin-right: 8px; margin-bottom: 4px; }
+.description-text { color: #666; line-height: 1.8; white-space: pre-wrap; }
+.empty-demands { padding: 20px 0; }
+.demand-list { display: flex; flex-direction: column; gap: 12px; }
+.demand-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #f5f7fa; border-radius: 8px; cursor: pointer; transition: background 0.3s;
+  &:hover { background: #e8f0fe; }
+  .demand-title { font-weight: 500; margin-bottom: 4px; }
+  .demand-meta { font-size: 12px; color: #666; display: flex; align-items: center; gap: 12px; }
 }
-
-.loading-container {
-  padding: 40px;
-  background: #fff;
-  border-radius: 12px;
-}
-
-.info-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-  
-  .card-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 20px;
-    
-    .header-info {
-      h2 {
-        font-size: 20px;
-        margin: 0 0 8px;
-      }
-      
-      .tags {
-        display: flex;
-        gap: 8px;
-      }
-    }
-  }
-  
-  .card-title {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0 0 16px;
-  }
-  
-  .card-title-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    
-    .card-title {
-      margin: 0;
-    }
-  }
-}
-
-.subject-tag {
-  margin-right: 8px;
-  margin-bottom: 4px;
-}
-
-.empty-text {
-  color: #999;
-}
-
-.description-text {
-  color: #666;
-  line-height: 1.8;
-  white-space: pre-wrap;
-}
-
-.empty-demands {
-  padding: 20px 0;
-}
-
-.demand-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.demand-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: #f5f7fa;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.3s;
-  
-  &:hover {
-    background: #e8f0fe;
-  }
-  
-  .demand-title {
-    font-weight: 500;
-    margin-bottom: 4px;
-  }
-  
-  .demand-meta {
-    font-size: 12px;
-    color: #666;
-    
-    span {
-      margin-right: 12px;
-    }
-  }
-}
-
-.danger-zone {
-  margin-top: 32px;
-  text-align: center;
-}
+.danger-zone { margin-top: 32px; text-align: center; }
 </style>
