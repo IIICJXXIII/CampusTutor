@@ -37,11 +37,13 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         if (userId != null) {
             sessionManager.addSession(userId, session);
 
-            // 发送连接成功消息
-            sendMessage(session, Map.of(
-                    "type", "connected",
-                    "message", "连接成功",
-                    "userId", userId));
+            // 🚨 修复：在发送初始化消息前，确认 session 没有被极速并发的新连接关掉
+            if (session.isOpen()) {
+                sendMessage(session, Map.of(
+                        "type", "connected",
+                        "message", "连接成功",
+                        "userId", userId));
+            }
         } else {
             log.warn("无法获取用户ID，关闭连接");
             session.close(CloseStatus.NOT_ACCEPTABLE);
@@ -49,87 +51,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     }
 
     /**
-     * 处理接收到的文本消息
+     * 收到客户端消息后调用
      */
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        Long senderId = getUserIdFromSession(session);
-        if (senderId == null) {
-            log.warn("无法识别发送者，忽略消息");
-            return;
-        }
-
-        try {
-            // 解析消息
-            ChatMessageDTO dto = objectMapper.readValue(message.getPayload(), ChatMessageDTO.class);
-
-            if ("send".equals(dto.getType())) {
-                // 发送消息
-                handleSendMessage(senderId, dto);
-            } else if ("read".equals(dto.getType())) {
-                // 标记已读
-                handleReadMessage(senderId, dto.getReceiverId());
-            } else if ("ping".equals(dto.getType())) {
-                // 心跳响应
-                sendMessage(session, Map.of("type", "pong"));
-            }
-        } catch (Exception e) {
-            log.error("处理消息失败: {}", e.getMessage(), e);
-            sendMessage(session, Map.of(
-                    "type", "error",
-                    "message", "消息处理失败: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * 处理发送消息
-     */
-    private void handleSendMessage(Long senderId, ChatMessageDTO dto) {
-        // 保存消息到数据库
-        ChatMessage savedMessage = chatService.sendMessage(
-                senderId,
-                dto.getReceiverId(),
-                dto.getContent(),
-                dto.getMsgType());
-
-        // 转换为 VO
-        ChatMessageVO messageVO = chatService.convertToVO(savedMessage);
-
-        // 构建推送消息
-        Map<String, Object> pushMessage = new HashMap<>();
-        pushMessage.put("type", "message");
-        pushMessage.put("data", messageVO);
-
-        // 推送给接收者（如果在线）
-        WebSocketSession receiverSession = sessionManager.getSession(dto.getReceiverId());
-        if (receiverSession != null && receiverSession.isOpen()) {
-            sendMessage(receiverSession, pushMessage);
-            log.info("消息已推送给用户 {}", dto.getReceiverId());
-        } else {
-            log.info("用户 {} 不在线，消息已保存", dto.getReceiverId());
-        }
-
-        // 也推送给发送者（确认消息已发送）
-        WebSocketSession senderSession = sessionManager.getSession(senderId);
-        if (senderSession != null && senderSession.isOpen()) {
-            pushMessage.put("type", "sent");
-            sendMessage(senderSession, pushMessage);
-        }
-    }
-
-    /**
-     * 处理标记已读
-     */
-    private void handleReadMessage(Long receiverId, Long senderId) {
-        chatService.markAsRead(senderId, receiverId);
-
-        // 通知对方消息已读
-        WebSocketSession senderSession = sessionManager.getSession(senderId);
-        if (senderSession != null && senderSession.isOpen()) {
-            sendMessage(senderSession, Map.of(
-                    "type", "read",
-                    "readBy", receiverId));
-        }
+        // 心跳处理等其他逻辑可以放这里
+        log.debug("收到消息: {}", message.getPayload());
     }
 
     /**
@@ -182,10 +109,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
      */
     private void sendMessage(WebSocketSession session, Object message) {
         try {
-            if (session.isOpen()) {
+            // 🚨 修复：严格判断状态，防止向已被 ChatSessionManager 关闭的会话发消息
+            if (session != null && session.isOpen()) {
                 String json = objectMapper.writeValueAsString(message);
                 session.sendMessage(new TextMessage(json));
             }
+        } catch (IllegalStateException e) {
+            // 🚨 修复：捕获并发挤占时的状态异常，转为静默警告而不是刷屏报错
+            log.warn("会话已被新连接挤占关闭，丢弃待发送消息: {}", e.getMessage());
         } catch (IOException e) {
             log.error("发送消息失败: {}", e.getMessage());
         }
