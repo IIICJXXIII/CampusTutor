@@ -33,14 +33,17 @@ public class DemandParseService {
     /**
      * 系统提示词 - 定义LLM如何解析需求
      */
+    /**
+     * 系统提示词 - 定义LLM如何解析需求
+     */
     private static final String SYSTEM_PROMPT = """
             你是一个家教需求解析助手。你的任务是从用户的自然语言描述中提取结构化的家教需求信息。
             
             请从用户输入中提取以下信息，并以JSON格式返回：
             
             {
-              "subject": "科目名称，如：数学、语文、英语、物理、化学、生物等",
-              "grade": "年级，如：小学一年级、初一、初二、高一、高二、高三等",
+              "subject": "辅导科目。必须且只能从以下列表中选择一项：['钢琴/乐器陪练', '美术/书法', '声乐/视唱练耳', '中考体育专项', '羽毛球/网球陪练', '篮球/足球指导', '少儿编程(Scratch/Python)', '机器人/3D打印', '科学实验/航模']。如果用户的描述不完全匹配，请推理并归类到最接近的一项",
+              "grade": "年级，如：小学一年级、初一、高二等",
               "expectPrice": 数字，期望时薪（元/小时），如果用户说'左右'则取中间值,
               "teachMode": 数字，1表示上门、2表示网课、3表示均可,
               "preferGender": 数字，1表示男教员、2表示女教员、null表示不限,
@@ -51,12 +54,12 @@ public class DemandParseService {
               "confidence": 0.0-1.0之间的数字，表示解析的置信度
             }
             
-            注意事项：
-            1. 如果某项信息用户没有提及，则设为null
-            2. 学历映射：本科在读=1，本科毕业=2，硕士在读=3，硕士毕业=4，博士=5
-            3. 如果用户提到"985/211"或"重点大学"，可以在detail中补充说明
-            4. 价格如果是范围，取中间值；如果说"左右"，直接取那个数值
-            5. 只返回JSON，不要有其他文字
+            🚨 注意事项（严格遵守）：
+            1. 如果某项信息用户没有提及，则设为 null。
+            2. 学历映射：本科在读=1，本科毕业=2，硕士在读=3，硕士毕业=4，博士=5。
+            3. 价格如果是范围，取中间值；如果说"左右"，直接取那个数值。
+            4. 【关于 detail 字段的特殊指令】：请将原文中对教师的额外要求（如：性格、学历背景、特定经验等）填入 detail。但是，'性别要求'（男/女）已经独立提取到了 preferGender 中，千万不要将性别要求写入 detail 字段！如果用户除了性别之外，没有提出任何其他对教师的额外要求，请严格将 detail 字段输出为 null 或空字符串，绝不要编造或重复已有信息！
+            5. 只返回JSON，不要有其他文字。
             """;
 
     /**
@@ -134,13 +137,24 @@ public class DemandParseService {
         result.setConfidence(0.6);
 
         // 科目解析
-        String[] subjects = {"语文", "数学", "英语", "物理", "化学", "生物", "历史", "地理", "政治", 
-                "编程", "Python", "Java", "钢琴", "吉他", "美术", "书法"};
-        for (String subject : subjects) {
-            if (text.contains(subject)) {
-                result.setSubject(subject);
-                break;
-            }
+        if (text.contains("钢琴") || text.contains("乐器") || text.contains("吉他") || text.contains("小提琴")) {
+            result.setSubject("钢琴/乐器陪练");
+        } else if (text.contains("美术") || text.contains("画画") || text.contains("画") || text.contains("书法")) {
+            result.setSubject("美术/书法");
+        } else if (text.contains("唱歌") || text.contains("声乐") || text.contains("视唱")) {
+            result.setSubject("声乐/视唱练耳");
+        } else if (text.contains("体育") || text.contains("中考") || text.contains("跑步") || text.contains("跳绳")) {
+            result.setSubject("中考体育专项");
+        } else if (text.contains("羽毛") || text.contains("网球")) {
+            result.setSubject("羽毛球/网球陪练");
+        } else if (text.contains("篮球") || text.contains("足球")) {
+            result.setSubject("篮球/足球指导");
+        } else if (text.contains("编程") || text.contains("Python") || text.contains("Scratch") || text.contains("代码")) {
+            result.setSubject("少儿编程(Scratch/Python)");
+        } else if (text.contains("机器") || text.contains("3D打印") || text.contains("乐高")) {
+            result.setSubject("机器人/3D打印");
+        } else if (text.contains("科学") || text.contains("实验") || text.contains("航模")) {
+            result.setSubject("科学实验/航模");
         }
 
         // 年级解析

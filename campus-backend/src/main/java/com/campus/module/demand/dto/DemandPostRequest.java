@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * 发布需求请求
@@ -51,7 +52,8 @@ public class DemandPostRequest {
     /**
      * 课时要求
      */
-    private List<String> scheduleRequire;
+    @Schema(description = "时间与各种杂项要求")
+    private Object scheduleRequire;
 
     @NotNull(message = "授课方式不能为空")
     private Integer teachMode;
