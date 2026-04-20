@@ -70,7 +70,7 @@ public class DemandController {
     @PostMapping("/{id}/offline")
     public Result<Void> offline(@PathVariable Long id) {
         Long publisherId = UserContext.getUserId();
-        demandPostService.changeStatus(publisherId, id, 0);
+        demandPostService.changeStatus(publisherId, id, 2); 
         return Result.success();
     }
 
