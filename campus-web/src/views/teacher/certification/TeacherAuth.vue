@@ -45,7 +45,7 @@
             :show-file-list="false"
             :before-upload="beforeUpload"
             :on-success="handleStudentCardUpload"
-            accept="image/*"
+            accept="image/*,.pdf"
           >
             <div v-if="!form.studentCardUrl" class="upload-placeholder">
               <el-icon :size="48"><Plus /></el-icon>
@@ -88,7 +88,7 @@
                 :show-file-list="false"
                 :before-upload="beforeUpload"
                 :on-success="handleIdCardFrontUpload"
-                accept="image/*"
+                accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.tif"
               >
                 <div v-if="!form.idCardFrontUrl" class="upload-placeholder">
                   <el-icon :size="32"><Plus /></el-icon>
@@ -108,7 +108,7 @@
                 :show-file-list="false"
                 :before-upload="beforeUpload"
                 :on-success="handleIdCardBackUpload"
-                accept="image/*"
+                accept="image/*,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.tif"
               >
                 <div v-if="!form.idCardBackUrl" class="upload-placeholder">
                   <el-icon :size="32"><Plus /></el-icon>
@@ -271,27 +271,67 @@ const maskIdCard = (id) => {
 }
 
 const beforeUpload = (file) => {
-  const isImage = file.type.startsWith('image/')
-  const isLt5M = file.size / 1024 / 1024 < 5
+  // 允许的图片 MIME 类型
+  const allowedImageTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/bmp',
+    'image/x-ms-bmp',
+    'image/tiff',
+    'image/svg+xml'
+  ];
+  // 允许的扩展名（备用检查）
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif', '.svg', '.pdf'];
   
-  if (!isImage) {
-    ElMessage.error('只能上传图片文件')
-    return false
+  const isImage = file.type.startsWith('image/');
+  const isAllowedType = allowedImageTypes.includes(file.type) || file.type === 'application/pdf';
+  const fileName = file.name.toLowerCase();
+  const hasAllowedExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+  const isLt10M = file.size / 1024 / 1024 < 10;
+  
+  if (!isAllowedType && !hasAllowedExtension) {
+    ElMessage.error(`不支持的文件格式。请上传以下格式：${allowedExtensions.join(', ')}`);
+    return false;
   }
-  if (!isLt5M) {
-    ElMessage.error('图片大小不能超过5MB')
-    return false
+  if (!isLt10M) {
+    ElMessage.error('文件大小不能超过10MB');
+    return false;
   }
-  return true
+  return true;
 }
 
 const handleStudentCardUpload = async (response) => {
+  console.log('学生证上传响应:', response)
+  console.log('学生证上传响应类型:', typeof response)
+  console.log('学生证上传响应数据结构:', JSON.stringify(response))
+  
   if (response.code === 200) {
-    form.studentCardUrl = response.data.url
+    // 检查响应数据结构
+    let imageUrl = null
+    if (response.data && typeof response.data === 'string') {
+      // data直接就是URL字符串
+      imageUrl = response.data
+      form.studentCardUrl = response.data
+    } else if (response.data && response.data.url) {
+      // data是对象，包含url字段
+      imageUrl = response.data.url
+      form.studentCardUrl = response.data.url
+    } else if (response.url) {
+      // response直接包含url字段
+      imageUrl = response.url
+      form.studentCardUrl = response.url
+    } else {
+      console.error('无法从上传响应中提取URL:', response)
+      return
+    }
+    
+    console.log('提取的图片URL:', imageUrl)
     
     // OCR识别
     try {
-      const res = await recognizeStudentCard(response.data.url)
+      const res = await recognizeStudentCard(imageUrl)
       if (res.code === 200 && res.data) {
         Object.assign(studentCardInfo, res.data)
         form.realName = res.data.name || form.realName
@@ -305,11 +345,33 @@ const handleStudentCardUpload = async (response) => {
 }
 
 const handleIdCardFrontUpload = async (response) => {
+  console.log('身份证正面上传响应:', response)
+  console.log('身份证正面上传响应数据结构:', JSON.stringify(response))
+  
   if (response.code === 200) {
-    form.idCardFrontUrl = response.data.url
+    // 检查响应数据结构
+    let imageUrl = null
+    if (response.data && typeof response.data === 'string') {
+      // data直接就是URL字符串
+      imageUrl = response.data
+      form.idCardFrontUrl = response.data
+    } else if (response.data && response.data.url) {
+      // data是对象，包含url字段
+      imageUrl = response.data.url
+      form.idCardFrontUrl = response.data.url
+    } else if (response.url) {
+      // response直接包含url字段
+      imageUrl = response.url
+      form.idCardFrontUrl = response.url
+    } else {
+      console.error('无法从上传响应中提取URL:', response)
+      return
+    }
+    
+    console.log('身份证正面提取的图片URL:', imageUrl)
     
     try {
-      const res = await recognizeIdCardFront(response.data.url)
+      const res = await recognizeIdCardFront(imageUrl)
       if (res.code === 200 && res.data) {
         Object.assign(idCardInfo, res.data)
         form.realName = res.data.name || form.realName
@@ -323,11 +385,33 @@ const handleIdCardFrontUpload = async (response) => {
 }
 
 const handleIdCardBackUpload = async (response) => {
+  console.log('身份证背面上传响应:', response)
+  console.log('身份证背面上传响应数据结构:', JSON.stringify(response))
+  
   if (response.code === 200) {
-    form.idCardBackUrl = response.data.url
+    // 检查响应数据结构
+    let imageUrl = null
+    if (response.data && typeof response.data === 'string') {
+      // data直接就是URL字符串
+      imageUrl = response.data
+      form.idCardBackUrl = response.data
+    } else if (response.data && response.data.url) {
+      // data是对象，包含url字段
+      imageUrl = response.data.url
+      form.idCardBackUrl = response.data.url
+    } else if (response.url) {
+      // response直接包含url字段
+      imageUrl = response.url
+      form.idCardBackUrl = response.url
+    } else {
+      console.error('无法从上传响应中提取URL:', response)
+      return
+    }
+    
+    console.log('身份证背面提取的图片URL:', imageUrl)
     
     try {
-      const res = await recognizeIdCardBack(response.data.url)
+      const res = await recognizeIdCardBack(imageUrl)
       if (res.code === 200 && res.data) {
         idCardInfo.validDate = res.data.validDate
       }
