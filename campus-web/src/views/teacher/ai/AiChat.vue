@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="ai-chat">
     <!-- 头部 -->
     <div class="chat-header">
@@ -17,7 +17,7 @@
         <div class="welcome-card">
           <el-avatar :size="64" class="ai-avatar-large">AI</el-avatar>
           <h2>你好，我是 AI 助手</h2>
-          <p>我可以帮你解答教学问题、提供教案建议、分析学生学情等</p>
+          <p>我可以帮你解答素质教育教学问题、提供教案建议、分析学生学情等</p>
         </div>
         
         <div class="quick-questions">
@@ -99,10 +99,10 @@ const messages = ref([])
 const loading = ref(false)
 
 const quickQuestions = [
-  '如何提高学生的学习兴趣？',
-  '数学应用题解题技巧有哪些？',
-  '如何制定一份高效的教案？',
-  '怎样与家长有效沟通？'
+  '如何让学生对乐器练习保持兴趣？',
+  '少儿编程课怎么设计更有趣？',
+  '体育训练如何制定科学的教案？',
+  '怎样与家长高效沟通孩子的进步？'
 ]
 
 const formatContent = (content) => {

@@ -148,6 +148,10 @@ public class SysWalletServiceImpl extends ServiceImpl<SysWalletMapper, SysWallet
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long recharge(Long userId, BigDecimal amount, String paymentMethod) {
+        // 防御性校验：金额必须大于0
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("充值金额必须大于0");
+        }
         // 执行充值
         boolean success = recharge(userId, amount);
         if (!success) {

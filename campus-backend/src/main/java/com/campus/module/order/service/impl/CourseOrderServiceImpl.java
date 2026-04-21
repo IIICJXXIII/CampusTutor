@@ -265,7 +265,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         if (!order.getParentId().equals(userId) && !order.getTutorId().equals(userId)) {
             throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
         }
-        if (order.getStatus() != 0 && order.getStatus() != 1) {
+        if (order.getStatus() != -1 && order.getStatus() != 0 && order.getStatus() != 1) {
             throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "当前状态无法取消");
         }
 
@@ -275,6 +275,17 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
             walletService.unfreeze(order.getTutorId(), order.getTutorAmount());
             // 退还家长金额
             walletService.recharge(order.getParentId(), order.getTotalAmount());
+        }
+
+        // 如果是待确认状态(-1)取消，需要释放需求的匹配教师
+        if (order.getStatus() == -1 && order.getDemandId() != null) {
+            DemandPost demand = demandPostMapper.selectById(order.getDemandId());
+            if (demand != null && demand.getMatchedTutorId() != null) {
+                demand.setMatchedTutorId(null);
+                demand.setStatus(1); // 恢复为上架状态
+                demandPostMapper.updateById(demand);
+                log.info("订单取消，需求 {} 恢复为可匹配状态", demand.getId());
+            }
         }
 
         order.setStatus(4); // 已取消
@@ -541,81 +552,13 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         // 生成退款单号
         String refundNo = "RF" + System.currentTimeMillis() + IdUtil.simpleUUID().substring(0, 6).toUpperCase();
 
-        // 处理退款逻辑
-        if (refundAmount.compareTo(refundableAmount) == 0) {
-            // 全额退款（按剩余课时）
-            // 解冻教员冻结金额
-            BigDecimal frozenAmount = order.getTutorAmount();
-            BigDecimal refundRatio = refundAmount.divide(totalAmount, 4, RoundingMode.HALF_UP);
-            BigDecimal refundToTutor = frozenAmount.multiply(refundRatio).setScale(2, RoundingMode.HALF_UP);
-
-            boolean unfreezeSuccess = walletService.unfreeze(order.getTutorId(), refundToTutor);
-            if (!unfreezeSuccess) {
-                log.error("退款解冻教员冻结金额失败: orderId={}, tutorId={}, amount={}",
-                        orderId, order.getTutorId(), refundToTutor);
-                throw new BusinessException("退款处理失败");
-            }
-
-            // 生成退款交易流水记录
-            try {
-                transactionFlowService.recordFlow(
-                        order.getTutorId(),
-                        refundToTutor.negate(), // 负数表示支出/退款
-                        BigDecimal.ZERO, // 退款后余额
-                        5, // 退款
-                        order.getId(),
-                        "订单退款，已解冻: " + order.getOrderNo());
-                log.info("生成教员退款记录成功: orderId={}, tutorId={}, amount={}",
-                        orderId, order.getTutorId(), refundToTutor);
-            } catch (Exception e) {
-                log.error("生成退款交易流水记录失败: orderId={}, error={}", orderId, e.getMessage());
-                // 不影响主流程，但记录错误
-            }
-
-            // 退还家长金额
-            walletService.recharge(order.getParentId(), refundAmount);
-            // 更新订单状态
-            order.setStatus(4); // 已取消
-            order.setCancelReason(reason);
-        } else {
-            // 部分退款
-            // 计算退款比例
-            BigDecimal refundRatio = refundAmount.divide(totalAmount, 4, RoundingMode.HALF_UP);
-            // 解冻相应比例的冻结金额
-            BigDecimal frozenAmount = order.getTutorAmount();
-            BigDecimal refundToTutor = frozenAmount.multiply(refundRatio).setScale(2, RoundingMode.HALF_UP);
-
-            boolean unfreezeSuccess = walletService.unfreeze(order.getTutorId(), refundToTutor);
-            if (!unfreezeSuccess) {
-                log.error("部分退款解冻教员冻结金额失败: orderId={}, tutorId={}, amount={}",
-                        orderId, order.getTutorId(), refundToTutor);
-                throw new BusinessException("退款处理失败");
-            }
-
-            // 生成部分退款交易流水记录
-            try {
-                transactionFlowService.recordFlow(
-                        order.getTutorId(),
-                        refundToTutor.negate(), // 负数表示支出/退款
-                        order.getTutorAmount().subtract(refundToTutor), // 剩余冻结金额
-                        5, // 退款
-                        order.getId(),
-                        "订单部分退款，已解冻: " + order.getOrderNo());
-                log.info("生成教员部分退款记录成功: orderId={}, tutorId={}, amount={}",
-                        orderId, order.getTutorId(), refundToTutor);
-            } catch (Exception e) {
-                log.error("生成部分退款交易流水记录失败: orderId={}, error={}", orderId, e.getMessage());
-                // 不影响主流程，但记录错误
-            }
-
-            // 退还家长金额
-            walletService.recharge(order.getParentId(), refundAmount);
-            // 更新订单金额
-            order.setTotalAmount(order.getTotalAmount().subtract(refundAmount));
-            order.setTutorAmount(order.getTutorAmount().subtract(refundToTutor));
-        }
-
+        // 设置订单为退款中状态（等待管理员审批后实际执行退款）
+        order.setStatus(5); // 退款中
+        order.setCancelReason("退款申请: " + reason + " | 退款单号: " + refundNo + " | 申请退款金额: " + refundAmount);
         updateById(order);
+
+        log.info("退款申请已提交: orderId={}, refundNo={}, refundAmount={}, reason={}",
+                orderId, refundNo, refundAmount, reason);
 
         return refundNo;
     }
