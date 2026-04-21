@@ -114,7 +114,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, MoreFilled, Picture, Promotion, Loading } from '@element-plus/icons-vue'
 import { useUserStore, useChatStore } from '@shared/stores'
-import { getMessages, sendMessage as sendMessageApi } from '@shared/api/chat'
+import { getChatHistory, sendMessage as sendMessageApi, markAsRead } from '@shared/api/chat'
 import dayjs from 'dayjs'
 
 const route = useRoute()
@@ -190,7 +190,11 @@ const loadMessages = async (reset = false) => {
   loading.value = true
   
   try {
-    const res = await getMessages(targetId, { page: page.value, pageSize: 20 })
+    if (reset) {
+      // 当重新加载/初次进入聊天时，标记对方的消息已读
+      markAsRead(targetId).catch(err => console.error('标记已读失败', err))
+    }
+    const res = await getChatHistory(targetId, { page: page.value, pageSize: 20 })
     if (res.code === 200) {
       const rawList = Array.isArray(res.data) ? res.data : (res.data?.list || [])
       

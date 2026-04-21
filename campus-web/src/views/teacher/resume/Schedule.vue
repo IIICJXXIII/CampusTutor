@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="schedule-page">
     <el-page-header @back="goBack">
       <template #content>排课设置</template>
@@ -82,8 +82,15 @@ const loadSchedule = async () => {
     const res = await getScheduleConfig()
     if (res.code === 200 && res.data) {
       res.data.forEach(item => {
-        if (scheduleData[item.dayOfWeek] && item.timeSlots) {
-          item.timeSlots.forEach(s => scheduleData[item.dayOfWeek].add(s))
+<<<<<<< HEAD
+        if (scheduleData[item.dayOfWeek]) {
+          if (item.timeSlots) {
+            // 兼容旧格式
+            item.timeSlots.forEach(s => scheduleData[item.dayOfWeek].add(s))
+          } else if (item.startTime && item.endTime) {
+            // 后端返回的 startTime/endTime 格式，拼回 "HH:mm-HH:mm"
+            scheduleData[item.dayOfWeek].add(`${item.startTime}-${item.endTime}`)
+          }
         }
       })
     }
@@ -96,10 +103,16 @@ const handleSave = async () => {
   const schedules = []
   for (let day = 1; day <= 7; day++) {
     if (scheduleData[day].size > 0) {
-      schedules.push({
-        dayOfWeek: day,
-        timeSlots: [...scheduleData[day]]
-      })
+      // 将每个时段拆分为 startTime/endTime 格式
+      for (const slot of scheduleData[day]) {
+        const [startTime, endTime] = slot.split('-')
+        schedules.push({
+          dayOfWeek: day,
+          startTime,
+          endTime,
+          available: 1
+        })
+      }
     }
   }
   
