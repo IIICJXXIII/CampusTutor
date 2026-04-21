@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="order-list-page">
     <div class="page-header">
       <h1 class="page-title">我的订单</h1>
@@ -65,6 +65,15 @@
             <div class="info-row">
               <span class="label">授课方式</span>
               <span class="value">{{ getTeachingModeText(order.teachMode || order.teachingMode) }}</span>
+              <span class="value">¥{{ order.unitPrice }}/小时</span>
+            </div>
+            <div class="info-row">
+              <span class="label">总课时</span>
+              <span class="value">{{ order.totalHours }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">授课方式</span>
+              <span class="value">{{ order.teachMode === 1 ? '线下上门' : (order.teachMode === 2 ? '线上网课' : '不限') }}</span>
             </div>
           </div>
         </div>
@@ -78,7 +87,8 @@
           <div class="order-actions" @click.stop>
             <template v-if="order.status === -1">
               <el-button size="small" @click="cancelOrder(order)">取消</el-button>
-              <el-button size="small" type="primary" @click="confirmOrder(order)">确认订单</el-button>
+              <el-button v-if="order.demandId" size="small" type="primary" @click="confirmOrder(order)">确认订单</el-button>
+              <el-button v-else size="small" type="info" disabled>等待教师确认</el-button>
             </template>
             <template v-else-if="order.status === 0">
               <el-button size="small" @click="cancelOrder(order)">取消</el-button>

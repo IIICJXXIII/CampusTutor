@@ -240,7 +240,7 @@ const routes = [
         meta: { title: '我的订单', role: 'tutor', tabbar: true }
       },
       {
-        path: 'teacher/order/:id',
+        path: 'teacher/orders/:id',
         name: 'TeacherOrderDetail',
         component: () => import('@/views/teacher/order/OrderDetail.vue'),
         meta: { title: '订单详情', role: 'tutor' }
