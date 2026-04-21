@@ -59,7 +59,7 @@
           </div>
           <div class="info-item">
             <el-icon><Location /></el-icon>
-            <span>{{ demand.district || '未设置地址' }}</span>
+            <span>{{ demand.address || '未设置地址' }}</span>
           </div>
         </div>
         

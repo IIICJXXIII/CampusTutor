@@ -43,6 +43,7 @@
             <div class="order-detail">
               <div class="detail-item">
                 <span class="label">课时费</span>
+                <span class="value price">¥{{ order.unitPrice || order.hourlyRate }}/小时</span>
                 <span class="value price">¥{{ order.unitPrice }}/小时</span>
               </div>
               <div class="detail-item">
@@ -50,6 +51,8 @@
                 <span class="value">{{ order.totalHours }}小时</span>
               </div>
               <div class="detail-item">
+                <span class="label">已完成</span>
+                <span class="value">{{ order.usedHours || order.completedHours || 0 }}小时</span>
                 <span class="label">已上</span>
                 <span class="value">{{ order.usedHours || 0 }}小时</span>
               </div>
@@ -166,6 +169,7 @@ const loadOrders = async () => {
     })
     
     if (res.code === 200) {
+      orders.value = res.data?.records || res.data?.list || []
       orders.value = res.data?.records || []
       total.value = res.data?.total || 0
     }
