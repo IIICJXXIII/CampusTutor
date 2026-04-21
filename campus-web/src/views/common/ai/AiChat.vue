@@ -31,7 +31,7 @@
                 </div>
               </div>
               <h3>您好，我是 AI 智能助手</h3>
-              <p class="desc">我可以帮您解答关于平台规则、家教对接、学习规划等任何问题。</p>
+              <p class="desc">我可以帮您解答关于平台规则、素质教育课程选择、教员对接等任何问题。</p>
               
               <div class="quick-questions">
                 <div class="qq-title">✨ 您可以试着这样问我：</div>
@@ -133,10 +133,10 @@ const userName = computed(() => userStore.user?.name)
 const userAvatar = computed(() => userStore.user?.avatar)
 
 const quickQuestions = [
-  '如何选择合适的家教老师？',
-  '孩子学习成绩不好怎么办？',
-  '家教费用一般是多少？',
-  '如何提高孩子的学习兴趣？'
+  '平台有哪些素质教育课程可以选？',
+  '我想给孩子找个钢琴陪练老师',
+  '少儿编程适合几岁的孩子学？',
+  '中考体育专项训练怎么收费？'
 ]
 
 const goBack = () => {

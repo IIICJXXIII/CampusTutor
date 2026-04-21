@@ -14,7 +14,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/wallet")
 @RequiredArgsConstructor
+@Validated
 public class WalletController {
 
     private final SysWalletService walletService;
@@ -91,7 +94,7 @@ public class WalletController {
     @Operation(summary = "充值", description = "模拟充值接口，实际需要对接支付网关")
     @PostMapping("/recharge")
     public Result<Long> recharge(
-            @Parameter(description = "充值金额") @RequestParam java.math.BigDecimal amount,
+            @Parameter(description = "充值金额") @RequestParam @DecimalMin(value = "0.01", message = "充值金额必须大于0") java.math.BigDecimal amount,
             @Parameter(description = "支付方式: wechat/alipay") @RequestParam(defaultValue = "wechat") String paymentMethod) {
         Long userId = UserContext.getUserId();
         // Mock: 直接增加余额

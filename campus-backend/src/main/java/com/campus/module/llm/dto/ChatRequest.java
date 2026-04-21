@@ -16,7 +16,7 @@ public class ChatRequest {
     @NotEmpty(message = "消息列表不能为空")
     private List<ChatMessage> messages;
 
-    @Schema(description = "对话场景: demand-需求咨询, tutor-教员推荐, general-通用问答", example = "demand")
+    @Schema(description = "对话场景（已废弃，不再影响逻辑，保留仅为向后兼容）", example = "general", deprecated = true)
     private String scene = "general";
 
     @Schema(description = "上一次对话的历史摘要（由后端生成，前端存储后回传）")
