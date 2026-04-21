@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div v-loading="loading" class="order-detail">
     <el-page-header @back="goBack">
       <template #content>订单详情</template>
@@ -48,12 +48,12 @@
           <el-descriptions :column="2" border>
             <el-descriptions-item label="订单编号">{{ order.orderNo }}</el-descriptions-item>
             <el-descriptions-item label="创建时间">{{ formatTime(order.createTime) }}</el-descriptions-item>
-            <el-descriptions-item label="课时费">¥{{ order.hourlyRate }}/小时</el-descriptions-item>
+            <el-descriptions-item label="课时费">¥{{ order.unitPrice }}/小时</el-descriptions-item>
             <el-descriptions-item label="约定课时">{{ order.totalHours }}小时</el-descriptions-item>
             <el-descriptions-item label="订单总额">
               <span class="price">¥{{ order.totalAmount }}</span>
             </el-descriptions-item>
-            <el-descriptions-item label="已完成课时">{{ order.completedHours || 0 }}小时</el-descriptions-item>
+            <el-descriptions-item label="已上课时">{{ order.usedHours || 0 }}小时</el-descriptions-item>
             <el-descriptions-item label="上课地点" :span="2">{{ order.address || '待定' }}</el-descriptions-item>
             <el-descriptions-item label="备注" :span="2">{{ order.remark || '无' }}</el-descriptions-item>
           </el-descriptions>
@@ -90,6 +90,14 @@
       
       <!-- 操作按钮 -->
       <div class="action-bar">
+        <template v-if="order.status === -1">
+          <el-button type="primary" size="large" @click="acceptOrder">
+            确认接单
+          </el-button>
+          <el-button type="danger" size="large" plain @click="rejectOrder">
+            拒绝订单
+          </el-button>
+        </template>
         <el-button v-if="order.status === 1" type="primary" size="large" @click="startOrder">
           确认开课
         </el-button>
@@ -109,7 +117,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Clock, Check, Close, ChatDotRound } from '@element-plus/icons-vue'
-import { getOrderDetail, confirmStartOrder as confirmStartOrderApi, cancelOrder as cancelOrderApi } from '@shared/api/order'
+import { getOrderDetail, confirmStartOrder as confirmStartOrderApi, cancelOrder as cancelOrderApi, tutorConfirmOrder as tutorConfirmOrderApi, tutorRejectOrder as tutorRejectOrderApi } from '@shared/api/order'
 import { getOrderLessons } from '@shared/api/teaching'
 import dayjs from 'dayjs'
 
@@ -121,18 +129,18 @@ const order = ref(null)
 const lessons = ref([])
 
 const getStatusIcon = (status) => {
-  const map = { 1: Clock, 2: Clock, 3: Check, 4: Close }
+  const map = { '-1': Clock, 0: Clock, 1: Clock, 2: Clock, 3: Check, 4: Close }
   return map[status] || Clock
 }
 
 const getStatusText = (status) => {
-  const map = { '-1': '待家长确认', 0: '待家长支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
+  const map = { '-1': '待确认', 0: '待家长支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
   return map[status] || '未知'
 }
 
 const getStatusDesc = (status) => {
   const map = {
-    '-1': '等待家长确认订单',
+    '-1': '家长发来预约请求，请确认是否接单',
     0: '等待家长支付',
     1: '家长已支付，请确认开课',
     2: '订单进行中，请按时上课',
@@ -231,6 +239,40 @@ const goToCheckin = () => {
 
 const goBack = () => {
   router.back()
+}
+
+const acceptOrder = async () => {
+  try {
+    await ElMessageBox.confirm('确认接受该预约订单吗？确认后家长即可支付。', '确认接单')
+    const res = await tutorConfirmOrderApi(order.value.id)
+    if (res.code === 200) {
+      ElMessage.success('已确认接单，等待家长支付')
+      loadOrder()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '操作失败')
+    }
+  }
+}
+
+const rejectOrder = async () => {
+  try {
+    const { value: reason } = await ElMessageBox.prompt('请输入拒绝原因', '拒绝订单', {
+      confirmButtonText: '确认拒绝',
+      cancelButtonText: '返回',
+      inputPlaceholder: '请输入拒绝原因（可选）'
+    })
+    const res = await tutorRejectOrderApi(order.value.id, reason)
+    if (res.code === 200) {
+      ElMessage.success('已拒绝该订单')
+      router.back()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '操作失败')
+    }
+  }
 }
 
 onMounted(() => {

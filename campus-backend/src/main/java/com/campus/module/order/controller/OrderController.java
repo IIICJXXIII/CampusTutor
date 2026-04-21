@@ -52,6 +52,22 @@ public class OrderController {
         return Result.success();
     }
 
+    @Operation(summary = "教师确认预约", description = "教师确认家长的直接预约订单，订单变为待支付状态")
+    @PostMapping("/{id}/tutor-confirm")
+    public Result<Void> tutorConfirm(@PathVariable Long id) {
+        Long tutorId = UserContext.getUserId();
+        orderService.tutorConfirmOrder(tutorId, id);
+        return Result.success();
+    }
+
+    @Operation(summary = "教师拒绝预约", description = "教师拒绝家长的直接预约订单，订单将被取消")
+    @PostMapping("/{id}/tutor-reject")
+    public Result<Void> tutorReject(@PathVariable Long id, @RequestParam(required = false) String reason) {
+        Long tutorId = UserContext.getUserId();
+        orderService.tutorRejectOrder(tutorId, id, reason);
+        return Result.success();
+    }
+
     @Operation(summary = "支付订单")
     @PostMapping("/pay")
     public Result<Map<String, String>> pay(@Valid @RequestBody PayOrderRequest request) {
