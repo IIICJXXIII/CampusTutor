@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="order-detail-page">
     <div class="page-header">
       <el-button link @click="goBack">
@@ -29,13 +29,14 @@
       <!-- 教师信息 -->
       <div class="info-card">
         <h3 class="card-title">教师信息</h3>
-        <div class="tutor-info" @click="viewTutor">
-          <el-avatar :size="56" :src="order.tutorAvatar">
-            {{ order.tutorName?.charAt(0) }}
+        <div class="tutor-info" @click="viewTutor" v-if="tutor">
+          <el-avatar :size="56" :src="tutor.avatarUrl">
+            {{ tutor.realName?.charAt(0) || tutor.name?.charAt(0) }}
           </el-avatar>
           <div class="info">
-            <div class="name">{{ order.tutorName }}</div>
-            <div class="school">{{ order.tutorUniversity }} · {{ order.tutorMajor }}</div>
+            <div class="name">{{ tutor.realName || tutor.name }}</div>
+            <div class="school">{{ tutor.universityName }} · {{ tutor.major }}</div>
+          </div>
           </div>
           <el-icon><ArrowRight /></el-icon>
         </div>
@@ -56,16 +57,14 @@
             {{ order.grade }}
           </el-descriptions-item>
           <el-descriptions-item label="课时单价">
-            <span class="price">¥{{ order.hourlyRate }}/小时</span>
+            <span class="price">¥{{ order.unitPrice }}/小时</span>
           </el-descriptions-item>
-          <el-descriptions-item label="上课频率">
-            {{ order.frequency }}
-          </el-descriptions-item>
-          <el-descriptions-item label="每次时长">
-            {{ order.duration }}小时
+          <el-descriptions-item label="总课时数">
+            {{ order.totalHours }}课时
           </el-descriptions-item>
           <el-descriptions-item label="授课方式">
-            {{ order.teachingMode }}
+            {{ order.teachMode === 1 ? '线下上门' : (order.teachMode === 2 ? '线上网课' : '不限') }}
+          </el-descriptions-item>
           </el-descriptions-item>
           <el-descriptions-item v-if="order.address" label="上课地址" :span="2">
             {{ order.district }} {{ order.address }}
@@ -85,7 +84,7 @@
         <div class="fee-list">
           <div class="fee-item">
             <span class="label">预估课时费</span>
-            <span class="value">¥{{ (order.estimatedAmount || 0).toFixed(2) }}</span>
+            <span class="value">¥{{ (order.totalAmount || 0).toFixed(2) }}</span>
           </div>
           <div class="fee-item">
             <span class="label">平台服务费</span>
@@ -121,9 +120,13 @@
       
       <!-- 底部操作 -->
       <div class="action-bar">
+        <!-- 待确认：区分"等待教师确认"和"等待家长确认" -->
         <template v-if="order.status === -1">
           <el-button size="large" @click="cancelOrder">取消订单</el-button>
-          <el-button size="large" type="primary" @click="confirmOrder">确认订单</el-button>
+          <!-- 有demandId说明是教师接需求帖创建的，需家长确认 -->
+          <el-button v-if="order.demandId" size="large" type="primary" @click="confirmOrder">确认订单</el-button>
+          <!-- 无demandId说明是家长直接预约，等待教师确认 -->
+          <el-button v-else size="large" type="info" disabled>等待教师确认</el-button>
         </template>
         <template v-else-if="order.status === 0">
           <el-button size="large" @click="cancelOrder">取消订单</el-button>
@@ -157,6 +160,7 @@ import {
   completeOrder as completeOrderApi 
 } from '@shared/api/order'
 import { getOrderLessons } from '@shared/api/teaching'
+import { getPublicTutorProfile } from '@shared/api/tutor'
 import dayjs from 'dayjs'
 
 const router = useRouter()
@@ -164,14 +168,21 @@ const route = useRoute()
 
 const loading = ref(false)
 const order = ref(null)
+const tutor = ref(null)
 const lessons = ref([])
 
 const getStatusText = (status) => {
+  if (status === -1 && order.value && !order.value.demandId) {
+    return '待教师确认'
+  }
   const texts = { '-1': '待确认', 0: '待支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
   return texts[status] || '未知'
 }
 
 const getStatusDesc = (status) => {
+  if (status === -1 && order.value && !order.value.demandId) {
+    return '已发送预约请求，等待教师确认后即可支付'
+  }
   const descs = {
     '-1': '请确认订单信息，确认后进入待支付状态',
     0: '请在24小时内完成支付，超时订单将自动取消',
@@ -207,6 +218,16 @@ const loadOrder = async () => {
     
     if (orderRes.code === 200) {
       order.value = orderRes.data
+      if (order.value?.tutorProfileId) {
+        try {
+          const tutorRes = await getPublicTutorProfile(order.value.tutorProfileId)
+          if (tutorRes.code === 200) {
+            tutor.value = tutorRes.data
+          }
+        } catch (e) {
+          console.error('Failed to load tutor profile', e)
+        }
+      }
     }
     lessons.value = lessonsRes.data || []
   } catch (error) {
@@ -222,7 +243,7 @@ const goBack = () => {
 }
 
 const viewTutor = () => {
-  router.push(`/parent/teachers/${order.value.tutorUserId}`)
+  router.push(`/parent/teachers/${order.value.tutorProfileId}`)
 }
 
 const copyOrderNo = async () => {
@@ -265,7 +286,7 @@ const goToPay = () => {
 }
 
 const contactTutor = () => {
-  router.push(`/chat/${order.value.tutorUserId}`)
+  router.push(`/chat/${order.value.tutorId}`)
 }
 
 const completeOrder = async () => {

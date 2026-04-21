@@ -88,7 +88,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         order.setServiceFee(serviceFee);
         order.setTutorAmount(tutorAmount);
         order.setUsedHours(0);
-        order.setStatus(0); // 待支付
+        order.setStatus(-1); // 待教师确认（家长直接预约场景，需教师先确认）
         order.setRemark(request.getRemark());
         save(order);
 
@@ -494,6 +494,49 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         updateById(order);
 
         log.info("家长 {} 确认订单: {}, 状态变更为待支付", parentId, orderId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void tutorConfirmOrder(Long tutorId, Long orderId) {
+        CourseOrder order = getById(orderId);
+        if (order == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
+        }
+        if (!order.getTutorId().equals(tutorId)) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
+        }
+        if (order.getStatus() != -1) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单状态不正确，仅待确认订单可操作");
+        }
+
+        // 教师确认后，订单变为待支付
+        order.setStatus(0);
+        updateById(order);
+
+        log.info("教师 {} 确认预约订单: {}, 状态变更为待支付", tutorId, orderId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void tutorRejectOrder(Long tutorId, Long orderId, String reason) {
+        CourseOrder order = getById(orderId);
+        if (order == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
+        }
+        if (!order.getTutorId().equals(tutorId)) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
+        }
+        if (order.getStatus() != -1) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单状态不正确，仅待确认订单可拒绝");
+        }
+
+        // 教师拒绝，订单取消
+        order.setStatus(4);
+        order.setCancelReason("教师拒绝: " + (reason != null ? reason : "未说明原因"));
+        updateById(order);
+
+        log.info("教师 {} 拒绝预约订单: {}, 原因: {}", tutorId, orderId, reason);
     }
 
     @Override

@@ -55,6 +55,25 @@ export function confirmStartOrder(id) {
 }
 
 /**
+ * 教师确认预约订单
+ * @param {number} id - 订单ID
+ */
+export function tutorConfirmOrder(id) {
+  return request.post(`/order/${id}/tutor-confirm`);
+}
+
+/**
+ * 教师拒绝预约订单
+ * @param {number} id - 订单ID
+ * @param {string} reason - 拒绝原因
+ */
+export function tutorRejectOrder(id, reason) {
+  return request.post(`/order/${id}/tutor-reject`, null, {
+    params: { reason }
+  });
+}
+
+/**
  * 完成订单
  * @param {number} id - 订单ID
  */

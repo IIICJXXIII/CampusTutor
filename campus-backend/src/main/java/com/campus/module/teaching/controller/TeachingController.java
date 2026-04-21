@@ -59,6 +59,20 @@ public class TeachingController {
         return Result.success("申诉已提交");
     }
 
+    @Operation(summary = "获取订单课时记录")
+    @GetMapping("/records/{orderId}")
+    public Result<List<TeachingRecordDTO>> getRecordsByOrderId(@PathVariable Long orderId) {
+        List<TeachingRecordDTO> records = teachingRecordService.getRecordsByOrderId(orderId);
+        return Result.success(records);
+    }
+
+    @Operation(summary = "获取课时详情")
+    @GetMapping("/record/{recordId}")
+    public Result<TeachingRecordDTO> getRecordById(@PathVariable Long recordId) {
+        TeachingRecordDTO record = teachingRecordService.getRecordById(recordId);
+        return Result.success(record);
+    }
+
     @Operation(summary = "获取我的课时记录")
     @GetMapping("/my-records")
     public Result<List<TeachingRecordDTO>> getMyRecords() {
