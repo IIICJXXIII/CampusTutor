@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="order-list">
     <div class="page-header">
       <h1 class="page-title">我的订单</h1>
@@ -43,15 +43,15 @@
             <div class="order-detail">
               <div class="detail-item">
                 <span class="label">课时费</span>
-                <span class="value price">¥{{ order.hourlyRate }}/小时</span>
+                <span class="value price">¥{{ order.unitPrice }}/小时</span>
               </div>
               <div class="detail-item">
                 <span class="label">总课时</span>
                 <span class="value">{{ order.totalHours }}小时</span>
               </div>
               <div class="detail-item">
-                <span class="label">已完成</span>
-                <span class="value">{{ order.completedHours || 0 }}小时</span>
+                <span class="label">已上</span>
+                <span class="value">{{ order.usedHours || 0 }}小时</span>
               </div>
             </div>
           </div>
@@ -59,6 +59,23 @@
           <div class="order-footer">
             <span class="time">{{ formatTime(order.createTime) }}</span>
             <div class="actions">
+              <el-button 
+                v-if="order.status === -1" 
+                type="primary" 
+                size="small"
+                @click.stop="acceptOrder(order)"
+              >
+                确认接单
+              </el-button>
+              <el-button 
+                v-if="order.status === -1" 
+                type="danger" 
+                size="small" 
+                plain
+                @click.stop="rejectOrder(order)"
+              >
+                拒绝
+              </el-button>
               <el-button 
                 v-if="order.status === 1" 
                 type="primary" 
@@ -107,7 +124,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getTutorOrders, confirmStartOrder as confirmStartOrderApi } from '@shared/api/order'
+import { getTutorOrders, confirmStartOrder as confirmStartOrderApi, tutorConfirmOrder as tutorConfirmOrderApi, tutorRejectOrder as tutorRejectOrderApi } from '@shared/api/order'
 import { formatDate } from '@shared/utils'
 
 const router = useRouter()
@@ -121,7 +138,7 @@ const total = ref(0)
 
 const statusMap = {
   all: null,
-  pending: 1,
+  pending: -1,
   ongoing: 2,
   completed: 3,
   cancelled: 4
@@ -133,7 +150,7 @@ const getStatusType = (status) => {
 }
 
 const getStatusText = (status) => {
-  const map = { '-1': '待家长确认', 0: '待家长支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
+  const map = { '-1': '待确认', 0: '待家长支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
   return map[status] || '未知'
 }
 
@@ -149,7 +166,7 @@ const loadOrders = async () => {
     })
     
     if (res.code === 200) {
-      orders.value = res.data?.list || []
+      orders.value = res.data?.records || []
       total.value = res.data?.total || 0
     }
   } catch (error) {
@@ -193,6 +210,43 @@ const goToLesson = (order) => {
 
 const goToChat = (order) => {
   router.push(`/chat/${order.parentId}`)
+}
+
+const acceptOrder = async (order) => {
+  try {
+    await ElMessageBox.confirm(
+      `确认接受该预约订单吗？确认后家长即可支付。`,
+      '确认接单'
+    )
+    const res = await tutorConfirmOrderApi(order.id)
+    if (res.code === 200) {
+      ElMessage.success('已确认接单，等待家长支付')
+      loadOrders()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '操作失败')
+    }
+  }
+}
+
+const rejectOrder = async (order) => {
+  try {
+    const { value: reason } = await ElMessageBox.prompt('请输入拒绝原因', '拒绝订单', {
+      confirmButtonText: '确认拒绝',
+      cancelButtonText: '返回',
+      inputPlaceholder: '请输入拒绝原因（可选）'
+    })
+    const res = await tutorRejectOrderApi(order.id, reason)
+    if (res.code === 200) {
+      ElMessage.success('已拒绝该订单')
+      loadOrders()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '操作失败')
+    }
+  }
 }
 
 onMounted(() => {

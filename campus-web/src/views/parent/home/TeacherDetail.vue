@@ -136,6 +136,19 @@
     <!-- 预约弹窗 -->
     <el-dialog v-model="bookingVisible" title="预约老师" width="500px">
       <el-form :model="bookingForm" label-width="90px">
+        <el-form-item label="辅导孩子">
+          <el-select v-model="bookingForm.studentId" placeholder="请选择要辅导的孩子" @change="onStudentChange">
+            <el-option
+              v-for="student in students"
+              :key="student.id"
+              :label="`${student.studentName || student.name} (${student.grade})`"
+              :value="student.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="学生年级">
+          <el-input v-model="bookingForm.grade" disabled placeholder="选择孩子后自动回填" />
+        </el-form-item>
         <el-form-item label="辅导科目">
           <el-select v-model="bookingForm.subject" placeholder="请选择科目">
             <el-option
@@ -145,6 +158,12 @@
               :value="s"
             />
           </el-select>
+        </el-form-item>
+        <el-form-item label="授课方式">
+          <el-radio-group v-model="bookingForm.teachMode">
+            <el-radio :value="1">上门</el-radio>
+            <el-radio :value="2">网课</el-radio>
+          </el-radio-group>
         </el-form-item>
         <el-form-item label="期望课时">
           <el-input-number v-model="bookingForm.totalHours" :min="1" :max="100" :step="1" />
@@ -170,6 +189,7 @@ import { ArrowLeft, ChatDotRound } from '@element-plus/icons-vue'
 import { getPublicTutorProfile } from '@shared/api/tutor'
 import { recordView } from '@shared/api/behavior'
 import { createOrder } from '@shared/api/order'
+import { getStudentList } from '@shared/api/parent'
 import dayjs from 'dayjs'
 
 const router = useRouter()
@@ -182,10 +202,37 @@ const bookingVisible = ref(false)
 const bookingLoading = ref(false)
 
 const bookingForm = reactive({
+  studentId: null,
+  grade: '',
   subject: '',
+  teachMode: 1,
   totalHours: 10,
   remark: ''
 })
+
+const students = ref([])
+
+const loadStudents = async () => {
+  try {
+    const res = await getStudentList()
+    if (res.code === 200) {
+      students.value = res.data || []
+      if (students.value.length > 0) {
+        bookingForm.studentId = students.value[0].id
+        bookingForm.grade = students.value[0].grade
+      }
+    }
+  } catch (error) {
+    console.error('加载学生列表失败:', error)
+  }
+}
+
+const onStudentChange = (val) => {
+  const student = students.value.find(s => s.id === val)
+  if (student) {
+    bookingForm.grade = student.grade
+  }
+}
 
 const formatDate = (date) => {
   return dayjs(date).format('YYYY-MM-DD')
@@ -259,6 +306,10 @@ const showBookingDialog = () => {
 }
 
 const submitBooking = async () => {
+  if (!bookingForm.studentId) {
+    ElMessage.warning('请选择辅导孩子')
+    return
+  }
   if (!bookingForm.subject) {
     ElMessage.warning('请选择辅导科目')
     return
@@ -266,7 +317,10 @@ const submitBooking = async () => {
   bookingLoading.value = true
   try {
     const res = await createOrder({
-      tutorId: parseInt(route.params.id),
+      tutorProfileId: parseInt(route.params.id),
+      studentId: bookingForm.studentId,
+      grade: bookingForm.grade,
+      teachMode: bookingForm.teachMode,
       subject: bookingForm.subject,
       totalHours: bookingForm.totalHours,
       unitPrice: tutor.value?.minPrice || 100,
@@ -286,6 +340,7 @@ const submitBooking = async () => {
 
 onMounted(() => {
   loadTutor()
+  loadStudents()
   // 记录浏览行为
   recordView(route.params.id).catch(() => {})
 })
