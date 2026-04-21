@@ -55,6 +55,9 @@ bin/
 .DS_Store
 Thumbs.db
 
+# Edge browser debug cache
+edge-debug/
+
 # Logs
 logs/
 *.log
