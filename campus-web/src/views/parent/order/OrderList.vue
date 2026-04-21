@@ -56,15 +56,15 @@
           <div class="order-info">
             <div class="info-row">
               <span class="label">课时单价</span>
-              <span class="value">¥{{ order.hourlyRate }}/小时</span>
+              <span class="value">¥{{ order.unitPrice || order.hourlyRate }}/小时</span>
             </div>
             <div class="info-row">
-              <span class="label">上课频率</span>
-              <span class="value">{{ order.frequency }}</span>
+              <span class="label">总课时</span>
+              <span class="value">{{ order.totalHours }}课时</span>
             </div>
             <div class="info-row">
               <span class="label">授课方式</span>
-              <span class="value">{{ order.teachingMode }}</span>
+              <span class="value">{{ getTeachingModeText(order.teachMode || order.teachingMode) }}</span>
             </div>
           </div>
         </div>
@@ -141,6 +141,11 @@ const getStatusType = (status) => {
 const getStatusText = (status) => {
   const texts = { '-1': '待确认', 0: '待支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
   return texts[status] || '未知'
+}
+
+const getTeachingModeText = (mode) => {
+  const modes = { 1: '线下上门', 2: '线上授课', 3: '线上线下均可' }
+  return modes[mode] || '未设置'
 }
 
 const loadOrders = async () => {

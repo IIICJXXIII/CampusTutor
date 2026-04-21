@@ -189,7 +189,7 @@ const saveProfile = async () => {
     const res = await updateUserInfo(data)
     if (res.code === 200) {
       ElMessage.success('保存成功')
-      userStore.setUser({ ...userStore.user, ...data })
+      userStore.setUserInfo({ ...userStore.userInfo, ...data })
       router.back()
     }
   } catch (error) {

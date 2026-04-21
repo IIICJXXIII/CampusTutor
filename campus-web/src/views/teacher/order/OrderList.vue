@@ -43,7 +43,7 @@
             <div class="order-detail">
               <div class="detail-item">
                 <span class="label">课时费</span>
-                <span class="value price">¥{{ order.hourlyRate }}/小时</span>
+                <span class="value price">¥{{ order.unitPrice || order.hourlyRate }}/小时</span>
               </div>
               <div class="detail-item">
                 <span class="label">总课时</span>
@@ -51,7 +51,7 @@
               </div>
               <div class="detail-item">
                 <span class="label">已完成</span>
-                <span class="value">{{ order.completedHours || 0 }}小时</span>
+                <span class="value">{{ order.usedHours || order.completedHours || 0 }}小时</span>
               </div>
             </div>
           </div>
@@ -121,7 +121,7 @@ const total = ref(0)
 
 const statusMap = {
   all: null,
-  pending: 1,
+  pending: -1,
   ongoing: 2,
   completed: 3,
   cancelled: 4
@@ -149,7 +149,7 @@ const loadOrders = async () => {
     })
     
     if (res.code === 200) {
-      orders.value = res.data?.list || []
+      orders.value = res.data?.records || res.data?.list || []
       total.value = res.data?.total || 0
     }
   } catch (error) {
