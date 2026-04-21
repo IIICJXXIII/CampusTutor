@@ -21,7 +21,7 @@ export function setRequestErrorHandler(handler) {
 // 创建 axios 实例
 const request = axios.create({
   baseURL: '/api',
-  timeout: 15000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json'
   }

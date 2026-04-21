@@ -389,10 +389,46 @@ public class AdminServiceImpl implements AdminService {
         if (order == null) {
             throw new BusinessException("订单不存在");
         }
+
+        if (order.getStatus() != 5) {
+            throw new BusinessException("仅退款中状态的订单可处理退款");
+        }
+
+        // 从 cancelReason 中解析退款金额
+        java.math.BigDecimal refundAmount = order.getTotalAmount(); // 默认全额
+        String cancelReason = order.getCancelReason();
+        if (cancelReason != null && cancelReason.contains("申请退款金额: ")) {
+            try {
+                String amountStr = cancelReason.substring(cancelReason.lastIndexOf("申请退款金额: ") + 8).trim();
+                refundAmount = new java.math.BigDecimal(amountStr);
+            } catch (Exception e) {
+                log.warn("解析退款金额失败，使用订单总金额: {}", e.getMessage());
+            }
+        }
+
+        // 计算退款比例和教员应解冻金额
+        java.math.BigDecimal refundRatio = refundAmount.divide(order.getTotalAmount(), 4, java.math.RoundingMode.HALF_UP);
+        java.math.BigDecimal refundToTutor = order.getTutorAmount().multiply(refundRatio)
+                .setScale(2, java.math.RoundingMode.HALF_UP);
+
+        // 解冻教员冻结金额
+        boolean unfreezeSuccess = walletService.unfreeze(order.getTutorId(), refundToTutor);
+        if (!unfreezeSuccess) {
+            log.error("管理员退款解冻教员冻结金额失败: orderId={}, tutorId={}, amount={}",
+                    id, order.getTutorId(), refundToTutor);
+            throw new BusinessException("退款处理失败：解冻教员金额失败");
+        }
+
+        // 退还家长金额
+        walletService.recharge(order.getParentId(), refundAmount);
+
+        // 更新订单状态
         order.setStatus(6); // 已退款
-        order.setCancelReason(reason);
+        order.setCancelReason(reason != null ? reason : cancelReason);
         courseOrderMapper.updateById(order);
-        log.info("订单 {} 已退款，原因: {}", id, reason);
+
+        log.info("管理员处理退款成功: orderId={}, refundAmount={}, refundToTutor={}, reason={}",
+                id, refundAmount, refundToTutor, reason);
     }
 
     // ==================== 课时管理 ====================
