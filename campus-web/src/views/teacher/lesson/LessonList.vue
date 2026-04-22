@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="lesson-list">
     <div class="page-header">
       <h1 class="page-title">课程记录</h1>
@@ -7,10 +7,9 @@
     <!-- 筛选器 -->
     <div class="filter-bar">
       <el-select v-model="filter.status" placeholder="课程状态" clearable @change="loadLessons">
-        <el-option label="待上课" :value="1" />
-        <el-option label="上课中" :value="2" />
-        <el-option label="已完成" :value="3" />
-        <el-option label="有争议" :value="4" />
+        <el-option label="待确认/上课中" :value="0" />
+        <el-option label="已完成" :value="1" />
+        <el-option label="有争议" :value="2" />
       </el-select>
       
       <el-date-picker
@@ -43,8 +42,8 @@
           <div class="lesson-main">
             <div class="lesson-header">
               <h4>{{ lesson.studentName }} - {{ lesson.subject }}</h4>
-              <el-tag :type="getStatusType(lesson.status)" size="small">
-                {{ getStatusText(lesson.status) }}
+              <el-tag :type="getStatusType(lesson.status, lesson.contentSummary)" size="small">
+                {{ getStatusText(lesson.status, lesson.contentSummary) }}
               </el-tag>
             </div>
             
@@ -59,14 +58,9 @@
               </p>
             </div>
             
-            <div v-if="lesson.status === 1" class="lesson-actions">
-              <el-button type="primary" size="small" @click.stop="startLesson(lesson)">
-                开始上课
-              </el-button>
-            </div>
-            <div v-if="lesson.status === 2" class="lesson-actions">
-              <el-button type="success" size="small" @click.stop="endLesson(lesson)">
-                结束上课
+            <div class="lesson-actions">
+              <el-button type="primary" size="small" @click.stop="viewDetail(lesson.id)">
+                查看详情
               </el-button>
             </div>
           </div>
@@ -111,14 +105,20 @@ const filter = reactive({
   orderId: null
 })
 
-const getStatusType = (status) => {
-  const map = { 1: 'info', 2: 'warning', 3: 'success', 4: 'danger' }
-  return map[status] || 'info'
+const getStatusType = (status, contentSummary) => {
+  if (status === 0 && !contentSummary) return 'info' // 上课中
+  if (status === 0 && contentSummary) return 'warning' // 待确认
+  if (status === 1) return 'success'
+  if (status === 2) return 'danger'
+  return 'info'
 }
 
-const getStatusText = (status) => {
-  const map = { 1: '待上课', 2: '上课中', 3: '已完成', 4: '有争议' }
-  return map[status] || '未知'
+const getStatusText = (status, contentSummary) => {
+  if (status === 0 && !contentSummary) return '上课中'
+  if (status === 0 && contentSummary) return '待确认'
+  if (status === 1) return '已完成'
+  if (status === 2) return '有争议'
+  return '未知'
 }
 
 const formatDay = (date) => dayjs(date).format('DD')
@@ -156,35 +156,7 @@ const loadLessons = async () => {
 }
 
 const viewDetail = (id) => {
-  router.push(`/teacher/lessons/${id}`)
-}
-
-const startLesson = async (lesson) => {
-  try {
-    const res = await checkIn(lesson.id, {
-      location: '手动签到'
-    })
-    if (res.code === 200) {
-      ElMessage.success('签到成功，开始上课')
-      loadLessons()
-    }
-  } catch (error) {
-    ElMessage.error(error.message || '签到失败')
-  }
-}
-
-const endLesson = async (lesson) => {
-  try {
-    const res = await checkOut(lesson.id, {
-      content: '课程结束'
-    })
-    if (res.code === 200) {
-      ElMessage.success('已结束课程')
-      loadLessons()
-    }
-  } catch (error) {
-    ElMessage.error(error.message || '操作失败')
-  }
+  router.push(`/teacher/lesson/${id}`)
 }
 
 onMounted(() => {

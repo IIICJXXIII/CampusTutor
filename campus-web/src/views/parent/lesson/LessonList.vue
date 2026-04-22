@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="lesson-list-page">
     <div class="page-header">
       <el-button link @click="goBack">
@@ -12,9 +12,9 @@
     <div class="filter-tabs">
       <el-radio-group v-model="statusFilter" @change="handleFilterChange">
         <el-radio-button value="all">全部</el-radio-button>
-        <el-radio-button value="1">待确认</el-radio-button>
-        <el-radio-button value="2">已确认</el-radio-button>
-        <el-radio-button value="3">申诉中</el-radio-button>
+        <el-radio-button value="0">待确认/上课中</el-radio-button>
+        <el-radio-button value="1">已确认</el-radio-button>
+        <el-radio-button value="2">申诉中</el-radio-button>
       </el-radio-group>
     </div>
     
@@ -39,8 +39,8 @@
             <el-icon><Calendar /></el-icon>
             {{ formatDate(lesson.startTime) }}
           </div>
-          <el-tag :type="getStatusType(lesson.status)" size="small">
-            {{ getStatusText(lesson.status) }}
+          <el-tag :type="getStatusType(lesson.status, lesson.contentSummary)" size="small">
+            {{ getStatusText(lesson.status, lesson.contentSummary) }}
           </el-tag>
         </div>
         
@@ -77,7 +77,7 @@
           </div>
           
           <div class="lesson-actions" @click.stop>
-            <template v-if="lesson.status === 1">
+            <template v-if="lesson.status === 0 && lesson.contentSummary">
               <el-button size="small" type="danger" plain @click="disputeLesson(lesson)">
                 申诉
               </el-button>
@@ -123,14 +123,20 @@ const total = ref(0)
 
 const orderId = route.query.orderId
 
-const getStatusType = (status) => {
-  const types = { 0: 'info', 1: 'warning', 2: 'success', 3: 'danger' }
-  return types[status] || 'info'
+const getStatusType = (status, contentSummary) => {
+  if (status === 0 && !contentSummary) return 'info'
+  if (status === 0 && contentSummary) return 'warning'
+  if (status === 1) return 'success'
+  if (status === 2) return 'danger'
+  return 'info'
 }
 
-const getStatusText = (status) => {
-  const texts = { 0: '上课中', 1: '待确认', 2: '已确认', 3: '申诉中' }
-  return texts[status] || '未知'
+const getStatusText = (status, contentSummary) => {
+  if (status === 0 && !contentSummary) return '上课中'
+  if (status === 0 && contentSummary) return '待确认'
+  if (status === 1) return '已确认'
+  if (status === 2) return '申诉中'
+  return '未知'
 }
 
 const formatDate = (time) => {
