@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="order-pay-page">
     <div class="page-header">
       <el-button link @click="goBack">
@@ -213,7 +213,7 @@ const handlePay = async () => {
     // 根据后端API，payType: 1钱包 2微信 3支付宝
     const payTypeMap = { balance: 1, wechat: 2, alipay: 3 }
     const res = await payOrder({
-      orderId: route.params.id,
+      orderId: order.value.id,
       payType: payTypeMap[paymentMethod.value]
     })
     

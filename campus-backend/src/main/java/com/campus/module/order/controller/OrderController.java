@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 /**
  * 订单模块控制器
@@ -27,6 +28,25 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController {
 
     private final CourseOrderService orderService;
+
+    private Long resolveOrderId(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单ID不能为空");
+        }
+        if (id.startsWith("CT")) {
+            CourseOrder order = orderService.getOne(new LambdaQueryWrapper<CourseOrder>()
+                    .eq(CourseOrder::getOrderNo, id));
+            if (order == null) {
+                throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
+            }
+            return order.getId();
+        }
+        try {
+            return Long.parseLong(id);
+        } catch (NumberFormatException e) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无效的订单ID格式");
+        }
+    }
 
     @Operation(summary = "创建订单")
     @PostMapping("/create")
@@ -46,25 +66,25 @@ public class OrderController {
 
     @Operation(summary = "家长确认订单", description = "家长确认教师接单，订单变为待支付状态")
     @PostMapping("/{id}/confirm")
-    public Result<Void> confirm(@PathVariable Long id) {
+    public Result<Void> confirm(@PathVariable String id) {
         Long parentId = UserContext.getUserId();
-        orderService.confirmOrder(parentId, id);
+        orderService.confirmOrder(parentId, resolveOrderId(id));
         return Result.success();
     }
 
     @Operation(summary = "教师确认预约", description = "教师确认家长的直接预约订单，订单变为待支付状态")
     @PostMapping("/{id}/tutor-confirm")
-    public Result<Void> tutorConfirm(@PathVariable Long id) {
+    public Result<Void> tutorConfirm(@PathVariable String id) {
         Long tutorId = UserContext.getUserId();
-        orderService.tutorConfirmOrder(tutorId, id);
+        orderService.tutorConfirmOrder(tutorId, resolveOrderId(id));
         return Result.success();
     }
 
     @Operation(summary = "教师拒绝预约", description = "教师拒绝家长的直接预约订单，订单将被取消")
     @PostMapping("/{id}/tutor-reject")
-    public Result<Void> tutorReject(@PathVariable Long id, @RequestParam(required = false) String reason) {
+    public Result<Void> tutorReject(@PathVariable String id, @RequestParam(required = false) String reason) {
         Long tutorId = UserContext.getUserId();
-        orderService.tutorRejectOrder(tutorId, id, reason);
+        orderService.tutorRejectOrder(tutorId, resolveOrderId(id), reason);
         return Result.success();
     }
 
@@ -78,34 +98,34 @@ public class OrderController {
 
     @Operation(summary = "取消订单")
     @PostMapping("/{id}/cancel")
-    public Result<Void> cancel(@PathVariable Long id, @RequestParam(required = false) String reason) {
+    public Result<Void> cancel(@PathVariable String id, @RequestParam(required = false) String reason) {
         Long userId = UserContext.getUserId();
-        orderService.cancelOrder(userId, id, reason);
+        orderService.cancelOrder(userId, resolveOrderId(id), reason);
         return Result.success();
     }
 
     @Operation(summary = "教员确认开课")
     @PostMapping("/{id}/start")
-    public Result<Void> start(@PathVariable Long id) {
+    public Result<Void> start(@PathVariable String id) {
         Long tutorId = UserContext.getUserId();
-        orderService.confirmStart(tutorId, id);
+        orderService.confirmStart(tutorId, resolveOrderId(id));
         return Result.success();
     }
 
     @Operation(summary = "完成订单")
 @PostMapping("/{id}/complete")
-public Result<Void> complete(@PathVariable Long id) {
+public Result<Void> complete(@PathVariable String id) {
     Long tutorId = UserContext.getUserId();
-    orderService.completeOrder(tutorId, id);
+    orderService.completeOrder(tutorId, resolveOrderId(id));
     return Result.success();
 }
 
     @Operation(summary = "订单详情")
     @GetMapping("/{id}")
-    public Result<CourseOrder> detail(@PathVariable Long id) {
+    public Result<CourseOrder> detail(@PathVariable String id) {
         Long userId = UserContext.getUserId();
         Integer role = UserContext.getRole();
-        CourseOrder order = orderService.getById(id);
+        CourseOrder order = orderService.getById(resolveOrderId(id));
         if (order == null) {
             throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
         }
@@ -144,11 +164,11 @@ public Result<Void> complete(@PathVariable Long id) {
     @Operation(summary = "申请退款")
     @PostMapping("/refund")
     public Result<String> applyRefund(
-            @RequestParam Long orderId,
+            @RequestParam String orderId,
             @RequestParam java.math.BigDecimal refundAmount,
             @RequestParam String reason) {
         Long userId = UserContext.getUserId();
-        String refundNo = orderService.applyRefund(userId, orderId, refundAmount, reason);
+        String refundNo = orderService.applyRefund(userId, resolveOrderId(orderId), refundAmount, reason);
         return Result.success(refundNo);
     }
 }

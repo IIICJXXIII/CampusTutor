@@ -13,6 +13,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import com.campus.module.order.service.CourseOrderService;
+import com.campus.module.order.entity.CourseOrder;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.campus.common.exception.BusinessException;
+import com.campus.common.result.ResultCode;
 
 @Tag(name = "课时打卡", description = "教师打卡、家长确认相关接口")
 @RestController
@@ -21,6 +26,26 @@ import java.util.List;
 public class TeachingController {
 
     private final TeachingRecordService teachingRecordService;
+    private final CourseOrderService orderService;
+
+    private Long resolveOrderId(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单ID不能为空");
+        }
+        if (id.startsWith("CT")) {
+            CourseOrder order = orderService.getOne(new LambdaQueryWrapper<CourseOrder>()
+                    .eq(CourseOrder::getOrderNo, id));
+            if (order == null) {
+                throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
+            }
+            return order.getId();
+        }
+        try {
+            return Long.parseLong(id);
+        } catch (NumberFormatException e) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无效的订单ID格式");
+        }
+    }
 
     @Operation(summary = "教师打卡上课")
     @PostMapping("/check-in")
@@ -61,8 +86,8 @@ public class TeachingController {
 
     @Operation(summary = "获取订单课时记录")
     @GetMapping("/records/{orderId}")
-    public Result<List<TeachingRecordDTO>> getRecordsByOrderId(@PathVariable Long orderId) {
-        List<TeachingRecordDTO> records = teachingRecordService.getRecordsByOrderId(orderId);
+    public Result<List<TeachingRecordDTO>> getRecordsByOrderId(@PathVariable String orderId) {
+        List<TeachingRecordDTO> records = teachingRecordService.getRecordsByOrderId(resolveOrderId(orderId));
         return Result.success(records);
     }
 
@@ -95,10 +120,10 @@ public class TeachingController {
     
     @Operation(summary = "获取课程统计信息")
     @GetMapping("/statistics/{orderId}")
-    public Result<java.util.Map<String, Object>> getCourseStatistics(@PathVariable Long orderId) {
+    public Result<java.util.Map<String, Object>> getCourseStatistics(@PathVariable String orderId) {
         Long userId = UserContext.getUserId();
         // TODO: 权限校验
-        java.util.Map<String, Object> statistics = teachingRecordService.getCourseStatistics(orderId);
+        java.util.Map<String, Object> statistics = teachingRecordService.getCourseStatistics(resolveOrderId(orderId));
         return Result.success(statistics);
     }
 }
