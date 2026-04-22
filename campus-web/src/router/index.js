@@ -260,7 +260,7 @@ const routes = [
         meta: { title: '课时详情', role: 'tutor' }
       },
       {
-        path: 'teacher/checkin/:orderId',
+        path: 'teacher/checkin',
         name: 'TeacherCheckIn',
         component: () => import('@/views/teacher/lesson/CheckIn.vue'),
         meta: { title: '上课打卡', role: 'tutor' }
