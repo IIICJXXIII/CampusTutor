@@ -92,8 +92,20 @@ public class ChatController {
     @Operation(summary = "发送消息", description = "发送聊天消息给指定用户")
     public Result<Long> sendMessage(@RequestBody Map<String, Object> message) {
         Long userId = UserContext.getUserId();
-        Long targetUserId = Long.valueOf(message.get("targetUserId").toString());
+        Object targetUserIdObj = message.get("targetUserId");
+        if (targetUserIdObj == null) {
+            return Result.fail("目标用户ID不能为空");
+        }
+        Long targetUserId;
+        try {
+            targetUserId = Long.valueOf(targetUserIdObj.toString());
+        } catch (NumberFormatException e) {
+            return Result.fail("目标用户ID格式无效");
+        }
         String content = (String) message.get("content");
+        if (content == null || content.trim().isEmpty()) {
+            return Result.fail("消息内容不能为空");
+        }
         String type = (String) message.getOrDefault("type", "text");
         
         Long messageId = chatService.sendMessageWithTypeString(userId, targetUserId, content, type);

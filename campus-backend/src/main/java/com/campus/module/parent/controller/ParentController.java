@@ -1,7 +1,12 @@
 package com.campus.module.parent.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.campus.common.context.UserContext;
 import com.campus.common.result.Result;
+import com.campus.module.demand.entity.DemandPost;
+import com.campus.module.demand.mapper.DemandPostMapper;
+import com.campus.module.order.entity.CourseOrder;
+import com.campus.module.order.mapper.CourseOrderMapper;
 import com.campus.module.parent.dto.StudentRequest;
 import com.campus.module.parent.entity.ParentStudent;
 import com.campus.module.parent.service.ParentStudentService;
@@ -11,11 +16,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-/**
- * 家长模块控制器
- */
 @Tag(name = "家长模块", description = "学生信息管理")
 @RestController
 @RequestMapping("/api/parent")
@@ -23,6 +27,8 @@ import java.util.List;
 public class ParentController {
 
     private final ParentStudentService parentStudentService;
+    private final DemandPostMapper demandPostMapper;
+    private final CourseOrderMapper courseOrderMapper;
 
     @Operation(summary = "添加学生")
     @PostMapping("/student")
@@ -61,5 +67,29 @@ public class ParentController {
     public Result<ParentStudent> getStudent(@PathVariable Long id) {
         ParentStudent student = parentStudentService.getById(id);
         return Result.success(student);
+    }
+
+    @Operation(summary = "获取家长端统计数据")
+    @GetMapping("/stats")
+    public Result<Map<String, Object>> getStats() {
+        Long parentId = UserContext.getUserId();
+        Map<String, Object> stats = new HashMap<>();
+
+        Long studentCount = parentStudentService.count(
+            new LambdaQueryWrapper<ParentStudent>().eq(ParentStudent::getParentId, parentId)
+        );
+        stats.put("studentCount", studentCount);
+
+        Long demandCount = demandPostMapper.selectCount(
+            new LambdaQueryWrapper<DemandPost>().eq(DemandPost::getPublisherId, parentId)
+        );
+        stats.put("demandCount", demandCount);
+
+        Long orderCount = courseOrderMapper.selectCount(
+            new LambdaQueryWrapper<CourseOrder>().eq(CourseOrder::getParentId, parentId)
+        );
+        stats.put("orderCount", orderCount);
+
+        return Result.success(stats);
     }
 }

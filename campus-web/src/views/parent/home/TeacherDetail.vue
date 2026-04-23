@@ -52,7 +52,7 @@
         </div>
         
         <div class="price-info">
-          <span class="price">¥{{ tutor.minPrice || 60 }} - {{ tutor.maxPrice || 120 }}</span>
+          <span class="price">¥{{ tutor.minPrice || 60 }}{{ tutor.minPrice !== tutor.maxPrice ? ' - ' + (tutor.maxPrice || 120) : '' }}</span>
           <span class="unit">/小时</span>
         </div>
       </div>
@@ -161,8 +161,9 @@
         </el-form-item>
         <el-form-item label="授课方式">
           <el-radio-group v-model="bookingForm.teachMode">
-            <el-radio :value="1">上门</el-radio>
-            <el-radio :value="2">网课</el-radio>
+            <el-radio :value="1">线下上门</el-radio>
+            <el-radio :value="2">线上授课</el-radio>
+            <el-radio :value="3">线上线下均可</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="期望课时">
@@ -244,17 +245,20 @@ const loadTutor = async () => {
     const res = await getPublicTutorProfile(route.params.id)
     if (res.code === 200) {
       const data = res.data || {}
-      // 后端字段 -> 前端展示字段映射与 JSON 解析
       const subjects = typeof data.teachSubjects === 'string'
         ? safeParseJson(data.teachSubjects, [])
         : (data.teachSubjects || [])
       const grades = typeof data.teachGrades === 'string'
         ? safeParseJson(data.teachGrades, [])
         : (data.teachGrades || [])
+      const isVerified = data.certStatus === 2
+      const rawName = data.realName || data.name || ''
+      const displayName = isVerified ? rawName : maskName(rawName)
       tutor.value = {
         id: data.id,
         userId: data.userId,
-        name: data.realName || data.name,
+        name: displayName,
+        realName: rawName,
         avatar: data.avatarUrl,
         university: data.universityName,
         major: data.major,
@@ -268,13 +272,13 @@ const loadTutor = async () => {
         introduction: data.introduction,
         experience: data.experience,
         schedules: data.scheduleConfig || [],
-        verified: data.certStatus === 2
+        verified: isVerified
       }
       reviews.value = data.reviews || []
-      // 默认选中第一个科目
       if (subjects.length > 0) {
         bookingForm.subject = subjects[0]
       }
+      recordView(data.userId)
     }
   } catch (error) {
     console.error('加载教师信息失败:', error)
@@ -284,13 +288,18 @@ const loadTutor = async () => {
   }
 }
 
-// 安全解析 JSON 字符串
 const safeParseJson = (str, fallback) => {
   try {
     return JSON.parse(str)
   } catch (e) {
     return fallback
   }
+}
+
+const maskName = (name) => {
+  if (!name || name.length <= 1) return name
+  if (name.length === 2) return name.charAt(0) + '*'
+  return name.charAt(0) + '*'.repeat(name.length - 2) + name.charAt(name.length - 1)
 }
 
 const goBack = () => {
@@ -317,7 +326,7 @@ const submitBooking = async () => {
   bookingLoading.value = true
   try {
     const res = await createOrder({
-      tutorProfileId: parseInt(route.params.id),
+      tutorProfileId: tutor.value?.id,
       studentId: bookingForm.studentId,
       grade: bookingForm.grade,
       teachMode: bookingForm.teachMode,
@@ -341,8 +350,6 @@ const submitBooking = async () => {
 onMounted(() => {
   loadTutor()
   loadStudents()
-  // 记录浏览行为
-  recordView(route.params.id).catch(() => {})
 })
 </script>
 

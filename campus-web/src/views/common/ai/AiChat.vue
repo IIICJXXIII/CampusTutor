@@ -10,7 +10,12 @@
             </div>
             <div class="title-text">
               <h2>Campus AI 助教</h2>
-              <span class="online-status"><span class="dot"></span>全天候为您解答</span>
+              <span class="online-status">
+                <span v-if="loading" class="thinking-status">
+                  <span class="pulse-dot"></span>思考中...
+                </span>
+                <template v-else><span class="dot"></span>全天候为您解答</template>
+              </span>
             </div>
           </div>
         </div>
@@ -70,13 +75,18 @@
             
             <div class="msg-content-wrapper">
               <div class="msg-name">{{ msg.role === 'user' ? '我' : 'AI 助手' }}</div>
-              <div class="message-bubble" :class="{ 'typing': msg.isTyping || msg.content === '' }">
-                <template v-if="msg.isTyping || msg.content === ''">
-                  <span class="dot"></span>
-                  <span class="dot"></span>
-                  <span class="dot"></span>
+              <div class="message-bubble" :class="{ 'typing': msg.isThinking }">
+                <template v-if="msg.isThinking">
+                  <div class="thinking-indicator">
+                    <div class="thinking-dots">
+                      <span class="thinking-dot"></span>
+                      <span class="thinking-dot"></span>
+                      <span class="thinking-dot"></span>
+                    </div>
+                    <span class="thinking-text">AI 正在思考中...</span>
+                  </div>
                 </template>
-                <template v-else>
+                <template v-else-if="msg.content">
                   <div class="md-content" v-html="msg.content"></div>
                 </template>
               </div>
@@ -118,7 +128,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@shared/stores'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Service, Delete, ChatLineSquare, ArrowRight, UserFilled, Promotion } from '@element-plus/icons-vue'
-import { chat, streamChat } from '@shared/api/llm'
+import { chat } from '@shared/api/llm'
 import { marked } from 'marked'
 
 const router = useRouter()
@@ -128,6 +138,11 @@ const messageContainer = ref(null)
 const messages = ref([])
 const inputText = ref('')
 const loading = ref(false)
+
+const chatStorageKey = computed(() => {
+  const prefix = userStore.userRole ? `${userStore.userRole}_` : ''
+  return `${prefix}ai_chat_history`
+})
 
 const userName = computed(() => userStore.user?.name)
 const userAvatar = computed(() => userStore.user?.avatar)
@@ -147,7 +162,7 @@ const clearHistory = async () => {
   try {
     await ElMessageBox.confirm('确定要清空聊天记录吗？', '提示')
     messages.value = []
-    localStorage.removeItem('ai_chat_history')
+    localStorage.removeItem(chatStorageKey.value)
     ElMessage.success('已清空')
   } catch {}
 }
@@ -187,37 +202,49 @@ const sendMessage = async () => {
   scrollToBottom()
   
   loading.value = true
+
+  const thinkingId = Date.now() + 1
+  messages.value.push({
+    id: thinkingId,
+    role: 'assistant',
+    content: '',
+    isThinking: true
+  })
+  scrollToBottom()
   
   try {
     const res = await chat({
       scene: 'demand',
-      messages: messages.value.map(m => ({
-        role: m.role,
-        content: m.content
-      }))
+      messages: messages.value
+        .filter(m => !m.isThinking)
+        .map(m => ({
+          role: m.role,
+          content: m.content
+        }))
     })
     
     if (res.code === 200) {
-      messages.value.push({
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: res.data.content || res.data.reply
-      })
+      const thinkingMsg = messages.value.find(m => m.id === thinkingId)
+      if (thinkingMsg) {
+        thinkingMsg.content = res.data.content || res.data.reply
+        thinkingMsg.isThinking = false
+      }
       scrollToBottom()
     } else {
       throw new Error(res.msg || '获取回复失败')
     }
     
-    // 保存聊天记录
-    localStorage.setItem('ai_chat_history', JSON.stringify(messages.value))
+    localStorage.setItem(chatStorageKey.value, JSON.stringify(
+      messages.value.map(m => ({ id: m.id, role: m.role, content: m.content }))
+    ))
   } catch (error) {
     console.error('AI回复失败:', error)
     const errMsg = error?.message || '服务暂时不可用，请稍后再试'
-    messages.value.push({
-      id: Date.now() + 1,
-      role: 'assistant',
-      content: `抱歉，请求失败：${errMsg}`
-    })
+    const thinkingMsg = messages.value.find(m => m.id === thinkingId)
+    if (thinkingMsg) {
+      thinkingMsg.content = `抱歉，请求失败：${errMsg}`
+      thinkingMsg.isThinking = false
+    }
   } finally {
     loading.value = false
     scrollToBottom()
@@ -226,7 +253,7 @@ const sendMessage = async () => {
 
 onMounted(() => {
   // 恢复聊天记录
-  const saved = localStorage.getItem('ai_chat_history')
+  const saved = localStorage.getItem(chatStorageKey.value)
   if (saved) {
     try {
       messages.value = JSON.parse(saved)
@@ -308,6 +335,19 @@ onMounted(() => {
           gap: 6px;
           margin-top: 2px;
           .dot { width: 6px; height: 6px; background: #67c23a; border-radius: 50%; }
+          .thinking-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #7b2ff7;
+            .pulse-dot {
+              width: 8px;
+              height: 8px;
+              border-radius: 50%;
+              background: #7b2ff7;
+              animation: headerPulse 1.5s ease-in-out infinite;
+            }
+          }
         }
       }
     }
@@ -452,11 +492,37 @@ onMounted(() => {
         :deep(code) { font-family: Consolas, monospace; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px; font-size: 13.5px; }
         
         &.typing {
-          display: flex; gap: 4px; padding: 16px 20px; align-items: center;
-          .dot { width: 6px; height: 6px; background: #999; border-radius: 50%; animation: typing 1.4s infinite ease-in-out; }
-          .dot:nth-child(1) { animation-delay: 0s; }
-          .dot:nth-child(2) { animation-delay: 0.2s; }
-          .dot:nth-child(3) { animation-delay: 0.4s; }
+          display: flex; align-items: center; padding: 14px 18px;
+          
+          .thinking-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            
+            .thinking-dots {
+              display: flex;
+              gap: 4px;
+              align-items: center;
+              
+              .thinking-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #7b2ff7, #256bfe);
+                animation: thinkingPulse 1.4s ease-in-out infinite;
+                
+                &:nth-child(1) { animation-delay: 0s; }
+                &:nth-child(2) { animation-delay: 0.2s; }
+                &:nth-child(3) { animation-delay: 0.4s; }
+              }
+            }
+            
+            .thinking-text {
+              font-size: 14px;
+              color: #86909c;
+              animation: thinkingFade 2s ease-in-out infinite;
+            }
+          }
         }
       }
     }
@@ -520,5 +586,16 @@ onMounted(() => {
 
 /* 动效 */
 @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes typing { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(-4px); opacity: 1; } }
+@keyframes thinkingPulse {
+  0%, 100% { transform: scale(0.6); opacity: 0.4; }
+  50% { transform: scale(1); opacity: 1; }
+}
+@keyframes thinkingFade {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+@keyframes headerPulse {
+  0%, 100% { transform: scale(0.8); opacity: 0.5; box-shadow: 0 0 0 0 rgba(123, 47, 247, 0.4); }
+  50% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 6px rgba(123, 47, 247, 0); }
+}
 </style>

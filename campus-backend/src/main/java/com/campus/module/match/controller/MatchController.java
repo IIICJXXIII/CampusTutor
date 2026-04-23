@@ -11,9 +11,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * 匹配搜索控制器
- */
 @Tag(name = "匹配模块", description = "教员搜索、匹配")
 @RestController
 @RequestMapping("/api/match")
@@ -25,7 +22,6 @@ public class MatchController {
     @Operation(summary = "搜索教员")
     @PostMapping("/tutors")
     public Result<IPage<TutorSearchResult>> searchTutors(@RequestBody TutorSearchRequest request) {
-        // 设置当前用户ID，用于个性化推荐(协同过滤)
         request.setUserId(UserContext.getUserId());
         IPage<TutorSearchResult> result = matchService.searchTutors(request);
         return Result.success(result);
@@ -45,9 +41,7 @@ public class MatchController {
             @RequestParam(defaultValue = "10") Integer size) {
 
         TutorSearchRequest request = new TutorSearchRequest();
-        // 设置当前用户ID
         request.setUserId(UserContext.getUserId());
-
         request.setSubject(subject);
         request.setGrade(grade);
         request.setLongitude(longitude);

@@ -30,7 +30,7 @@
             {{ demand.address }}
           </el-descriptions-item>
           <el-descriptions-item label="技能水平">{{ demand.skillLevel || '不限' }}</el-descriptions-item>
-          <el-descriptions-item label="授课方式">{{ demand.teachMode === 1 ? '线上' : demand.teachMode === 2 ? '线下' : '均可' }}</el-descriptions-item>
+          <el-descriptions-item label="授课方式">{{ demand.teachMode === 1 ? '线下上门' : demand.teachMode === 2 ? '线上授课' : '线上线下均可' }}</el-descriptions-item>
         </el-descriptions>
         
         <div class="section">
@@ -103,7 +103,7 @@ const getStatusType = (status) => {
 }
 
 const getStatusText = (status) => {
-  const map = { 0: '待发布', 1: '招募中', 2: '已匹配', 3: '已关闭' }
+  const map = { 0: '草稿', 1: '已上架', 2: '已下架', 3: '已完成' }
   return map[status] || '未知'
 }
 

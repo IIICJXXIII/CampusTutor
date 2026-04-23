@@ -33,17 +33,13 @@ public class AdminAuthController {
     public Result<LoginResponse> login(@RequestBody LoginRequest request) {
         log.info("管理员登录请求: {}", request.getAccount());
 
-        // 查询用户
         SysUser user = sysUserMapper.selectByUsername(request.getAccount());
 
         if (user == null) {
             return Result.fail("用户名或密码错误");
         }
 
-        // 验证密码 (优先 BCrypt，兼容 MD5 并自动升级)
         String storedPassword = user.getPassword();
-        log.info("数据库存储的密码: {}", storedPassword != null ? storedPassword.substring(0, Math.min(storedPassword.length(), 10)) + "..." : "null");
-        log.info("用户输入的密码: {}", request.getPassword());
         
         boolean verified;
         boolean shouldUpgrade = false;
@@ -51,12 +47,11 @@ public class AdminAuthController {
             verified = BCrypt.checkpw(request.getPassword(), storedPassword);
         } else {
             String md5Password = cn.hutool.crypto.SecureUtil.md5(request.getPassword());
-            log.info("计算后的MD5密码: {}", md5Password);
             verified = md5Password.equals(storedPassword);
             shouldUpgrade = verified;
         }
         if (!verified) {
-            log.error("密码验证失败，数据库密码: {}, 输入密码MD5: {}", storedPassword, cn.hutool.crypto.SecureUtil.md5(request.getPassword()));
+            log.warn("管理员密码验证失败, account={}", request.getAccount());
             return Result.fail("用户名或密码错误");
         }
 
@@ -75,9 +70,7 @@ public class AdminAuthController {
             return Result.fail("账号已被禁用");
         }
 
-        // 生成 Token
         String token = jwtUtils.generateToken(user.getId(), user.getRole());
-        log.info("生成的JWT Token: {}", token != null ? token.substring(0, Math.min(token.length(), 20)) + "..." : "null");
 
         // 构建响应 - 使用 Builder 模式
         LoginResponse response = LoginResponse.builder()

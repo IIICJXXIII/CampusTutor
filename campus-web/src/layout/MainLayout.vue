@@ -63,7 +63,7 @@
 
           <!-- 消息通知 -->
           <div class="icon-btn" @click="goToChat">
-            <el-badge :value="unreadCount" :max="99" :hidden="unreadCount === 0">
+            <el-badge :value="chatStore.unreadCount" :max="99" :hidden="chatStore.unreadCount === 0">
               <el-icon :size="20"><ChatDotRound /></el-icon>
             </el-badge>
           </div>
@@ -155,14 +155,15 @@ import {
 } from '@element-plus/icons-vue'
 import { useUserStore, useChatStore } from '@shared/stores'
 import { getUnreadCount } from '@shared/api/chat'
+import { reverseGeocode } from '@shared/api/map'
+import { updateUserInfo } from '@shared/api/user'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const chatStore = useChatStore()
 
-const isMobile = ref(false)
-const unreadCount = ref(0)
+const isMobile = ref(window.innerWidth < 768)
 let pollTimer = null
 
 // 角色判断
@@ -258,9 +259,7 @@ const handleUserCommand = async (command) => {
         })
         userStore.logout()
         router.push('/login')
-        ElMessage.success('已退出登录')
       } catch (e) {
-        // 用户取消
       }
       break
   }
@@ -271,11 +270,45 @@ const fetchUnreadCount = async () => {
   try {
     const res = await getUnreadCount()
     if (res.code === 200) {
-      unreadCount.value = res.data || 0
       chatStore.setUnreadCount(res.data || 0)
     }
   } catch (error) {
-    console.error('获取未读数失败', error)
+  }
+}
+
+const requestLocation = async () => {
+  const info = userStore.userInfo
+  if (info?.longitude && info?.latitude) return
+
+  try {
+    const pos = await new Promise((resolve, reject) => {
+      if (!navigator.geolocation) return reject(new Error('不支持定位'))
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: false, timeout: 8000, maximumAge: 300000
+      })
+    })
+    const { longitude, latitude } = pos.coords
+    try {
+      const geoRes = await reverseGeocode(latitude, longitude)
+      if (geoRes.code === 200 && geoRes.data) {
+        const addr = geoRes.data
+        await updateUserInfo({
+          longitude, latitude,
+          address: addr.formattedAddress || addr.address || '',
+          region: [addr.province, addr.city, addr.district].filter(Boolean).join(',')
+        })
+        userStore.setUserInfo({
+          ...info,
+          longitude, latitude,
+          address: addr.formattedAddress || addr.address || '',
+          region: [addr.province, addr.city, addr.district].filter(Boolean).join(',')
+        })
+      }
+    } catch (e) {
+      console.warn('逆地址解析失败:', e)
+    }
+  } catch (e) {
+    console.warn('定位获取失败:', e.message)
   }
 }
 
@@ -284,6 +317,7 @@ onMounted(() => {
   window.addEventListener('resize', checkMobile)
   fetchUnreadCount()
   pollTimer = setInterval(fetchUnreadCount, 30000)
+  requestLocation()
 })
 
 onUnmounted(() => {

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="teacher-auth">
     <div class="page-header">
       <h1 class="page-title">资质认证</h1>
@@ -303,33 +303,21 @@ const beforeUpload = (file) => {
 }
 
 const handleStudentCardUpload = async (response) => {
-  console.log('学生证上传响应:', response)
-  console.log('学生证上传响应类型:', typeof response)
-  console.log('学生证上传响应数据结构:', JSON.stringify(response))
-  
   if (response.code === 200) {
-    // 检查响应数据结构
     let imageUrl = null
     if (response.data && typeof response.data === 'string') {
-      // data直接就是URL字符串
       imageUrl = response.data
       form.studentCardUrl = response.data
     } else if (response.data && response.data.url) {
-      // data是对象，包含url字段
       imageUrl = response.data.url
       form.studentCardUrl = response.data.url
     } else if (response.url) {
-      // response直接包含url字段
       imageUrl = response.url
       form.studentCardUrl = response.url
     } else {
-      console.error('无法从上传响应中提取URL:', response)
       return
     }
     
-    console.log('提取的图片URL:', imageUrl)
-    
-    // OCR识别
     try {
       const res = await recognizeStudentCard(imageUrl)
       if (res.code === 200 && res.data) {
@@ -339,36 +327,26 @@ const handleStudentCardUpload = async (response) => {
         form.major = res.data.major || form.major
       }
     } catch (error) {
-      console.error('OCR识别失败', error)
+      // OCR识别失败
     }
   }
 }
 
 const handleIdCardFrontUpload = async (response) => {
-  console.log('身份证正面上传响应:', response)
-  console.log('身份证正面上传响应数据结构:', JSON.stringify(response))
-  
   if (response.code === 200) {
-    // 检查响应数据结构
     let imageUrl = null
     if (response.data && typeof response.data === 'string') {
-      // data直接就是URL字符串
       imageUrl = response.data
       form.idCardFrontUrl = response.data
     } else if (response.data && response.data.url) {
-      // data是对象，包含url字段
       imageUrl = response.data.url
       form.idCardFrontUrl = response.data.url
     } else if (response.url) {
-      // response直接包含url字段
       imageUrl = response.url
       form.idCardFrontUrl = response.url
     } else {
-      console.error('无法从上传响应中提取URL:', response)
       return
     }
-    
-    console.log('身份证正面提取的图片URL:', imageUrl)
     
     try {
       const res = await recognizeIdCardFront(imageUrl)
@@ -379,36 +357,26 @@ const handleIdCardFrontUpload = async (response) => {
         form.idNumber = res.data.idNumber || form.idNumber
       }
     } catch (error) {
-      console.error('OCR识别失败', error)
+      // OCR识别失败
     }
   }
 }
 
 const handleIdCardBackUpload = async (response) => {
-  console.log('身份证背面上传响应:', response)
-  console.log('身份证背面上传响应数据结构:', JSON.stringify(response))
-  
   if (response.code === 200) {
-    // 检查响应数据结构
     let imageUrl = null
     if (response.data && typeof response.data === 'string') {
-      // data直接就是URL字符串
       imageUrl = response.data
       form.idCardBackUrl = response.data
     } else if (response.data && response.data.url) {
-      // data是对象，包含url字段
       imageUrl = response.data.url
       form.idCardBackUrl = response.data.url
     } else if (response.url) {
-      // response直接包含url字段
       imageUrl = response.url
       form.idCardBackUrl = response.url
     } else {
-      console.error('无法从上传响应中提取URL:', response)
       return
     }
-    
-    console.log('身份证背面提取的图片URL:', imageUrl)
     
     try {
       const res = await recognizeIdCardBack(imageUrl)
@@ -416,7 +384,7 @@ const handleIdCardBackUpload = async (response) => {
         idCardInfo.validDate = res.data.validDate
       }
     } catch (error) {
-      console.error('OCR识别失败', error)
+      // OCR识别失败
     }
   }
 }
@@ -496,7 +464,7 @@ const loadCertStatus = async () => {
       }
     }
   } catch (error) {
-    console.error('获取认证状态失败', error)
+    // 获取认证状态失败
   }
 }
 

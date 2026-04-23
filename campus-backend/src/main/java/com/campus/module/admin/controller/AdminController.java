@@ -5,6 +5,8 @@ import com.campus.common.result.Result;
 import com.campus.module.admin.dto.*;
 import com.campus.module.admin.service.AdminService;
 import com.campus.module.demand.entity.DemandPost;
+import com.campus.module.match.service.DeepFMInferenceService;
+import com.campus.module.recommend.service.CollaborativeFilterService;
 import com.campus.module.teaching.entity.TeachingRecord;
 import com.campus.module.user.entity.SysUser;
 import com.campus.module.wallet.entity.SysWallet;
@@ -15,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -28,6 +31,8 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminService adminService;
+    private final DeepFMInferenceService deepFMInferenceService;
+    private final CollaborativeFilterService collaborativeFilterService;
 
     // ==================== 仪表盘 ====================
 
@@ -269,6 +274,32 @@ public class AdminController {
     @Operation(summary = "更新系统设置")
     public Result<Void> updateSettings(@RequestBody Map<String, Object> settings) {
         log.info("更新系统设置: {}", settings);
+        return Result.success();
+    }
+
+    // ==================== 推荐算法监控 ====================
+
+    @GetMapping("/deepfm/status")
+    @Operation(summary = "DeepFM模型状态检查(管理员)")
+    public Result<Map<String, Object>> deepfmStatus() {
+        Map<String, Object> status = new HashMap<>();
+        status.put("modelReady", deepFMInferenceService.isModelReady());
+        status.put("modelPath", deepFMInferenceService.getModelPath());
+        status.put("featureDim", deepFMInferenceService.getFeatureDim());
+        return Result.success(status);
+    }
+
+    @DeleteMapping("/recommend/cache/{tutorId}")
+    @Operation(summary = "清除推荐缓存(管理员)")
+    public Result<Void> clearRecommendCache(@PathVariable(required = false) Long tutorId) {
+        collaborativeFilterService.clearSimilarityCache(tutorId);
+        return Result.success();
+    }
+
+    @DeleteMapping("/recommend/cache")
+    @Operation(summary = "清除所有推荐缓存(管理员)")
+    public Result<Void> clearAllRecommendCache() {
+        collaborativeFilterService.clearSimilarityCache(null);
         return Result.success();
     }
 }

@@ -67,15 +67,22 @@ public class AuthController {
 
     @Operation(summary = "密码找回 - 重置密码", description = "使用验证码重置密码")
     @PostMapping("/reset/password")
-    public Result<Void> resetPassword(
-            @Parameter(description = "手机号") @RequestParam String phone,
-            @Parameter(description = "验证码") @RequestParam String code,
-            @Parameter(description = "新密码") @RequestParam String newPassword) {
-        // 验证验证码
+    public Result<Void> resetPassword(@RequestBody java.util.Map<String, String> params) {
+        String phone = params.get("phone");
+        String code = params.get("code");
+        String newPassword = params.get("newPassword");
+        if (phone == null || phone.trim().isEmpty()) {
+            throw new BusinessException(400, "手机号不能为空");
+        }
+        if (code == null || code.trim().isEmpty()) {
+            throw new BusinessException(400, "验证码不能为空");
+        }
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new BusinessException(400, "新密码不能为空");
+        }
         if (!authService.verifyCode(phone, code)) {
             throw new BusinessException(400, "验证码错误或已过期");
         }
-        // 重置密码
         sysUserService.resetPassword(phone, newPassword);
         return Result.success("密码重置成功");
     }
