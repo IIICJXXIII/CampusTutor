@@ -94,6 +94,9 @@ public class DemandController {
     @GetMapping("/detail/{id}")
     public Result<DemandPost> detail(@PathVariable Long id) {
         DemandPost demand = demandPostService.getById(id);
+        if (demand == null) {
+            return Result.fail("需求不存在");
+        }
         return Result.success(demand);
     }
 

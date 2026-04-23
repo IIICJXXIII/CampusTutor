@@ -208,10 +208,12 @@ public class MatchService {
         boolean enableCF = false;
         double cfWeight = 0.0;
 
-        // 只有请求了"score"排序（即默认搜索或智能排序）且用户已登录，才尝试CF
+        boolean useDeepFM = ("score".equals(sortBy) || StringUtils.isEmpty(sortBy))
+                && request.getUserId() != null
+                && deepFMInferenceService.isModelReady();
+
         if (("score".equals(sortBy) || StringUtils.isEmpty(sortBy)) && request.getUserId() != null) {
             try {
-                // 检查是否启用且有足够的历史行为（冷启动检查）
                 if (cfConfig.isEnableCache() && cfService.hasEnoughHistory(request.getUserId())) {
                     List<Long> candidateIds = filteredProfiles.stream()
                             .map(TutorProfile::getId)
@@ -242,10 +244,29 @@ public class MatchService {
         Map<Long, SysUser> finalUserMap = userMap;
         Map<Long, Double> finalDistanceMap = distanceMap;
 
-        // 传入有效final变量给Stream
         boolean finalEnableCF = enableCF;
         double finalCfWeight = cfWeight;
         Map<Long, Double> finalCfScores = cfScores;
+
+        // ============ DeepFM 深度学习精排 ============
+        Map<Long, Double> deepFmScores = new HashMap<>();
+        if (useDeepFM && !filteredProfiles.isEmpty()) {
+            try {
+                float[][] features = filteredProfiles.stream()
+                        .map(tp -> buildFeatureVector(request.getUserId(), tp))
+                        .toArray(float[][]::new);
+                float[] predictions = deepFMInferenceService.predictScores(features);
+                if (predictions != null && predictions.length == filteredProfiles.size()) {
+                    for (int i = 0; i < predictions.length; i++) {
+                        deepFmScores.put(filteredProfiles.get(i).getId(), (double) predictions[i]);
+                    }
+                    log.info("[DeepFM] 推理完成，有效预测数={}", deepFmScores.size());
+                }
+            } catch (Exception e) {
+                log.warn("[DeepFM] 推理异常，降级到规则排序: {}", e.getMessage());
+            }
+        }
+        boolean finalUseDeepFM = !deepFmScores.isEmpty();
 
         List<TutorSearchResult> results = filteredProfiles.stream().map(profile -> {
             // 获取动态权重配置
@@ -274,29 +295,35 @@ public class MatchService {
                     weights.getHotnessWeight());
 
             // ============ 混合评分计算 (Hybrid Scoring) ============
-            // 如果启用了CF且该教员有预测分，则计算混合分数
             if (finalEnableCF && finalCfScores.containsKey(profile.getId())) {
                 Double cfScore = finalCfScores.get(profile.getId());
                 if (cfScore != null) {
-                    double contentScore = scoreResult.getMatchScore(); // 0-100
-                    double cfScoreNormalized = cfScore * 100; // 0-100
-
-                    // 混合公式： (1-w) * Content + w * CF
+                    double contentScore = scoreResult.getMatchScore();
+                    double cfScoreNormalized = cfScore * 100;
                     double hybridScore = (1 - finalCfWeight) * contentScore + finalCfWeight * cfScoreNormalized;
-
-                    // 更新分数
                     scoreResult.setMatchScore(Math.min(100.0, hybridScore));
                     scoreResult.setCfScore(cfScore);
-
-                    // 添加推荐标签
                     if (cfScore >= 0.7) {
                         scoreResult.getMatchTags().add("相似家长推荐");
                     } else if (cfScore >= 0.5) {
                         scoreResult.getMatchTags().add("猜你喜欢");
                     }
-
                     log.debug("Hybrid score for tutor {}: content={}, cf={}, hybrid={}",
                             profile.getId(), contentScore, cfScoreNormalized, hybridScore);
+                }
+            }
+
+            // ============ DeepFM 精排融合 ============
+            if (finalUseDeepFM && deepFmScores.containsKey(profile.getId())) {
+                Double deepFmScore = deepFmScores.get(profile.getId());
+                if (deepFmScore != null) {
+                    double currentScore = scoreResult.getMatchScore();
+                    double deepFmNormalized = Math.min(100.0, deepFmScore * 100);
+                    double deepFmWeight = 0.3;
+                    double fusedScore = (1 - deepFmWeight) * currentScore + deepFmWeight * deepFmNormalized;
+                    scoreResult.setMatchScore(Math.min(100.0, fusedScore));
+                    log.debug("DeepFM fusion for tutor {}: rule={}, deepfm={}, fused={}",
+                            profile.getId(), currentScore, deepFmNormalized, fusedScore);
                 }
             }
 
@@ -333,22 +360,17 @@ public class MatchService {
                 log.debug("流量池加分失败(Redis不可用)，跳过: {}", e.getMessage());
             }
 
-            // 复制评分数据到结果
             scoreResult.setId(profile.getId());
             scoreResult.setUserId(profile.getUserId());
 
-            // 姓名脱敏
             String name = profile.getRealName();
-            if (name != null && name.length() > 1) {
-                scoreResult.setRealName(name.charAt(0) + "**");
-            } else {
-                scoreResult.setRealName(name);
-            }
+            scoreResult.setRealName(name);
 
             // 获取头像
             SysUser user = finalUserMap.get(profile.getUserId());
             if (user != null) {
                 scoreResult.setAvatarUrl(user.getAvatarUrl());
+                scoreResult.setGender(user.getGender());
             }
 
             scoreResult.setUniversityName(profile.getUniversityName());
@@ -416,10 +438,6 @@ public class MatchService {
     // LBS 召回 + DeepFM 深度学习精排 —— 级联推荐算法
     // ========================================================================================
 
-    /** 离散特征 Hash 取模空间 */
-    private static final int HASH_MOD = 10000;
-
-    /** 连续特征归一化分母 */
     private static final float PRICE_NORM = 500f;
     private static final float RATING_NORM = 5.0f;
     private static final float ORDER_NORM = 1000f;
@@ -618,18 +636,14 @@ public class MatchService {
             result.setId(profile.getId());
             result.setUserId(profile.getUserId());
 
-            // 姓名脱敏
             String name = profile.getRealName();
-            if (name != null && name.length() > 1) {
-                result.setRealName(name.charAt(0) + "**");
-            } else {
-                result.setRealName(name);
-            }
+            result.setRealName(name);
 
             // 头像
             SysUser user = userMap.get(profile.getUserId());
             if (user != null) {
                 result.setAvatarUrl(user.getAvatarUrl());
+                result.setGender(user.getGender());
             }
 
             result.setUniversityName(profile.getUniversityName());
@@ -688,39 +702,26 @@ public class MatchService {
     private float[] buildFeatureVector(Long userId, TutorProfile tp) {
         float[] vec = new float[8];
 
-        // ---- 离散特征：Hash 取模映射为数值索引 ----
-        // [0] user_id
-        vec[0] = 0f;
+        vec[0] = (float) DeepFMInferenceService.hashFeature(userId, DeepFMInferenceService.VOCAB_USER_ID);
 
-        // [1] tutor_id
-        vec[1] = (float) (tp.getId().hashCode() & 0x7FFFFFFF) % HASH_MOD;
+        vec[1] = (float) DeepFMInferenceService.hashFeature(tp.getId(), DeepFMInferenceService.VOCAB_TUTOR_ID);
 
-        // [2] university_name
-        vec[2] = tp.getUniversityName() != null
-                ? (float) (tp.getUniversityName().hashCode() & 0x7FFFFFFF) % HASH_MOD
+        vec[2] = (float) DeepFMInferenceService.hashFeature(tp.getUniversityName(), DeepFMInferenceService.VOCAB_UNIVERSITY_NAME);
+
+        vec[3] = (float) DeepFMInferenceService.hashFeature(tp.getTeachSubjects(), DeepFMInferenceService.VOCAB_TEACH_SUBJECTS);
+
+        vec[4] = tp.getCanOnline() != null
+                ? (float) DeepFMInferenceService.hashFeature(tp.getCanOnline(), DeepFMInferenceService.VOCAB_CAN_ONLINE)
                 : 0f;
 
-        // [3] teach_subjects
-        vec[3] = tp.getTeachSubjects() != null
-                ? (float) (tp.getTeachSubjects().hashCode() & 0x7FFFFFFF) % HASH_MOD
-                : 0f;
-
-        // ---- 离散特征（二值型）----
-        // [4] can_online
-        vec[4] = tp.getCanOnline() != null ? tp.getCanOnline().floatValue() : 0f;
-
-        // ---- 连续特征：归一化处理 ----
-        // [5] expect_price / 500
         vec[5] = tp.getExpectPrice() != null
                 ? Math.min(tp.getExpectPrice().floatValue() / PRICE_NORM, 1.0f)
                 : 0f;
 
-        // [6] rating / 5.0
         vec[6] = tp.getRating() != null
                 ? tp.getRating().floatValue() / RATING_NORM
                 : 0f;
 
-        // [7] order_count / 1000
         vec[7] = tp.getOrderCount() != null
                 ? tp.getOrderCount().floatValue() / ORDER_NORM
                 : 0f;

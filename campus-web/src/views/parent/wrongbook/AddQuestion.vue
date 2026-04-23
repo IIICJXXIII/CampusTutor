@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="add-question-page">
     <div class="page-header">
       <el-button link @click="goBack">
@@ -129,7 +129,7 @@ import { ArrowLeft, Plus, View, Delete, Loading } from '@element-plus/icons-vue'
 import { addWrongQuestion } from '@shared/api/wrongbook'
 import { getStudentList } from '@shared/api/parent'
 import { uploadFile } from '@shared/api/file'
-import { generalOcr } from '@shared/api/ocr'
+import { recognizeGeneral } from '@shared/api/ocr'
 
 const router = useRouter()
 
@@ -188,7 +188,7 @@ const recognizeText = async () => {
   
   recognizing.value = true
   try {
-    const res = await generalOcr(imageUrl.value)
+    const res = await recognizeGeneral(imageUrl.value)
     if (res.code === 200 && res.data?.text) {
       form.value.content = res.data.text
       ElMessage.success('识别成功')

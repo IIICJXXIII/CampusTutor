@@ -27,6 +27,7 @@ export function register(data) {
 /**
  * 发送验证码
  * @param {string} phone - 手机号
+ * @param {string} purpose - 用途 (register/reset_password)
  */
 export function sendCode(phone, purpose = 'register') {
   return request.post('/auth/send-code', null, {
@@ -35,16 +36,9 @@ export function sendCode(phone, purpose = 'register') {
 }
 
 /**
- * 微信小程序登录
- * @param {Object} data - { code, encryptedData, iv, userInfo }
+ * 重置密码
+ * @param {Object} data - { phone, code, newPassword }
  */
-export function wxLogin(data) {
-  return request.post('/auth/wx-login', data);
-}
-
-/**
- * 获取当前用户信息
- */
-export function getCurrentUser() {
-  return request.get('/user/current');
+export function resetPassword(data) {
+  return request.post('/auth/reset/password', data);
 }

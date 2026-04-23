@@ -175,7 +175,6 @@ const loadTargetUserInfo = async () => {
       targetUser.value = res.data
     }
   } catch (error) {
-    console.error('获取对方用户信息失败:', error)
   }
 }
 
@@ -191,8 +190,9 @@ const loadMessages = async (reset = false) => {
   
   try {
     if (reset) {
-      // 当重新加载/初次进入聊天时，标记对方的消息已读
-      markAsRead(targetId).catch(err => console.error('标记已读失败', err))
+      markAsRead(targetId).then(() => {
+        chatStore.setUnreadCount(Math.max(0, chatStore.unreadCount - 1))
+      }).catch(() => {})
     }
     const res = await getChatHistory(targetId, { page: page.value, pageSize: 20 })
     if (res.code === 200) {
@@ -324,13 +324,12 @@ const connectWebSocket = () => {
 
   ws = new WebSocket(wsUrl)
 
-  ws.onopen = () => { console.log('WebSocket connected') }
+  ws.onopen = () => {}
 
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data)
     if (String(data.targetId) === String(route.params.id) || String(data.senderId) === String(route.params.id)) {
 
-      // 🚨 同步加上映射逻辑
       let msgTypeStr = data.type || 'text'
       if (data.msgType === 1) msgTypeStr = 'text'
       else if (data.msgType === 2) msgTypeStr = 'image'
@@ -338,14 +337,19 @@ const connectWebSocket = () => {
       messages.value.push({
         ...data,
         type: msgTypeStr,
-        isSelf: String(data.senderId) !== String(route.params.id) // 准确判断是否是我发送的
+        isSelf: String(data.senderId) !== String(route.params.id)
       })
       scrollToBottom()
+
+      if (String(data.senderId) !== String(userStore.userId)) {
+        markAsRead(String(data.senderId)).catch(() => {})
+      }
+    } else if (String(data.targetId) === String(userStore.userId)) {
+      chatStore.setUnreadCount(chatStore.unreadCount + 1)
     }
   }
 
   ws.onclose = () => {
-    console.log('WebSocket closed')
     reconnectTimer = setTimeout(connectWebSocket, 3000)
   }
 }
@@ -361,19 +365,18 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  // 1. 先清理定时器
   if (reconnectTimer) {
     clearTimeout(reconnectTimer)
     reconnectTimer = null
   }
   
-  // 2. 彻底切断 WebSocket
   if (ws) {
-    // 将 onclose 回调置空，防止触发 3 秒后的断线重连！
     ws.onclose = null 
     ws.close()
     ws = null
   }
+
+  chatStore.refreshUnreadCount()
 })
 </script>
 

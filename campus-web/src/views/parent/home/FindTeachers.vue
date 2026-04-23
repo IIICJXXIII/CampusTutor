@@ -108,11 +108,9 @@
         class="tutor-card"
         @click="viewDetail(tutor.userId)"
       >
-        <!-- 推荐标签 -->
-        <div v-if="tutor.matchScore > 70 || (tutor.matchTags && tutor.matchTags.length)" class="recommend-badge">
+        <div v-if="tutor.matchTags && tutor.matchTags.length" class="recommend-badge">
           <el-tag type="warning" size="small" effect="dark">
-            <el-icon><MagicStick /></el-icon>
-            {{ tutor.matchScore ? `匹配 ${Math.round(tutor.matchScore)}%` : '智能推荐' }}
+            {{ tutor.matchTags[0] }}
           </el-tag>
         </div>
         <div class="tutor-avatar">
@@ -127,8 +125,8 @@
         <div class="tutor-info">
           <div class="tutor-name">
             {{ tutor.name }}
-            <el-tag size="small" :type="tutor.gender === 1 ? 'primary' : 'danger'">
-              {{ tutor.gender === 1 ? '男' : '女' }}
+            <el-tag v-if="tutor.gender != null" size="small" :type="Number(tutor.gender) === 1 ? 'primary' : 'danger'">
+              {{ Number(tutor.gender) === 1 ? '男' : '女' }}
             </el-tag>
           </div>
           <div class="tutor-school">{{ tutor.university }} · {{ tutor.major }}</div>
@@ -152,7 +150,7 @@
               {{ tutor.totalHours || 0 }}小时
             </span>
             <span class="stat-item price">
-              ¥{{ tutor.minPrice || 60 }}-{{ tutor.maxPrice || 120 }}/时
+              ¥{{ tutor.minPrice || 60 }}/时
             </span>
           </div>
         </div>
@@ -182,7 +180,7 @@
 import { ref, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Search, Star, Clock, Location, List, Aim, Close, MagicStick } from '@element-plus/icons-vue'
+import { Search, Star, Clock, Location, List, Aim, Close } from '@element-plus/icons-vue'
 import { getTutorList } from '@shared/api/match'
 import { recordSearch } from '@shared/api/behavior'
 
@@ -190,6 +188,7 @@ const router = useRouter()
 const loading = ref(false)
 const tutors = ref([])
 const searchKeyword = ref('')
+const userLocation = ref(null)
 const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
@@ -206,6 +205,12 @@ const filters = reactive({
   gender: '',
   sort: 'default'
 })
+
+const maskName = (name) => {
+  if (!name || name.length <= 1) return name
+  if (name.length === 2) return name.charAt(0) + '*'
+  return name.charAt(0) + '**'
+}
 
 const loadTutors = async () => {
   loading.value = true
@@ -247,22 +252,27 @@ const loadTutors = async () => {
     if (res.code === 200) {
       const rawRecords = res.data?.records || []
       // 后端字段 -> 前端展示字段映射
-      tutors.value = rawRecords.map(t => ({
-        ...t,
-        name: t.realName || t.name,
-        avatar: t.avatarUrl || t.avatar,
-        university: t.universityName || t.university,
-        subjects: t.teachSubjects || t.subjects || [],
-        grades: t.teachGrades || t.grades || [],
-        minPrice: t.expectPrice || t.minPrice || 60,
-        maxPrice: t.expectPrice || t.maxPrice || 120,
-        verified: t.certStatus === 2 || t.verified,
-        totalHours: t.totalHours || 0,
-        rating: t.rating || 5,
-        gender: t.gender,
-        matchScore: t.matchScore,
-        matchTags: t.matchTags
-      }))
+      tutors.value = rawRecords.map(t => {
+        const rawName = t.realName || t.name || ''
+        const isVerified = t.certStatus === 2 || t.verified
+        const displayName = isVerified ? rawName : maskName(rawName)
+        return {
+          ...t,
+          name: displayName,
+          realName: rawName,
+          avatar: t.avatarUrl || t.avatar,
+          university: t.universityName || t.university,
+          subjects: t.teachSubjects || t.subjects || [],
+          grades: t.teachGrades || t.grades || [],
+          minPrice: t.expectPrice || t.minPrice || 60,
+          maxPrice: t.expectPrice || t.maxPrice || t.minPrice || 60,
+          verified: isVerified,
+          totalHours: t.totalHours || 0,
+          rating: t.rating || 5,
+          gender: t.gender,
+          matchTags: t.matchTags || []
+        }
+      })
       total.value = res.data?.total || 0
     }
   } catch (error) {
@@ -340,6 +350,7 @@ const initMap = async () => {
     geo.getCurrentPosition((status, result) => {
       if (status === 'complete') {
         map.setCenter([result.position.lng, result.position.lat])
+        userLocation.value = { longitude: result.position.lng, latitude: result.position.lat }
       }
     })
     addMarkersToMap()

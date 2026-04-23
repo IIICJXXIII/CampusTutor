@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="find-students">
     <!-- 搜索筛选 -->
     <div class="search-card">
@@ -30,11 +30,12 @@
           </el-select>
         </el-form-item>
         <el-form-item label="距离">
-          <el-select v-model="searchForm.radius" placeholder="选择距离">
+          <el-select v-model="searchForm.radius" placeholder="选择距离" clearable>
             <el-option label="3公里内" :value="3" />
             <el-option label="5公里内" :value="5" />
             <el-option label="10公里内" :value="10" />
-            <el-option label="不限" :value="50" />
+            <el-option label="20公里内" :value="20" />
+            <el-option label="50公里内" :value="50" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -172,13 +173,17 @@ const getSubjectType = (subject) => {
 
 const initMap = async () => {
   try {
-    // 🚨 核心修复：在加载地图前，全局注入安全密钥
+    const amapKey = import.meta.env.VITE_AMAP_KEY
+    if (!amapKey) {
+      ElMessage.warning('地图功能需要配置高德地图 Key')
+      return
+    }
     window._AMapSecurityConfig = {
       securityJsCode: import.meta.env.VITE_AMAP_SECURITY_CODE,
     }
 
     const AMap = await AMapLoader.load({
-      key: import.meta.env.VITE_AMAP_KEY || 'YOUR_AMAP_KEY',
+      key: amapKey,
       version: '2.0',
       plugins: ['AMap.Geolocation', 'AMap.Marker']
     })
@@ -212,43 +217,61 @@ const initMap = async () => {
 const loadNearbyDemands = async () => {
   loading.value = true
   try {
-    const res = await getNearbyDemands({
-      longitude: currentPosition.longitude,
-      latitude: currentPosition.latitude,
-      radius: searchForm.radius,
-      subject: searchForm.subject,
-      grade: searchForm.grade,
-      page: page.value,
-      size: 20
-    })
+    let rawList = []
+
+    if (viewMode.value === 'map' && currentPosition.longitude && currentPosition.latitude) {
+      const nearbyRes = await getNearbyDemands({
+        longitude: currentPosition.longitude,
+        latitude: currentPosition.latitude,
+        radius: searchForm.radius
+      })
+      if (nearbyRes.code === 200 && nearbyRes.data) {
+        rawList = Array.isArray(nearbyRes.data) ? nearbyRes.data : (nearbyRes.data.records || [])
+      }
+    }
+
+    if (rawList.length === 0) {
+      const listRes = await getDemandList({
+        subject: searchForm.subject || undefined,
+        grade: searchForm.grade || undefined,
+        page: page.value,
+        size: 20
+      })
+      if (listRes.code === 200) {
+        rawList = listRes.data?.records ?? (Array.isArray(listRes.data) ? listRes.data : [])
+      }
+    }
+
+    if (searchForm.subject) {
+      rawList = rawList.filter(item => item.subject === searchForm.subject)
+    }
+    if (searchForm.grade) {
+      rawList = rawList.filter(item => item.grade === searchForm.grade)
+    }
+    rawList = rawList.filter(item => item.status === 1)
+
+    const list = rawList.map(item => ({
+      id: item.id,
+      title: item.title,
+      subject: item.subject,
+      grade: item.grade,
+      salary: item.expectPrice,
+      distance: item.distance || item.km || null,
+      description: item.detail || item.description,
+      frequency: item.scheduleRequire ? parseSchedule(item.scheduleRequire) : '',
+      address: item.address,
+      status: item.status,
+      teachMode: item.teachMode
+    }))
+    if (page.value === 1) {
+      demands.value = list
+    } else {
+      demands.value.push(...list)
+    }
+    hasMore.value = list.length >= 20
     
-    if (res.code === 200) {
-      const rawList = res.data?.records ?? res.data ?? []
-      // 后端字段 -> 前端展示字段映射
-      const list = rawList.map(item => ({
-        id: item.id,
-        title: item.title,
-        subject: item.subject,
-        grade: item.grade,
-        salary: item.expectPrice,
-        distance: item.distance || item.km || null,
-        description: item.detail || item.description,
-        frequency: item.scheduleRequire ? parseSchedule(item.scheduleRequire) : '',
-        address: item.address,
-        status: item.status,
-        teachMode: item.teachMode
-      }))
-      if (page.value === 1) {
-        demands.value = list
-      } else {
-        demands.value.push(...list)
-      }
-      hasMore.value = list.length >= 20
-      
-      // 在地图上显示标记
-      if (map && viewMode.value === 'map') {
-        addMarkersToMap(list)
-      }
+    if (map && viewMode.value === 'map') {
+      addMarkersToMap(list)
     }
   } catch (error) {
     console.error('加载需求失败:', error)

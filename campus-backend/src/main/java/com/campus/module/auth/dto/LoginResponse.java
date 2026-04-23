@@ -33,11 +33,13 @@ public class LoginResponse {
     @Schema(description = "是否需要绑定手机号")
     private Boolean needBind;
 
-    // 构造方法
+    @Schema(description = "手机号")
+    private String phone;
+
     public LoginResponse() {
     }
 
-    public LoginResponse(String token, Long userId, String username, String nickname, String avatar, Integer role, Boolean needBind) {
+    public LoginResponse(String token, Long userId, String username, String nickname, String avatar, Integer role, Boolean needBind, String phone) {
         this.token = token;
         this.userId = userId;
         this.username = username;
@@ -45,6 +47,7 @@ public class LoginResponse {
         this.avatar = avatar;
         this.role = role;
         this.needBind = needBind;
+        this.phone = phone;
     }
 
     // 显式的getter和setter方法
@@ -104,6 +107,14 @@ public class LoginResponse {
         this.needBind = needBind;
     }
 
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
     // Builder 模式
     public static Builder builder() {
         return new Builder();
@@ -117,6 +128,7 @@ public class LoginResponse {
         private String avatar;
         private Integer role;
         private Boolean needBind;
+        private String phone;
 
         public Builder token(String token) {
             this.token = token;
@@ -153,8 +165,13 @@ public class LoginResponse {
             return this;
         }
 
+        public Builder phone(String phone) {
+            this.phone = phone;
+            return this;
+        }
+
         public LoginResponse build() {
-            return new LoginResponse(token, userId, username, nickname, avatar, role, needBind);
+            return new LoginResponse(token, userId, username, nickname, avatar, role, needBind, phone);
         }
     }
 }
