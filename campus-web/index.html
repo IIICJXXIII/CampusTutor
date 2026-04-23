@@ -1,23 +1,85 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#667eea" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>校园智教 - CampusTutor</title>
-
-    <script type="text/javascript">
-      window._AMapSecurityConfig = {
-        // 请去高德控制台新建【Web端(JSAPI)】Key，把对应的安全密钥填在这里
-        securityJsCode: '395b2de0b9cf263e585280d5d81821a4',
+    <style>
+      #app-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        color: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       }
-    </script>
-
-    <script src="https://webapi.amap.com/maps?v=2.0&key=你的Web端JSAPI_Key"></script>
-
+      #app-loading .spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid rgba(255,255,255,0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-bottom: 20px;
+      }
+      #app-loading p { font-size: 16px; margin: 0; }
+      #app-loading .error-box { display: none; text-align: center; }
+      #app-loading .error-box p { margin-bottom: 16px; }
+      #app-loading .error-box button {
+        padding: 10px 28px;
+        border: 2px solid #fff;
+        background: transparent;
+        color: #fff;
+        border-radius: 8px;
+        font-size: 15px;
+        cursor: pointer;
+      }
+      #app-loading .error-box button:hover { background: rgba(255,255,255,0.15); }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <div id="app-loading">
+        <div class="spinner"></div>
+        <p>正在加载校园智教...</p>
+        <div class="error-box">
+          <p>页面加载失败，可能是浏览器缓存问题</p>
+          <button onclick="location.reload()">点击刷新</button>
+        </div>
+      </div>
+    </div>
+    <script>
+      window.addEventListener('error', function(e) {
+        console.error('资源加载失败:', e.target?.src || e.target?.href || e.message);
+        var loading = document.getElementById('app-loading');
+        if (loading) {
+          loading.querySelector('.spinner').style.display = 'none';
+          loading.querySelector('p').style.display = 'none';
+          loading.querySelector('.error-box').style.display = 'block';
+        }
+      }, true);
+      var _loadTimer = setTimeout(function() {
+        var app = document.getElementById('app');
+        if (app && app.querySelector('#app-loading') && !app.__vue_app__) {
+          var loading = document.getElementById('app-loading');
+          if (loading) {
+            loading.querySelector('.spinner').style.display = 'none';
+            loading.querySelector('p').textContent = '页面加载超时，请尝试刷新';
+            loading.querySelector('.error-box').style.display = 'block';
+          }
+        }
+      }, 10000);
+    </script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

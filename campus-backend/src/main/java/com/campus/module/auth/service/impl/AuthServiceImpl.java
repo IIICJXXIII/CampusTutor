@@ -59,10 +59,9 @@ public class AuthServiceImpl implements AuthService {
         // 根据账号/手机号查询用户
         SysUser user = sysUserService.getByUsername(request.getAccount());
         if (user == null) {
-            throw new BusinessException(5001, "用户不存在");
+            throw new BusinessException(5004, "账号或密码错误");
         }
 
-        // 检查账号状态
         if (user.getStatus() == 0) {
             throw new BusinessException(5002, "账号已被禁用");
         }
@@ -92,7 +91,7 @@ public class AuthServiceImpl implements AuthService {
             }
 
             if (!verified) {
-                throw new BusinessException(5004, "密码错误");
+                throw new BusinessException(5004, "账号或密码错误");
             }
 
             if (shouldUpgrade) {
@@ -112,6 +111,7 @@ public class AuthServiceImpl implements AuthService {
                 .avatar(user.getAvatarUrl())
                 .role(user.getRole())
                 .needBind(false)
+                .phone(user.getUsername())
                 .build();
     }
 

@@ -123,14 +123,4 @@ public interface CourseOrderService extends IService<CourseOrder> {
      */
     String applyRefund(Long userId, Long orderId, java.math.BigDecimal refundAmount, String reason);
 
-    /**
-     * 从预约请求创建订单
-     * 
-     * @param parentId   家长ID
-     * @param bookingId  预约请求ID
-     * @param totalHours 总课时
-     * @param unitPrice  课时单价
-     * @return 订单ID
-     */
-    Long createOrderFromBooking(Long parentId, Long bookingId, Integer totalHours, java.math.BigDecimal unitPrice);
 }

@@ -118,8 +118,8 @@ const handleSubmit = async () => {
     })
     if (res.code === 200) {
       ElMessage.success('密码修改成功，请重新登录')
-      await userStore.logout()
-      router.push('/login')
+      userStore.logout()
+      window.location.href = '/login'
     }
   } catch (error) {
     ElMessage.error(error.message || '修改失败')

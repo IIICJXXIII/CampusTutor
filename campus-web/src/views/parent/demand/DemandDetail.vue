@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="demand-detail-page">
     <div class="page-header">
       <el-button link @click="goBack">
@@ -53,7 +53,7 @@
             <span class="salary">{{ demand.expectPrice }}元/小时</span>
           </el-descriptions-item>
           <el-descriptions-item label="授课方式">
-            {{ demand.teachMode === 1 ? '线下上门' : (demand.teachMode === 2 ? '线上授课' : '均可') }}
+            {{ demand.teachMode === 1 ? '线下上门' : (demand.teachMode === 2 ? '线上授课' : '线上线下均可') }}
           </el-descriptions-item>
           <el-descriptions-item label="上课频率">
             {{ parsedSchedule.frequency || '面议' }}

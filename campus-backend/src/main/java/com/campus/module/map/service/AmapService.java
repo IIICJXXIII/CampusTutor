@@ -8,6 +8,7 @@ import com.campus.module.map.config.AmapConfig;
 import com.campus.module.map.dto.DirectionResult;
 import com.campus.module.map.dto.DistanceResult;
 import com.campus.module.map.dto.GeocoderResult;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -30,11 +31,22 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-// 当配置文件中 map.provider=amap 时生效，或者没有配置该项时也默认生效
 @ConditionalOnProperty(name = "map.provider", havingValue = "amap", matchIfMissing = true)
 public class AmapService implements MapService {
 
     private final AmapConfig config;
+
+    @PostConstruct
+    public void init() {
+        if (isConfigured()) {
+            log.info("高德地图服务已初始化，API Key: {}...{}",
+                    config.getKey().substring(0, 4),
+                    config.getKey().substring(config.getKey().length() - 4));
+        } else {
+            log.warn("高德地图API未配置，相关功能（逆地址解析、路径规划等）将不可用。" +
+                    "请在 .env 文件中设置 AMAP_KEY=你的高德Web服务API密钥");
+        }
+    }
 
     /**
      * 逆地址解析 - 根据经纬度获取地址信息

@@ -56,7 +56,7 @@
           <div class="order-info">
             <div class="info-row">
               <span class="label">课时单价</span>
-              <span class="value">¥{{ order.unitPrice || order.hourlyRate }}/小时</span>
+              <span class="value">¥{{ order.unitPrice }}/小时</span>
             </div>
             <div class="info-row">
               <span class="label">总课时</span>
@@ -64,16 +64,7 @@
             </div>
             <div class="info-row">
               <span class="label">授课方式</span>
-              <span class="value">{{ getTeachingModeText(order.teachMode || order.teachingMode) }}</span>
-              <span class="value">¥{{ order.unitPrice }}/小时</span>
-            </div>
-            <div class="info-row">
-              <span class="label">总课时</span>
-              <span class="value">{{ order.totalHours }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">授课方式</span>
-              <span class="value">{{ order.teachMode === 1 ? '线下上门' : (order.teachMode === 2 ? '线上网课' : '不限') }}</span>
+              <span class="value">{{ getTeachingModeText(order.teachMode) }}</span>
             </div>
           </div>
         </div>

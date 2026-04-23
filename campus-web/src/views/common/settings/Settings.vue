@@ -86,7 +86,7 @@
             <span>检查更新</span>
           </div>
           <div class="item-right">
-            <span class="item-value">v1.0.0</span>
+            <span class="item-value">v2.0.0</span>
             <el-icon><ArrowRight /></el-icon>
           </div>
         </div>
@@ -148,7 +148,11 @@ import {
 const router = useRouter()
 const userStore = useUserStore()
 
-const userInfo = computed(() => userStore.user || {})
+const userInfo = computed(() => ({
+  name: userStore.nickname || '',
+  phone: userStore.phone || '',
+  avatar: userStore.avatar || ''
+}))
 const cacheSize = ref('0KB')
 
 const settings = ref({
@@ -211,9 +215,8 @@ const showDeactivate = async () => {
 const handleLogout = async () => {
   try {
     await ElMessageBox.confirm('确定要退出登录吗？', '提示')
-    await userStore.logout()
-    ElMessage.success('已退出登录')
-    router.push('/login')
+    userStore.logout()
+    window.location.href = '/login'
   } catch {}
 }
 

@@ -103,6 +103,11 @@ public class TutorSearchResult {
      */
     private Double distance;
 
+    /**
+     * 性别: 1-男, 2-女
+     */
+    private Integer gender;
+
     // 显式的getter和setter方法
     public Long getId() {
         return id;
@@ -254,5 +259,13 @@ public class TutorSearchResult {
 
     public void setDistance(Double distance) {
         this.distance = distance;
+    }
+
+    public Integer getGender() {
+        return gender;
+    }
+
+    public void setGender(Integer gender) {
+        this.gender = gender;
     }
 }

@@ -313,12 +313,13 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void completeOrder(Long tutorId, Long orderId) {
+    public void completeOrder(Long userId, Long orderId) {
         CourseOrder order = getById(orderId);
         if (order == null) {
             throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
         }
-        if (!order.getTutorId().equals(tutorId)) {
+        boolean isOwner = order.getTutorId().equals(userId) || order.getParentId().equals(userId);
+        if (!isOwner) {
             throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
         }
         if (order.getStatus() != 2) {
@@ -537,17 +538,6 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         updateById(order);
 
         log.info("教师 {} 拒绝预约订单: {}, 原因: {}", tutorId, orderId, reason);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Long createOrderFromBooking(Long parentId, Long bookingId, Integer totalHours, BigDecimal unitPrice) {
-        // TODO: 实现从预约请求创建订单的逻辑
-        // 1. 验证预约请求存在且状态为已确认
-        // 2. 创建订单
-        // 3. 更新预约请求状态
-        // 4. 返回订单ID
-        throw new BusinessException("功能开发中");
     }
 
     @Override

@@ -190,6 +190,20 @@ const routes = [
         meta: { title: '充值', role: 'parent' }
       },
 
+      // 学生报告
+      {
+        path: 'parent/reports',
+        name: 'ParentReportList',
+        component: () => import('@/views/parent/report/ReportList.vue'),
+        meta: { title: '学生报告', role: 'parent' }
+      },
+      {
+        path: 'parent/reports/:id',
+        name: 'ParentReportDetail',
+        component: () => import('@/views/parent/report/ReportDetail.vue'),
+        meta: { title: '报告详情', role: 'parent' }
+      },
+
       // ============== 教师端路由 ==============
       {
         path: 'teacher/home',
@@ -320,6 +334,24 @@ const routes = [
         meta: { title: 'AI助手' }
       },
       {
+        path: 'community',
+        name: 'CommunityList',
+        component: () => import('@/views/common/community/CommunityList.vue'),
+        meta: { title: '社区' }
+      },
+      {
+        path: 'community/:id',
+        name: 'CommunityDetail',
+        component: () => import('@/views/common/community/CommunityDetail.vue'),
+        meta: { title: '帖子详情' }
+      },
+      {
+        path: 'insurance',
+        name: 'InsuranceList',
+        component: () => import('@/views/common/insurance/InsuranceList.vue'),
+        meta: { title: '保险单' }
+      },
+      {
         path: 'mine',
         name: 'Mine',
         component: () => import('@/views/common/mine/Mine.vue'),
@@ -381,37 +413,53 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
-  // 设置页面标题
   document.title = to.meta.title ? `${to.meta.title} - 校园智教` : '校园智教'
 
   const userStore = useUserStore()
-  const token = userStore.token || localStorage.getItem('token')
-  const userRole = userStore.userRole || localStorage.getItem('userRole')
+  const token = userStore.token
+  const userRole = userStore.userRole
 
-  // 白名单：不需要登录的页面
   if (to.meta.requiresAuth === false) {
-    if (token && to.path === '/login') {
-      // 已登录用户访问登录页，根据角色跳转
-      next(userRole === 'tutor' ? '/teacher/home' : '/parent/home')
+    if (token && (to.path === '/login' || to.path === '/register')) {
+      if (userRole === 'tutor') {
+        next('/teacher/home')
+      } else if (userRole === 'parent') {
+        next('/parent/home')
+      } else {
+        userStore.logout()
+        next()
+      }
     } else {
       next()
     }
     return
   }
 
-  // 需要登录但未登录
   if (!token) {
     next('/login')
     return
   }
 
-  // 根路径重定向
+  if (!userRole) {
+    userStore.logout()
+    next('/login')
+    return
+  }
+
   if (to.path === '/') {
     next(userRole === 'tutor' ? '/teacher/home' : '/parent/home')
     return
   }
 
-  // 角色路由隔离：家长不能访问教师页面，反之亦然
+  const pathRole = to.path.startsWith('/teacher') ? 'tutor'
+    : to.path.startsWith('/parent') ? 'parent'
+    : null
+
+  if (pathRole && pathRole !== userRole) {
+    next(userRole === 'tutor' ? '/teacher/home' : '/parent/home')
+    return
+  }
+
   if (to.meta.role && to.meta.role !== userRole) {
     next(userRole === 'tutor' ? '/teacher/home' : '/parent/home')
     return
