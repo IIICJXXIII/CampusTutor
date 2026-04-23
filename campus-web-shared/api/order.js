@@ -104,3 +104,14 @@ export function getParentOrders(params) {
 export function getTutorOrders(params) {
   return request.get('/order/tutor/list', { params });
 }
+
+/**
+ * 申请退款
+ * @param {number} id - 订单ID
+ * @param {string} reason - 退款原因
+ */
+export function refundOrder(id, reason) {
+  return request.post(`/order/${id}/refund`, null, {
+    params: { reason }
+  });
+}

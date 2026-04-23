@@ -262,8 +262,10 @@ const form = reactive({
   duration: 2,
   availableTime: [],
   teachingMode: '线下',
-  address: '',
-  district: '',
+  address: userStore.userInfo?.address || '',
+  district: userStore.userInfo?.region || '',
+  longitude: userStore.userInfo?.longitude || null,
+  latitude: userStore.userInfo?.latitude || null,
   genderRequirement: '不限',
   requirements: ''
 })

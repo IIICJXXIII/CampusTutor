@@ -82,13 +82,10 @@ const loadSchedule = async () => {
     const res = await getScheduleConfig()
     if (res.code === 200 && res.data) {
       res.data.forEach(item => {
-<<<<<<< HEAD
         if (scheduleData[item.dayOfWeek]) {
           if (item.timeSlots) {
-            // 兼容旧格式
             item.timeSlots.forEach(s => scheduleData[item.dayOfWeek].add(s))
           } else if (item.startTime && item.endTime) {
-            // 后端返回的 startTime/endTime 格式，拼回 "HH:mm-HH:mm"
             scheduleData[item.dayOfWeek].add(`${item.startTime}-${item.endTime}`)
           }
         }

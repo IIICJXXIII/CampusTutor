@@ -2,13 +2,12 @@
   <div class="register-page">
     <div class="register-container">
       <div class="register-header">
-        <img src="@/assets/logo.svg" alt="Logo" class="logo" />
+        <img src="@/assets/logo.svg" alt="校园智教 Logo" class="logo" />
         <h1>注册账号</h1>
         <p>加入校园智教平台</p>
       </div>
 
       <el-form :model="form" :rules="rules" ref="formRef" class="register-form">
-        <!-- 角色选择 -->
         <el-form-item prop="role">
           <div class="role-selector">
             <div
@@ -38,6 +37,7 @@
             placeholder="请输入手机号"
             size="large"
             :prefix-icon="Phone"
+            maxlength="11"
           />
         </el-form-item>
 
@@ -47,9 +47,10 @@
             placeholder="请输入验证码"
             size="large"
             :prefix-icon="Message"
+            maxlength="6"
           >
             <template #append>
-              <el-button :disabled="countdown > 0" @click="sendCode">
+              <el-button :disabled="countdown > 0 || sendingCode" @click="sendCode">
                 {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
               </el-button>
             </template>
@@ -76,12 +77,23 @@
           />
         </el-form-item>
 
+        <el-form-item prop="confirmPassword">
+          <el-input
+            v-model="form.confirmPassword"
+            type="password"
+            placeholder="请确认密码"
+            size="large"
+            :prefix-icon="Lock"
+            show-password
+          />
+        </el-form-item>
+
         <el-form-item>
           <el-checkbox v-model="agreed">
             我已阅读并同意
-            <a href="#">《用户协议》</a>和
-            <a href="#">《隐私政策》</a>
           </el-checkbox>
+          <router-link to="/settings/agreement" class="agreement-link">《用户协议》</router-link>和
+          <router-link to="/settings/privacy" class="agreement-link">《隐私政策》</router-link>
         </el-form-item>
 
         <el-form-item>
@@ -109,7 +121,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Phone, Message, User as UserIcon, Lock, Reading } from '@element-plus/icons-vue'
@@ -123,14 +135,32 @@ const formRef = ref(null)
 const loading = ref(false)
 const countdown = ref(0)
 const agreed = ref(false)
+const sendingCode = ref(false)
+let countdownTimer = null
+
+onUnmounted(() => {
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+})
 
 const form = reactive({
   phone: '',
   code: '',
   nickname: '',
   password: '',
-  role: 2 // 默认家长
+  confirmPassword: '',
+  role: 2
 })
+
+const validateConfirmPassword = (rule, value, callback) => {
+  if (value !== form.password) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
+}
 
 const rules = {
   phone: [
@@ -146,6 +176,13 @@ const rules = {
   password: [
     { required: true, message: '请设置密码', trigger: 'blur' },
     { min: 6, message: '密码至少6位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认密码', trigger: 'blur' },
+    { validator: validateConfirmPassword, trigger: 'blur' }
+  ],
+  role: [
+    { required: true, message: '请选择角色', trigger: 'change' }
   ]
 }
 
@@ -155,20 +192,26 @@ const sendCode = async () => {
     return
   }
 
+  sendingCode.value = true
   try {
     const res = await sendCodeApi(form.phone)
     if (res.code === 200) {
       ElMessage.success('验证码已发送')
       countdown.value = 60
-      const timer = setInterval(() => {
+      countdownTimer = setInterval(() => {
         countdown.value--
         if (countdown.value <= 0) {
-          clearInterval(timer)
+          clearInterval(countdownTimer)
+          countdownTimer = null
         }
       }, 1000)
     }
   } catch (error) {
-    ElMessage.error(error.message || '发送失败')
+    if (!error._handled) {
+      ElMessage.error(error.message || '发送失败')
+    }
+  } finally {
+    sendingCode.value = false
   }
 }
 
@@ -196,7 +239,7 @@ const handleRegister = async () => {
       }
     }
   } catch (error) {
-    if (error !== 'cancel') {
+    if (error !== 'cancel' && !error._handled) {
       ElMessage.error(error.message || '注册失败')
     }
   } finally {
@@ -310,11 +353,9 @@ const handleRegister = async () => {
     }
   }
 
-  .el-checkbox {
-    a {
-      color: #667eea;
-      text-decoration: none;
-    }
+  .agreement-link {
+    color: #667eea;
+    text-decoration: none;
   }
 }
 

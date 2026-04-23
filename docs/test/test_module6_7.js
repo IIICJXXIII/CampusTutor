@@ -218,47 +218,44 @@ async function main() {
     console.log(' MODULE 6: 预约与接单 (Booking & Order Acceptance)');
     console.log('============================================================\n');
 
-    // --- 6.1 家长发起预约 ---
-    console.log('--- 6.1 家长发起预约 ---');
+    // --- 6.1 家长发起预约（通过订单系统） ---
+    console.log('--- 6.1 家长发起预约（通过订单系统） ---');
 
-    const bookingDate = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 19);
-    const createBk = await api('POST', '/api/booking/create', parentToken, {
-        tutorId: teacherUserId, subject: 'piano', grade: '5-8岁',
-        bookingDate, startTime: '14:00', endTime: '16:00', remark: '测试预约'
+    let directOrderId = 0;
+    const createDirectOrder = await api('POST', '/api/order/create', parentToken, {
+        tutorProfileId: teacherUserId, subject: 'piano', grade: '5-8岁',
+        teachMode: 1, totalHours: 10, unitPrice: 150, remark: '测试直接预约'
     });
-    let bookingId = 0;
-    if (createBk.body?.code === 200) bookingId = createBk.body.data;
-    logResult('TC-6.1.1', '家长向教师发起预约', 'code=200, 返回bookingId', createBk, createBk.body?.code === 200);
+    if (createDirectOrder.body?.code === 200) directOrderId = createDirectOrder.body.data;
+    logResult('TC-6.1.1', '家长向教师发起直接预约(order/create)', 'code=200, 返回orderId', createDirectOrder, createDirectOrder.body?.code === 200);
 
-    const parentBkList = await api('GET', '/api/booking/parent/list', parentToken);
-    const bkInList = parentBkList.body?.data?.some(b => b.id === bookingId) ?? false;
-    logResult('TC-6.1.2', '家长查看预约列表', 'code=200, 含新预约', parentBkList,
-        parentBkList.body?.code === 200 && (bookingId === 0 || bkInList));
+    const parentOrdList = await api('GET', '/api/order/parent/list?page=1&size=10', parentToken);
+    const ordInList = parentOrdList.body?.data?.records?.some(o => o.id === directOrderId) ?? false;
+    logResult('TC-6.1.2', '家长查看订单列表(含新预约)', 'code=200, 含新订单', parentOrdList,
+        parentOrdList.body?.code === 200 && (directOrderId === 0 || ordInList));
 
-    // --- 6.2 教师处理预约 ---
-    console.log('\n--- 6.2 教师处理预约 ---');
+    // --- 6.2 教师处理预约（通过订单系统） ---
+    console.log('\n--- 6.2 教师处理预约（通过订单系统） ---');
 
-    const tutorBkList = await api('GET', '/api/booking/tutor/list', teacherToken);
-    logResult('TC-6.2.1', '教师查看收到的预约列表', 'code=200', tutorBkList, tutorBkList.body?.code === 200);
+    const tutorOrdList = await api('GET', '/api/order/tutor/list?page=1&size=10', teacherToken);
+    logResult('TC-6.2.1', '教师查看收到的订单列表', 'code=200', tutorOrdList, tutorOrdList.body?.code === 200);
 
-    if (bookingId > 0) {
-        const confirmBk = await api('POST', `/api/booking/confirm/${bookingId}`, teacherToken);
-        logResult('TC-6.2.2', '教师确认预约', 'code=200', confirmBk, confirmBk.body?.code === 200);
+    if (directOrderId > 0) {
+        const confirmOrd = await api('POST', `/api/order/${directOrderId}/tutor-confirm`, teacherToken);
+        logResult('TC-6.2.2', '教师确认预约(tutor-confirm)', 'code=200', confirmOrd, confirmOrd.body?.code === 200);
     } else {
-        logResult('TC-6.2.2', '教师确认预约', 'code=200 (SKIPPED: 创建预约失败)', { status: 0, body: { code: -1, msg: 'SKIPPED' } }, false);
+        logResult('TC-6.2.2', '教师确认预约', 'code=200 (SKIPPED: 创建订单失败)', { status: 0, body: { code: -1, msg: 'SKIPPED' } }, false);
     }
 
-    // Create another booking for reject test
-    const createBk2 = await api('POST', '/api/booking/create', parentToken, {
-        tutorId: teacherUserId, subject: 'art', grade: '8-12岁',
-        bookingDate: new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 19),
-        startTime: '10:00', endTime: '12:00', remark: '拒绝测试'
+    const createDirectOrder2 = await api('POST', '/api/order/create', parentToken, {
+        tutorProfileId: teacherUserId, subject: 'art', grade: '8-12岁',
+        teachMode: 2, totalHours: 8, unitPrice: 100, remark: '拒绝测试'
     });
-    let bookingId2 = createBk2.body?.code === 200 ? createBk2.body.data : 0;
+    let directOrderId2 = createDirectOrder2.body?.code === 200 ? createDirectOrder2.body.data : 0;
 
-    if (bookingId2 > 0) {
-        const rejectBk = await api('POST', `/api/booking/reject/${bookingId2}?reason=时间冲突`, teacherToken);
-        logResult('TC-6.2.3', '教师拒绝另一个预约', 'code=200', rejectBk, rejectBk.body?.code === 200);
+    if (directOrderId2 > 0) {
+        const rejectOrd = await api('POST', `/api/order/${directOrderId2}/tutor-reject?reason=时间冲突`, teacherToken);
+        logResult('TC-6.2.3', '教师拒绝另一个预约(tutor-reject)', 'code=200', rejectOrd, rejectOrd.body?.code === 200);
     } else {
         logResult('TC-6.2.3', '教师拒绝另一个预约', 'code=200 (SKIPPED)', { status: 0, body: { code: -1, msg: 'SKIPPED' } }, false);
     }
@@ -286,19 +283,18 @@ async function main() {
         logResult('TC-6.3.2', '教师通过order/accept接单', 'code=200 (SKIPPED)', { status: 0, body: { code: -1 } }, false);
     }
 
-    // --- 6.4 家长取消预约 ---
-    console.log('\n--- 6.4 家长取消预约 ---');
+    // --- 6.4 家长取消预约（通过订单系统） ---
+    console.log('\n--- 6.4 家长取消预约（通过订单系统） ---');
 
-    const createBk3 = await api('POST', '/api/booking/create', parentToken, {
-        tutorId: teacherUserId, subject: 'dance', grade: '3-6岁',
-        bookingDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 19),
-        startTime: '09:00', endTime: '11:00', remark: '取消测试'
+    const createDirectOrder3 = await api('POST', '/api/order/create', parentToken, {
+        tutorProfileId: teacherUserId, subject: 'dance', grade: '3-6岁',
+        teachMode: 1, totalHours: 6, unitPrice: 120, remark: '取消测试'
     });
-    let bookingId3 = createBk3.body?.code === 200 ? createBk3.body.data : 0;
+    let directOrderId3 = createDirectOrder3.body?.code === 200 ? createDirectOrder3.body.data : 0;
 
-    if (bookingId3 > 0) {
-        const cancelBk = await api('POST', `/api/booking/cancel/${bookingId3}`, parentToken);
-        logResult('TC-6.4.1', '家长取消已发预约', 'code=200', cancelBk, cancelBk.body?.code === 200);
+    if (directOrderId3 > 0) {
+        const cancelOrd = await api('POST', `/api/order/${directOrderId3}/cancel?reason=不需要了`, parentToken);
+        logResult('TC-6.4.1', '家长取消已发预约(order/cancel)', 'code=200', cancelOrd, cancelOrd.body?.code === 200);
     } else {
         logResult('TC-6.4.1', '家长取消已发预约', 'code=200 (SKIPPED)', { status: 0, body: { code: -1, msg: 'SKIPPED' } }, false);
     }

@@ -37,7 +37,6 @@
             <div class="name">{{ tutor.realName || tutor.name }}</div>
             <div class="school">{{ tutor.universityName }} · {{ tutor.major }}</div>
           </div>
-          </div>
           <el-icon><ArrowRight /></el-icon>
         </div>
       </div>
@@ -63,8 +62,7 @@
             {{ order.totalHours }}课时
           </el-descriptions-item>
           <el-descriptions-item label="授课方式">
-            {{ order.teachMode === 1 ? '线下上门' : (order.teachMode === 2 ? '线上网课' : '不限') }}
-          </el-descriptions-item>
+            {{ order.teachMode === 1 ? '线下上门' : (order.teachMode === 2 ? '线上授课' : '线上线下均可') }}
           </el-descriptions-item>
           <el-descriptions-item v-if="order.address" label="上课地址" :span="2">
             {{ order.district }} {{ order.address }}
@@ -138,6 +136,7 @@
         </template>
         <template v-else-if="order.status === 2">
           <el-button size="large" @click="contactTutor">联系老师</el-button>
+          <el-button size="large" @click="applyRefund">申请退款</el-button>
           <el-button size="large" type="success" @click="completeOrder">完成订单</el-button>
         </template>
         <template v-else-if="order.status === 3 && !order.reviewed">
@@ -160,7 +159,8 @@ import {
   completeOrder as completeOrderApi 
 } from '@shared/api/order'
 import { getOrderLessons } from '@shared/api/teaching'
-import { getPublicTutorProfile } from '@shared/api/tutor'
+import { getPublicTutorProfile, getPublicTutorProfileById } from '@shared/api/tutor'
+import { refundOrder } from '@shared/api/order'
 import dayjs from 'dayjs'
 
 const router = useRouter()
@@ -220,12 +220,21 @@ const loadOrder = async () => {
       order.value = orderRes.data
       if (order.value?.tutorProfileId) {
         try {
-          const tutorRes = await getPublicTutorProfile(order.value.tutorProfileId)
+          const tutorRes = await getPublicTutorProfileById(order.value.tutorProfileId)
           if (tutorRes.code === 200) {
             tutor.value = tutorRes.data
           }
         } catch (e) {
           console.error('Failed to load tutor profile', e)
+        }
+      } else if (order.value?.tutorId) {
+        try {
+          const tutorRes = await getPublicTutorProfile(order.value.tutorId)
+          if (tutorRes.code === 200) {
+            tutor.value = tutorRes.data
+          }
+        } catch (e) {
+          console.error('Failed to load tutor profile by userId', e)
         }
       }
     }
@@ -243,7 +252,9 @@ const goBack = () => {
 }
 
 const viewTutor = () => {
-  router.push(`/parent/teachers/${order.value.tutorProfileId}`)
+  if (tutor.value?.userId) {
+    router.push(`/parent/teachers/${tutor.value.userId}`)
+  }
 }
 
 const copyOrderNo = async () => {
@@ -302,6 +313,22 @@ const completeOrder = async () => {
 
 const goToReview = () => {
   router.push(`/parent/orders/${route.params.id}/review`)
+}
+
+const applyRefund = async () => {
+  try {
+    const { value: reason } = await ElMessageBox.prompt('请输入退款原因', '申请退款', {
+      confirmButtonText: '提交申请',
+      cancelButtonText: '取消',
+      inputPlaceholder: '请详细说明退款原因',
+      inputValidator: (val) => val ? true : '退款原因不能为空'
+    })
+    const res = await refundOrder(route.params.id, reason)
+    if (res.code === 200) {
+      ElMessage.success('退款申请已提交')
+      loadOrder()
+    }
+  } catch (e) { /* cancelled */ }
 }
 
 onMounted(() => {

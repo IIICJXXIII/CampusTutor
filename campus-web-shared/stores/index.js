@@ -8,49 +8,52 @@ import { ref, computed } from 'vue'
  * 用户信息 Store
  */
 export const useUserStore = defineStore('user', () => {
-  // 状态
-  const token = ref(localStorage.getItem('token') || '')
+  const userRole = ref(localStorage.getItem('userRole') || '')
+
+  const storagePrefix = computed(() => userRole.value ? `${userRole.value}_` : '')
+
+  const token = ref(localStorage.getItem(`${storagePrefix.value}token`) || '')
   
-  // 安全读取 userInfo
   let initialUserInfo = null;
   try {
-    const stored = localStorage.getItem('userInfo');
+    const stored = localStorage.getItem(`${storagePrefix.value}userInfo`);
     if (stored && stored !== 'undefined') {
       initialUserInfo = JSON.parse(stored);
     }
   } catch (e) {
     console.error('Failed to parse userInfo:', e);
-    localStorage.removeItem('userInfo');
+    localStorage.removeItem(`${storagePrefix.value}userInfo`);
   }
   const userInfo = ref(initialUserInfo);
-
-  const userRole = ref(localStorage.getItem('userRole') || '') // 'parent' | 'tutor'
 
   // 计算属性
   const isLoggedIn = computed(() => !!token.value)
   const isParent = computed(() => userRole.value === 'parent')
   const isTutor = computed(() => userRole.value === 'tutor')
-  const userId = computed(() => userInfo.value?.id || null)
+  const userId = computed(() => userInfo.value?.userId || userInfo.value?.id || null)
   const nickname = computed(() => userInfo.value?.nickname || '用户')
-  const avatar = computed(() => userInfo.value?.avatar || 'https://api.dicebear.com/7.x/miniavs/svg?seed=default')
-  const phone = computed(() => userInfo.value?.phone || '')
+  const avatar = computed(() => {
+    if (userInfo.value?.avatar) return userInfo.value.avatar
+    const name = userInfo.value?.nickname || userInfo.value?.username || 'U'
+    return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" fill="#667eea"/><text x="50%" y="55%" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="18" font-family="sans-serif">${name.charAt(0)}</text></svg>`)}`
+  })
+  const phone = computed(() => userInfo.value?.phone || userInfo.value?.username || '')
 
   // 方法
   function setToken(newToken) {
     token.value = newToken
-    localStorage.setItem('token', newToken)
+    localStorage.setItem(`${storagePrefix.value}token`, newToken)
   }
 
   function setUserInfo(info) {
     if (!info) {
       userInfo.value = null;
-      localStorage.removeItem('userInfo');
+      localStorage.removeItem(`${storagePrefix.value}userInfo`);
       return;
     }
     userInfo.value = info
-    localStorage.setItem('userInfo', JSON.stringify(info))
+    localStorage.setItem(`${storagePrefix.value}userInfo`, JSON.stringify(info))
     
-    // 根据 role 设置用户类型
     if (info?.role === 1) {
       setRole('tutor')
     } else if (info?.role === 2) {
@@ -59,17 +62,27 @@ export const useUserStore = defineStore('user', () => {
   }
 
   function setRole(role) {
+    const oldPrefix = storagePrefix.value
     userRole.value = role
     localStorage.setItem('userRole', role)
+    const newPrefix = storagePrefix.value
+
+    if (oldPrefix !== newPrefix) {
+      if (token.value) localStorage.setItem(`${newPrefix}token`, token.value)
+      if (userInfo.value) localStorage.setItem(`${newPrefix}userInfo`, JSON.stringify(userInfo.value))
+    }
   }
 
   function logout() {
+    const prefix = storagePrefix.value
     token.value = ''
     userInfo.value = null
     userRole.value = ''
-    localStorage.removeItem('token')
-    localStorage.removeItem('userInfo')
+    localStorage.removeItem(`${prefix}token`)
+    localStorage.removeItem(`${prefix}userInfo`)
+    localStorage.removeItem(`${prefix}ai_chat_history`)
     localStorage.removeItem('userRole')
+    localStorage.removeItem('token')
   }
 
   return {
@@ -299,6 +312,17 @@ export const useChatStore = defineStore('chat', () => {
     unreadCount.value = count
   }
 
+  async function refreshUnreadCount() {
+    try {
+      const request = (await import('@shared/api/chat')).getUnreadCount
+      const res = await request()
+      if (res.code === 200) {
+        unreadCount.value = res.data || 0
+      }
+    } catch (e) {
+    }
+  }
+
   function reset() {
     conversations.value = []
     currentChat.value = null
@@ -316,6 +340,7 @@ export const useChatStore = defineStore('chat', () => {
     setMessages,
     addMessage,
     setUnreadCount,
+    refreshUnreadCount,
     reset
   }
 })

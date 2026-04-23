@@ -68,6 +68,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         updateById(user);
     }
 
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void updatePassword(Long userId, String oldPassword, String newPassword) {
         SysUser user = getById(userId);

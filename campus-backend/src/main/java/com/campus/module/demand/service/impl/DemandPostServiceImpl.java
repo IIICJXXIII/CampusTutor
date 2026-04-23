@@ -118,6 +118,12 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
         }
         demand.setStatus(status);
         updateById(demand);
+
+        if (status != 1) {
+            geoService.removeDemandLocation(demandId);
+        } else if (demand.getLongitude() != null && demand.getLatitude() != null) {
+            geoService.addDemandLocation(demandId, demand.getLongitude().doubleValue(), demand.getLatitude().doubleValue());
+        }
     }
 
     @Override
