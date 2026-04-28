@@ -42,7 +42,7 @@
         <div class="form-section">
           <h3 class="section-title">选择孩子</h3>
           <el-form-item label="关联学生" prop="studentId">
-            <el-select v-model="form.studentId" placeholder="请选择要辅导的孩子">
+            <el-select v-model="form.studentId" placeholder="请选择要辅导的孩子" @change="onStudentChange">
               <el-option
                 v-for="student in students"
                 :key="student.id"
@@ -237,9 +237,11 @@ import { ArrowLeft, Plus, MagicStick } from '@element-plus/icons-vue'
 import { createDemand, publishDemand } from '@shared/api/demand'
 import { getStudentList } from '@shared/api/parent'
 import { parseDemand } from '@shared/api/llm'
+import { useUserStore } from '@shared/stores'
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
 
 const currentStep = ref(0)
 const step1Ref = ref(null)
@@ -262,13 +264,33 @@ const form = reactive({
   duration: 2,
   availableTime: [],
   teachingMode: '线下',
-  address: userStore.userInfo?.address || '',
-  district: userStore.userInfo?.region || '',
-  longitude: userStore.userInfo?.longitude || null,
-  latitude: userStore.userInfo?.latitude || null,
+  address: '',
+  district: '',
+  longitude: null,
+  latitude: null,
   genderRequirement: '不限',
   requirements: ''
 })
+
+const autoFillLocation = () => {
+  const info = userStore.userInfo
+  if (!info) return
+  if (info.address && !form.address) {
+    form.address = info.address
+  }
+  if (info.address && !form.district) {
+    const parts = info.address.split(/[市区县]/)
+    if (parts.length >= 2) {
+      form.district = parts[0].replace(/.*省/, '') + '市' + (parts[1] ? parts[1].substring(0, parts[1].indexOf('区') > -1 ? parts[1].indexOf('区') + 1 : parts[1].length) : '')
+    } else {
+      form.district = info.address
+    }
+  }
+  if (info.longitude && !form.longitude) {
+    form.longitude = info.longitude
+    form.latitude = info.latitude
+  }
+}
 
 const rules1 = {
   title: [{ required: true, message: '请输入需求标题', trigger: 'blur' }],
@@ -288,17 +310,25 @@ const loadStudents = async () => {
     const res = await getStudentList()
     if (res.code === 200) {
       students.value = res.data || []
-      // 如果URL有studentId参数，自动选中
       if (route.query.studentId) {
         form.studentId = parseInt(route.query.studentId)
         const student = students.value.find(s => s.id === form.studentId)
         if (student) {
           form.grade = student.grade
         }
+      } else if (students.value.length === 1) {
+        form.studentId = students.value[0].id
+        form.grade = students.value[0].grade
       }
     }
   } catch (error) {
-    console.error('加载学生列表失败:', error)
+  }
+}
+
+const onStudentChange = (studentId) => {
+  const student = students.value.find(s => s.id === studentId)
+  if (student) {
+    form.grade = student.grade
   }
 }
 
@@ -439,6 +469,7 @@ const handleSubmit = async () => {
 
 onMounted(() => {
   loadStudents()
+  autoFillLocation()
 })
 </script>
 

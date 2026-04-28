@@ -27,6 +27,12 @@ export function confirmOrder(id) {
   return request.post(`/order/${id}/confirm`);
 }
 
+export function parentRejectOrder(id, reason) {
+  return request.post(`/order/${id}/parent-reject`, null, {
+    params: { reason }
+  });
+}
+
 /**
  * 支付订单 (家长)
  * @param {Object} data - { orderId, payType }
