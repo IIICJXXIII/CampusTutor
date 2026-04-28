@@ -19,7 +19,8 @@ public class RoleCheckInterceptor implements HandlerInterceptor {
     private final ObjectMapper objectMapper;
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws Exception {
         Integer role = UserContext.getRole();
         String uri = request.getRequestURI();
 

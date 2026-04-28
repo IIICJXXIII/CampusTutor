@@ -40,13 +40,7 @@ public interface CourseOrderService extends IService<CourseOrder> {
      */
     void cancelOrder(Long userId, Long orderId, String reason);
 
-    /**
-     * 确认开课
-     * 
-     * @param tutorId 教员ID
-     * @param orderId 订单ID
-     */
-    void confirmStart(Long tutorId, Long orderId);
+    void confirmStart(Long parentId, Long orderId);
 
     /**
      * 完成订单
@@ -95,12 +89,8 @@ public interface CourseOrderService extends IService<CourseOrder> {
      */
     void confirmOrder(Long parentId, Long orderId);
 
-    /**
-     * 教师确认预约订单（家长直接预约场景）
-     *
-     * @param tutorId 教师用户ID
-     * @param orderId 订单ID
-     */
+    void parentRejectOrder(Long parentId, Long orderId, String reason);
+
     void tutorConfirmOrder(Long tutorId, Long orderId);
 
     /**
@@ -115,10 +105,10 @@ public interface CourseOrderService extends IService<CourseOrder> {
     /**
      * 申请退款
      * 
-     * @param userId     用户ID
-     * @param orderId    订单ID
+     * @param userId       用户ID
+     * @param orderId      订单ID
      * @param refundAmount 退款金额
-     * @param reason     退款原因
+     * @param reason       退款原因
      * @return 退款单号
      */
     String applyRefund(Long userId, Long orderId, java.math.BigDecimal refundAmount, String reason);

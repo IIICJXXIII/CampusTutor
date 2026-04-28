@@ -96,7 +96,11 @@ public class DemandPost {
 
     /**
      * 匹配的教员ID
+     * 注意: 使用 ALWAYS 策略确保 null 值能正确写入数据库，
+     * 否则 MyBatis-Plus 默认 NOT_NULL 策略会跳过 null 字段，
+     * 导致取消订单后需求无法正确重新上架。
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long matchedTutorId;
 
     /**

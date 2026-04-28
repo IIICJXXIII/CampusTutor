@@ -41,22 +41,6 @@
           />
         </el-form-item>
 
-        <el-form-item prop="code">
-          <el-input
-            v-model="form.code"
-            placeholder="请输入验证码"
-            size="large"
-            :prefix-icon="Message"
-            maxlength="6"
-          >
-            <template #append>
-              <el-button :disabled="countdown > 0 || sendingCode" @click="sendCode">
-                {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
-              </el-button>
-            </template>
-          </el-input>
-        </el-form-item>
-
         <el-form-item prop="nickname">
           <el-input
             v-model="form.nickname"
@@ -121,33 +105,22 @@
 </template>
 
 <script setup>
-import { ref, reactive, onUnmounted } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Phone, Message, User as UserIcon, Lock, Reading } from '@element-plus/icons-vue'
+import { Phone, User as UserIcon, Lock, Reading } from '@element-plus/icons-vue'
 import { useUserStore } from '@shared/stores'
-import { register, sendCode as sendCodeApi } from '@shared/api/auth'
+import { register } from '@shared/api/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
 
 const formRef = ref(null)
 const loading = ref(false)
-const countdown = ref(0)
 const agreed = ref(false)
-const sendingCode = ref(false)
-let countdownTimer = null
-
-onUnmounted(() => {
-  if (countdownTimer) {
-    clearInterval(countdownTimer)
-    countdownTimer = null
-  }
-})
 
 const form = reactive({
   phone: '',
-  code: '',
   nickname: '',
   password: '',
   confirmPassword: '',
@@ -167,9 +140,6 @@ const rules = {
     { required: true, message: '请输入手机号', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
   ],
-  code: [
-    { required: true, message: '请输入验证码', trigger: 'blur' }
-  ],
   nickname: [
     { required: true, message: '请输入昵称', trigger: 'blur' }
   ],
@@ -186,42 +156,16 @@ const rules = {
   ]
 }
 
-const sendCode = async () => {
-  if (!form.phone || !/^1[3-9]\d{9}$/.test(form.phone)) {
-    ElMessage.warning('请输入正确的手机号')
-    return
-  }
-
-  sendingCode.value = true
-  try {
-    const res = await sendCodeApi(form.phone)
-    if (res.code === 200) {
-      ElMessage.success('验证码已发送')
-      countdown.value = 60
-      countdownTimer = setInterval(() => {
-        countdown.value--
-        if (countdown.value <= 0) {
-          clearInterval(countdownTimer)
-          countdownTimer = null
-        }
-      }, 1000)
-    }
-  } catch (error) {
-    if (!error._handled) {
-      ElMessage.error(error.message || '发送失败')
-    }
-  } finally {
-    sendingCode.value = false
-  }
-}
-
 const handleRegister = async () => {
   try {
     await formRef.value.validate()
 
     loading.value = true
     const res = await register({
-      ...form
+      phone: form.phone,
+      password: form.password,
+      nickname: form.nickname,
+      role: form.role
     })
 
     if (res.code === 200) {

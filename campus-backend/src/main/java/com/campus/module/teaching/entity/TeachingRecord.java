@@ -63,14 +63,12 @@ public class TeachingRecord {
      */
     private String homeworkAssigned;
 
-    /**
-     * 状态：0-待确认, 1-家长已确认, 2-异常/申诉
-     */
     private Integer status;
 
-    /**
-     * 创建时间
-     */
+    private Integer payStatus;
+
+    private LocalDateTime payTime;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

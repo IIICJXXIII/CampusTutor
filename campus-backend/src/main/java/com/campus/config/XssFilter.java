@@ -33,7 +33,8 @@ public class XssFilter implements Filter {
         @Override
         public String[] getParameterValues(String name) {
             String[] values = super.getParameterValues(name);
-            if (values == null) return null;
+            if (values == null)
+                return null;
             String[] sanitized = new String[values.length];
             for (int i = 0; i < values.length; i++) {
                 sanitized[i] = sanitize(values[i]);
@@ -48,7 +49,8 @@ public class XssFilter implements Filter {
         }
 
         private static String sanitize(String value) {
-            if (value == null || value.isEmpty()) return value;
+            if (value == null || value.isEmpty())
+                return value;
             return value
                     .replace("<", "&lt;")
                     .replace(">", "&gt;")

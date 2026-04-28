@@ -6,9 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
-/**
- * 注册请求 DTO
- */
 @Data
 @Schema(description = "注册请求")
 public class RegisterRequest {
@@ -21,10 +18,6 @@ public class RegisterRequest {
     @Schema(description = "密码", example = "123456")
     @NotBlank(message = "密码不能为空")
     private String password;
-
-    @Schema(description = "验证码", example = "123456")
-    @NotBlank(message = "验证码不能为空")
-    private String code;
 
     @Schema(description = "昵称")
     private String nickname;
