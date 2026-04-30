@@ -291,7 +291,6 @@ onUnmounted(() => {
   padding: 20px;
   max-width: 600px;
   margin: 0 auto;
-  padding-bottom: 100px;
 }
 
 .page-header {
@@ -524,13 +523,11 @@ onUnmounted(() => {
 }
 
 .action-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
   padding: 16px 20px;
+  margin-top: 24px;
   background: #fff;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   justify-content: space-between;

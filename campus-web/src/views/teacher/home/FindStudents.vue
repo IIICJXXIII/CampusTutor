@@ -1,52 +1,64 @@
 <template>
   <div class="find-students">
     <!-- 搜索筛选 -->
-    <div class="search-card">
-      <el-form :inline="true" :model="searchForm" class="search-form">
-        <el-form-item label="科目">
-          <el-select v-model="searchForm.subject" placeholder="选择科目" clearable>
-            <el-option-group label="艺术素养">
-              <el-option label="钢琴/乐器陪练" value="钢琴/乐器陪练" />
-              <el-option label="美术/书法" value="美术/书法" />
-              <el-option label="声乐/视唱练耳" value="声乐/视唱练耳" />
-            </el-option-group>
-            <el-option-group label="体育健康">
-              <el-option label="中考体育" value="中考体育" />
-              <el-option label="羽毛球/网球" value="羽毛球/网球" />
-              <el-option label="篮球/足球" value="篮球/足球" />
-            </el-option-group>
-            <el-option-group label="科创STEAM">
-              <el-option label="少儿编程(Scratch/Python)" value="少儿编程(Scratch/Python)" />
-              <el-option label="机器人/3D打印" value="机器人/3D打印" />
-              <el-option label="科学实验/航模" value="科学实验/航模" />
-            </el-option-group>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="年级">
-          <el-select v-model="searchForm.grade" placeholder="选择年级" clearable>
-            <el-option label="小学" value="小学" />
-            <el-option label="初中" value="初中" />
-            <el-option label="高中" value="高中" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="距离">
-          <el-select v-model="searchForm.radius" placeholder="选择距离" clearable>
-            <el-option label="3公里内" :value="3" />
-            <el-option label="5公里内" :value="5" />
-            <el-option label="10公里内" :value="10" />
-            <el-option label="20公里内" :value="20" />
-            <el-option label="50公里内" :value="50" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">
+    <div class="filter-bar">
+      <div class="filter-header">
+        <div class="filter-title">
+          <el-icon><Filter /></el-icon>
+          <span>筛选条件</span>
+        </div>
+        <div class="location-status" v-if="!locating">
+          <span class="status-dot" :class="{ ready: positionReady }"></span>
+          <span class="status-text">{{ positionReady ? '已定位' : '使用注册地址' }}</span>
+        </div>
+      </div>
+      <el-form :inline="true" :model="searchForm" class="filter-form">
+        <div class="filter-controls">
+          <el-form-item label="科目">
+            <el-select v-model="searchForm.subject" placeholder="全部科目" clearable size="default">
+              <el-option-group label="艺术素养">
+                <el-option label="钢琴/乐器陪练" value="钢琴/乐器陪练" />
+                <el-option label="美术/书法" value="美术/书法" />
+                <el-option label="声乐/视唱练耳" value="声乐/视唱练耳" />
+              </el-option-group>
+              <el-option-group label="体育健康">
+                <el-option label="中考体育" value="中考体育" />
+                <el-option label="羽毛球/网球" value="羽毛球/网球" />
+                <el-option label="篮球/足球" value="篮球/足球" />
+              </el-option-group>
+              <el-option-group label="科创STEAM">
+                <el-option label="少儿编程(Scratch/Python)" value="少儿编程(Scratch/Python)" />
+                <el-option label="机器人/3D打印" value="机器人/3D打印" />
+                <el-option label="科学实验/航模" value="科学实验/航模" />
+              </el-option-group>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="年级">
+            <el-select v-model="searchForm.grade" placeholder="全部年级" clearable size="default">
+              <el-option label="小学" value="小学" />
+              <el-option label="初中" value="初中" />
+              <el-option label="高中" value="高中" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="距离">
+            <el-select v-model="searchForm.radius" placeholder="搜索范围" size="default">
+              <el-option label="3公里内" :value="3" />
+              <el-option label="5公里内" :value="5" />
+              <el-option label="10公里内" :value="10" />
+              <el-option label="20公里内" :value="20" />
+              <el-option label="50公里内" :value="50" />
+            </el-select>
+          </el-form-item>
+        </div>
+        <div class="filter-actions">
+          <el-button type="primary" @click="handleSearch" class="btn-search">
             <el-icon><Search /></el-icon>搜索
           </el-button>
-          <el-button @click="toggleView">
+          <el-button @click="toggleView" class="btn-toggle">
             <el-icon><component :is="viewMode === 'map' ? 'List' : 'Location'" /></el-icon>
-            {{ viewMode === 'map' ? '列表模式' : '地图模式' }}
+            {{ viewMode === 'map' ? '列表' : '地图' }}
           </el-button>
-        </el-form-item>
+        </div>
       </el-form>
     </div>
 
@@ -100,7 +112,7 @@
               <el-tag :type="getSubjectType(demand.subject)" size="small">
                 {{ demand.subject }}
               </el-tag>
-              <span class="distance">{{ demand.distance }}km</span>
+              <span class="distance">{{ demand.distance != null ? demand.distance + 'km' : '' }}</span>
             </div>
             <h3 class="card-title">{{ demand.title || `${demand.grade}${demand.subject}辅导` }}</h3>
             <p class="card-desc">{{ demand.description || '暂无描述' }}</p>
@@ -133,9 +145,9 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Location, List, Aim, Close, User, Clock } from '@element-plus/icons-vue'
+import { Search, Location, List, Aim, Close, User, Clock, Filter } from '@element-plus/icons-vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
-import { getNearbyDemands, getDemandList } from '@shared/api/demand'
+import { getDemandListWithMatch } from '@shared/api/demand'
 import { acceptOrder, getTutorOrders } from '@shared/api/order'
 
 const router = useRouter()
@@ -146,14 +158,16 @@ const demands = ref([])
 const selectedDemand = ref(null)
 const hasMore = ref(true)
 const page = ref(1)
+const locating = ref(true)
+const positionReady = ref(false)
 
 let map = null
-let currentPosition = { longitude: 116.397428, latitude: 39.90923 }
+let currentPosition = { longitude: null, latitude: null }
 
 const searchForm = reactive({
   subject: '',
   grade: '',
-  radius: 5
+  radius: 10
 })
 
 const getSubjectType = (subject) => {
@@ -169,6 +183,35 @@ const getSubjectType = (subject) => {
     '科学实验/航模': 'info'
   }
   return typeMap[subject] || ''
+}
+
+// 使用浏览器原生API获取位置（不依赖高德地图SDK），后台静默更新
+const initGeolocation = () => {
+  locating.value = true
+  if (!navigator.geolocation) {
+    locating.value = false
+    loadNearbyDemands()
+    return
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      currentPosition = {
+        longitude: position.coords.longitude,
+        latitude: position.coords.latitude
+      }
+      positionReady.value = true
+      locating.value = false
+      // 获得精确坐标后刷新数据
+      loadNearbyDemands()
+    },
+    () => {
+      locating.value = false
+      // GPS失败时，使用后端兜底（教师档案注册地址）加载数据
+      loadNearbyDemands()
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  )
 }
 
 const initMap = async () => {
@@ -188,17 +231,26 @@ const initMap = async () => {
       plugins: ['AMap.Geolocation', 'AMap.Marker']
     })
     
+    const center = (currentPosition.longitude && currentPosition.latitude)
+      ? [currentPosition.longitude, currentPosition.latitude]
+      : [116.397428, 39.90923] // 默认北京，geolocation 成功后会自动更新
+
     map = new AMap.Map('demand-map', {
       zoom: 14,
-      center: [currentPosition.longitude, currentPosition.latitude]
+      center
     })
-    
-    // 获取当前位置
+
+    // 如果数据已加载（列表模式先于地图初始化完成），立即渲染标记
+    if (demands.value.length > 0) {
+      addMarkersToMap(demands.value)
+    }
+
+    // 获取当前位置（AMap 高精度定位，成功后刷新数据）
     const geolocation = new AMap.Geolocation({
       enableHighAccuracy: true,
       timeout: 10000
     })
-    
+
     geolocation.getCurrentPosition((status, result) => {
       if (status === 'complete') {
         currentPosition = {
@@ -206,6 +258,7 @@ const initMap = async () => {
           latitude: result.position.lat
         }
         map.setCenter([currentPosition.longitude, currentPosition.latitude])
+        // AMap 高精度定位成功后，用更精确的坐标刷新数据
         loadNearbyDemands()
       }
     })
@@ -218,36 +271,31 @@ const loadNearbyDemands = async () => {
   loading.value = true
   try {
     let rawList = []
+    let total = 0
 
-    if (viewMode.value === 'map' && currentPosition.longitude && currentPosition.latitude) {
-      const nearbyRes = await getNearbyDemands({
-        longitude: currentPosition.longitude,
-        latitude: currentPosition.latitude,
-        radius: searchForm.radius
-      })
-      if (nearbyRes.code === 200 && nearbyRes.data) {
-        rawList = Array.isArray(nearbyRes.data) ? nearbyRes.data : (nearbyRes.data.records || [])
-      }
+    // 构建位置参数：只传有效坐标，避免 null 导致后端解析异常
+    const hasPosition = currentPosition.longitude && currentPosition.latitude
+    const locationParams = hasPosition
+      ? { longitude: currentPosition.longitude, latitude: currentPosition.latitude }
+      : {}
+
+    // 统一使用 list-with-match 接口，保证列表/地图模式数据一致
+    // 地图模式拉取更大数据量以便一次性展示所有标记
+    const pageSize = viewMode.value === 'map' ? 200 : 20
+    const matchRes = await getDemandListWithMatch({
+      subject: searchForm.subject || undefined,
+      grade: searchForm.grade || undefined,
+      radius: searchForm.radius,
+      ...locationParams,
+      page: page.value,
+      size: pageSize
+    })
+    if (matchRes.code === 200 && matchRes.data) {
+      rawList = matchRes.data.records ?? (Array.isArray(matchRes.data) ? matchRes.data : [])
+      total = matchRes.data.total ?? 0
     }
 
-    if (rawList.length === 0) {
-      const listRes = await getDemandList({
-        subject: searchForm.subject || undefined,
-        grade: searchForm.grade || undefined,
-        page: page.value,
-        size: 20
-      })
-      if (listRes.code === 200) {
-        rawList = listRes.data?.records ?? (Array.isArray(listRes.data) ? listRes.data : [])
-      }
-    }
-
-    if (searchForm.subject) {
-      rawList = rawList.filter(item => item.subject === searchForm.subject)
-    }
-    if (searchForm.grade) {
-      rawList = rawList.filter(item => item.grade === searchForm.grade)
-    }
+    // 仅过滤已上架的需求（防御性过滤）
     rawList = rawList.filter(item => item.status === 1)
 
     const list = rawList.map(item => ({
@@ -256,20 +304,22 @@ const loadNearbyDemands = async () => {
       subject: item.subject,
       grade: item.grade,
       salary: item.expectPrice,
-      distance: item.distance || item.km || null,
+      distance: item.distance != null ? Math.round(item.distance * 10) / 10 : (item.km || null),
       description: item.detail || item.description,
       frequency: item.scheduleRequire ? parseSchedule(item.scheduleRequire) : '',
       address: item.address,
       status: item.status,
-      teachMode: item.teachMode
+      teachMode: item.teachMode,
+      longitude: item.longitude,
+      latitude: item.latitude
     }))
     if (page.value === 1) {
       demands.value = list
     } else {
       demands.value.push(...list)
     }
-    hasMore.value = list.length >= 20
-    
+    hasMore.value = total > 0 ? demands.value.length < total : list.length >= pageSize
+
     if (map && viewMode.value === 'map') {
       addMarkersToMap(list)
     }
@@ -295,6 +345,7 @@ const parseSchedule = (value) => {
 }
 
 const addMarkersToMap = (list) => {
+  map.clearMap() // 清除已有标记再重新打点，避免切换模式或刷新时重复
   list.forEach(demand => {
     if (demand.longitude && demand.latitude) {
       const marker = new AMap.Marker({
@@ -351,13 +402,20 @@ const handleSearch = () => {
 
 const toggleView = () => {
   viewMode.value = viewMode.value === 'map' ? 'list' : 'map'
-  if (viewMode.value === 'map' && !map) {
-    initMap()
+  page.value = 1
+  if (viewMode.value === 'map') {
+    if (!map) {
+      initMap() // initMap 负责初始化地图并渲染已有数据
+    } else {
+      loadNearbyDemands() // 地图已存在，直接刷新数据并打点
+    }
+  } else {
+    loadNearbyDemands() // 列表模式，重新加载数据
   }
 }
 
 const relocate = () => {
-  if (map) {
+  if (map && currentPosition.longitude && currentPosition.latitude) {
     map.setCenter([currentPosition.longitude, currentPosition.latitude])
   }
 }
@@ -410,8 +468,8 @@ const handleAccept = async (demand) => {
 }
 
 onMounted(() => {
-  // 默认加载列表数据
-  loadNearbyDemands()
+  // 先获取GPS位置，成功或失败后再加载数据，避免无坐标时返回全量数据
+  initGeolocation()
 })
 
 onUnmounted(() => {
@@ -423,24 +481,144 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .find-students {
-  .search-card {
+  .filter-bar {
     background: #fff;
-    padding: 16px 24px;
     border-radius: 12px;
     margin-bottom: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+
+    .filter-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
+      border-bottom: 1px solid #ebeef5;
+
+      .filter-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #303133;
+
+        .el-icon {
+          color: #409eff;
+          font-size: 15px;
+        }
+      }
+
+      .location-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .status-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #e6a23c;
+          transition: background 0.3s;
+
+          &.ready {
+            background: #67c23a;
+          }
+        }
+
+        .status-text {
+          font-size: 12px;
+          color: #909399;
+        }
+      }
+    }
+
+    .filter-form {
+      padding: 16px 20px;
+
+      .filter-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 20px;
+        margin-bottom: 12px;
+
+        :deep(.el-form-item) {
+          margin-bottom: 0;
+          flex-shrink: 0;
+
+          .el-form-item__label {
+            font-size: 13px;
+            color: #606266;
+            font-weight: 500;
+            padding-right: 8px;
+          }
+
+          .el-select {
+            width: 180px;
+          }
+        }
+      }
+
+      .filter-actions {
+        display: flex;
+        gap: 10px;
+
+        .btn-search {
+          border-radius: 8px;
+          font-weight: 500;
+          padding: 8px 18px;
+        }
+
+        .btn-toggle {
+          border-radius: 8px;
+          font-weight: 500;
+          padding: 8px 16px;
+          color: #606266;
+          border-color: #dcdfe6;
+
+          &:hover {
+            color: #409eff;
+            border-color: #c6e2ff;
+            background: #ecf5ff;
+          }
+        }
+      }
+    }
+
     @media (max-width: 768px) {
-      padding: 12px;
-      
-      :deep(.el-form-item) {
-        margin-bottom: 8px;
-        margin-right: 0;
-        width: 100%;
+      .filter-header {
+        padding: 12px 16px;
+      }
+
+      .filter-form {
+        padding: 12px 16px;
+
+        .filter-controls {
+          flex-direction: column;
+          gap: 10px;
+
+          :deep(.el-form-item) {
+            width: 100%;
+            margin-right: 0;
+
+            .el-select {
+              width: 100%;
+            }
+          }
+        }
+
+        .filter-actions {
+          flex-direction: column;
+
+          .el-button {
+            width: 100%;
+          }
+        }
       }
     }
   }
-  
+
   .map-container {
     position: relative;
     height: calc(100vh - 220px);
