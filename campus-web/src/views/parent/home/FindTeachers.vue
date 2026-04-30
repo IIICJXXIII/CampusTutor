@@ -109,8 +109,15 @@
         @click="viewDetail(tutor.userId)"
       >
         <div v-if="tutor.matchTags && tutor.matchTags.length" class="recommend-badge">
-          <el-tag type="warning" size="small" effect="dark">
-            {{ tutor.matchTags[0] }}
+          <el-tag
+            v-for="(tag, idx) in tutor.matchTags.slice(0, 3)"
+            :key="idx"
+            :type="getTagType(tag)"
+            size="small"
+            effect="dark"
+            class="tag-item"
+          >
+            {{ tag }}
           </el-tag>
         </div>
         <div class="tutor-avatar">
@@ -210,6 +217,36 @@ const maskName = (name) => {
   if (!name || name.length <= 1) return name
   if (name.length === 2) return name.charAt(0) + '*'
   return name.charAt(0) + '**'
+}
+
+const getTagType = (tag) => {
+  // 评分标签 - 红色系
+  if (tag === '口碑之星') return 'danger'
+  if (tag === '高评分') return 'warning'
+  if (tag === '好评') return 'success'
+  // 经验标签 - 红/橙/绿
+  if (tag === '资深名师') return 'danger'
+  if (tag === '经验丰富') return 'warning'
+  if (tag === '教学有方') return 'success'
+  // 距离标签 - 绿/蓝/灰
+  if (tag === '超近') return 'success'
+  if (tag === '距离近') return 'primary'
+  if (tag === '同城') return 'info'
+  // 学历标签 - 红/橙/蓝
+  if (tag === '博士') return 'danger'
+  if (tag === '硕士') return 'warning'
+  if (tag === '学历优秀') return 'primary'
+  // 价格标签 - 绿/蓝
+  if (tag === '性价比高') return 'success'
+  if (tag === '价格合适') return 'primary'
+  // 推荐标签 - 特殊颜色
+  if (tag === '相似家长推荐' || tag === 'AI精选') return 'danger'
+  if (tag === '猜你喜欢' || tag === '热门教员') return 'warning'
+  if (tag === '系统推荐' || tag === '智能推荐') return 'primary'
+  // 匹配标签 - 蓝/灰
+  if (tag === '科目匹配' || tag === '年级匹配' || tag === '年龄段匹配') return 'primary'
+  if (tag === '教学特长' || tag === '特长匹配' || tag === '授课方式匹配' || tag === '授课方式灵活' || tag === '水平匹配') return 'info'
+  return 'info'
 }
 
 const loadTutors = async () => {
@@ -543,10 +580,18 @@ onUnmounted(() => {
 
 .recommend-badge {
   position: absolute;
-  top: 12px;
+  top: 8px;
   right: 12px;
   z-index: 1;
-  .el-icon { margin-right: 2px; vertical-align: middle; }
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+  max-width: 60%;
+
+  .tag-item {
+    white-space: nowrap;
+  }
 }
 
 .tutor-card {
