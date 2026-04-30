@@ -83,6 +83,30 @@
           <div class="menu-text">AI助手</div>
           <el-icon><ArrowRight /></el-icon>
         </div>
+
+        <div class="menu-item" @click="goTo('/community')">
+          <div class="menu-icon" style="background: linear-gradient(135deg, #ff9a9e, #fecfef)">
+            <el-icon><ChatLineSquare /></el-icon>
+          </div>
+          <div class="menu-text">社区</div>
+          <el-icon><ArrowRight /></el-icon>
+        </div>
+
+        <div class="menu-item" v-if="!isTeacher" @click="goTo('/parent/reports')">
+          <div class="menu-icon" style="background: linear-gradient(135deg, #667eea, #764ba2)">
+            <el-icon><DataAnalysis /></el-icon>
+          </div>
+          <div class="menu-text">学生报告</div>
+          <el-icon><ArrowRight /></el-icon>
+        </div>
+
+        <div class="menu-item" @click="goTo('/insurance')">
+          <div class="menu-icon" style="background: linear-gradient(135deg, #89f7fe, #66a6ff)">
+            <el-icon><Lock /></el-icon>
+          </div>
+          <div class="menu-text">保险单</div>
+          <el-icon><ArrowRight /></el-icon>
+        </div>
       </div>
       
       <div class="menu-group">
@@ -134,9 +158,13 @@ import { useUserStore, useWalletStore } from '@shared/stores'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   ArrowRight, Wallet, Document, Calendar, User, Edit, 
-  ChatDotRound, Setting, InfoFilled 
+  ChatDotRound, Setting, InfoFilled, ChatLineSquare, DataAnalysis, Lock
 } from '@element-plus/icons-vue'
 import { getParentStats } from '@shared/api/parent'
+import { getParentOrders } from '@shared/api/order'
+import { getStudentList } from '@shared/api/parent'
+import { getMyDemands } from '@shared/api/demand'
+import { getTutorStats } from '@shared/api/tutor'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -156,9 +184,39 @@ const walletBalance = computed(() => walletStore.balance || 0)
 
 const loadStats = async () => {
   try {
-    const res = await getParentStats()
-    if (res.code === 200) {
-      stats.value = res.data || {}
+    if (isTeacher.value) {
+      const res = await getTutorStats()
+      if (res.code === 200 && res.data) {
+        stats.value = {
+          studentCount: res.data.studentCount || 0,
+          demandCount: res.data.completedCount || 0,
+          orderCount: res.data.orderCount || 0
+        }
+      }
+    } else {
+      try {
+        const res = await getParentStats()
+        if (res.code === 200 && res.data) {
+          stats.value = {
+            studentCount: res.data.studentCount || 0,
+            demandCount: res.data.demandCount || 0,
+            orderCount: res.data.orderCount || 0
+          }
+        } else {
+          throw new Error('stats api failed')
+        }
+      } catch {
+        const [studentRes, demandRes, orderRes] = await Promise.all([
+          getStudentList().catch(() => ({ code: 200, data: [] })),
+          getMyDemands({ page: 1, size: 1 }).catch(() => ({ code: 200, data: { total: 0 } })),
+          getParentOrders({ page: 1, size: 1 }).catch(() => ({ code: 200, data: { total: 0 } }))
+        ])
+        stats.value = {
+          studentCount: (Array.isArray(studentRes.data) ? studentRes.data.length : (studentRes.data?.total || 0)),
+          demandCount: demandRes.data?.total || 0,
+          orderCount: orderRes.data?.total || 0
+        }
+      }
     }
   } catch (error) {
     console.error('加载统计失败:', error)
@@ -184,9 +242,8 @@ const showAbout = () => {
 const handleLogout = async () => {
   try {
     await ElMessageBox.confirm('确定要退出登录吗？', '提示')
-    await userStore.logout()
-    ElMessage.success('已退出登录')
-    router.push('/login')
+    userStore.logout()
+    window.location.href = '/login'
   } catch {}
 }
 

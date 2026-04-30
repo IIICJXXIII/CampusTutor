@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="lesson-plan-page">
     <el-page-header @back="$router.push('/teacher/ai/hub')">
       <template #content>AI 课程规划</template>
@@ -79,10 +79,10 @@ const generate = async () => {
   loading.value = true
   try {
     const res = await generateLessonPlan(form.value)
-    if (res.data?.code === 200) {
-      result.value = res.data.data
+    if (res.code === 200) {
+      result.value = res.data
     } else {
-      result.value = res.data?.data || res.data?.msg || '生成失败'
+      result.value = res.msg || '生成失败'
     }
   } catch (e) {
     ElMessage.error('生成失败，请稍后重试')

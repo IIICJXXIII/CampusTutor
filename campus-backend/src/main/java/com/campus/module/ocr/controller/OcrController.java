@@ -56,6 +56,9 @@ public class OcrController {
     @PostMapping("/id-card/back")
     public Result<OcrResultDTO> recognizeIdCardBack(
             @Parameter(description = "OCR识别请求") @RequestBody OcrRequestDTO request) {
+        if (request.getImageUrl() == null) {
+            return Result.fail("图片URL不能为空");
+        }
         OcrResultDTO result = ocrService.recognizeIdCardBack(request.getImageUrl());
         return result.getSuccess() ? Result.success(result) : Result.fail(result.getErrorMsg());
     }

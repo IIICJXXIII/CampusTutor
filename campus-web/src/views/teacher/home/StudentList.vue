@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="student-list">
     <div class="page-header">
       <h1 class="page-title">学生需求列表</h1>
@@ -173,7 +173,11 @@ const handleAccept = async (row) => {
       { confirmButtonText: '确定', cancelButtonText: '取消' }
     )
     
-    const res = await acceptOrder(row.orderId || row.id)
+    const res = await acceptOrder({
+      demandId: row.orderId || row.id,
+      totalHours: 10,
+      remark: ''
+    })
     if (res.code === 200) {
       ElMessage.success('接单成功！')
       loadDemands()

@@ -42,11 +42,12 @@ public class WalletController {
         Long userId = UserContext.getUserId();
         SysWallet wallet = walletService.getByUserId(userId);
         if (wallet == null) {
-            // 如果钱包不存在，自动创建
             walletService.createWallet(userId);
             wallet = walletService.getByUserId(userId);
         }
-        // 清空敏感信息
+        if (wallet == null) {
+            return Result.fail("钱包创建失败，请稍后重试");
+        }
         wallet.setPayPassword(null);
         return Result.success(wallet);
     }

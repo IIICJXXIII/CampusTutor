@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="comment-polish-page">
     <el-page-header @back="$router.push('/teacher/ai/hub')">
       <template #content>AI 评语润色</template>
@@ -58,10 +58,10 @@ const polish = async () => {
   loading.value = true
   try {
     const res = await polishComment(form.value)
-    if (res.data?.code === 200) {
-      result.value = res.data.data
+    if (res.code === 200) {
+      result.value = res.data
     } else {
-      result.value = res.data?.data || res.data?.msg || '润色失败'
+      result.value = res.msg || '润色失败'
     }
   } catch (e) {
     ElMessage.error('润色失败，请稍后重试')

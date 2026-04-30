@@ -6,11 +6,11 @@ import com.campus.module.community.entity.CommunityPost;
 
 public interface CommunityPostService extends IService<CommunityPost> {
 
-    Long createPost(Long userId, String title, String content, Integer topicType);
-
     IPage<CommunityPost> listPosts(Integer topicType, Integer page, Integer size);
 
-    CommunityPost getPostDetail(Long postId);
+    CommunityPost getPostDetail(Long id);
 
-    void likePost(Long userId, Long postId);
+    CommunityPost createPost(Long userId, CommunityPost post);
+
+    boolean likePost(Long id);
 }

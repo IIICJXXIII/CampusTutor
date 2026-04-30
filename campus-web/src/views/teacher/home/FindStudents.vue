@@ -16,6 +16,47 @@
             class="view-toggle-btn"
             @click="toggleView"
           >
+      <el-form :inline="true" :model="searchForm" class="search-form">
+        <el-form-item label="科目">
+          <el-select v-model="searchForm.subject" placeholder="选择科目" clearable>
+            <el-option-group label="艺术素养">
+              <el-option label="钢琴/乐器陪练" value="钢琴/乐器陪练" />
+              <el-option label="美术/书法" value="美术/书法" />
+              <el-option label="声乐/视唱练耳" value="声乐/视唱练耳" />
+            </el-option-group>
+            <el-option-group label="体育健康">
+              <el-option label="中考体育" value="中考体育" />
+              <el-option label="羽毛球/网球" value="羽毛球/网球" />
+              <el-option label="篮球/足球" value="篮球/足球" />
+            </el-option-group>
+            <el-option-group label="科创STEAM">
+              <el-option label="少儿编程(Scratch/Python)" value="少儿编程(Scratch/Python)" />
+              <el-option label="机器人/3D打印" value="机器人/3D打印" />
+              <el-option label="科学实验/航模" value="科学实验/航模" />
+            </el-option-group>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="年级">
+          <el-select v-model="searchForm.grade" placeholder="选择年级" clearable>
+            <el-option label="小学" value="小学" />
+            <el-option label="初中" value="初中" />
+            <el-option label="高中" value="高中" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="距离">
+          <el-select v-model="searchForm.radius" placeholder="选择距离" clearable>
+            <el-option label="3公里内" :value="3" />
+            <el-option label="5公里内" :value="5" />
+            <el-option label="10公里内" :value="10" />
+            <el-option label="20公里内" :value="20" />
+            <el-option label="50公里内" :value="50" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleSearch">
+            <el-icon><Search /></el-icon>搜索
+          </el-button>
+          <el-button @click="toggleView">
             <el-icon><component :is="viewMode === 'map' ? 'List' : 'Location'" /></el-icon>
             {{ viewMode === 'map' ? '列表' : '地图' }}
           </el-button>
@@ -212,6 +253,8 @@ import { getNearbyDemands, applyForDemand } from '@shared/api/demand'
 import { useUserStore } from '@shared/stores'
 import { updateUserAddress } from '@shared/api/user'
 import { reverseGeocode } from '@shared/api/map'
+import { getNearbyDemands, getDemandList } from '@shared/api/demand'
+import { acceptOrder, getTutorOrders } from '@shared/api/order'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -433,12 +476,19 @@ const initMap = async () => {
   }
 
   try {
+=======
+    const amapKey = import.meta.env.VITE_AMAP_KEY
+    if (!amapKey) {
+      ElMessage.warning('地图功能需要配置高德地图 Key')
+      return
+    }
+>>>>>>> 3745728a8acb42a0a4d836ff5db19c2faa1cff85
     window._AMapSecurityConfig = {
       securityJsCode: import.meta.env.VITE_AMAP_SECURITY_CODE,
     }
 
     const AMap = await AMapLoader.load({
-      key: import.meta.env.VITE_AMAP_KEY || 'YOUR_AMAP_KEY',
+      key: amapKey,
       version: '2.0',
       plugins: ['AMap.Geolocation', 'AMap.Marker']
     })
@@ -488,9 +538,74 @@ const initMap = async () => {
   }
 }
 
+const loadNearbyDemands = async () => {
+  loading.value = true
+  try {
+    let rawList = []
+
+    if (viewMode.value === 'map' && currentPosition.longitude && currentPosition.latitude) {
+      const nearbyRes = await getNearbyDemands({
+        longitude: currentPosition.longitude,
+        latitude: currentPosition.latitude,
+        radius: searchForm.radius
+      })
+      if (nearbyRes.code === 200 && nearbyRes.data) {
+        rawList = Array.isArray(nearbyRes.data) ? nearbyRes.data : (nearbyRes.data.records || [])
+      }
+    }
+
+    if (rawList.length === 0) {
+      const listRes = await getDemandList({
+        subject: searchForm.subject || undefined,
+        grade: searchForm.grade || undefined,
+        page: page.value,
+        size: 20
+      })
+      if (listRes.code === 200) {
+        rawList = listRes.data?.records ?? (Array.isArray(listRes.data) ? listRes.data : [])
+      }
+    }
+
+    if (searchForm.subject) {
+      rawList = rawList.filter(item => item.subject === searchForm.subject)
+    }
+    if (searchForm.grade) {
+      rawList = rawList.filter(item => item.grade === searchForm.grade)
+    }
+    rawList = rawList.filter(item => item.status === 1)
+
+    const list = rawList.map(item => ({
+      id: item.id,
+      title: item.title,
+      subject: item.subject,
+      grade: item.grade,
+      salary: item.expectPrice,
+      distance: item.distance || item.km || null,
+      description: item.detail || item.description,
+      frequency: item.scheduleRequire ? parseSchedule(item.scheduleRequire) : '',
+      address: item.address,
+      status: item.status,
+      teachMode: item.teachMode
+    }))
+    if (page.value === 1) {
+      demands.value = list
+    } else {
+      demands.value.push(...list)
+    }
+    hasMore.value = list.length >= 20
+    
+    if (map && viewMode.value === 'map') {
+      addMarkersToMap(list)
+    }
+  } catch (error) {
+    console.error('加载需求失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
 const updateMapMarkers = () => {
   if (!map) return
-
   markers.forEach(m => map.remove(m))
   markers = []
 
@@ -516,6 +631,38 @@ const updateMapMarkers = () => {
       markers.push(marker)
     }
   })
+
+  addOrderMarkersToMap()
+}
+
+const addOrderMarkersToMap = async () => {
+  if (!map) return
+  try {
+    const res = await getTutorOrders({ status: undefined, page: 1, size: 50 })
+    if (res.code === 200) {
+      const orders = res.data?.records || res.data || []
+      const statusColors = { '-1': '#e6a23c', 0: '#909399', 1: '#409eff', 2: '#67c23a', 3: '#909399' }
+      const statusTexts = { '-1': '待确认', 0: '待支付', 1: '待开课', 2: '进行中', 3: '已完成' }
+      orders.forEach(order => {
+        if (order.longitude && order.latitude) {
+          const color = statusColors[order.status] || '#909399'
+          const statusText = statusTexts[order.status] || '未知'
+          const marker = new AMap.Marker({
+            position: [order.longitude, order.latitude],
+            title: `${order.subject} - ${statusText}`,
+            content: `<div style="background:${color};color:#fff;padding:4px 10px;border-radius:12px;font-size:12px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.2);border:2px solid #fff;">📋${statusText} ${order.subject || ''}</div>`,
+            offset: new AMap.Pixel(-30, -15)
+          })
+          marker.on('click', () => {
+            router.push(`/teacher/orders/${order.id}`)
+          })
+          map.add(marker)
+        }
+      })
+    }
+  } catch (e) {
+    console.error('加载订单标记失败:', e)
+  }
 }
 
 const handleSearch = () => {

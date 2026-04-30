@@ -38,7 +38,7 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponse login(LoginRequest request) {
         SysUser user = sysUserService.getByUsername(request.getAccount());
         if (user == null) {
-            throw new BusinessException(5001, "用户不存在");
+            throw new BusinessException(5004, "账号或密码错误");
         }
 
         if (user.getStatus() == 0) {
@@ -58,7 +58,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (!verified) {
-            throw new BusinessException(5004, "密码错误");
+            throw new BusinessException(5004, "账号或密码错误");
         }
 
         if (shouldUpgrade) {
@@ -76,6 +76,10 @@ public class AuthServiceImpl implements AuthService {
                 .avatar(user.getAvatarUrl())
                 .role(user.getRole())
                 .needBind(false)
+                .phone(user.getUsername())
+                .longitude(user.getLongitude())
+                .latitude(user.getLatitude())
+                .address(user.getAddress())
                 .build();
     }
 
@@ -111,6 +115,7 @@ public class AuthServiceImpl implements AuthService {
                 .nickname(user.getNickname())
                 .role(user.getRole())
                 .needBind(false)
+                .phone(user.getUsername())
                 .build();
     }
 }

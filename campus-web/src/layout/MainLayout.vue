@@ -29,28 +29,23 @@
                 <el-icon><List /></el-icon>我的需求
               </el-menu-item>
               <el-menu-item index="/community">
+              <el-menu-item index="/community" class="community-menu-item">
                 <el-icon><ChatLineSquare /></el-icon>社区
               </el-menu-item>
               <el-menu-item index="/parent/orders">
                 <el-icon><Document /></el-icon>我的订单
               </el-menu-item>
-              <el-menu-item index="/parent/lessons">
-                <el-icon><Clock /></el-icon>课程记录
-              </el-menu-item>
             </template>
-            <!-- 教师端菜单 -->
             <template v-else>
               <el-menu-item index="/teacher/home">
                 <el-icon><Location /></el-icon>找学生
               </el-menu-item>
               <el-menu-item index="/community">
+              <el-menu-item index="/community" class="community-menu-item">
                 <el-icon><ChatLineSquare /></el-icon>社区
               </el-menu-item>
               <el-menu-item index="/teacher/orders">
                 <el-icon><Document /></el-icon>我的订单
-              </el-menu-item>
-              <el-menu-item index="/teacher/lessons">
-                <el-icon><Clock /></el-icon>课时记录
               </el-menu-item>
               <el-menu-item index="/teacher/resume">
                 <el-icon><User /></el-icon>我的简历
@@ -69,7 +64,7 @@
 
           <!-- 消息通知 -->
           <div class="icon-btn" @click="goToChat">
-            <el-badge :value="unreadCount" :max="99" :hidden="unreadCount === 0">
+            <el-badge :value="chatStore.unreadCount" :max="99" :hidden="chatStore.unreadCount === 0">
               <el-icon :size="20"><ChatDotRound /></el-icon>
             </el-badge>
           </div>
@@ -129,7 +124,7 @@
         v-for="item in mobileTabItems"
         :key="item.path"
         class="tab-item"
-        :class="{ active: isTabActive(item.path), 'publish-btn': item.isPublish }"
+        :class="{ active: isTabActive(item.path), 'community-tab': item.isCommunity }"
         @click="item.isPublish ? createDemand() : router.push(item.path)"
       >
         <el-icon><component :is="item.icon" /></el-icon>
@@ -149,6 +144,24 @@
       @located="handleLocated"
       @denied="handleLocationDenied"
     />
+    <el-dialog
+      v-model="locationDialogVisible"
+      title="获取您的位置"
+      width="400px"
+      :close-on-click-modal="false"
+      :show-close="false"
+      align-center
+    >
+      <div class="location-dialog-content">
+        <el-icon :size="48" color="#667eea"><Location /></el-icon>
+        <p>为了更好地为您推荐附近的教师/学生，我们需要获取您的位置信息。</p>
+        <p class="location-hint">您的位置信息仅用于服务推荐，不会公开显示。</p>
+      </div>
+      <template #footer>
+        <el-button @click="skipLocation">暂不授权</el-button>
+        <el-button type="primary" @click="grantLocation" :loading="locating">授权获取位置</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 页脚 (桌面端) -->
     <footer v-if="!isMobile" class="footer">
@@ -171,6 +184,8 @@ import { getUnreadCount } from '@shared/api/chat'
 import { updateUserAddress } from '@shared/api/user'
 import { reverseGeocode } from '@shared/api/map'
 import LocationDialog from '@/components/LocationDialog.vue'
+import { reverseGeocode } from '@shared/api/map'
+import { updateUserInfo } from '@shared/api/user'
 
 const route = useRoute()
 const router = useRouter()
@@ -180,6 +195,7 @@ const chatStore = useChatStore()
 const isMobile = ref(false)
 const unreadCount = ref(0)
 const showLocationDialog = ref(false)
+const isMobile = ref(window.innerWidth < 768)
 let pollTimer = null
 
 // 角色判断
@@ -206,14 +222,16 @@ const mobileTabItems = computed(() => {
       { path: '/teacher/home', label: '找学生', icon: Location },
       { path: '/community', label: '社区', icon: ChatLineSquare },
       { path: '/teacher/orders', label: '订单', icon: Document },
+=======
+      { path: '/community', label: '社区', icon: ChatLineSquare, isCommunity: true },
+>>>>>>> 3745728a8acb42a0a4d836ff5db19c2faa1cff85
       { path: '/teacher/wallet', label: '钱包', icon: Wallet },
       { path: '/mine', label: '我的', icon: User }
     ]
   } else {
     return [
       { path: '/parent/home', label: '找老师', icon: Search },
-      { path: '/community', label: '社区', icon: ChatLineSquare },
-      { path: '#publish', label: '', icon: Plus, isPublish: true },
+      { path: '/community', label: '社区', icon: ChatLineSquare, isCommunity: true },
       { path: '/parent/orders', label: '订单', icon: Document },
       { path: '/mine', label: '我的', icon: User }
     ]
@@ -275,9 +293,7 @@ const handleUserCommand = async (command) => {
         })
         userStore.logout()
         router.push('/login')
-        ElMessage.success('已退出登录')
       } catch (e) {
-        // 用户取消
       }
       break
   }
@@ -288,11 +304,68 @@ const fetchUnreadCount = async () => {
   try {
     const res = await getUnreadCount()
     if (res.code === 200) {
-      unreadCount.value = res.data || 0
       chatStore.setUnreadCount(res.data || 0)
     }
   } catch (error) {
-    console.error('获取未读数失败', error)
+  }
+}
+
+const locationDialogVisible = ref(false)
+const locating = ref(false)
+
+const LOCATION_DECIDED_KEY = 'location_permission_decided'
+
+const requestLocation = () => {
+  const info = userStore.userInfo
+  if (info?.longitude && info?.latitude) return
+
+  const decided = localStorage.getItem(LOCATION_DECIDED_KEY)
+  if (decided) return
+
+  locationDialogVisible.value = true
+}
+
+const skipLocation = () => {
+  localStorage.setItem(LOCATION_DECIDED_KEY, 'skipped')
+  locationDialogVisible.value = false
+}
+
+const grantLocation = async () => {
+  locating.value = true
+  try {
+    const pos = await new Promise((resolve, reject) => {
+      if (!navigator.geolocation) return reject(new Error('不支持定位'))
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: false, timeout: 8000, maximumAge: 300000
+      })
+    })
+    const { longitude, latitude } = pos.coords
+    try {
+      const geoRes = await reverseGeocode(latitude, longitude)
+      if (geoRes.code === 200 && geoRes.data) {
+        const addr = geoRes.data
+        await updateUserInfo({
+          longitude, latitude,
+          address: addr.formattedAddress || addr.address || '',
+          region: [addr.province, addr.city, addr.district].filter(Boolean).join(',')
+        })
+        userStore.setUserInfo({
+          ...userStore.userInfo,
+          longitude, latitude,
+          address: addr.formattedAddress || addr.address || '',
+          region: [addr.province, addr.city, addr.district].filter(Boolean).join(',')
+        })
+        localStorage.setItem(LOCATION_DECIDED_KEY, 'granted')
+        ElMessage.success('位置获取成功')
+      }
+    } catch (e) {
+    }
+  } catch (e) {
+    localStorage.setItem(LOCATION_DECIDED_KEY, 'denied')
+    ElMessage.warning('无法获取位置，您可以稍后在设置中授权')
+  } finally {
+    locating.value = false
+    locationDialogVisible.value = false
   }
 }
 
@@ -361,6 +434,7 @@ onMounted(() => {
   fetchUnreadCount()
   pollTimer = setInterval(fetchUnreadCount, 30000)
   setTimeout(checkAndShowLocationDialog, 1500)
+  requestLocation()
 })
 
 onUnmounted(() => {
@@ -433,6 +507,29 @@ onUnmounted(() => {
 
         &.is-active {
           font-weight: 600;
+        }
+      }
+
+      .community-menu-item {
+        position: relative;
+
+        &::after {
+          content: 'HOT';
+          position: absolute;
+          top: 8px;
+          right: -4px;
+          font-size: 9px;
+          background: linear-gradient(135deg, #f56c6c, #e6404a);
+          color: #fff;
+          padding: 1px 4px;
+          border-radius: 6px;
+          line-height: 1.2;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+        }
+
+        .el-icon {
+          color: #667eea;
         }
       }
     }
@@ -538,6 +635,26 @@ onUnmounted(() => {
       color: var(--el-color-primary);
     }
 
+    &.community-tab {
+      position: relative;
+
+      &::after {
+        content: '';
+        position: absolute;
+        top: -2px;
+        right: 50%;
+        transform: translateX(14px);
+        width: 6px;
+        height: 6px;
+        background: #f56c6c;
+        border-radius: 50%;
+      }
+
+      .el-icon {
+        color: #667eea;
+      }
+    }
+
     &.publish-btn {
       width: 48px;
       height: 48px;
@@ -556,6 +673,23 @@ onUnmounted(() => {
 }
 
 // ===================== AI 悬浮按钮 =====================
+.location-dialog-content {
+  text-align: center;
+  padding: 16px 0;
+
+  p {
+    font-size: 15px;
+    color: #606266;
+    margin: 16px 0 0;
+  }
+
+  .location-hint {
+    font-size: 13px;
+    color: #909399;
+    margin-top: 8px;
+  }
+}
+
 .ai-float-btn {
   position: fixed;
   bottom: 80px;

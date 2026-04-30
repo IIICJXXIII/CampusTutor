@@ -31,11 +31,14 @@ public class SysUser implements Serializable {
 
     private Integer gender;
 
+private String wechat;
+
+    private String region;
+
+    private String address;
     private BigDecimal longitude;
 
     private BigDecimal latitude;
-
-    private String address;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

@@ -2,7 +2,7 @@
   <div class="register-page">
     <div class="register-container">
       <div class="register-header">
-        <img src="@/assets/logo.svg" alt="Logo" class="logo" />
+        <img src="@/assets/logo.svg" alt="校园智教 Logo" class="logo" />
         <h1>注册账号</h1>
         <p>加入校园智教平台</p>
       </div>
@@ -37,6 +37,7 @@
             placeholder="请输入手机号"
             size="large"
             :prefix-icon="Phone"
+            maxlength="11"
           />
         </el-form-item>
 
@@ -74,9 +75,9 @@
         <el-form-item>
           <el-checkbox v-model="agreed">
             我已阅读并同意
-            <a href="#">《用户协议》</a>和
-            <a href="#">《隐私政策》</a>
           </el-checkbox>
+          <router-link to="/settings/agreement" class="agreement-link">《用户协议》</router-link>和
+          <router-link to="/settings/privacy" class="agreement-link">《隐私政策》</router-link>
         </el-form-item>
 
         <el-form-item>
@@ -149,6 +150,11 @@ const rules = {
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
     { validator: validateConfirmPassword, trigger: 'blur' }
+=======
+  ],
+  role: [
+    { required: true, message: '请选择角色', trigger: 'change' }
+>>>>>>> 3745728a8acb42a0a4d836ff5db19c2faa1cff85
   ]
 }
 
@@ -179,7 +185,7 @@ const handleRegister = async () => {
       }
     }
   } catch (error) {
-    if (error !== 'cancel') {
+    if (error !== 'cancel' && !error._handled) {
       ElMessage.error(error.message || '注册失败')
     }
   } finally {
@@ -293,11 +299,9 @@ const handleRegister = async () => {
     }
   }
 
-  .el-checkbox {
-    a {
-      color: #667eea;
-      text-decoration: none;
-    }
+  .agreement-link {
+    color: #667eea;
+    text-decoration: none;
   }
 }
 

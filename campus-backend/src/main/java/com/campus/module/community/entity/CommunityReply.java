@@ -13,16 +13,36 @@ public class CommunityReply {
 
     private Long postId;
 
+    private Long rootId;
+
+    private Long parentId;
+
+    private Long replyToId;
+
+    private Long replyToUserId;
+
     private Long userId;
 
     private String content;
+
+    private Integer likeCount;
+
+    private Integer replyCount;
+
+    private Integer status;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
     @TableField(exist = false)
-    private String authorName;
+    private String authorNickname;
 
     @TableField(exist = false)
     private String authorAvatar;
+
+    @TableField(exist = false)
+    private String replyToNickname;
+
+    @TableField(exist = false)
+    private Boolean liked;
 }

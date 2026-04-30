@@ -99,8 +99,14 @@ public class CourseOrder {
     private Integer usedHours;
 
     /**
-     * 订单状态：0待支付 1已支付待上课 2进行中 3已完成 4已取消 5退款中 6已退款
+     * 支付模式：full(全额) / per_lesson(按课时)
      */
+    private String paymentMode;
+
+    private Integer paidHours;
+
+    private Integer courseFlowMode;
+
     private Integer status;
 
     /**
@@ -129,14 +135,8 @@ public class CourseOrder {
     private String remark;
 
     /**
-     * 支付模式：full(全额) / per_lesson(按课时)
+     * 经度
      */
-    private String paymentMode;
-
-    private Integer paidHours;
-
-    private Integer courseFlowMode;
-
     private BigDecimal longitude;
 
     /**

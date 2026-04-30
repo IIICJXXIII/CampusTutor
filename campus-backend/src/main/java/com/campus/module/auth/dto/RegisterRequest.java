@@ -6,9 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
-/**
- * 注册请求 DTO
- */
 @Data
 @Schema(description = "注册请求")
 public class RegisterRequest {

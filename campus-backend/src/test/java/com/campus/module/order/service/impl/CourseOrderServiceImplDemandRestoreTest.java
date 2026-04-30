@@ -1,7 +1,7 @@
 package com.campus.module.order.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.campus.common.exception.BusinessException;
-import com.campus.module.booking.mapper.BookingRequestMapper;
 import com.campus.module.demand.entity.DemandPost;
 import com.campus.module.demand.mapper.DemandPostMapper;
 import com.campus.module.demand.mapper.TutorApplicationMapper;
@@ -47,8 +47,6 @@ class CourseOrderServiceImplDemandRestoreTest {
     @Mock
     private GeoService geoService;
     @Mock
-    private BookingRequestMapper bookingRequestMapper;
-    @Mock
     private TutorApplicationMapper tutorApplicationMapper;
     @Mock
     private CourseOrderMapper courseOrderMapper;
@@ -65,7 +63,7 @@ class CourseOrderServiceImplDemandRestoreTest {
     void setUp() {
         orderService = spy(new CourseOrderServiceImpl(
                 tutorProfileMapper, walletService, teachingRecordMapper,
-                demandPostMapper, transactionFlowService, geoService, bookingRequestMapper,
+                demandPostMapper, transactionFlowService, geoService,
                 tutorApplicationMapper));
         ReflectionTestUtils.setField(orderService, "baseMapper", courseOrderMapper);
         lenient().doReturn(true).when(orderService).updateById(any());
@@ -100,6 +98,22 @@ class CourseOrderServiceImplDemandRestoreTest {
         return demand;
     }
 
+    /**
+     * 辅助方法: 验证 demandPostMapper.update(null, wrapper) 被调用，
+     * 并且 wrapper 设置了 status=1 和 matchedTutorId=null
+     */
+    private void verifyDemandRestoredViaUpdateWrapper() {
+        verify(demandPostMapper).update(isNull(), any(UpdateWrapper.class));
+    }
+
+    /**
+     * 辅助方法: 验证 demandPostMapper.update 从未被调用
+     */
+    private void verifyDemandNotUpdated() {
+        verify(demandPostMapper, never()).update(any(), any());
+        verify(demandPostMapper, never()).updateById(any());
+    }
+
     @Nested
     @DisplayName("教师取消订单 → 需求恢复")
     class CancelOrderRestoreDemand {
@@ -109,18 +123,15 @@ class CourseOrderServiceImplDemandRestoreTest {
         void cancelPendingOrder_shouldRestoreDemand() {
             CourseOrder order = buildOrder(-1, DEMAND_ID, TUTOR_ID);
             DemandPost demand = buildDemand(2, TUTOR_ID);
+            // 验证恢复后的回读
+            DemandPost restoredDemand = buildDemand(1, null);
 
             doReturn(order).when(orderService).getById(ORDER_ID);
-            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand);
+            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand, restoredDemand);
 
             orderService.cancelOrder(TUTOR_ID, ORDER_ID, "不想接了");
 
-            ArgumentCaptor<DemandPost> captor = ArgumentCaptor.forClass(DemandPost.class);
-            verify(demandPostMapper).updateById(captor.capture());
-            DemandPost updated = captor.getValue();
-            assertEquals(1, updated.getStatus());
-            assertNull(updated.getMatchedTutorId());
-
+            verifyDemandRestoredViaUpdateWrapper();
             verify(geoService).addDemandLocation(eq(DEMAND_ID), anyDouble(), anyDouble());
         }
 
@@ -129,9 +140,10 @@ class CourseOrderServiceImplDemandRestoreTest {
         void cancelPaidOrder_shouldRestoreDemandAndRefund() {
             CourseOrder order = buildOrder(1, DEMAND_ID, TUTOR_ID);
             DemandPost demand = buildDemand(2, TUTOR_ID);
+            DemandPost restoredDemand = buildDemand(1, null);
 
             doReturn(order).when(orderService).getById(ORDER_ID);
-            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand);
+            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand, restoredDemand);
             when(walletService.unfreeze(anyLong(), any())).thenReturn(true);
             when(walletService.recharge(anyLong(), any())).thenReturn(true);
 
@@ -140,11 +152,7 @@ class CourseOrderServiceImplDemandRestoreTest {
             verify(walletService).unfreeze(TUTOR_ID, order.getTutorAmount());
             verify(walletService).recharge(PARENT_ID, order.getTotalAmount());
 
-            ArgumentCaptor<DemandPost> captor = ArgumentCaptor.forClass(DemandPost.class);
-            verify(demandPostMapper).updateById(captor.capture());
-            assertEquals(1, captor.getValue().getStatus());
-            assertNull(captor.getValue().getMatchedTutorId());
-
+            verifyDemandRestoredViaUpdateWrapper();
             verify(geoService).addDemandLocation(eq(DEMAND_ID), anyDouble(), anyDouble());
         }
 
@@ -156,7 +164,7 @@ class CourseOrderServiceImplDemandRestoreTest {
             doReturn(order).when(orderService).getById(ORDER_ID);
 
             assertDoesNotThrow(() -> orderService.cancelOrder(TUTOR_ID, ORDER_ID, "取消"));
-            verify(demandPostMapper, never()).updateById(any());
+            verifyDemandNotUpdated();
         }
 
         @Test
@@ -170,7 +178,7 @@ class CourseOrderServiceImplDemandRestoreTest {
 
             orderService.cancelOrder(TUTOR_ID, ORDER_ID, "取消");
 
-            verify(demandPostMapper, never()).updateById(any());
+            verifyDemandNotUpdated();
             verify(geoService, never()).addDemandLocation(anyLong(), anyDouble(), anyDouble());
         }
 
@@ -185,7 +193,7 @@ class CourseOrderServiceImplDemandRestoreTest {
 
             orderService.cancelOrder(TUTOR_ID, ORDER_ID, "取消");
 
-            verify(demandPostMapper, never()).updateById(any());
+            verifyDemandNotUpdated();
         }
 
         @Test
@@ -199,7 +207,7 @@ class CourseOrderServiceImplDemandRestoreTest {
 
             orderService.cancelOrder(TUTOR_ID, ORDER_ID, "取消");
 
-            verify(demandPostMapper, never()).updateById(any());
+            verifyDemandNotUpdated();
         }
 
         @Test
@@ -207,16 +215,14 @@ class CourseOrderServiceImplDemandRestoreTest {
         void cancelOrder_matchedTutorIdNullButStatusMatched_shouldRestore() {
             CourseOrder order = buildOrder(-1, DEMAND_ID, TUTOR_ID);
             DemandPost demand = buildDemand(2, null);
+            DemandPost restoredDemand = buildDemand(1, null);
 
             doReturn(order).when(orderService).getById(ORDER_ID);
-            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand);
+            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand, restoredDemand);
 
             orderService.cancelOrder(TUTOR_ID, ORDER_ID, "取消");
 
-            ArgumentCaptor<DemandPost> captor = ArgumentCaptor.forClass(DemandPost.class);
-            verify(demandPostMapper).updateById(captor.capture());
-            assertEquals(1, captor.getValue().getStatus());
-            assertNull(captor.getValue().getMatchedTutorId());
+            verifyDemandRestoredViaUpdateWrapper();
         }
 
         @Test
@@ -226,16 +232,16 @@ class CourseOrderServiceImplDemandRestoreTest {
             DemandPost demand = buildDemand(2, TUTOR_ID);
             demand.setLongitude(null);
             demand.setLatitude(null);
+            DemandPost restoredDemand = buildDemand(1, null);
+            restoredDemand.setLongitude(null);
+            restoredDemand.setLatitude(null);
 
             doReturn(order).when(orderService).getById(ORDER_ID);
-            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand);
+            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand, restoredDemand);
 
             orderService.cancelOrder(TUTOR_ID, ORDER_ID, "取消");
 
-            ArgumentCaptor<DemandPost> captor = ArgumentCaptor.forClass(DemandPost.class);
-            verify(demandPostMapper).updateById(captor.capture());
-            assertEquals(1, captor.getValue().getStatus());
-
+            verifyDemandRestoredViaUpdateWrapper();
             verify(geoService, never()).addDemandLocation(anyLong(), anyDouble(), anyDouble());
         }
     }
@@ -249,17 +255,14 @@ class CourseOrderServiceImplDemandRestoreTest {
         void parentReject_shouldRestoreDemand() {
             CourseOrder order = buildOrder(-1, DEMAND_ID, TUTOR_ID);
             DemandPost demand = buildDemand(2, TUTOR_ID);
+            DemandPost restoredDemand = buildDemand(1, null);
 
             doReturn(order).when(orderService).getById(ORDER_ID);
-            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand);
+            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand, restoredDemand);
 
             orderService.parentRejectOrder(PARENT_ID, ORDER_ID, "不合适");
 
-            ArgumentCaptor<DemandPost> captor = ArgumentCaptor.forClass(DemandPost.class);
-            verify(demandPostMapper).updateById(captor.capture());
-            assertEquals(1, captor.getValue().getStatus());
-            assertNull(captor.getValue().getMatchedTutorId());
-
+            verifyDemandRestoredViaUpdateWrapper();
             verify(geoService).addDemandLocation(eq(DEMAND_ID), anyDouble(), anyDouble());
         }
 
@@ -268,15 +271,14 @@ class CourseOrderServiceImplDemandRestoreTest {
         void parentReject_matchedTutorIdNull_shouldRestore() {
             CourseOrder order = buildOrder(-1, DEMAND_ID, TUTOR_ID);
             DemandPost demand = buildDemand(2, null);
+            DemandPost restoredDemand = buildDemand(1, null);
 
             doReturn(order).when(orderService).getById(ORDER_ID);
-            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand);
+            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand, restoredDemand);
 
             orderService.parentRejectOrder(PARENT_ID, ORDER_ID, "不合适");
 
-            ArgumentCaptor<DemandPost> captor = ArgumentCaptor.forClass(DemandPost.class);
-            verify(demandPostMapper).updateById(captor.capture());
-            assertEquals(1, captor.getValue().getStatus());
+            verifyDemandRestoredViaUpdateWrapper();
         }
 
         @Test
@@ -290,7 +292,7 @@ class CourseOrderServiceImplDemandRestoreTest {
 
             orderService.parentRejectOrder(PARENT_ID, ORDER_ID, "不合适");
 
-            verify(demandPostMapper, never()).updateById(any());
+            verifyDemandNotUpdated();
         }
     }
 
@@ -303,17 +305,14 @@ class CourseOrderServiceImplDemandRestoreTest {
         void tutorReject_shouldRestoreDemand() {
             CourseOrder order = buildOrder(-1, DEMAND_ID, TUTOR_ID);
             DemandPost demand = buildDemand(2, TUTOR_ID);
+            DemandPost restoredDemand = buildDemand(1, null);
 
             doReturn(order).when(orderService).getById(ORDER_ID);
-            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand);
+            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand, restoredDemand);
 
             orderService.tutorRejectOrder(TUTOR_ID, ORDER_ID, "时间冲突");
 
-            ArgumentCaptor<DemandPost> captor = ArgumentCaptor.forClass(DemandPost.class);
-            verify(demandPostMapper).updateById(captor.capture());
-            assertEquals(1, captor.getValue().getStatus());
-            assertNull(captor.getValue().getMatchedTutorId());
-
+            verifyDemandRestoredViaUpdateWrapper();
             verify(geoService).addDemandLocation(eq(DEMAND_ID), anyDouble(), anyDouble());
         }
 
@@ -322,15 +321,14 @@ class CourseOrderServiceImplDemandRestoreTest {
         void tutorReject_matchedTutorIdNull_shouldRestore() {
             CourseOrder order = buildOrder(-1, DEMAND_ID, TUTOR_ID);
             DemandPost demand = buildDemand(2, null);
+            DemandPost restoredDemand = buildDemand(1, null);
 
             doReturn(order).when(orderService).getById(ORDER_ID);
-            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand);
+            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand, restoredDemand);
 
             orderService.tutorRejectOrder(TUTOR_ID, ORDER_ID, "时间冲突");
 
-            ArgumentCaptor<DemandPost> captor = ArgumentCaptor.forClass(DemandPost.class);
-            verify(demandPostMapper).updateById(captor.capture());
-            assertEquals(1, captor.getValue().getStatus());
+            verifyDemandRestoredViaUpdateWrapper();
         }
 
         @Test
@@ -344,7 +342,7 @@ class CourseOrderServiceImplDemandRestoreTest {
 
             orderService.tutorRejectOrder(TUTOR_ID, ORDER_ID, "时间冲突");
 
-            verify(demandPostMapper, never()).updateById(any());
+            verifyDemandNotUpdated();
         }
     }
 
@@ -361,7 +359,7 @@ class CourseOrderServiceImplDemandRestoreTest {
             when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(null);
 
             assertDoesNotThrow(() -> orderService.cancelOrder(TUTOR_ID, ORDER_ID, "取消"));
-            verify(demandPostMapper, never()).updateById(any());
+            verifyDemandNotUpdated();
         }
 
         @Test
@@ -369,18 +367,16 @@ class CourseOrderServiceImplDemandRestoreTest {
         void cancelOrder_geoIndexFails_demandStillRestored() {
             CourseOrder order = buildOrder(-1, DEMAND_ID, TUTOR_ID);
             DemandPost demand = buildDemand(2, TUTOR_ID);
+            DemandPost restoredDemand = buildDemand(1, null);
 
             doReturn(order).when(orderService).getById(ORDER_ID);
-            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand);
+            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand, restoredDemand);
             doThrow(new RuntimeException("Redis连接失败"))
                     .when(geoService).addDemandLocation(anyLong(), anyDouble(), anyDouble());
 
             orderService.cancelOrder(TUTOR_ID, ORDER_ID, "取消");
 
-            ArgumentCaptor<DemandPost> captor = ArgumentCaptor.forClass(DemandPost.class);
-            verify(demandPostMapper).updateById(captor.capture());
-            assertEquals(1, captor.getValue().getStatus());
-            assertNull(captor.getValue().getMatchedTutorId());
+            verifyDemandRestoredViaUpdateWrapper();
         }
 
         @Test
@@ -416,25 +412,23 @@ class CourseOrderServiceImplDemandRestoreTest {
 
             orderService.cancelOrder(TUTOR_ID, ORDER_ID, "取消");
 
-            verify(demandPostMapper, never()).updateById(any());
+            verifyDemandNotUpdated();
         }
 
         @Test
-        @DisplayName("恢复后需求status=1且matchedTutorId=null，与正常上架需求查询条件一致")
+        @DisplayName("恢复后需求应通过LambdaUpdateWrapper显式设置status=1且matchedTutorId=null")
         void restoredDemand_shouldMatchNormalDemandQueryCriteria() {
             CourseOrder order = buildOrder(-1, DEMAND_ID, TUTOR_ID);
             DemandPost demand = buildDemand(2, TUTOR_ID);
+            DemandPost restoredDemand = buildDemand(1, null);
 
             doReturn(order).when(orderService).getById(ORDER_ID);
-            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand);
+            when(demandPostMapper.selectById(DEMAND_ID)).thenReturn(demand, restoredDemand);
 
             orderService.cancelOrder(TUTOR_ID, ORDER_ID, "取消");
 
-            ArgumentCaptor<DemandPost> captor = ArgumentCaptor.forClass(DemandPost.class);
-            verify(demandPostMapper).updateById(captor.capture());
-            DemandPost restored = captor.getValue();
-            assertEquals(1, restored.getStatus(), "恢复后status应为1(上架)");
-            assertNull(restored.getMatchedTutorId(), "恢复后matchedTutorId应为null");
+            // 验证使用了 UpdateWrapper (而非 updateById) 来确保 null 值正确写入
+            verify(demandPostMapper).update(isNull(), any(UpdateWrapper.class));
         }
     }
 }

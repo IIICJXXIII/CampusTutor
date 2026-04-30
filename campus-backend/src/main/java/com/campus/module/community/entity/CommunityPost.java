@@ -20,7 +20,7 @@ public class CommunityPost {
 
     private String content;
 
-    private List<String> images;
+    private String images;
 
     private Integer viewCount;
 
@@ -30,11 +30,14 @@ public class CommunityPost {
     private LocalDateTime createTime;
 
     @TableField(exist = false)
-    private String authorName;
+    private String authorNickname;
 
     @TableField(exist = false)
     private String authorAvatar;
 
     @TableField(exist = false)
     private Integer replyCount;
+
+    @TableField(exist = false)
+    private Boolean liked;
 }

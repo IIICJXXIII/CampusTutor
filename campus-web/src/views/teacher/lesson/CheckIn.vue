@@ -189,8 +189,17 @@ const loadData = async () => {
 
 const initMap = async () => {
   try {
+    const amapKey = import.meta.env.VITE_AMAP_KEY
+    if (!amapKey) {
+      ElMessage.warning('地图功能需要配置高德地图 Key')
+      getLocationFallback()
+      return
+    }
+    window._AMapSecurityConfig = {
+      securityJsCode: import.meta.env.VITE_AMAP_SECURITY_CODE,
+    }
     const AMap = await AMapLoader.load({
-      key: import.meta.env.VITE_AMAP_KEY || '395b2de0b9cf263e585280d5d81821a4', // 使用默认key供测试
+      key: amapKey,
       version: '2.0',
       plugins: ['AMap.Geolocation', 'AMap.Geocoder']
     })

@@ -4,7 +4,6 @@
       <h1 class="page-title">我的订单</h1>
     </div>
     
-    <!-- 状态标签页 -->
     <el-tabs v-model="activeTab" @tab-change="handleTabChange">
       <el-tab-pane label="全部" name="all" />
       <el-tab-pane label="待确认" name="pending" />
@@ -13,7 +12,6 @@
       <el-tab-pane label="已取消" name="cancelled" />
     </el-tabs>
     
-    <!-- 订单列表 -->
     <div v-loading="loading" class="order-container">
       <div v-if="orders.length" class="order-cards">
         <div 
@@ -31,11 +29,11 @@
           
           <div class="order-body">
             <div class="student-info">
-              <el-avatar :size="48" :src="order.studentAvatar">
-                {{ order.studentName?.charAt(0) }}
+              <el-avatar :size="48" :src="order.parentAvatar">
+                {{ order.parentName?.charAt(0) || '家' }}
               </el-avatar>
               <div class="info">
-                <h4>{{ order.studentName }}</h4>
+                <h4>{{ order.parentName || '家长' }}</h4>
                 <p>{{ order.grade }} · {{ order.subject }}</p>
               </div>
             </div>
@@ -43,7 +41,6 @@
             <div class="order-detail">
               <div class="detail-item">
                 <span class="label">课时费</span>
-                <span class="value price">¥{{ order.unitPrice || order.hourlyRate }}/小时</span>
                 <span class="value price">¥{{ order.unitPrice }}/小时</span>
               </div>
               <div class="detail-item">
@@ -51,9 +48,7 @@
                 <span class="value">{{ order.totalHours }}小时</span>
               </div>
               <div class="detail-item">
-                <span class="label">已完成</span>
-                <span class="value">{{ order.usedHours || order.completedHours || 0 }}小时</span>
-                <span class="label">已上</span>
+                <span class="label">已上课时</span>
                 <span class="value">{{ order.usedHours || 0 }}小时</span>
               </div>
             </div>
@@ -118,7 +113,6 @@
       
       <el-empty v-else description="暂无订单" />
       
-      <!-- 分页 -->
       <div v-if="total > pageSize" class="pagination">
         <el-pagination
           v-model:current-page="page"
@@ -136,7 +130,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getTutorOrders, confirmStartOrder as confirmStartOrderApi, tutorConfirmOrder as tutorConfirmOrderApi, tutorRejectOrder as tutorRejectOrderApi, cancelApplication as cancelApplicationApi } from '@shared/api/order'
+import { getTutorOrders, tutorConfirmOrder as tutorConfirmOrderApi, tutorRejectOrder as tutorRejectOrderApi, cancelApplication as cancelApplicationApi } from '@shared/api/order'
 import { formatDate } from '@shared/utils'
 
 const router = useRouter()
@@ -179,7 +173,6 @@ const loadOrders = async () => {
     })
     
     if (res.code === 200) {
-      orders.value = res.data?.records || res.data?.list || []
       orders.value = res.data?.records || []
       total.value = res.data?.total || 0
     }
@@ -199,25 +192,6 @@ const viewDetail = (id) => {
   router.push(`/teacher/orders/${id}`)
 }
 
-const startOrder = async (order) => {
-  try {
-    await ElMessageBox.confirm(
-      `确认开始 ${order.studentName} 的家教课程吗？`,
-      '确认开课'
-    )
-    
-    const res = await confirmStartOrderApi(order.id)
-    if (res.code === 200) {
-      ElMessage.success('开课成功')
-      loadOrders()
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.message || '操作失败')
-    }
-  }
-}
-
 const goToLesson = (order) => {
   router.push(`/teacher/lessons?orderId=${order.id}`)
 }
@@ -229,7 +203,7 @@ const goToChat = (order) => {
 const acceptOrder = async (order) => {
   try {
     await ElMessageBox.confirm(
-      `确认接受该预约订单吗？确认后家长即可支付。`,
+      '确认接受该预约订单吗？确认后家长即可支付。',
       '确认接单'
     )
     const res = await tutorConfirmOrderApi(order.id)
@@ -273,6 +247,15 @@ const cancelApply = async (order) => {
     const res = await cancelApplicationApi(order.id, '教师主动取消')
     if (res.code === 200) {
       ElMessage.success('申请已取消')
+const cancelApplication = async (order) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要取消接单申请吗？取消后需求将重新对其他教师开放。',
+      '取消申请'
+    )
+    const res = await cancelOrderApi(order.id, { reason: '教师取消接单申请' })
+    if (res.code === 200) {
+      ElMessage.success('已取消申请')
       loadOrders()
     }
   } catch (error) {
@@ -387,6 +370,7 @@ onMounted(() => {
       .actions {
         display: flex;
         gap: 8px;
+        align-items: center;
       }
     }
   }
@@ -398,7 +382,6 @@ onMounted(() => {
   }
 }
 
-// 响应式
 @media (max-width: 768px) {
   .order-list {
     .order-card {

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="wallet-page">
     <div class="page-header">
       <h1 class="page-title">我的钱包</h1>
@@ -152,7 +152,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Tickets, Plus, Minus, ArrowRight } from '@element-plus/icons-vue'
-import { getWalletInfo, getWalletRecords, recharge } from '@shared/api/wallet'
+import { getWalletInfo, getTransactions, recharge } from '@shared/api/wallet'
 import dayjs from 'dayjs'
 
 const loading = ref(false)
@@ -187,7 +187,7 @@ const loadWallet = async () => {
       walletInfo.value = res.data || {}
     }
     
-    const recordRes = await getWalletRecords({ page: 1, size: 5 })
+    const recordRes = await getTransactions({ page: 1, size: 5 })
     if (recordRes.code === 200) {
       records.value = recordRes.data?.records || []
     }
@@ -217,7 +217,7 @@ const loadRecords = async () => {
       params.type = recordType.value
     }
     
-    const res = await getWalletRecords(params)
+    const res = await getTransactions(params)
     if (res.code === 200) {
       const newRecords = res.data?.records || []
       allRecords.value = [...allRecords.value, ...newRecords]

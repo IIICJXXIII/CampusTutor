@@ -7,10 +7,10 @@
         <p>大学生家教智能服务平台</p>
       </div>
 
-      <el-form ref="formRef" :model="form" :rules="rules" class="login-form">
+      <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" class="login-form">
         <el-form-item prop="phone">
           <el-input
-            v-model="form.phone"
+            v-model="pwdForm.phone"
             placeholder="请输入手机号"
             size="large"
             :prefix-icon="Phone"
@@ -19,13 +19,13 @@
 
         <el-form-item prop="password">
           <el-input
-            v-model="form.password"
+            v-model="pwdForm.password"
             type="password"
             placeholder="请输入密码"
             size="large"
             :prefix-icon="Lock"
             show-password
-            @keyup.enter="handleLogin"
+            @keyup.enter="handlePasswordLogin"
           />
         </el-form-item>
 
@@ -35,7 +35,7 @@
             size="large"
             :loading="loading"
             class="login-btn"
-            @click="handleLogin"
+            @click="handlePasswordLogin"
           >
             登录
           </el-button>
@@ -47,13 +47,37 @@
           还没有账号？
           <router-link to="/register">立即注册</router-link>
         </p>
+        <p class="forgot-password">
+          <a href="#" @click.prevent="showResetPassword">忘记密码？</a>
+        </p>
         <p class="agreement">
           登录即表示同意
-          <a href="#">《用户协议》</a>和
-          <a href="#">《隐私政策》</a>
+          <router-link to="/settings/privacy">《用户协议》</router-link>和
+          <router-link to="/settings/agreement">《隐私政策》</router-link>
         </p>
       </div>
     </div>
+
+    <el-dialog v-model="resetVisible" title="重置密码" width="400px" :close-on-click-modal="false">
+      <el-form ref="resetFormRef" :model="resetForm" :rules="resetRules">
+        <el-form-item prop="phone">
+          <el-input v-model="resetForm.phone" placeholder="请输入手机号" :prefix-icon="Phone" />
+        </el-form-item>
+        <el-form-item prop="oldPassword">
+          <el-input v-model="resetForm.oldPassword" type="password" placeholder="请输入旧密码" show-password :prefix-icon="Lock" />
+        </el-form-item>
+        <el-form-item prop="newPassword">
+          <el-input v-model="resetForm.newPassword" type="password" placeholder="请输入新密码" show-password :prefix-icon="Lock" />
+        </el-form-item>
+        <el-form-item prop="confirmPassword">
+          <el-input v-model="resetForm.confirmPassword" type="password" placeholder="请确认新密码" show-password :prefix-icon="Lock" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="resetVisible = false">取消</el-button>
+        <el-button type="primary" :loading="resetLoading" @click="handleResetPassword">确认重置</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -63,20 +87,21 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Phone, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@shared/stores'
-import { login } from '@shared/api/auth'
+import { login, resetPassword } from '@shared/api/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-const formRef = ref(null)
 const loading = ref(false)
 
-const form = reactive({
+const pwdFormRef = ref(null)
+
+const pwdForm = reactive({
   phone: '',
   password: ''
 })
 
-const rules = {
+const pwdRules = {
   phone: [
     { required: true, message: '请输入手机号', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
@@ -87,39 +112,107 @@ const rules = {
   ]
 }
 
-const handleLogin = async () => {
-  try {
-    await formRef.value.validate()
-    loading.value = true
+const handleLoginSuccess = (userInfo) => {
+  userStore.setToken(userInfo.token)
+  userStore.setUserInfo(userInfo)
 
+  if (userInfo.role === 1) {
+    userStore.setRole('tutor')
+    ElMessage.success('登录成功，欢迎教师')
+    router.push('/teacher/home')
+  } else {
+    userStore.setRole('parent')
+    ElMessage.success('登录成功，欢迎家长')
+    router.push('/parent/home')
+  }
+}
+
+const handlePasswordLogin = async () => {
+  try {
+    await pwdFormRef.value.validate()
+    loading.value = true
     const res = await login({
       account: form.phone,
       password: form.password
+      account: pwdForm.phone,
+      password: pwdForm.password
     })
-
     if (res.code === 200) {
-      const userInfo = res.data
-
-      userStore.setToken(userInfo.token)
-      userStore.setUserInfo(userInfo)
-
-      // 根据角色设置并跳转
-      if (userInfo.role === 1) {
-        userStore.setRole('tutor')
-        ElMessage.success('登录成功，欢迎教师')
-        router.push('/teacher/home')
-      } else {
-        userStore.setRole('parent')
-        ElMessage.success('登录成功，欢迎家长')
-        router.push('/parent/home')
-      }
+      handleLoginSuccess(res.data)
     }
   } catch (error) {
-    if (error !== 'cancel') {
+    if (error !== 'cancel' && !error._handled) {
       ElMessage.error(error.message || '登录失败')
     }
   } finally {
     loading.value = false
+  }
+}
+
+const resetVisible = ref(false)
+const resetLoading = ref(false)
+const resetFormRef = ref(null)
+
+const resetForm = reactive({
+  phone: '',
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const validateConfirmPassword = (rule, value, callback) => {
+  if (value !== resetForm.newPassword) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
+}
+
+const resetRules = {
+  phone: [
+    { required: true, message: '请输入手机号', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
+  ],
+  oldPassword: [
+    { required: true, message: '请输入旧密码', trigger: 'blur' }
+  ],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '密码至少6位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    { validator: validateConfirmPassword, trigger: 'blur' }
+  ]
+}
+
+const showResetPassword = () => {
+  resetForm.phone = ''
+  resetForm.oldPassword = ''
+  resetForm.newPassword = ''
+  resetForm.confirmPassword = ''
+  resetVisible.value = true
+}
+
+const handleResetPassword = async () => {
+  try {
+    await resetFormRef.value.validate()
+    resetLoading.value = true
+    const res = await resetPassword({
+      phone: resetForm.phone,
+      oldPassword: resetForm.oldPassword,
+      newPassword: resetForm.newPassword
+    })
+    if (res.code === 200) {
+      ElMessage.success('密码重置成功，请使用新密码登录')
+      resetVisible.value = false
+    }
+  } catch (error) {
+    if (error !== 'cancel' && !error._handled) {
+      ElMessage.error(error.message || '重置密码失败')
+    }
+  } finally {
+    resetLoading.value = false
   }
 }
 </script>
@@ -145,7 +238,7 @@ const handleLogin = async () => {
 
 .login-header {
   text-align: center;
-  margin-bottom: 36px;
+  margin-bottom: 24px;
 
   .logo {
     width: 72px;
@@ -201,6 +294,14 @@ const handleLogin = async () => {
       &:hover {
         text-decoration: underline;
       }
+    }
+  }
+
+  .forgot-password {
+    margin-top: 8px;
+
+    a {
+      font-size: 13px;
     }
   }
 

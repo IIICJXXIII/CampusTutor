@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-@Tag(name = "社区模块", description = "社区帖子、评论功能")
+@Tag(name = "社区")
 @RestController
 @RequestMapping("/api/community")
 @RequiredArgsConstructor
@@ -23,60 +23,74 @@ public class CommunityController {
     private final CommunityPostService postService;
     private final CommunityReplyService replyService;
 
-    @Operation(summary = "发布帖子")
-    @PostMapping("/posts")
-    public Result<Long> createPost(@RequestBody Map<String, Object> params) {
-        Long userId = UserContext.getUserId();
-        String title = (String) params.get("title");
-        String content = (String) params.get("content");
-        Integer topicType = params.get("topicType") != null
-                ? Integer.parseInt(params.get("topicType").toString())
-                : 1;
-        Long postId = postService.createPost(userId, title, content, topicType);
-        return Result.success(postId);
-    }
-
     @Operation(summary = "获取帖子列表")
     @GetMapping("/posts")
     public Result<IPage<CommunityPost>> listPosts(
             @RequestParam(required = false) Integer topicType,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
-        IPage<CommunityPost> result = postService.listPosts(topicType, page, size);
-        return Result.success(result);
+        return Result.success(postService.listPosts(topicType, page, size));
     }
 
     @Operation(summary = "获取帖子详情")
     @GetMapping("/posts/{id}")
-    public Result<CommunityPost> getPostDetail(@PathVariable Long id) {
-        CommunityPost post = postService.getPostDetail(id);
-        return Result.success(post);
+    public Result<CommunityPost> getPost(@PathVariable Long id) {
+        return Result.success(postService.getPostDetail(id));
     }
 
-    @Operation(summary = "点赞帖子")
+    @Operation(summary = "发布帖子")
+    @PostMapping("/posts")
+    public Result<CommunityPost> createPost(@RequestBody CommunityPost post) {
+        Long userId = UserContext.getUserId();
+        return Result.success(postService.createPost(userId, post));
+    }
+
+    @Operation(summary = "点赞/取消点赞帖子")
     @PostMapping("/posts/{id}/like")
-    public Result<Void> likePost(@PathVariable Long id) {
-        Long userId = UserContext.getUserId();
-        postService.likePost(userId, id);
-        return Result.success();
+    public Result<Map<String, Object>> likePost(@PathVariable Long id) {
+        boolean liked = postService.likePost(id);
+        return Result.success(Map.of("liked", liked));
     }
 
-    @Operation(summary = "发表评论")
-    @PostMapping("/posts/{id}/replies")
-    public Result<Long> createReply(@PathVariable Long id, @RequestBody Map<String, String> params) {
-        Long userId = UserContext.getUserId();
-        String content = params.get("content");
-        Long replyId = replyService.createReply(userId, id, content);
-        return Result.success(replyId);
-    }
-
-    @Operation(summary = "获取帖子评论列表")
-    @GetMapping("/posts/{id}/replies")
+    @Operation(summary = "获取帖子一级评论列表")
+    @GetMapping("/posts/{postId}/replies")
     public Result<IPage<CommunityReply>> listReplies(
-            @PathVariable Long id,
+            @PathVariable Long postId,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
-        IPage<CommunityReply> result = replyService.listReplies(id, page, size);
-        return Result.success(result);
+        return Result.success(replyService.listReplies(postId, page, size));
+    }
+
+    @Operation(summary = "获取子评论列表(游标分页)")
+    @GetMapping("/replies/{rootId}/sub")
+    public Result<IPage<CommunityReply>> listSubReplies(
+            @PathVariable Long rootId,
+            @RequestParam(required = false) Long lastId,
+            @RequestParam(defaultValue = "3") Integer size) {
+        return Result.success(replyService.listSubReplies(rootId, lastId, size));
+    }
+
+    @Operation(summary = "评论/回复评论")
+    @PostMapping("/posts/{postId}/replies")
+    public Result<CommunityReply> createReply(
+            @PathVariable Long postId,
+            @RequestBody CommunityReply reply) {
+        Long userId = UserContext.getUserId();
+        reply.setPostId(postId);
+        return Result.success(replyService.createReply(userId, reply));
+    }
+
+    @Operation(summary = "删除评论")
+    @DeleteMapping("/replies/{replyId}")
+    public Result<Void> deleteReply(@PathVariable Long replyId) {
+        replyService.deleteReply(replyId);
+        return Result.success(null);
+    }
+
+    @Operation(summary = "点赞/取消点赞评论")
+    @PostMapping("/replies/{replyId}/like")
+    public Result<Map<String, Object>> likeReply(@PathVariable Long replyId) {
+        boolean liked = replyService.likeReply(replyId);
+        return Result.success(Map.of("liked", liked));
     }
 }

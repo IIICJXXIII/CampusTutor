@@ -33,24 +33,16 @@ export function applyWithdraw(data) {
 export function getWithdrawals(params) {
   return request.get('/wallet/withdrawals', { params });
 }
+
 /**
  * 充值
  * @param {Object} data - { amount, paymentMethod }
  */
 export function recharge(data) {
-  // 后端使用 @RequestParam 接收参数
   return request.post('/wallet/recharge', null, {
     params: {
       amount: data.amount,
       paymentMethod: data.paymentMethod
     }
   });
-}
-
-/**
- * 获取钱包记录 (使用交易流水接口)
- * @param {Object} params - 分页参数
- */
-export function getWalletRecords(params) {
-  return request.get('/wallet/transactions', { params });
 }

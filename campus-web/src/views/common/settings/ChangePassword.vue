@@ -12,6 +12,12 @@
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="当前密码" prop="oldPassword">
           <el-input v-model="form.oldPassword" type="password" placeholder="请输入当前密码" show-password />
+        <el-form-item label="手机号">
+          <el-input :value="maskPhone(userStore.phone)" disabled />
+        </el-form-item>
+        
+        <el-form-item label="旧密码" prop="oldPassword">
+          <el-input v-model="form.oldPassword" type="password" placeholder="请输入旧密码" show-password />
         </el-form-item>
         
         <el-form-item label="新密码" prop="newPassword">
@@ -37,6 +43,7 @@ import { ElMessage } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useUserStore } from '@shared/stores'
 import { updatePassword } from '@shared/api/user'
+import { resetPassword } from '@shared/api/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -52,6 +59,7 @@ const form = reactive({
 const rules = {
   oldPassword: [
     { required: true, message: '请输入当前密码', trigger: 'blur' }
+    { required: true, message: '请输入旧密码', trigger: 'blur' }
   ],
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
@@ -81,13 +89,15 @@ const handleSubmit = async () => {
   loading.value = true
   try {
     const res = await updatePassword({
+    const res = await resetPassword({
+      phone: userStore.phone,
       oldPassword: form.oldPassword,
       newPassword: form.newPassword
     })
     if (res.code === 200) {
       ElMessage.success('密码修改成功，请重新登录')
-      await userStore.logout()
-      router.push('/login')
+      userStore.logout()
+      window.location.href = '/login'
     }
   } catch (error) {
     ElMessage.error(error.message || '修改失败')

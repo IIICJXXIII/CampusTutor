@@ -52,7 +52,6 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
     private final DemandPostMapper demandPostMapper;
     private final SysTransactionFlowService transactionFlowService;
     private final com.campus.module.demand.service.GeoService geoService;
-    private final com.campus.module.booking.mapper.BookingRequestMapper bookingRequestMapper;
     private final TutorApplicationMapper tutorApplicationMapper;
 
     /**
@@ -367,78 +366,77 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
             return;
         }
 
-        DemandPost demand = demandPostMapper.selectById(order.getDemandId());
+        Long demandId = order.getDemandId();
+        DemandPost demand = demandPostMapper.selectById(demandId);
         if (demand == null) {
-            log.warn("[需求恢复] 订单 {} 关联的需求 {} 不存在 (触发: {})", orderId, order.getDemandId(), trigger);
+            log.warn("[需求恢复] 订单 {} 关联的需求 {} 不存在 (触发: {})", orderId, demandId, trigger);
             return;
         }
 
-        log.info("[需求恢复] 开始恢复需求 {} (当前status={}, matchedTutorId={}, 触发: {}, 订单: {}, 教师: {})",
-                demand.getId(), demand.getStatus(), demand.getMatchedTutorId(), trigger, orderId, tutorId);
+        log.info("[需求恢复] 开始处理需求 {} 恢复，当前状态: status={}, matchedTutorId={} (触发: {}, 订单: {}, 教师: {})",
+                demandId, demand.getStatus(), demand.getMatchedTutorId(), trigger, orderId, tutorId);
 
         if (demand.getStatus() == 1 && demand.getMatchedTutorId() == null) {
-            log.info("[需求恢复] 需求 {} 已处于上架且未匹配状态，无需恢复 (触发: {})", demand.getId(), trigger);
+            log.info("[需求恢复] 需求 {} 已处于上架且未匹配状态，无需恢复 (触发: {})", demandId, trigger);
             return;
         }
 
         if (demand.getStatus() == 3) {
-            log.warn("[需求恢复] 需求 {} 已完成，不应恢复 (触发: {})", demand.getId(), trigger);
+            log.warn("[需求恢复] 需求 {} 已完成，不应恢复 (触发: {})", demandId, trigger);
             return;
         }
 
         if (demand.getStatus() == 0) {
-            log.warn("[需求恢复] 需求 {} 已被家长主动下架，不应恢复 (触发: {})", demand.getId(), trigger);
+            log.warn("[需求恢复] 需求 {} 已被家长主动下架，不应恢复 (触发: {})", demandId, trigger);
             return;
         }
 
         if (demand.getStatus() != 2) {
-            log.warn("[需求恢复] 需求 {} 状态异常(status={})，不恢复 (触发: {})", demand.getId(), demand.getStatus(), trigger);
+            log.warn("[需求恢复] 需求 {} 状态异常(status={})，不恢复 (触发: {})", demandId, demand.getStatus(), trigger);
             return;
         }
 
         if (demand.getMatchedTutorId() != null && !demand.getMatchedTutorId().equals(tutorId)) {
             log.warn("[需求恢复] 需求 {} 已被其他教师 {} 匹配，当前教师 {}，不恢复 (触发: {})",
-                    demand.getId(), demand.getMatchedTutorId(), tutorId, trigger);
+                    demandId, demand.getMatchedTutorId(), tutorId, trigger);
             return;
         }
 
-        // 恢复需求状态：上架 + 清除匹配教师
-        demand.setMatchedTutorId(null);
-        demand.setStatus(1);
-        demandPostMapper.updateById(demand);
-        log.info("[需求恢复] 已执行 updateById，需求 {} 状态变更: status=1, matchedTutorId=null (触发: {}, 订单: {}, 教师: {})",
-                demand.getId(), trigger, orderId, tutorId);
+        // 🔑 关键修复: 必须使用 UpdateWrapper 显式设置 matched_tutor_id 为 null
+        // MyBatis-Plus 的 updateById 默认使用 NOT_NULL 策略，会跳过 null 字段，
+        // 导致 matched_tutor_id 永远不会被清除，需求无法重新出现在"找学生"页面。
+        com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<DemandPost> updateWrapper =
+                new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<>();
+        updateWrapper.eq("id", demandId)
+                .set("status", 1)
+                .set("matched_tutor_id", null);
+        demandPostMapper.update(null, updateWrapper);
+
+        log.info("[需求恢复] ✅ 需求 {} 已恢复为上架可匹配状态 (status=1, matchedTutorId=null) (触发: {}, 订单: {}, 教师: {})",
+                demandId, trigger, orderId, tutorId);
 
         // 验证恢复结果
-        DemandPost verifyDemand = demandPostMapper.selectById(demand.getId());
-        if (verifyDemand != null) {
-            if (verifyDemand.getMatchedTutorId() != null || verifyDemand.getStatus() != 1) {
-                log.error("[需求恢复] 验证失败！需求 {} 更新后 status={}, matchedTutorId={}，使用 UpdateWrapper 强制修正",
-                        demand.getId(), verifyDemand.getStatus(), verifyDemand.getMatchedTutorId());
-                // 使用 UpdateWrapper 强制将 matchedTutorId 设置为 NULL
-                com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<DemandPost> updateWrapper = new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<>();
-                updateWrapper.eq(DemandPost::getId, demand.getId())
-                        .set(DemandPost::getStatus, 1)
-                        .set(DemandPost::getMatchedTutorId, null);
-                demandPostMapper.update(null, updateWrapper);
-                log.info("[需求恢复] UpdateWrapper 强制修正完成，需求 {} 已恢复", demand.getId());
-            } else {
-                log.info("[需求恢复] 验证通过，需求 {} 已正确恢复为上架可匹配状态", demand.getId());
+        DemandPost restored = demandPostMapper.selectById(demandId);
+        if (restored != null) {
+            log.info("[需求恢复] 验证结果: 需求 {} status={}, matchedTutorId={}",
+                    demandId, restored.getStatus(), restored.getMatchedTutorId());
+            if (restored.getStatus() != 1 || restored.getMatchedTutorId() != null) {
+                log.error("[需求恢复] ❌ 需求 {} 恢复验证失败！期望 status=1, matchedTutorId=null，实际 status={}, matchedTutorId={}",
+                        demandId, restored.getStatus(), restored.getMatchedTutorId());
             }
         }
 
-        // 恢复GEO索引
         if (demand.getLongitude() != null && demand.getLatitude() != null) {
             try {
-                geoService.addDemandLocation(demand.getId(),
+                geoService.addDemandLocation(demandId,
                         demand.getLongitude().doubleValue(), demand.getLatitude().doubleValue());
                 log.info("[需求恢复] 需求 {} 已重新添加到Redis GEO索引 ({}, {})",
-                        demand.getId(), demand.getLongitude(), demand.getLatitude());
+                        demandId, demand.getLongitude(), demand.getLatitude());
             } catch (Exception e) {
-                log.error("[需求恢复] 需求 {} 添加到GEO索引失败", demand.getId(), e);
+                log.error("[需求恢复] 需求 {} 添加到GEO索引失败，不影响需求状态恢复", demandId, e);
             }
         } else {
-            log.warn("[需求恢复] 需求 {} 无经纬度信息，跳过GEO索引", demand.getId());
+            log.warn("[需求恢复] 需求 {} 无经纬度信息，跳过GEO索引", demandId);
         }
     }
 
@@ -474,13 +472,13 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void confirmStart(Long tutorId, Long orderId) {
+    public void confirmStart(Long parentId, Long orderId) {
         CourseOrder order = getById(orderId);
         if (order == null) {
             throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
         }
-        if (!order.getTutorId().equals(tutorId)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "仅教师可确认开课");
+        if (!order.getParentId().equals(parentId)) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "仅家长可确认开课");
         }
         if (order.getStatus() != 1) {
             throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单状态不正确，仅已支付待上课的订单可确认开课");
@@ -494,7 +492,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
 
         order.setStatus(2);
         updateById(order);
-        log.info("教师 {} 确认开课: {}, 已支付课时: {}, 已上课时: {}", tutorId, orderId, paidHours, usedHours);
+        log.info("家长 {} 确认开课: {}, 已支付课时: {}, 已上课时: {}", parentId, orderId, paidHours, usedHours);
     }
 
     @Override
@@ -849,58 +847,6 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
 
         log.info("[取消申请] 教师 {} 取消申请, 订单ID: {}, 申请ID: {}, 原因: {}",
                 tutorId, orderId, order.getApplicationId(), reason);
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Long createOrderFromBooking(Long parentId, Long bookingId, Integer totalHours, BigDecimal unitPrice) {
-        // 查询预约请求
-        com.campus.module.booking.entity.BookingRequest booking = bookingRequestMapper.selectById(bookingId);
-        if (booking == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "预约请求不存在");
-        }
-        if (!booking.getParentId().equals(parentId)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此预约");
-        }
-
-        // 查询教员档案
-        LambdaQueryWrapper<TutorProfile> profileWrapper = new LambdaQueryWrapper<TutorProfile>()
-                .eq(TutorProfile::getUserId, booking.getTutorId())
-                .eq(TutorProfile::getCertStatus, 2);
-        TutorProfile tutorProfile = tutorProfileMapper.selectOne(profileWrapper);
-        if (tutorProfile == null) {
-            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "教员未认证或档案不存在");
-        }
-
-        // 计算金额
-        BigDecimal totalAmount = unitPrice.multiply(new BigDecimal(totalHours));
-        BigDecimal serviceFee = totalAmount.multiply(SERVICE_FEE_RATE).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal tutorAmount = totalAmount.subtract(serviceFee);
-
-        // 创建订单
-        CourseOrder order = new CourseOrder();
-        order.setOrderNo(generateOrderNo());
-        order.setParentId(parentId);
-        order.setStudentId(booking.getStudentId());
-        order.setTutorId(booking.getTutorId());
-        order.setTutorProfileId(tutorProfile.getId());
-        order.setSubject(booking.getSubject());
-        order.setGrade(booking.getGrade());
-        order.setTeachMode(1); // 默认上门
-        order.setUnitPrice(unitPrice);
-        order.setTotalHours(totalHours);
-        order.setTotalAmount(totalAmount);
-        order.setServiceFee(serviceFee);
-        order.setTutorAmount(tutorAmount);
-        order.setUsedHours(0);
-        order.setStatus(0); // 待支付
-        order.setRemark(booking.getRemark());
-        save(order);
-
-        log.info("[预约转订单] 家长 {} 从预约 {} 创建订单 {}, 教师 {}, 金额 {}",
-                parentId, bookingId, order.getId(), booking.getTutorId(), totalAmount);
-
-        return order.getId();
     }
 
 }

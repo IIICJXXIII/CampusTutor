@@ -72,6 +72,14 @@ public class OrderController {
         return Result.success();
     }
 
+    @Operation(summary = "家长拒绝接单申请", description = "家长拒绝教师的接单申请，订单将被取消")
+    @PostMapping("/{id}/parent-reject")
+    public Result<Void> parentReject(@PathVariable String id, @RequestParam(required = false) String reason) {
+        Long parentId = UserContext.getUserId();
+        orderService.parentRejectOrder(parentId, resolveOrderId(id), reason);
+        return Result.success();
+    }
+
     @Operation(summary = "教师确认预约", description = "教师确认家长的直接预约订单，订单变为待支付状态")
     @PostMapping("/{id}/tutor-confirm")
     public Result<Void> tutorConfirm(@PathVariable String id) {
@@ -104,21 +112,25 @@ public class OrderController {
         return Result.success();
     }
 
-    @Operation(summary = "教师确认开课", description = "教师确认开课，需家长已支付对应课时费用")
+    @Operation(summary = "家长确认开课", description = "家长确认开始上课，订单变为进行中")
     @PostMapping("/{id}/start")
     public Result<Void> start(@PathVariable String id) {
-        Long tutorId = UserContext.getUserId();
-        orderService.confirmStart(tutorId, resolveOrderId(id));
+        Long parentId = UserContext.getUserId();
+        Integer role = UserContext.getRole();
+        if (role == null || role != 2) {
+            throw new BusinessException(ResultCode.FORBIDDEN.getCode(), "仅家长可确认开课");
+        }
+        orderService.confirmStart(parentId, resolveOrderId(id));
         return Result.success();
     }
 
     @Operation(summary = "完成订单")
-@PostMapping("/{id}/complete")
-public Result<Void> complete(@PathVariable String id) {
-    Long tutorId = UserContext.getUserId();
-    orderService.completeOrder(tutorId, resolveOrderId(id));
-    return Result.success();
-}
+    @PostMapping("/{id}/complete")
+    public Result<Void> complete(@PathVariable String id) {
+        Long userId = UserContext.getUserId();
+        orderService.completeOrder(userId, resolveOrderId(id));
+        return Result.success();
+    }
 
     @Operation(summary = "订单详情")
     @GetMapping("/{id}")
@@ -177,6 +189,25 @@ public Result<Void> complete(@PathVariable String id) {
             @RequestParam String reason) {
         Long userId = UserContext.getUserId();
         String refundNo = orderService.applyRefund(userId, resolveOrderId(orderId), refundAmount, reason);
+        return Result.success(refundNo);
+    }
+
+    @Operation(summary = "申请退款(前端简化版)", description = "前端通过订单ID和原因申请退款，退款金额自动计算")
+    @PostMapping("/{id}/refund")
+    public Result<String> applyRefundSimple(
+            @PathVariable String id,
+            @RequestParam(required = false) String reason) {
+        Long userId = UserContext.getUserId();
+        Long orderId = resolveOrderId(id);
+        CourseOrder order = orderService.getById(orderId);
+        if (order == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
+        }
+        if (!order.getParentId().equals(userId)) {
+            throw new BusinessException(ResultCode.FORBIDDEN.getCode(), "只能对自己的订单申请退款");
+        }
+        java.math.BigDecimal refundAmount = order.getTotalAmount();
+        String refundNo = orderService.applyRefund(userId, orderId, refundAmount, reason);
         return Result.success(refundNo);
     }
 }

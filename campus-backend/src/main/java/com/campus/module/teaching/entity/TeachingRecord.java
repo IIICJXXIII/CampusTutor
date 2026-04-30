@@ -63,9 +63,6 @@ public class TeachingRecord {
      */
     private String homeworkAssigned;
 
-    /**
-     * 状态：0-待确认, 1-家长已确认, 2-异常/申诉
-     */
     private Integer status;
 
     /**
