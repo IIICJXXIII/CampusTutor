@@ -104,7 +104,7 @@ public class OrderController {
         return Result.success();
     }
 
-    @Operation(summary = "教员确认开课")
+    @Operation(summary = "教师确认开课", description = "教师确认开课，需家长已支付对应课时费用")
     @PostMapping("/{id}/start")
     public Result<Void> start(@PathVariable String id) {
         Long tutorId = UserContext.getUserId();
@@ -159,6 +159,14 @@ public Result<Void> complete(@PathVariable String id) {
         Long tutorId = UserContext.getUserId();
         IPage<CourseOrder> result = orderService.listTutorOrders(tutorId, status, page, size);
         return Result.success(result);
+    }
+
+    @Operation(summary = "教师取消需求申请", description = "教师取消已提交的需求接单申请")
+    @PostMapping("/{id}/cancel-application")
+    public Result<Void> cancelApplication(@PathVariable String id, @RequestParam(required = false) String reason) {
+        Long tutorId = UserContext.getUserId();
+        orderService.cancelApplication(tutorId, resolveOrderId(id), reason);
+        return Result.success("已取消申请");
     }
 
     @Operation(summary = "申请退款")

@@ -69,6 +69,16 @@ public class TeachingRecord {
     private Integer status;
 
     /**
+     * 支付状态：0未支付 1已支付
+     */
+    private Integer payStatus;
+
+    /**
+     * 支付时间
+     */
+    private LocalDateTime payTime;
+
+    /**
      * 创建时间
      */
     @TableField(fill = FieldFill.INSERT)

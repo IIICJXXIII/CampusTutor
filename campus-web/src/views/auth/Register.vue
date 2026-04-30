@@ -8,7 +8,6 @@
       </div>
 
       <el-form :model="form" :rules="rules" ref="formRef" class="register-form">
-        <!-- 角色选择 -->
         <el-form-item prop="role">
           <div class="role-selector">
             <div
@@ -41,21 +40,6 @@
           />
         </el-form-item>
 
-        <el-form-item prop="code">
-          <el-input
-            v-model="form.code"
-            placeholder="请输入验证码"
-            size="large"
-            :prefix-icon="Message"
-          >
-            <template #append>
-              <el-button :disabled="countdown > 0" @click="sendCode">
-                {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
-              </el-button>
-            </template>
-          </el-input>
-        </el-form-item>
-
         <el-form-item prop="nickname">
           <el-input
             v-model="form.nickname"
@@ -70,6 +54,17 @@
             v-model="form.password"
             type="password"
             placeholder="请设置密码"
+            size="large"
+            :prefix-icon="Lock"
+            show-password
+          />
+        </el-form-item>
+
+        <el-form-item prop="confirmPassword">
+          <el-input
+            v-model="form.confirmPassword"
+            type="password"
+            placeholder="请确认密码"
             size="large"
             :prefix-icon="Lock"
             show-password
@@ -112,33 +107,37 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Phone, Message, User as UserIcon, Lock, Reading } from '@element-plus/icons-vue'
+import { Phone, User as UserIcon, Lock, Reading } from '@element-plus/icons-vue'
 import { useUserStore } from '@shared/stores'
-import { register, sendCode as sendCodeApi } from '@shared/api/auth'
+import { register } from '@shared/api/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
 
 const formRef = ref(null)
 const loading = ref(false)
-const countdown = ref(0)
 const agreed = ref(false)
 
 const form = reactive({
   phone: '',
-  code: '',
   nickname: '',
   password: '',
-  role: 2 // 默认家长
+  confirmPassword: '',
+  role: 2
 })
+
+const validateConfirmPassword = (rule, value, callback) => {
+  if (value !== form.password) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
+}
 
 const rules = {
   phone: [
     { required: true, message: '请输入手机号', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
-  ],
-  code: [
-    { required: true, message: '请输入验证码', trigger: 'blur' }
   ],
   nickname: [
     { required: true, message: '请输入昵称', trigger: 'blur' }
@@ -146,30 +145,11 @@ const rules = {
   password: [
     { required: true, message: '请设置密码', trigger: 'blur' },
     { min: 6, message: '密码至少6位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认密码', trigger: 'blur' },
+    { validator: validateConfirmPassword, trigger: 'blur' }
   ]
-}
-
-const sendCode = async () => {
-  if (!form.phone || !/^1[3-9]\d{9}$/.test(form.phone)) {
-    ElMessage.warning('请输入正确的手机号')
-    return
-  }
-
-  try {
-    const res = await sendCodeApi(form.phone)
-    if (res.code === 200) {
-      ElMessage.success('验证码已发送')
-      countdown.value = 60
-      const timer = setInterval(() => {
-        countdown.value--
-        if (countdown.value <= 0) {
-          clearInterval(timer)
-        }
-      }, 1000)
-    }
-  } catch (error) {
-    ElMessage.error(error.message || '发送失败')
-  }
 }
 
 const handleRegister = async () => {
@@ -178,7 +158,10 @@ const handleRegister = async () => {
 
     loading.value = true
     const res = await register({
-      ...form
+      phone: form.phone,
+      nickname: form.nickname,
+      password: form.password,
+      role: form.role
     })
 
     if (res.code === 200) {

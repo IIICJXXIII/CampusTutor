@@ -87,7 +87,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, ChatDotRound } from '@element-plus/icons-vue'
-import { getDemandDetail } from '@shared/api/demand'
+import { getDemandDetail, getDemandApplications } from '@shared/api/demand'
 import { relativeFromNow } from '@shared/utils'
 
 const router = useRouter()
@@ -102,10 +102,23 @@ const formatTime = (time) => relativeFromNow(time)
 const loadData = async () => {
   loading.value = true
   try {
-    const res = await getDemandDetail(route.params.id)
-    if (res.code === 200) {
-      demand.value = res.data
-      applicants.value = res.data?.applicants || []
+    const [detailRes, appRes] = await Promise.all([
+      getDemandDetail(route.params.id),
+      getDemandApplications(route.params.id)
+    ])
+    if (detailRes.code === 200) {
+      demand.value = detailRes.data
+    }
+    if (appRes.code === 200) {
+      applicants.value = (appRes.data || []).map(a => ({
+        ...a,
+        name: a.tutorNickname || `教师 #${a.tutorId}`,
+        avatar: a.tutorAvatar || '',
+        tutorUserId: a.tutorId,
+        message: a.remark || '暂无留言',
+        applyTime: a.createTime,
+        verified: true
+      }))
     }
   } catch (error) {
     console.error('加载数据失败:', error)

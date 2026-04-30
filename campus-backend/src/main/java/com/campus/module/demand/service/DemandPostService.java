@@ -66,7 +66,7 @@ public interface DemandPostService extends IService<DemandPost> {
      * @param radiusKm 半径(公里)
      * @return 需求列表
      */
-    List<DemandPost> searchNearby(Double longitude, Double latitude, Double radiusKm);
+    List<DemandPost> searchNearby(Double longitude, Double latitude, Double radiusKm, String subject, String grade);
 
     /**
      * 获取带有匹配度的需求列表（教师端专用）

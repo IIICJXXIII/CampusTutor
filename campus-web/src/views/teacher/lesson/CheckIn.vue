@@ -195,9 +195,14 @@ const initMap = async () => {
       plugins: ['AMap.Geolocation', 'AMap.Geocoder']
     })
     
+    const storedLng = JSON.parse(localStorage.getItem('userInfo') || '{}')?.longitude
+    const storedLat = JSON.parse(localStorage.getItem('userInfo') || '{}')?.latitude
+    const centerLng = storedLng || 112.938888
+    const centerLat = storedLat || 28.228333
+
     map = new AMap.Map('checkin-map', {
       zoom: 15,
-      center: [116.397428, 39.90923]
+      center: [centerLng, centerLat]
     })
     
     getLocation()
@@ -250,9 +255,11 @@ const getLocationFallback = () => {
 
 const applyMockLocation = () => {
   locationLoading.value = false
+  const storedLng = JSON.parse(localStorage.getItem('userInfo') || '{}')?.longitude
+  const storedLat = JSON.parse(localStorage.getItem('userInfo') || '{}')?.latitude
   currentLocation.value = {
-    lng: 116.397428,
-    lat: 39.90923,
+    lng: storedLng || 112.938888,
+    lat: storedLat || 28.228333,
     address: '模拟地址位置 (暂无有效GPS配置)'
   }
   ElMessage.warning('实际定位失败，已使用模拟坐标以便打卡测试')

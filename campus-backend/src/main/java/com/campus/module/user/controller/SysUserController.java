@@ -74,9 +74,9 @@ public class SysUserController {
     public Result<Boolean> updateUserInfo(@RequestBody SysUser user) {
         Long userId = UserContext.getUserId();
         user.setId(userId);
-        user.setPassword(null);  // 不允许通过此接口修改密码
-        user.setRole(null);      // 不允许修改角色
-        user.setStatus(null);    // 不允许修改状态
+        user.setPassword(null); // 不允许通过此接口修改密码
+        user.setRole(null); // 不允许修改角色
+        user.setStatus(null); // 不允许修改状态
         boolean result = sysUserService.updateById(user);
         return Result.success(result);
     }
@@ -87,7 +87,26 @@ public class SysUserController {
         Long userId = UserContext.getUserId();
         String oldPassword = params.get("oldPassword");
         String newPassword = params.get("newPassword");
-        //sysUserService.updatePassword(userId, oldPassword, newPassword);
+        // sysUserService.updatePassword(userId, oldPassword, newPassword);
         return Result.success("密码修改成功");
+    }
+
+    @Operation(summary = "更新用户地址", description = "更新当前用户的地理位置信息")
+    @PutMapping("/address")
+    public Result<Void> updateAddress(@RequestBody java.util.Map<String, Object> params) {
+        Long userId = UserContext.getUserId();
+        SysUser user = new SysUser();
+        user.setId(userId);
+        if (params.get("longitude") != null) {
+            user.setLongitude(new java.math.BigDecimal(params.get("longitude").toString()));
+        }
+        if (params.get("latitude") != null) {
+            user.setLatitude(new java.math.BigDecimal(params.get("latitude").toString()));
+        }
+        if (params.get("address") != null) {
+            user.setAddress(params.get("address").toString());
+        }
+        sysUserService.updateById(user);
+        return Result.success("地址更新成功");
     }
 }

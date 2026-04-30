@@ -11,7 +11,9 @@ import com.campus.module.order.dto.AcceptDemandRequest;
 import com.campus.module.order.dto.CreateOrderRequest;
 import com.campus.module.order.dto.PayOrderRequest;
 import com.campus.module.demand.entity.DemandPost;
+import com.campus.module.demand.entity.TutorApplication;
 import com.campus.module.demand.mapper.DemandPostMapper;
+import com.campus.module.demand.mapper.TutorApplicationMapper;
 import com.campus.module.order.entity.CourseOrder;
 import com.campus.module.order.mapper.CourseOrderMapper;
 import com.campus.module.order.service.CourseOrderService;
@@ -49,6 +51,9 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
     private final TeachingRecordMapper teachingRecordMapper;
     private final DemandPostMapper demandPostMapper;
     private final SysTransactionFlowService transactionFlowService;
+    private final com.campus.module.demand.service.GeoService geoService;
+    private final com.campus.module.booking.mapper.BookingRequestMapper bookingRequestMapper;
+    private final TutorApplicationMapper tutorApplicationMapper;
 
     /**
      * 平台服务费比例(10%)
@@ -88,9 +93,31 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         order.setServiceFee(serviceFee);
         order.setTutorAmount(tutorAmount);
         order.setUsedHours(0);
-        order.setStatus(-1); // 待教师确认（家长直接预约场景，需教师先确认）
+        order.setStatus(-1);
         order.setRemark(request.getRemark());
+        if (request.getDemandId() != null) {
+            DemandPost demand = demandPostMapper.selectById(request.getDemandId());
+            if (demand != null) {
+                order.setLongitude(demand.getLongitude());
+                order.setLatitude(demand.getLatitude());
+                order.setAddress(demand.getAddress());
+
+                if (demand.getStatus() == 1 && demand.getMatchedTutorId() == null) {
+                    demand.setMatchedTutorId(tutorProfile.getUserId());
+                    demand.setStatus(2);
+                    demandPostMapper.updateById(demand);
+                    geoService.removeDemandLocation(demand.getId());
+                    log.info("[订单创建] 家长 {} 创建订单 {}，需求 {} 标记为已匹配教师 {}",
+                            parentId, order.getId(), demand.getId(), tutorProfile.getUserId());
+                } else {
+                    log.warn("[订单创建] 需求 {} 状态异常(status={}, matchedTutorId={})，未更新匹配状态",
+                            demand.getId(), demand.getStatus(), demand.getMatchedTutorId());
+                }
+            }
+        }
         save(order);
+
+        log.info("[订单创建] 家长 {} 创建订单 {}, 教师 {}, 金额 {}", parentId, order.getId(), tutorProfile.getUserId(), totalAmount);
 
         return order.getId();
     }
@@ -105,96 +132,174 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         if (!order.getParentId().equals(userId)) {
             throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
         }
-        if (order.getStatus() != 0) {
-            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单状态不正确");
+
+        String paymentMode = request.getPaymentMode();
+        if (paymentMode == null) {
+            paymentMode = "per_lesson";
         }
 
-        // 验证金额
-        if (order.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单金额无效");
+        if ("per_lesson".equals(paymentMode)) {
+            return payPerLesson(userId, order, request);
+        } else {
+            return payFull(userId, order, request);
         }
+    }
 
-        // 仅支持钱包支付
+    private Map<String, String> payPerLesson(Long userId, CourseOrder order, PayOrderRequest request) {
+        int lessonCount = request.getLessonCount() != null ? request.getLessonCount() : 1;
+        BigDecimal unitPrice = order.getUnitPrice();
+        BigDecimal payAmount = unitPrice.multiply(new BigDecimal(lessonCount));
+        BigDecimal serviceFeePerLesson = unitPrice.multiply(SERVICE_FEE_RATE).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal tutorAmountPerLesson = unitPrice.subtract(serviceFeePerLesson);
+        BigDecimal totalServiceFee = serviceFeePerLesson.multiply(new BigDecimal(lessonCount));
+        BigDecimal totalTutorAmount = tutorAmountPerLesson.multiply(new BigDecimal(lessonCount));
+
         if (request.getPayType() == 1) {
-            // 扣减钱包余额
-            boolean success = walletService.deduct(userId, order.getTotalAmount());
+            boolean success = walletService.deduct(userId, payAmount);
             if (!success) {
-                log.error("余额不足: userId={}, orderId={}, amount={}", userId, order.getId(), order.getTotalAmount());
                 throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "余额不足");
             }
 
-            // 获取家长扣款后的余额
-            BigDecimal parentBalanceAfter = BigDecimal.ZERO;
             try {
+                BigDecimal parentBalanceAfter = BigDecimal.ZERO;
                 SysWallet parentWallet = walletService.getByUserId(userId);
                 if (parentWallet != null) {
                     parentBalanceAfter = parentWallet.getBalance();
                 }
-            } catch (Exception e) {
-                log.error("获取家长余额失败: userId={}", userId, e);
-            }
-
-            // 记录家长支付交易流水
-            try {
                 transactionFlowService.recordFlow(
-                        userId,
-                        order.getTotalAmount().negate(), // 负数表示支出
-                        parentBalanceAfter,
-                        2, // 支付订单
-                        order.getId(),
-                        "支付订单: " + order.getOrderNo());
-                log.info("家长支付流水记录成功: userId={}, orderId={}, amount={}", userId, order.getId(), order.getTotalAmount());
+                        userId, payAmount.negate(), parentBalanceAfter, 2,
+                        order.getId(), "按课时支付(" + lessonCount + "节): " + order.getOrderNo());
             } catch (Exception e) {
                 log.error("记录家长支付流水失败", e);
-                // 不影响支付流程
             }
 
-            // 冻结教员收益(待完课后解冻)
+            boolean freezeSuccess = walletService.freeze(order.getTutorId(), totalTutorAmount);
+            if (!freezeSuccess) {
+                walletService.recharge(userId, payAmount);
+                throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "支付失败，请重试");
+            }
+
+            try {
+                transactionFlowService.recordFlow(
+                        order.getTutorId(), totalTutorAmount, totalTutorAmount, 3,
+                        order.getId(), "课时费冻结(" + lessonCount + "节): " + order.getOrderNo());
+            } catch (Exception e) {
+                log.error("记录教员收入流水失败", e);
+            }
+
+            int newPaidHours = (order.getPaidHours() != null ? order.getPaidHours() : 0) + lessonCount;
+            order.setPaidHours(newPaidHours);
+            order.setPaymentMode("per_lesson");
+
+            if (order.getStatus() == 0) {
+                order.setStatus(1);
+                order.setPayTime(LocalDateTime.now());
+                order.setPayType(request.getPayType());
+                order.setPayTradeNo("WALLET_" + IdUtil.simpleUUID());
+
+                if (order.getDemandId() != null) {
+                    DemandPost demand = demandPostMapper.selectById(order.getDemandId());
+                    if (demand != null && demand.getStatus() == 1) {
+                        demand.setStatus(2);
+                        demandPostMapper.updateById(demand);
+                    }
+                }
+
+                generateTeachingRecords(order);
+            }
+
+            if (request.getLessonId() != null) {
+                TeachingRecord record = teachingRecordMapper.selectById(request.getLessonId());
+                if (record != null && record.getOrderId().equals(order.getId())) {
+                    record.setPayStatus(1);
+                    record.setPayTime(LocalDateTime.now());
+                    teachingRecordMapper.updateById(record);
+                }
+            } else {
+                LambdaQueryWrapper<TeachingRecord> wrapper = new LambdaQueryWrapper<TeachingRecord>()
+                        .eq(TeachingRecord::getOrderId, order.getId())
+                        .eq(TeachingRecord::getPayStatus, 0)
+                        .orderByAsc(TeachingRecord::getLessonIndex)
+                        .last("LIMIT " + lessonCount);
+                java.util.List<TeachingRecord> unpaidLessons = teachingRecordMapper.selectList(wrapper);
+                for (TeachingRecord record : unpaidLessons) {
+                    record.setPayStatus(1);
+                    record.setPayTime(LocalDateTime.now());
+                    teachingRecordMapper.updateById(record);
+                }
+            }
+
+            updateById(order);
+
+            log.info("按课时支付成功: userId={}, orderId={}, lessonCount={}, amount={}", userId, order.getId(), lessonCount,
+                    payAmount);
+            return Collections.singletonMap("status", "success");
+        }
+
+        throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "当前仅支持钱包支付");
+    }
+
+    private Map<String, String> payFull(Long userId, CourseOrder order, PayOrderRequest request) {
+        if (order.getStatus() != 0) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单状态不正确");
+        }
+
+        if (order.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单金额无效");
+        }
+
+        if (request.getPayType() == 1) {
+            boolean success = walletService.deduct(userId, order.getTotalAmount());
+            if (!success) {
+                throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "余额不足");
+            }
+
+            try {
+                BigDecimal parentBalanceAfter = BigDecimal.ZERO;
+                SysWallet parentWallet = walletService.getByUserId(userId);
+                if (parentWallet != null) {
+                    parentBalanceAfter = parentWallet.getBalance();
+                }
+                transactionFlowService.recordFlow(
+                        userId, order.getTotalAmount().negate(), parentBalanceAfter, 2,
+                        order.getId(), "全额支付订单: " + order.getOrderNo());
+            } catch (Exception e) {
+                log.error("记录家长支付流水失败", e);
+            }
+
             boolean freezeSuccess = walletService.freeze(order.getTutorId(), order.getTutorAmount());
             if (!freezeSuccess) {
-                log.error("冻结教员收益失败: tutorId={}, amount={}", order.getTutorId(), order.getTutorAmount());
-                // 回滚家长扣款
                 walletService.recharge(userId, order.getTotalAmount());
                 throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "支付失败，请重试");
             }
 
-            // 记录教员收入流水（冻结状态）
             try {
                 transactionFlowService.recordFlow(
-                        order.getTutorId(),
-                        order.getTutorAmount(), // 正数表示收入
-                        order.getTutorAmount(), // 暂时用冻结金额
-                        3, // 课时费收入
-                        order.getId(),
-                        "订单支付，课时费已冻结: " + order.getOrderNo());
-                log.info("教员收入流水记录成功: tutorId={}, orderId={}, amount={}", order.getTutorId(), order.getId(),
-                        order.getTutorAmount());
+                        order.getTutorId(), order.getTutorAmount(), order.getTutorAmount(), 3,
+                        order.getId(), "订单支付，课时费已冻结: " + order.getOrderNo());
             } catch (Exception e) {
                 log.error("记录教员收入流水失败", e);
-                // 不影响支付流程
             }
 
-            // 更新订单状态
-            order.setStatus(1); // 已支付待上课
+            order.setStatus(1);
             order.setPayTime(LocalDateTime.now());
             order.setPayType(request.getPayType());
             order.setPayTradeNo("WALLET_" + IdUtil.simpleUUID());
+            order.setPaymentMode("full");
+            order.setPaidHours(order.getTotalHours());
             updateById(order);
 
-            // 更新需求状态为已匹配（支付成功后）
             if (order.getDemandId() != null) {
                 DemandPost demand = demandPostMapper.selectById(order.getDemandId());
                 if (demand != null && demand.getStatus() == 1) {
-                    demand.setStatus(2); // 已匹配
+                    demand.setStatus(2);
                     demandPostMapper.updateById(demand);
-                    log.info("需求状态更新为已匹配: demandId={}", demand.getId());
                 }
             }
 
-            // 支付成功后生成课程记录（课表）
             generateTeachingRecords(order);
 
-            log.info("钱包支付成功: userId={}, orderId={}, amount={}", userId, order.getId(), order.getTotalAmount());
+            log.info("全额支付成功: userId={}, orderId={}, amount={}", userId, order.getId(), order.getTotalAmount());
             return Collections.singletonMap("status", "success");
         }
 
@@ -255,6 +360,88 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         return null;
     }
 
+    private void restoreDemand(Long orderId, Long tutorId, String trigger) {
+        CourseOrder order = getById(orderId);
+        if (order == null || order.getDemandId() == null) {
+            log.warn("[需求恢复] 订单 {} 无关联需求，跳过恢复 (触发: {})", orderId, trigger);
+            return;
+        }
+
+        DemandPost demand = demandPostMapper.selectById(order.getDemandId());
+        if (demand == null) {
+            log.warn("[需求恢复] 订单 {} 关联的需求 {} 不存在 (触发: {})", orderId, order.getDemandId(), trigger);
+            return;
+        }
+
+        log.info("[需求恢复] 开始恢复需求 {} (当前status={}, matchedTutorId={}, 触发: {}, 订单: {}, 教师: {})",
+                demand.getId(), demand.getStatus(), demand.getMatchedTutorId(), trigger, orderId, tutorId);
+
+        if (demand.getStatus() == 1 && demand.getMatchedTutorId() == null) {
+            log.info("[需求恢复] 需求 {} 已处于上架且未匹配状态，无需恢复 (触发: {})", demand.getId(), trigger);
+            return;
+        }
+
+        if (demand.getStatus() == 3) {
+            log.warn("[需求恢复] 需求 {} 已完成，不应恢复 (触发: {})", demand.getId(), trigger);
+            return;
+        }
+
+        if (demand.getStatus() == 0) {
+            log.warn("[需求恢复] 需求 {} 已被家长主动下架，不应恢复 (触发: {})", demand.getId(), trigger);
+            return;
+        }
+
+        if (demand.getStatus() != 2) {
+            log.warn("[需求恢复] 需求 {} 状态异常(status={})，不恢复 (触发: {})", demand.getId(), demand.getStatus(), trigger);
+            return;
+        }
+
+        if (demand.getMatchedTutorId() != null && !demand.getMatchedTutorId().equals(tutorId)) {
+            log.warn("[需求恢复] 需求 {} 已被其他教师 {} 匹配，当前教师 {}，不恢复 (触发: {})",
+                    demand.getId(), demand.getMatchedTutorId(), tutorId, trigger);
+            return;
+        }
+
+        // 恢复需求状态：上架 + 清除匹配教师
+        demand.setMatchedTutorId(null);
+        demand.setStatus(1);
+        demandPostMapper.updateById(demand);
+        log.info("[需求恢复] 已执行 updateById，需求 {} 状态变更: status=1, matchedTutorId=null (触发: {}, 订单: {}, 教师: {})",
+                demand.getId(), trigger, orderId, tutorId);
+
+        // 验证恢复结果
+        DemandPost verifyDemand = demandPostMapper.selectById(demand.getId());
+        if (verifyDemand != null) {
+            if (verifyDemand.getMatchedTutorId() != null || verifyDemand.getStatus() != 1) {
+                log.error("[需求恢复] 验证失败！需求 {} 更新后 status={}, matchedTutorId={}，使用 UpdateWrapper 强制修正",
+                        demand.getId(), verifyDemand.getStatus(), verifyDemand.getMatchedTutorId());
+                // 使用 UpdateWrapper 强制将 matchedTutorId 设置为 NULL
+                com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<DemandPost> updateWrapper = new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<>();
+                updateWrapper.eq(DemandPost::getId, demand.getId())
+                        .set(DemandPost::getStatus, 1)
+                        .set(DemandPost::getMatchedTutorId, null);
+                demandPostMapper.update(null, updateWrapper);
+                log.info("[需求恢复] UpdateWrapper 强制修正完成，需求 {} 已恢复", demand.getId());
+            } else {
+                log.info("[需求恢复] 验证通过，需求 {} 已正确恢复为上架可匹配状态", demand.getId());
+            }
+        }
+
+        // 恢复GEO索引
+        if (demand.getLongitude() != null && demand.getLatitude() != null) {
+            try {
+                geoService.addDemandLocation(demand.getId(),
+                        demand.getLongitude().doubleValue(), demand.getLatitude().doubleValue());
+                log.info("[需求恢复] 需求 {} 已重新添加到Redis GEO索引 ({}, {})",
+                        demand.getId(), demand.getLongitude(), demand.getLatitude());
+            } catch (Exception e) {
+                log.error("[需求恢复] 需求 {} 添加到GEO索引失败", demand.getId(), e);
+            }
+        } else {
+            log.warn("[需求恢复] 需求 {} 无经纬度信息，跳过GEO索引", demand.getId());
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancelOrder(Long userId, Long orderId, String reason) {
@@ -269,28 +456,20 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
             throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "当前状态无法取消");
         }
 
-        // 如果已支付，需要退款
+        log.info("[订单取消] 用户 {} 取消订单 {}, 原因: {}, 当前订单状态: {}, 关联需求ID: {}",
+                userId, orderId, reason, order.getStatus(), order.getDemandId());
+
         if (order.getStatus() == 1) {
-            // 解冻教员冻结金额
             walletService.unfreeze(order.getTutorId(), order.getTutorAmount());
-            // 退还家长金额
             walletService.recharge(order.getParentId(), order.getTotalAmount());
+            log.info("[订单取消] 已退款: 订单 {}, 退款金额 {}", orderId, order.getTotalAmount());
         }
 
-        // 如果是待确认状态(-1)取消，需要释放需求的匹配教师
-        if (order.getStatus() == -1 && order.getDemandId() != null) {
-            DemandPost demand = demandPostMapper.selectById(order.getDemandId());
-            if (demand != null && demand.getMatchedTutorId() != null) {
-                demand.setMatchedTutorId(null);
-                demand.setStatus(1); // 恢复为上架状态
-                demandPostMapper.updateById(demand);
-                log.info("订单取消，需求 {} 恢复为可匹配状态", demand.getId());
-            }
-        }
-
-        order.setStatus(4); // 已取消
+        order.setStatus(4);
         order.setCancelReason(reason);
         updateById(order);
+
+        restoreDemand(orderId, order.getTutorId(), "取消订单");
     }
 
     @Override
@@ -301,24 +480,32 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
             throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
         }
         if (!order.getTutorId().equals(tutorId)) {
-            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "仅教师可确认开课");
         }
         if (order.getStatus() != 1) {
-            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单状态不正确");
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单状态不正确，仅已支付待上课的订单可确认开课");
         }
 
-        order.setStatus(2); // 进行中
+        int paidHours = order.getPaidHours() != null ? order.getPaidHours() : 0;
+        int usedHours = order.getUsedHours() != null ? order.getUsedHours() : 0;
+        if (paidHours <= usedHours) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "家长尚未支付课时费用，无法确认开课。请等待家长完成支付后再操作。");
+        }
+
+        order.setStatus(2);
         updateById(order);
+        log.info("教师 {} 确认开课: {}, 已支付课时: {}, 已上课时: {}", tutorId, orderId, paidHours, usedHours);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void completeOrder(Long tutorId, Long orderId) {
+    public void completeOrder(Long userId, Long orderId) {
         CourseOrder order = getById(orderId);
         if (order == null) {
             throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
         }
-        if (!order.getTutorId().equals(tutorId)) {
+        boolean isOwner = order.getTutorId().equals(userId) || order.getParentId().equals(userId);
+        if (!isOwner) {
             throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
         }
         if (order.getStatus() != 2) {
@@ -462,15 +649,26 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         order.setServiceFee(serviceFee);
         order.setTutorAmount(tutorAmount);
         order.setUsedHours(0);
-        order.setStatus(-1); // 待确认（需家长确认后才能支付）
-        order.setRemark(request.getRemark());
+        order.setStatus(-1);
+        String remark = request.getRemark();
+        if (demand.getDetail() != null && !demand.getDetail().trim().isEmpty()) {
+            remark = (remark != null && !remark.trim().isEmpty())
+                    ? demand.getDetail() + "\n教师备注: " + remark
+                    : demand.getDetail();
+        }
+        order.setRemark(remark);
+        order.setLongitude(demand.getLongitude());
+        order.setLatitude(demand.getLatitude());
+        order.setAddress(demand.getAddress());
         save(order);
 
-        // 5. 标记需求已被接单（但保持status=1，等支付后才变为2）
         demand.setMatchedTutorId(tutorId);
+        demand.setStatus(2);
         demandPostMapper.updateById(demand);
 
-        log.info("教师 {} 接单成功，需求ID: {}, 订单ID: {}", tutorId, demand.getId(), order.getId());
+        geoService.removeDemandLocation(demand.getId());
+
+        log.info("[教师接单] 教师 {} 接单成功，需求ID: {}, 订单ID: {}", tutorId, demand.getId(), order.getId());
 
         return order.getId();
     }
@@ -494,6 +692,29 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         updateById(order);
 
         log.info("家长 {} 确认订单: {}, 状态变更为待支付", parentId, orderId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void parentRejectOrder(Long parentId, Long orderId, String reason) {
+        CourseOrder order = getById(orderId);
+        if (order == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
+        }
+        if (!order.getParentId().equals(parentId)) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
+        }
+        if (order.getStatus() != -1) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单状态不正确，仅待确认订单可拒绝");
+        }
+
+        order.setStatus(4);
+        order.setCancelReason("家长拒绝接单申请: " + (reason != null ? reason : "未说明原因"));
+        updateById(order);
+
+        log.info("[家长拒绝] 家长 {} 拒绝接单申请: {}, 原因: {}", parentId, orderId, reason);
+
+        restoreDemand(orderId, order.getTutorId(), "家长拒绝接单");
     }
 
     @Override
@@ -531,23 +752,13 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
             throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单状态不正确，仅待确认订单可拒绝");
         }
 
-        // 教师拒绝，订单取消
         order.setStatus(4);
         order.setCancelReason("教师拒绝: " + (reason != null ? reason : "未说明原因"));
         updateById(order);
 
-        log.info("教师 {} 拒绝预约订单: {}, 原因: {}", tutorId, orderId, reason);
-    }
+        log.info("[教师拒绝] 教师 {} 拒绝预约订单: {}, 原因: {}", tutorId, orderId, reason);
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Long createOrderFromBooking(Long parentId, Long bookingId, Integer totalHours, BigDecimal unitPrice) {
-        // TODO: 实现从预约请求创建订单的逻辑
-        // 1. 验证预约请求存在且状态为已确认
-        // 2. 创建订单
-        // 3. 更新预约请求状态
-        // 4. 返回订单ID
-        throw new BusinessException("功能开发中");
+        restoreDemand(orderId, tutorId, "教师拒绝接单");
     }
 
     @Override
@@ -604,6 +815,92 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
                 orderId, refundNo, refundAmount, reason);
 
         return refundNo;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelApplication(Long tutorId, Long orderId, String reason) {
+        CourseOrder order = getById(orderId);
+        if (order == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
+        }
+        if (!order.getTutorId().equals(tutorId)) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此订单");
+        }
+        if (order.getApplicationId() == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "该订单不是申请订单，无法取消申请");
+        }
+        if (order.getStatus() != -1) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "当前状态无法取消申请");
+        }
+
+        // 更新申请状态为已拒绝(2)
+        TutorApplication application = tutorApplicationMapper.selectById(order.getApplicationId());
+        if (application != null) {
+            application.setStatus(2);
+            application.setRejectReason("教师取消申请: " + (reason != null ? reason : "未说明原因"));
+            tutorApplicationMapper.updateById(application);
+        }
+
+        // 更新订单状态为已取消
+        order.setStatus(4);
+        order.setCancelReason("教师取消申请: " + (reason != null ? reason : "未说明原因"));
+        updateById(order);
+
+        log.info("[取消申请] 教师 {} 取消申请, 订单ID: {}, 申请ID: {}, 原因: {}",
+                tutorId, orderId, order.getApplicationId(), reason);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long createOrderFromBooking(Long parentId, Long bookingId, Integer totalHours, BigDecimal unitPrice) {
+        // 查询预约请求
+        com.campus.module.booking.entity.BookingRequest booking = bookingRequestMapper.selectById(bookingId);
+        if (booking == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "预约请求不存在");
+        }
+        if (!booking.getParentId().equals(parentId)) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "无权操作此预约");
+        }
+
+        // 查询教员档案
+        LambdaQueryWrapper<TutorProfile> profileWrapper = new LambdaQueryWrapper<TutorProfile>()
+                .eq(TutorProfile::getUserId, booking.getTutorId())
+                .eq(TutorProfile::getCertStatus, 2);
+        TutorProfile tutorProfile = tutorProfileMapper.selectOne(profileWrapper);
+        if (tutorProfile == null) {
+            throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "教员未认证或档案不存在");
+        }
+
+        // 计算金额
+        BigDecimal totalAmount = unitPrice.multiply(new BigDecimal(totalHours));
+        BigDecimal serviceFee = totalAmount.multiply(SERVICE_FEE_RATE).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal tutorAmount = totalAmount.subtract(serviceFee);
+
+        // 创建订单
+        CourseOrder order = new CourseOrder();
+        order.setOrderNo(generateOrderNo());
+        order.setParentId(parentId);
+        order.setStudentId(booking.getStudentId());
+        order.setTutorId(booking.getTutorId());
+        order.setTutorProfileId(tutorProfile.getId());
+        order.setSubject(booking.getSubject());
+        order.setGrade(booking.getGrade());
+        order.setTeachMode(1); // 默认上门
+        order.setUnitPrice(unitPrice);
+        order.setTotalHours(totalHours);
+        order.setTotalAmount(totalAmount);
+        order.setServiceFee(serviceFee);
+        order.setTutorAmount(tutorAmount);
+        order.setUsedHours(0);
+        order.setStatus(0); // 待支付
+        order.setRemark(booking.getRemark());
+        save(order);
+
+        log.info("[预约转订单] 家长 {} 从预约 {} 创建订单 {}, 教师 {}, 金额 {}",
+                parentId, bookingId, order.getId(), booking.getTutorId(), totalAmount);
+
+        return order.getId();
     }
 
 }

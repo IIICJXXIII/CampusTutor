@@ -50,7 +50,6 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest();
         request.setAccount(user.getUsername());
         request.setPassword(TEST_PASSWORD);
-        request.setLoginType("password");
 
         LoginResponse response = authService.login(request);
         
@@ -79,7 +78,6 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest();
         request.setAccount(user.getUsername());
         request.setPassword("wrong_password");
-        request.setLoginType("password");
 
         assertThrows(BusinessException.class, () -> {
             authService.login(request);
@@ -95,7 +93,6 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest();
         request.setAccount("nonexistent_user_12345");
         request.setPassword(TEST_PASSWORD);
-        request.setLoginType("password");
 
         assertThrows(BusinessException.class, () -> {
             authService.login(request);
@@ -121,7 +118,6 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest();
         request.setAccount(user.getUsername());
         request.setPassword(TEST_PASSWORD);
-        request.setLoginType("password");
 
         assertThrows(BusinessException.class, () -> {
             authService.login(request);
@@ -147,7 +143,6 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest();
         request.setAccount(user.getUsername());
         request.setPassword(TEST_PASSWORD);
-        request.setLoginType("password");
         
         LoginResponse response = authService.login(request);
         
@@ -190,7 +185,6 @@ class AuthServiceTest {
             LoginRequest request = new LoginRequest();
             request.setAccount(tutorAccount);
             request.setPassword(plainPassword); // 使用明文密码
-            request.setLoginType("password");
             
             try {
                 LoginResponse response = authService.login(request);
@@ -215,7 +209,6 @@ class AuthServiceTest {
             LoginRequest request = new LoginRequest();
             request.setAccount(parentAccount);
             request.setPassword(plainPassword);
-            request.setLoginType("password");
             
             try {
                 LoginResponse response = authService.login(request);
@@ -272,7 +265,6 @@ class AuthServiceTest {
         RegisterRequest registerRequest = new RegisterRequest();
         registerRequest.setPhone(testPhone);
         registerRequest.setPassword(testPassword);
-        registerRequest.setCode("123456"); // 万能验证码
         registerRequest.setNickname("测试用户");
         registerRequest.setRole(2); // 家长
         
@@ -298,7 +290,6 @@ class AuthServiceTest {
         LoginRequest loginRequest = new LoginRequest();
         loginRequest.setAccount(testPhone);
         loginRequest.setPassword(testPassword); // 使用明文密码登录
-        loginRequest.setLoginType("password");
         
         try {
             LoginResponse loginResponse = authService.login(loginRequest);

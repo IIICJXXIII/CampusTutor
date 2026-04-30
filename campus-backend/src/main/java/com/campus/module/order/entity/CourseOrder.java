@@ -49,6 +49,11 @@ public class CourseOrder {
     private Long demandId;
 
     /**
+     * 申请ID（教师申请需求时关联的TutorApplication ID）
+     */
+    private Long applicationId;
+
+    /**
      * 课程科目
      */
     private String subject;
@@ -122,6 +127,27 @@ public class CourseOrder {
      * 备注
      */
     private String remark;
+
+    /**
+     * 支付模式：full(全额) / per_lesson(按课时)
+     */
+    private String paymentMode;
+
+    private Integer paidHours;
+
+    private Integer courseFlowMode;
+
+    private BigDecimal longitude;
+
+    /**
+     * 纬度
+     */
+    private BigDecimal latitude;
+
+    /**
+     * 详细地址
+     */
+    private String address;
 
     /**
      * 创建时间

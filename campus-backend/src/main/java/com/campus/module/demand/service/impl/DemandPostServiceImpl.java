@@ -134,9 +134,19 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
 
     @Override
     public List<DemandPost> listMyDemands(Long publisherId) {
-        return list(new LambdaQueryWrapper<DemandPost>()
+        List<DemandPost> demands = list(new LambdaQueryWrapper<DemandPost>()
                 .eq(DemandPost::getPublisherId, publisherId)
                 .orderByDesc(DemandPost::getCreateTime));
+        // 填充申请数量
+        for (DemandPost demand : demands) {
+            long count = com.baomidou.mybatisplus.extension.toolkit.Db.lambdaQuery(
+                    com.campus.module.demand.entity.TutorApplication.class)
+                    .eq(com.campus.module.demand.entity.TutorApplication::getDemandId, demand.getId())
+                    .eq(com.campus.module.demand.entity.TutorApplication::getStatus, 0)
+                    .count();
+            demand.setApplyCount((int) count);
+        }
+        return demands;
     }
 
     @Override
@@ -157,46 +167,19 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
     }
 
     @Override
-    public List<DemandPost> searchNearby(Double longitude, Double latitude, Double radiusKm) {
+    public List<DemandPost> searchNearby(Double longitude, Double latitude, Double radiusKm, String subject, String grade) {
         if (longitude == null || latitude == null) {
             return new ArrayList<>();
         }
-        double radius = radiusKm != null ? radiusKm : 10.0; // 默认10公里
-        log.info("搜索附近需求: 经度={}, 纬度={}, 半径={}km", longitude, latitude, radius);
+        double radius = radiusKm != null ? radiusKm : 10.0;
+        log.info("搜索附近需求: 经度={}, 纬度={}, 半径={}km, 科目={}, 年级={}", longitude, latitude, radius, subject, grade);
 
-        // 1. 优先使用 Redis GEO 搜索
-        List<Long> demandIds = geoService.searchNearbyDemands(longitude, latitude, radius);
-        List<DemandPost> demands;
-
-        if (!demandIds.isEmpty()) {
-            // Redis 有结果
-            log.info("Redis GEO 返回 {} 条结果: {}", demandIds.size(), demandIds);
-            demands = listByIds(demandIds);
-        } else {
-            // 2. Redis 不可用或无数据，降级使用 SQL + Haversine 公式
-            log.info("Redis GEO 无结果，降级使用数据库 Haversine 距离计算");
-            demands = searchNearbyByDatabase(longitude, latitude, radius);
-        }
-
-        // 3. 无论数据来源，都用 Haversine 公式二次校验距离（防止 Redis 返回距离外的结果）
-        final double finalRadius = radius;
-        final Double searchLon = longitude;
-        final Double searchLat = latitude;
-        demands.removeIf(d -> {
-            if (d.getLongitude() == null || d.getLatitude() == null) {
-                return true; // 无坐标的直接移除
-            }
-            double distance = geoService.calculateDistance(
-                    searchLon, searchLat,
-                    d.getLongitude().doubleValue(), d.getLatitude().doubleValue());
-            if (distance > finalRadius) {
-                log.info("移除超出范围的需求: id={}, 距离={}km, 限制={}km", d.getId(), String.format("%.1f", distance), finalRadius);
-                return true;
-            }
-            return false;
-        });
+        List<DemandPost> demands = searchNearbyByDatabase(longitude, latitude, radius, subject, grade);
+        log.info("数据库 Haversine 返回 {} 条附近需求", demands.size());
 
         // 按距离升序排序
+        final Double searchLon = longitude;
+        final Double searchLat = latitude;
         demands.sort(Comparator.comparingDouble(d -> geoService.calculateDistance(searchLon, searchLat,
                 d.getLongitude().doubleValue(), d.getLatitude().doubleValue())));
 
@@ -212,7 +195,7 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
             demands.removeIf(d -> d.getPublisherId().equals(currentUserId));
         }
 
-        // 4. 为缺少 address 的需求通过反向地理编码补全地址
+        // 为缺少 address 的需求通过反向地理编码补全地址
         fillMissingAddresses(demands);
 
         log.info("最终返回 {} 条附近需求", demands.size());
@@ -222,12 +205,17 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
     /**
      * 数据库降级搜索：使用 Haversine 公式在 SQL 层面按距离筛选
      */
-    private List<DemandPost> searchNearbyByDatabase(Double longitude, Double latitude, double radiusKm) {
-        // 查询所有上架且有坐标的需求
+    private List<DemandPost> searchNearbyByDatabase(Double longitude, Double latitude, double radiusKm, String subject, String grade) {
         LambdaQueryWrapper<DemandPost> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(DemandPost::getStatus, 1)
                 .isNotNull(DemandPost::getLongitude)
                 .isNotNull(DemandPost::getLatitude);
+        if (subject != null && !subject.isEmpty()) {
+            wrapper.eq(DemandPost::getSubject, subject);
+        }
+        if (grade != null && !grade.isEmpty()) {
+            wrapper.eq(DemandPost::getGrade, grade);
+        }
         List<DemandPost> allDemands = list(wrapper);
 
         // 使用 Haversine 公式过滤并排序
@@ -317,7 +305,7 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
             double maxRadius = 50.0; // 同城最大展示距离 50km
             
             // 直接调用类内现成的内存运算兜底方法，严格保证查出来的只有同城需求！
-            List<DemandPost> strictNearbyDemands = searchNearbyByDatabase(searchLng, searchLat, maxRadius);
+            List<DemandPost> strictNearbyDemands = searchNearbyByDatabase(searchLng, searchLat, maxRadius, subject, grade);
             
             if (strictNearbyDemands.isEmpty()) {
                 // 如果附近 50km 确实一个需求都没有，直接返回空分页，绝不查库！
@@ -458,10 +446,8 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
 
         Long orderId = courseOrderService.acceptDemand(tutorId, acceptRequest);
 
-        // 4. 更新需求状态为已匹配
-        demand.setStatus(2);
-        demand.setMatchedTutorId(tutorId);
-        updateById(demand);
+        // acceptDemand() 已经更新了需求状态(status=2, matchedTutorId=tutorId)并移除了GEO索引
+        // 无需再次更新，避免使用 stale 对象覆盖数据
 
         return orderId;
     }

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="demand-list-page">
     <div class="page-header">
       <h1 class="page-title">我的需求</h1>
@@ -12,9 +12,9 @@
     <div class="filter-tabs">
       <el-radio-group v-model="statusFilter" @change="loadDemands">
         <el-radio-button value="all">全部</el-radio-button>
-        <el-radio-button value="0">草稿</el-radio-button>
         <el-radio-button value="1">已上架</el-radio-button>
-        <el-radio-button value="2">已下架</el-radio-button>
+        <el-radio-button value="2">已匹配</el-radio-button>
+        <el-radio-button value="0">已下架</el-radio-button>
         <el-radio-button value="3">已完成</el-radio-button>
       </el-radio-group>
     </div>
@@ -145,7 +145,7 @@ const getStatusType = (status) => {
 }
 
 const getStatusText = (status) => {
-  const texts = { 0: '草稿', 1: '已上架', 2: '已下架', 3: '已完成' }
+  const texts = { 0: '已下架', 1: '已上架', 2: '已匹配', 3: '已完成' }
   return texts[status] || '未知'
 }
 

@@ -237,9 +237,11 @@ import { ArrowLeft, Plus, MagicStick } from '@element-plus/icons-vue'
 import { createDemand, publishDemand } from '@shared/api/demand'
 import { getStudentList } from '@shared/api/parent'
 import { parseDemand } from '@shared/api/llm'
+import { useUserStore } from '@shared/stores'
 
 const router = useRouter()
 const route = useRoute()
+const userStore = useUserStore()
 
 const currentStep = ref(0)
 const step1Ref = ref(null)
@@ -437,6 +439,15 @@ const handleSubmit = async () => {
 
 onMounted(() => {
   loadStudents()
+  if (userStore.userInfo?.address) {
+    form.address = userStore.userInfo.address
+  }
+  if (userStore.userInfo?.longitude) {
+    form.longitude = userStore.userInfo.longitude
+  }
+  if (userStore.userInfo?.latitude) {
+    form.latitude = userStore.userInfo.latitude
+  }
 })
 </script>
 

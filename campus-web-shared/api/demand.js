@@ -74,3 +74,25 @@ export function getDemandList(params) {
 export function getNearbyDemands(params) {
   return request.get('/demand/nearby', { params });
 }
+
+export function applyForDemand(demandId, data) {
+  return request.post(`/demand/${demandId}/apply`, data);
+}
+
+export function getDemandApplications(demandId) {
+  return request.get(`/demand/${demandId}/applications`);
+}
+
+export function acceptApplication(applicationId) {
+  return request.post(`/demand/application/${applicationId}/accept`);
+}
+
+export function rejectApplication(applicationId, reason) {
+  return request.post(`/demand/application/${applicationId}/reject`, null, {
+    params: { reason }
+  });
+}
+
+export function getMyApplications(params) {
+  return request.get('/demand/my-applications', { params });
+}

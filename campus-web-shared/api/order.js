@@ -104,3 +104,14 @@ export function getParentOrders(params) {
 export function getTutorOrders(params) {
   return request.get('/order/tutor/list', { params });
 }
+
+/**
+ * 教师取消需求申请
+ * @param {number} id - 订单ID
+ * @param {string} reason - 取消原因
+ */
+export function cancelApplication(id, reason) {
+  return request.post(`/order/${id}/cancel-application`, null, {
+    params: { reason }
+  });
+}

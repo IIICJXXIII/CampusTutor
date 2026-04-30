@@ -67,3 +67,7 @@ export function getUserInfo() {
 export function updateUserInfo(data) {
   return request.put('/user/info', data);
 }
+
+export function updateUserAddress(data) {
+  return request.put('/user/address', data);
+}

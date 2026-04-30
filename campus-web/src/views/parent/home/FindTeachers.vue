@@ -331,9 +331,15 @@ const initMap = async () => {
       version: '2.0',
       plugins: ['AMap.Geolocation', 'AMap.Marker']
     })
+    const userStore = (await import('@shared/stores')).useUserStore()
+    const storedLng = userStore.userInfo?.longitude
+    const storedLat = userStore.userInfo?.latitude
+    const centerLng = storedLng || 112.938888
+    const centerLat = storedLat || 28.228333
+
     map = new AMap.Map('tutor-map', {
       zoom: 13,
-      center: [116.397428, 39.90923]
+      center: [centerLng, centerLat]
     })
     // 尝试获取当前位置
     const geo = new AMap.Geolocation({ enableHighAccuracy: true, timeout: 8000 })

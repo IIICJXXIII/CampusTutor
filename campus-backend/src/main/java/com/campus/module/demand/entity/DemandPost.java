@@ -96,8 +96,16 @@ public class DemandPost {
 
     /**
      * 匹配的教员ID
+     * 使用 ALWAYS 策略确保 updateById 时 null 值也能写入数据库
      */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long matchedTutorId;
+
+    /**
+     * 申请数量（非数据库字段，查询时动态计算）
+     */
+    @TableField(exist = false)
+    private Integer applyCount;
 
     /**
      * 创建时间

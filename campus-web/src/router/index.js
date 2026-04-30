@@ -320,6 +320,18 @@ const routes = [
         meta: { title: 'AI助手' }
       },
       {
+        path: 'community',
+        name: 'Community',
+        component: () => import('@/views/common/community/CommunityList.vue'),
+        meta: { title: '社区', tabbar: true }
+      },
+      {
+        path: 'community/:id',
+        name: 'CommunityDetail',
+        component: () => import('@/views/common/community/CommunityDetail.vue'),
+        meta: { title: '帖子详情' }
+      },
+      {
         path: 'mine',
         name: 'Mine',
         component: () => import('@/views/common/mine/Mine.vue'),

@@ -37,22 +37,8 @@
           <h3>需求描述</h3>
           <p class="description">{{ demand.detail || '暂无详细描述' }}</p>
         </div>
-        
-        <div class="section">
-          <h3>学生情况</h3>
-          <p class="description">{{ demand.studentInfo || '暂无学生情况说明' }}</p>
-        </div>
-        
-        <div class="section">
-          <h3>对教员要求</h3>
-          <div class="requirements">
-            <el-tag v-for="req in demand.requirements" :key="req" class="req-tag">{{ req }}</el-tag>
-            <span v-if="!demand.requirements?.length" class="no-data">暂无特殊要求</span>
-          </div>
-        </div>
       </div>
       
-      <!-- 家长信息 -->
       <div class="parent-card">
         <h3>家长信息</h3>
         <div class="parent-info">
@@ -67,35 +53,65 @@
         </div>
       </div>
       
-      <!-- 操作按钮 -->
       <div class="action-bar">
         <el-button size="large" @click="goBack">返回</el-button>
         <el-button 
+          v-if="demand.status === 1"
           type="primary" 
           size="large" 
-          :loading="accepting"
-          @click="handleAccept"
+          :loading="applying"
+          @click="handleApply"
         >
-          立即接单
+          申请接单
         </el-button>
+        <el-tag v-else-if="demand.status === 2" type="warning" size="large">
+          该需求已被其他教师接单
+        </el-tag>
       </div>
     </div>
+
+    <el-dialog v-model="showApplyDialog" title="申请接单" width="480px">
+      <el-form :model="applyForm" label-width="100px">
+        <el-form-item label="计划课时">
+          <el-input-number v-model="applyForm.totalHours" :min="1" :max="100" />
+          <span style="margin-left: 8px; color: #909399;">课时</span>
+        </el-form-item>
+        <el-form-item label="申请备注">
+          <el-input
+            v-model="applyForm.remark"
+            type="textarea"
+            :rows="3"
+            placeholder="向家长介绍您的教学优势和计划"
+            maxlength="200"
+            show-word-limit
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showApplyDialog = false">取消</el-button>
+        <el-button type="primary" :loading="applying" @click="submitApply">提交申请</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { Location, ChatDotRound } from '@element-plus/icons-vue'
-import { getDemandDetail } from '@shared/api/demand'
-import { acceptOrder } from '@shared/api/order'
+import { getDemandDetail, applyForDemand } from '@shared/api/demand'
 
 const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
-const accepting = ref(false)
+const applying = ref(false)
 const demand = ref({})
+const showApplyDialog = ref(false)
+const applyForm = reactive({
+  totalHours: 10,
+  remark: ''
+})
 
 const getStatusType = (status) => {
   const map = { 0: 'info', 1: 'success', 2: 'warning', 3: '' }
@@ -103,7 +119,7 @@ const getStatusType = (status) => {
 }
 
 const getStatusText = (status) => {
-  const map = { 0: '待发布', 1: '招募中', 2: '已匹配', 3: '已关闭' }
+  const map = { 0: '已下架', 1: '招募中', 2: '已匹配', 3: '已关闭' }
   return map[status] || '未知'
 }
 
@@ -136,31 +152,26 @@ const goToChat = () => {
   }
 }
 
-const handleAccept = async () => {
+const handleApply = () => {
+  showApplyDialog.value = true
+}
+
+const submitApply = async () => {
+  applying.value = true
   try {
-    await ElMessageBox.confirm(
-      '确定要接单吗？接单后请等待家长确认。',
-      '确认接单',
-      { confirmButtonText: '确定', cancelButtonText: '取消' }
-    )
-    
-    accepting.value = true
-    // 后端 AcceptDemandRequest 需要 { demandId, totalHours, remark }
-    const res = await acceptOrder({
-      demandId: parseInt(route.params.id),
-      totalHours: 10,
-      remark: ''
+    const res = await applyForDemand(demand.value.id, {
+      totalHours: applyForm.totalHours,
+      remark: applyForm.remark
     })
     if (res.code === 200) {
-      ElMessage.success('接单成功！等待家长确认')
+      ElMessage.success('申请已提交，请等待家长审核')
+      showApplyDialog.value = false
       router.push('/teacher/orders')
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.message || '接单失败')
-    }
+    ElMessage.error(error.message || '申请失败')
   } finally {
-    accepting.value = false
+    applying.value = false
   }
 }
 
@@ -227,21 +238,6 @@ onMounted(() => {
         color: #606266;
         line-height: 1.8;
       }
-      
-      .requirements {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        
-        .req-tag {
-          margin: 0;
-        }
-        
-        .no-data {
-          color: #909399;
-          font-size: 14px;
-        }
-      }
     }
   }
   
@@ -283,6 +279,7 @@ onMounted(() => {
   .action-bar {
     display: flex;
     gap: 16px;
+    align-items: center;
     
     .el-button {
       flex: 1;

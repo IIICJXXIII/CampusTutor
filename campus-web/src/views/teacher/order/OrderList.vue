@@ -25,7 +25,7 @@
           <div class="order-header">
             <span class="order-no">订单号: {{ order.orderNo }}</span>
             <el-tag :type="getStatusType(order.status)" size="small">
-              {{ getStatusText(order.status) }}
+              {{ getStatusText(order) }}
             </el-tag>
           </div>
           
@@ -62,18 +62,27 @@
           <div class="order-footer">
             <span class="time">{{ formatTime(order.createTime) }}</span>
             <div class="actions">
-              <el-button 
-                v-if="order.status === -1" 
-                type="primary" 
+              <el-button
+                v-if="order.status === -1 && order.applicationId"
+                type="danger"
+                size="small"
+                plain
+                @click.stop="cancelApply(order)"
+              >
+                取消申请
+              </el-button>
+              <el-button
+                v-if="order.status === -1 && !order.applicationId"
+                type="primary"
                 size="small"
                 @click.stop="acceptOrder(order)"
               >
                 确认接单
               </el-button>
-              <el-button 
-                v-if="order.status === -1" 
-                type="danger" 
-                size="small" 
+              <el-button
+                v-if="order.status === -1 && !order.applicationId"
+                type="danger"
+                size="small"
                 plain
                 @click.stop="rejectOrder(order)"
               >
@@ -127,7 +136,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getTutorOrders, confirmStartOrder as confirmStartOrderApi, tutorConfirmOrder as tutorConfirmOrderApi, tutorRejectOrder as tutorRejectOrderApi } from '@shared/api/order'
+import { getTutorOrders, confirmStartOrder as confirmStartOrderApi, tutorConfirmOrder as tutorConfirmOrderApi, tutorRejectOrder as tutorRejectOrderApi, cancelApplication as cancelApplicationApi } from '@shared/api/order'
 import { formatDate } from '@shared/utils'
 
 const router = useRouter()
@@ -152,9 +161,10 @@ const getStatusType = (status) => {
   return map[status] || 'info'
 }
 
-const getStatusText = (status) => {
+const getStatusText = (order) => {
+  if (order.status === -1 && order.applicationId) return '待家长审核'
   const map = { '-1': '待确认', 0: '待家长支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
-  return map[status] || '未知'
+  return map[order.status] || '未知'
 }
 
 const formatTime = (time) => formatDate(time, 'YYYY-MM-DD HH:mm')
@@ -244,6 +254,25 @@ const rejectOrder = async (order) => {
     const res = await tutorRejectOrderApi(order.id, reason)
     if (res.code === 200) {
       ElMessage.success('已拒绝该订单')
+      loadOrders()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '操作失败')
+    }
+  }
+}
+
+const cancelApply = async (order) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要取消该申请吗？取消后家长将无法看到您的申请。',
+      '取消申请',
+      { confirmButtonText: '确定取消', cancelButtonText: '返回', type: 'warning' }
+    )
+    const res = await cancelApplicationApi(order.id, '教师主动取消')
+    if (res.code === 200) {
+      ElMessage.success('申请已取消')
       loadOrders()
     }
   } catch (error) {

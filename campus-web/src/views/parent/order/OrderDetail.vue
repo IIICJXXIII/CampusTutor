@@ -37,7 +37,6 @@
             <div class="name">{{ tutor.realName || tutor.name }}</div>
             <div class="school">{{ tutor.universityName }} · {{ tutor.major }}</div>
           </div>
-          </div>
           <el-icon><ArrowRight /></el-icon>
         </div>
       </div>
@@ -64,7 +63,6 @@
           </el-descriptions-item>
           <el-descriptions-item label="授课方式">
             {{ order.teachMode === 1 ? '线下上门' : (order.teachMode === 2 ? '线上网课' : '不限') }}
-          </el-descriptions-item>
           </el-descriptions-item>
           <el-descriptions-item v-if="order.address" label="上课地址" :span="2">
             {{ order.district }} {{ order.address }}

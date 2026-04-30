@@ -40,12 +40,6 @@ public interface CourseOrderService extends IService<CourseOrder> {
      */
     void cancelOrder(Long userId, Long orderId, String reason);
 
-    /**
-     * 确认开课
-     * 
-     * @param tutorId 教员ID
-     * @param orderId 订单ID
-     */
     void confirmStart(Long tutorId, Long orderId);
 
     /**
@@ -115,17 +109,26 @@ public interface CourseOrderService extends IService<CourseOrder> {
     /**
      * 申请退款
      * 
-     * @param userId     用户ID
-     * @param orderId    订单ID
+     * @param userId       用户ID
+     * @param orderId      订单ID
      * @param refundAmount 退款金额
-     * @param reason     退款原因
+     * @param reason       退款原因
      * @return 退款单号
      */
     String applyRefund(Long userId, Long orderId, java.math.BigDecimal refundAmount, String reason);
 
     /**
+     * 家长拒绝教师接单申请
+     *
+     * @param parentId 家长ID
+     * @param orderId  订单ID
+     * @param reason   拒绝原因
+     */
+    void parentRejectOrder(Long parentId, Long orderId, String reason);
+
+    /**
      * 从预约请求创建订单
-     * 
+     *
      * @param parentId   家长ID
      * @param bookingId  预约请求ID
      * @param totalHours 总课时
@@ -133,4 +136,13 @@ public interface CourseOrderService extends IService<CourseOrder> {
      * @return 订单ID
      */
     Long createOrderFromBooking(Long parentId, Long bookingId, Integer totalHours, java.math.BigDecimal unitPrice);
+
+    /**
+     * 教师取消需求申请
+     *
+     * @param tutorId 教师ID
+     * @param orderId 订单ID
+     * @param reason  取消原因
+     */
+    void cancelApplication(Long tutorId, Long orderId, String reason);
 }
