@@ -72,6 +72,14 @@ public class OrderController {
         return Result.success();
     }
 
+    @Operation(summary = "家长拒绝接单申请", description = "家长拒绝教师的接单申请，订单将被取消")
+    @PostMapping("/{id}/parent-reject")
+    public Result<Void> parentReject(@PathVariable String id, @RequestParam(required = false) String reason) {
+        Long parentId = UserContext.getUserId();
+        orderService.parentRejectOrder(parentId, resolveOrderId(id), reason);
+        return Result.success();
+    }
+
     @Operation(summary = "教师确认预约", description = "教师确认家长的直接预约订单，订单变为待支付状态")
     @PostMapping("/{id}/tutor-confirm")
     public Result<Void> tutorConfirm(@PathVariable String id) {
@@ -104,11 +112,15 @@ public class OrderController {
         return Result.success();
     }
 
-    @Operation(summary = "教员确认开课")
+    @Operation(summary = "家长确认开课", description = "家长确认开始上课，订单变为进行中")
     @PostMapping("/{id}/start")
     public Result<Void> start(@PathVariable String id) {
-        Long tutorId = UserContext.getUserId();
-        orderService.confirmStart(tutorId, resolveOrderId(id));
+        Long parentId = UserContext.getUserId();
+        Integer role = UserContext.getRole();
+        if (role == null || role != 2) {
+            throw new BusinessException(ResultCode.FORBIDDEN.getCode(), "仅家长可确认开课");
+        }
+        orderService.confirmStart(parentId, resolveOrderId(id));
         return Result.success();
     }
 

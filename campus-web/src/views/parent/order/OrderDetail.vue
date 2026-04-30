@@ -120,10 +120,9 @@
       <div class="action-bar">
         <!-- 待确认：区分"等待教师确认"和"等待家长确认" -->
         <template v-if="order.status === -1">
+          <el-button v-if="order.demandId" size="large" type="danger" plain @click="rejectOrder">拒绝接单</el-button>
           <el-button size="large" @click="cancelOrder">取消订单</el-button>
-          <!-- 有demandId说明是教师接需求帖创建的，需家长确认 -->
-          <el-button v-if="order.demandId" size="large" type="primary" @click="confirmOrder">确认订单</el-button>
-          <!-- 无demandId说明是家长直接预约，等待教师确认 -->
+          <el-button v-if="order.demandId" size="large" type="primary" @click="confirmOrder">同意接单</el-button>
           <el-button v-else size="large" type="info" disabled>等待教师确认</el-button>
         </template>
         <template v-else-if="order.status === 0">
@@ -132,7 +131,7 @@
         </template>
         <template v-else-if="order.status === 1">
           <el-button size="large" @click="contactTutor">联系老师</el-button>
-          <el-button size="large" type="info" disabled>等待教师开课</el-button>
+          <el-button size="large" type="primary" @click="confirmStart">确认开课</el-button>
         </template>
         <template v-else-if="order.status === 2">
           <el-button size="large" @click="contactTutor">联系老师</el-button>
@@ -155,8 +154,10 @@ import { ArrowLeft, ArrowRight, Loading, CircleCheck, Clock } from '@element-plu
 import { 
   getOrderDetail, 
   confirmOrder as confirmOrderApi,
+  parentRejectOrder as parentRejectOrderApi,
   cancelOrder as cancelOrderApi,
-  completeOrder as completeOrderApi 
+  completeOrder as completeOrderApi,
+  confirmStartOrder as confirmStartOrderApi
 } from '@shared/api/order'
 import { getOrderLessons } from '@shared/api/teaching'
 import { getPublicTutorProfile, getPublicTutorProfileById } from '@shared/api/tutor'
@@ -172,6 +173,9 @@ const tutor = ref(null)
 const lessons = ref([])
 
 const getStatusText = (status) => {
+  if (status === -1 && order.value && order.value.demandId) {
+    return '接单申请'
+  }
   if (status === -1 && order.value && !order.value.demandId) {
     return '待教师确认'
   }
@@ -180,13 +184,16 @@ const getStatusText = (status) => {
 }
 
 const getStatusDesc = (status) => {
+  if (status === -1 && order.value && order.value.demandId) {
+    return '教师申请接单，请查看教师信息后选择同意或拒绝'
+  }
   if (status === -1 && order.value && !order.value.demandId) {
     return '已发送预约请求，等待教师确认后即可支付'
   }
   const descs = {
     '-1': '请确认订单信息，确认后进入待支付状态',
     0: '请在24小时内完成支付，超时订单将自动取消',
-    1: '已支付成功，等待教师确认开课',
+    1: '已支付成功，请确认开课后教师开始服务',
     2: '订单进行中，老师会按约定时间上课',
     3: '订单已完成，感谢您的使用',
     4: '订单已取消'
@@ -272,10 +279,36 @@ const viewAllLessons = () => {
 
 const confirmOrder = async () => {
   try {
-    await ElMessageBox.confirm('确认订单后将进入待支付状态', '确认订单')
+    await ElMessageBox.confirm('同意接单后，教师将为您服务，订单进入待支付状态', '同意接单申请')
     const res = await confirmOrderApi(route.params.id)
     if (res.code === 200) {
-      ElMessage.success('确认成功')
+      ElMessage.success('已同意接单申请')
+      loadOrder()
+    }
+  } catch (e) { /* cancelled */ }
+}
+
+const rejectOrder = async () => {
+  try {
+    const { value: reason } = await ElMessageBox.prompt('请输入拒绝原因', '拒绝接单申请', {
+      confirmButtonText: '确认拒绝',
+      cancelButtonText: '返回',
+      inputPlaceholder: '请输入拒绝原因（可选）'
+    })
+    const res = await parentRejectOrderApi(route.params.id, reason)
+    if (res.code === 200) {
+      ElMessage.success('已拒绝接单申请')
+      router.back()
+    }
+  } catch (e) { /* cancelled */ }
+}
+
+const confirmStart = async () => {
+  try {
+    await ElMessageBox.confirm('确认开课后，教师将开始为您服务', '确认开课')
+    const res = await confirmStartOrderApi(route.params.id)
+    if (res.code === 200) {
+      ElMessage.success('已确认开课')
       loadOrder()
     }
   } catch (e) { /* cancelled */ }
