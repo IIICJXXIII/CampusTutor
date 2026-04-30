@@ -5,7 +5,6 @@
     </el-page-header>
     
     <div v-if="order" class="detail-container">
-      <!-- 订单状态 -->
       <div class="status-section">
         <div class="status-icon" :class="`status-${order.status}`">
           <el-icon :size="32">
@@ -18,18 +17,17 @@
         </div>
       </div>
       
-      <!-- 学生信息 -->
       <div class="info-card">
         <div class="card-header">
-          <h3>学生信息</h3>
+          <h3>家长信息</h3>
         </div>
         <div class="card-body">
-          <div class="student-row">
-            <el-avatar :size="56" :src="order.studentAvatar">
-              {{ order.studentName?.charAt(0) }}
+          <div class="user-row">
+            <el-avatar :size="56" :src="parentInfo.avatar">
+              {{ parentInfo.nickname?.charAt(0) || '家' }}
             </el-avatar>
-            <div class="student-info">
-              <h4>{{ order.studentName }}</h4>
+            <div class="user-info">
+              <h4>{{ parentInfo.nickname || '家长' }}</h4>
               <p>{{ order.grade }} · {{ order.subject }}</p>
             </div>
             <el-button type="primary" link @click="goToChat">
@@ -39,7 +37,6 @@
         </div>
       </div>
       
-      <!-- 订单信息 -->
       <div class="info-card">
         <div class="card-header">
           <h3>订单信息</h3>
@@ -55,12 +52,13 @@
             </el-descriptions-item>
             <el-descriptions-item label="已上课时">{{ order.usedHours || 0 }}小时</el-descriptions-item>
             <el-descriptions-item label="上课地点" :span="2">{{ order.address || '待定' }}</el-descriptions-item>
-            <el-descriptions-item label="备注" :span="2">{{ order.remark || '无' }}</el-descriptions-item>
+            <el-descriptions-item label="备注" :span="2">
+              <div class="remark-content" style="white-space: pre-line;">{{ order.remark || '无' }}</div>
+            </el-descriptions-item>
           </el-descriptions>
         </div>
       </div>
       
-      <!-- 课程记录 -->
       <div class="info-card">
         <div class="card-header">
           <h3>课程记录</h3>
@@ -88,9 +86,12 @@
         </div>
       </div>
       
-      <!-- 操作按钮 -->
       <div class="action-bar">
-        <template v-if="order.status === -1">
+        <template v-if="order.status === -1 && order.demandId">
+          <div class="action-hint">您已申请接单，等待家长确认</div>
+          <el-button type="danger" size="large" plain @click="cancelOrder">取消申请</el-button>
+        </template>
+        <template v-else-if="order.status === -1 && !order.demandId">
           <el-button type="primary" size="large" @click="acceptOrder">
             确认接单
           </el-button>
@@ -98,15 +99,20 @@
             拒绝订单
           </el-button>
         </template>
-        <el-button v-if="order.status === 1" type="primary" size="large" @click="startOrder">
-          确认开课
-        </el-button>
-        <el-button v-if="order.status === 2" type="success" size="large" @click="goToCheckin">
-          开始上课
-        </el-button>
-        <el-button v-if="[1, 2].includes(order.status)" size="large" @click="cancelOrder">
-          取消订单
-        </el-button>
+        <template v-else-if="order.status === 0">
+          <div class="action-hint">等待家长支付</div>
+        </template>
+        <template v-else-if="order.status === 1">
+          <div class="action-hint">等待家长确认开课</div>
+        </template>
+        <template v-else-if="order.status === 2">
+          <el-button type="success" size="large" @click="goToCheckin">
+            开始上课
+          </el-button>
+          <el-button size="large" @click="cancelOrder">
+            取消订单
+          </el-button>
+        </template>
       </div>
     </div>
   </div>
@@ -117,7 +123,8 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Clock, Check, Close, ChatDotRound } from '@element-plus/icons-vue'
-import { getOrderDetail, confirmStartOrder as confirmStartOrderApi, cancelOrder as cancelOrderApi, tutorConfirmOrder as tutorConfirmOrderApi, tutorRejectOrder as tutorRejectOrderApi } from '@shared/api/order'
+import { getOrderDetail, cancelOrder as cancelOrderApi, tutorConfirmOrder as tutorConfirmOrderApi, tutorRejectOrder as tutorRejectOrderApi } from '@shared/api/order'
+import { getUserById } from '@shared/api/user'
 import { getOrderLessons } from '@shared/api/teaching'
 import dayjs from 'dayjs'
 
@@ -127,6 +134,7 @@ const router = useRouter()
 const loading = ref(true)
 const order = ref(null)
 const lessons = ref([])
+const parentInfo = ref({ nickname: '', avatar: '' })
 
 const getStatusIcon = (status) => {
   const map = { '-1': Clock, 0: Clock, 1: Clock, 2: Clock, 3: Check, 4: Close }
@@ -134,15 +142,21 @@ const getStatusIcon = (status) => {
 }
 
 const getStatusText = (status) => {
-  const map = { '-1': '待确认', 0: '待家长支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
+  const map = { '-1': '待确认', 0: '待家长支付', 1: '待家长确认开课', 2: '进行中', 3: '已完成', 4: '已取消' }
   return map[status] || '未知'
 }
 
 const getStatusDesc = (status) => {
+  if (!order.value) return ''
+  if (status === -1 && order.value.demandId) {
+    return '您已申请接单，请等待家长确认'
+  }
+  if (status === -1 && !order.value.demandId) {
+    return '家长发来预约请求，请确认是否接单'
+  }
   const map = {
-    '-1': '家长发来预约请求，请确认是否接单',
     0: '等待家长支付',
-    1: '家长已支付，请确认开课',
+    1: '家长已支付，等待家长确认开课',
     2: '订单进行中，请按时上课',
     3: '订单已完成，感谢您的付出',
     4: '订单已取消'
@@ -172,11 +186,28 @@ const loadOrder = async () => {
     const res = await getOrderDetail(orderId)
     if (res.code === 200) {
       order.value = res.data
+      if (res.data.parentId) {
+        loadParentInfo(res.data.parentId)
+      }
     }
   } catch (error) {
     ElMessage.error(error.message || '加载失败')
   } finally {
     loading.value = false
+  }
+}
+
+const loadParentInfo = async (parentId) => {
+  try {
+    const res = await getUserById(parentId)
+    if (res.code === 200 && res.data) {
+      parentInfo.value = {
+        nickname: res.data.nickname || '家长',
+        avatar: res.data.avatarUrl || res.data.avatar || ''
+      }
+    }
+  } catch (e) {
+    // silent
   }
 }
 
@@ -189,21 +220,6 @@ const loadLessons = async () => {
     }
   } catch (error) {
     console.error('加载课程失败', error)
-  }
-}
-
-const startOrder = async () => {
-  try {
-    await ElMessageBox.confirm('确认开始上课吗？', '确认开课')
-    const res = await confirmStartOrderApi(order.value.id)
-    if (res.code === 200) {
-      ElMessage.success('开课成功')
-      loadOrder()
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.message || '操作失败')
-    }
   }
 }
 
@@ -237,9 +253,7 @@ const goToCheckin = () => {
   router.push(`/teacher/checkin?orderId=${order.value.id}`)
 }
 
-const goBack = () => {
-  router.back()
-}
+const goBack = () => router.back()
 
 const acceptOrder = async () => {
   try {
@@ -308,8 +322,10 @@ onMounted(() => {
       justify-content: center;
       color: #fff;
       
-      &.status-1 { background: #e6a23c; }
-      &.status-2 { background: #409eff; }
+      &.status--1 { background: #e6a23c; }
+      &.status-0 { background: #909399; }
+      &.status-1 { background: #409eff; }
+      &.status-2 { background: #67c23a; }
       &.status-3 { background: #67c23a; }
       &.status-4 { background: #909399; }
     }
@@ -352,12 +368,12 @@ onMounted(() => {
     }
   }
   
-  .student-row {
+  .user-row {
     display: flex;
     align-items: center;
     gap: 16px;
     
-    .student-info {
+    .user-info {
       flex: 1;
       
       h4 {
@@ -424,9 +440,21 @@ onMounted(() => {
   
   .action-bar {
     display: flex;
-    justify-content: center;
-    gap: 16px;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
     padding: 24px 0;
+    
+    .action-hint {
+      font-size: 14px;
+      color: #909399;
+      margin-bottom: 4px;
+    }
+    
+    > div {
+      display: flex;
+      gap: 16px;
+    }
   }
 }
 </style>

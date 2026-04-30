@@ -10,11 +10,17 @@
         <result column="avatar" property="avatarUrl"/>
         <result column="role" property="role"/>
         <result column="status" property="status"/>
+        <result column="gender" property="gender"/>
+        <result column="wechat" property="wechat"/>
+        <result column="region" property="region"/>
+        <result column="address" property="address"/>
+        <result column="longitude" property="longitude"/>
+        <result column="latitude" property="latitude"/>
         <result column="create_time" property="createTime"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, username, password, nickname, avatar, role, status, create_time
+        id, username, password, nickname, avatar, role, status, gender, wechat, region, address, longitude, latitude, create_time
     </sql>
 
     <select id="selectByUsername" resultMap="BaseResultMap">

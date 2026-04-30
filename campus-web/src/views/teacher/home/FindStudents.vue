@@ -136,7 +136,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Location, List, Aim, Close, User, Clock } from '@element-plus/icons-vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { getNearbyDemands, getDemandList } from '@shared/api/demand'
-import { acceptOrder } from '@shared/api/order'
+import { acceptOrder, getTutorOrders } from '@shared/api/order'
 
 const router = useRouter()
 
@@ -310,6 +310,38 @@ const addMarkersToMap = (list) => {
       map.add(marker)
     }
   })
+
+  addOrderMarkersToMap()
+}
+
+const addOrderMarkersToMap = async () => {
+  if (!map) return
+  try {
+    const res = await getTutorOrders({ status: undefined, page: 1, size: 50 })
+    if (res.code === 200) {
+      const orders = res.data?.records || res.data || []
+      const statusColors = { '-1': '#e6a23c', 0: '#909399', 1: '#409eff', 2: '#67c23a', 3: '#909399' }
+      const statusTexts = { '-1': '待确认', 0: '待支付', 1: '待开课', 2: '进行中', 3: '已完成' }
+      orders.forEach(order => {
+        if (order.longitude && order.latitude) {
+          const color = statusColors[order.status] || '#909399'
+          const statusText = statusTexts[order.status] || '未知'
+          const marker = new AMap.Marker({
+            position: [order.longitude, order.latitude],
+            title: `${order.subject} - ${statusText}`,
+            content: `<div style="background:${color};color:#fff;padding:4px 10px;border-radius:12px;font-size:12px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.2);border:2px solid #fff;">📋${statusText} ${order.subject || ''}</div>`,
+            offset: new AMap.Pixel(-30, -15)
+          })
+          marker.on('click', () => {
+            router.push(`/teacher/orders/${order.id}`)
+          })
+          map.add(marker)
+        }
+      })
+    }
+  } catch (e) {
+    console.error('加载订单标记失败:', e)
+  }
 }
 
 const handleSearch = () => {
