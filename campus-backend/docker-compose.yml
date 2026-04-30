@@ -6,6 +6,8 @@ services:
     container_name: campus-backend
     ports:
       - "8080:8080" # 映射宿主机端口:容器端口
+    env_file:
+      - .env
     environment:
       # 覆盖 application.properties 中的配置
       # 数据库连接：使用服务名 'mysql' 代替 localhost
