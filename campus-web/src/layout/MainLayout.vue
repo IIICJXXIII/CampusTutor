@@ -438,21 +438,6 @@ onUnmounted(() => {
       .community-menu-item {
         position: relative;
 
-        &::after {
-          content: 'HOT';
-          position: absolute;
-          top: 8px;
-          right: -4px;
-          font-size: 9px;
-          background: linear-gradient(135deg, #f56c6c, #e6404a);
-          color: #fff;
-          padding: 1px 4px;
-          border-radius: 6px;
-          line-height: 1.2;
-          font-weight: 700;
-          letter-spacing: 0.5px;
-        }
-
         .el-icon {
           color: #667eea;
         }

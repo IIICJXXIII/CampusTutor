@@ -155,12 +155,18 @@ public class MatchScoreCalculator {
             matchTags.add("年龄段匹配");
         }
 
-        // 3. 距离评分（体育类加权）
+        // 3. 距离评分（体育类加权，多级距离标签）
         double distanceScore = calculateDistanceScore(distance) * distanceMultiplier;
         distanceScore = Math.min(distanceScore, getWeightDistance() * 1.5); // 上限
         result.setDistanceScore(distanceScore);
-        if (distance != null && distance <= 3.0) {
-            matchTags.add("距离近");
+        if (distance != null) {
+            if (distance <= 1.0) {
+                matchTags.add("超近");
+            } else if (distance <= 3.0) {
+                matchTags.add("距离近");
+            } else if (distance <= 5.0) {
+                matchTags.add("同城");
+            }
         }
 
         // 4. 价格匹配分数
@@ -169,27 +175,50 @@ public class MatchScoreCalculator {
         if (priceScore >= getWeightPrice() * 0.8) {
             matchTags.add("价格合适");
         }
+        if (demand.getExpectPrice() == null && tutor.getExpectPrice() != null
+                && tutor.getExpectPrice().doubleValue() <= 100) {
+            matchTags.add("性价比高");
+        }
 
-        // 5. 教员评分权重（艺术/科创类加权）
+        // 5. 教员评分权重（艺术/科创类加权，多级标签）
         double ratingScore = calculateRatingScore(tutor.getRating()) * ratingMultiplier;
         ratingScore = Math.min(ratingScore, getWeightRating() * 1.5);
         result.setRatingScore(ratingScore);
-        if (tutor.getRating() != null && tutor.getRating().doubleValue() >= 4.5) {
-            matchTags.add("高评分");
+        if (tutor.getRating() != null) {
+            double r = tutor.getRating().doubleValue();
+            if (r >= 4.8) {
+                matchTags.add("口碑之星");
+            } else if (r >= 4.5) {
+                matchTags.add("高评分");
+            } else if (r >= 4.0) {
+                matchTags.add("好评");
+            }
         }
 
-        // 6. 教学经验评分
+        // 6. 教学经验评分（多级标签）
         double experienceScore = calculateExperienceScore(tutor);
         result.setExperienceScore(experienceScore);
-        if (experienceScore >= getWeightExperience() * 0.8) {
+        int orderCount = tutor.getOrderCount() != null ? tutor.getOrderCount() : 0;
+        if (orderCount >= 50) {
+            matchTags.add("资深名师");
+        } else if (orderCount >= 20) {
             matchTags.add("经验丰富");
+        } else if (orderCount >= 10) {
+            matchTags.add("教学有方");
         }
 
-        // 7. 学历背景评分
+        // 7. 学历背景评分（具体学历标签）
         double educationScore = calculateEducationScore(tutor.getEducation());
         result.setEducationScore(educationScore);
-        if (educationScore >= getWeightEducation() * 0.8) {
-            matchTags.add("学历优秀");
+        if (tutor.getEducation() != null) {
+            int edu = tutor.getEducation();
+            if (edu >= 5) {
+                matchTags.add("博士");
+            } else if (edu >= 4) {
+                matchTags.add("硕士");
+            } else if (edu >= 3 && educationScore >= getWeightEducation() * 0.8) {
+                matchTags.add("学历优秀");
+            }
         }
 
         // 8. 教学特长评分（艺术/科创类加权）
@@ -257,11 +286,17 @@ public class MatchScoreCalculator {
             matchTags.add("年级匹配");
         }
 
-        // 3. 距离评分
+        // 3. 距离评分（多级距离标签）
         double distanceScore = calculateDistanceScore(distance);
         result.setDistanceScore(distanceScore);
-        if (distance != null && distance <= 3.0) {
-            matchTags.add("距离近");
+        if (distance != null) {
+            if (distance <= 1.0) {
+                matchTags.add("超近");
+            } else if (distance <= 3.0) {
+                matchTags.add("距离近");
+            } else if (distance <= 5.0) {
+                matchTags.add("同城");
+            }
         }
 
         // 4. 价格匹配分数
@@ -270,26 +305,49 @@ public class MatchScoreCalculator {
         if (priceScore >= getWeightPrice() * 0.8) {
             matchTags.add("价格合适");
         }
+        if (budgetPrice == null && tutor.getExpectPrice() != null
+                && tutor.getExpectPrice().doubleValue() <= 100) {
+            matchTags.add("性价比高");
+        }
 
-        // 5. 教员评分权重
+        // 5. 教员评分权重（多级标签，不受筛选条件影响）
         double ratingScore = calculateRatingScore(tutor.getRating());
         result.setRatingScore(ratingScore);
-        if (tutor.getRating() != null && tutor.getRating().doubleValue() >= 4.5) {
-            matchTags.add("高评分");
+        if (tutor.getRating() != null) {
+            double r = tutor.getRating().doubleValue();
+            if (r >= 4.8) {
+                matchTags.add("口碑之星");
+            } else if (r >= 4.5) {
+                matchTags.add("高评分");
+            } else if (r >= 4.0) {
+                matchTags.add("好评");
+            }
         }
 
-        // 6. 教学经验评分
+        // 6. 教学经验评分（多级标签）
         double experienceScore = calculateExperienceScore(tutor);
         result.setExperienceScore(experienceScore);
-        if (experienceScore >= getWeightExperience() * 0.8) {
+        int orderCount = tutor.getOrderCount() != null ? tutor.getOrderCount() : 0;
+        if (orderCount >= 50) {
+            matchTags.add("资深名师");
+        } else if (orderCount >= 20) {
             matchTags.add("经验丰富");
+        } else if (orderCount >= 10) {
+            matchTags.add("教学有方");
         }
 
-        // 7. 学历背景评分
+        // 7. 学历背景评分（具体学历标签）
         double educationScore = calculateEducationScore(tutor.getEducation());
         result.setEducationScore(educationScore);
-        if (educationScore >= getWeightEducation() * 0.8) {
-            matchTags.add("学历优秀");
+        if (tutor.getEducation() != null) {
+            int edu = tutor.getEducation();
+            if (edu >= 5) {
+                matchTags.add("博士");
+            } else if (edu >= 4) {
+                matchTags.add("硕士");
+            } else if (edu >= 3 && educationScore >= getWeightEducation() * 0.8) {
+                matchTags.add("学历优秀");
+            }
         }
 
         // 8. 教学特长评分
@@ -632,11 +690,17 @@ public class MatchScoreCalculator {
             matchTags.add("年级匹配");
         }
 
-        // 3. 距离评分
+        // 3. 距离评分（多级距离标签）
         double distanceScore = calculateDistanceScoreWithWeight(distance, weightDistance);
         result.setDistanceScore(distanceScore);
-        if (distance != null && distance <= 3.0) {
-            matchTags.add("距离近");
+        if (distance != null) {
+            if (distance <= 1.0) {
+                matchTags.add("超近");
+            } else if (distance <= 3.0) {
+                matchTags.add("距离近");
+            } else if (distance <= 5.0) {
+                matchTags.add("同城");
+            }
         }
 
         // 4. 价格匹配分数
@@ -645,26 +709,50 @@ public class MatchScoreCalculator {
         if (priceScore >= weightPrice * 0.8) {
             matchTags.add("价格合适");
         }
+        // 无预算筛选时，价格较低的教员打上性价比标签
+        if (budgetPrice == null && tutor.getExpectPrice() != null
+                && tutor.getExpectPrice().doubleValue() <= 100) {
+            matchTags.add("性价比高");
+        }
 
-        // 5. 教员评分权重
+        // 5. 教员评分权重（多级标签，不受筛选条件影响）
         double ratingScore = calculateRatingScoreWithWeight(tutor.getRating(), weightRating);
         result.setRatingScore(ratingScore);
-        if (tutor.getRating() != null && tutor.getRating().doubleValue() >= 4.5) {
-            matchTags.add("高评分");
+        if (tutor.getRating() != null) {
+            double r = tutor.getRating().doubleValue();
+            if (r >= 4.8) {
+                matchTags.add("口碑之星");
+            } else if (r >= 4.5) {
+                matchTags.add("高评分");
+            } else if (r >= 4.0) {
+                matchTags.add("好评");
+            }
         }
 
-        // 6. 教学经验评分
+        // 6. 教学经验评分（多级标签）
         double experienceScore = calculateExperienceScoreWithWeight(tutor, weightExperience);
         result.setExperienceScore(experienceScore);
-        if (experienceScore >= weightExperience * 0.8) {
+        int orderCount = tutor.getOrderCount() != null ? tutor.getOrderCount() : 0;
+        if (orderCount >= 50) {
+            matchTags.add("资深名师");
+        } else if (orderCount >= 20) {
             matchTags.add("经验丰富");
+        } else if (orderCount >= 10) {
+            matchTags.add("教学有方");
         }
 
-        // 7. 学历背景评分
+        // 7. 学历背景评分（具体学历标签）
         double educationScore = calculateEducationScoreWithWeight(tutor.getEducation(), weightEducation);
         result.setEducationScore(educationScore);
-        if (educationScore >= weightEducation * 0.8) {
-            matchTags.add("学历优秀");
+        if (tutor.getEducation() != null) {
+            int edu = tutor.getEducation();
+            if (edu >= 5) {
+                matchTags.add("博士");
+            } else if (edu >= 4) {
+                matchTags.add("硕士");
+            } else if (edu >= 3 && educationScore >= weightEducation * 0.8) {
+                matchTags.add("学历优秀");
+            }
         }
 
         // 8. 教学特长评分
