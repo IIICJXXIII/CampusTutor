@@ -1,0 +1,62 @@
+0:00:19 CloseTab_NoAlertIndicator
+0:00:19 Microsoft.Shutdown.TabStripModel.CloseWebContentsAt
+0:00:19 Microsoft.Shutdown.TabStripModel.CloseTabs
+0:00:19 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl
+0:00:19 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl_TabClosable
+0:00:19 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl_NotClosingAll
+0:00:19 Microsoft.Shutdown.TabStripModel.CloseWebContentses
+0:00:19 Microsoft.Shutdown.TabStripModel.CloseWebContentses_FastShutdown
+0:00:19 Microsoft.Shutdown.TabStripModel.ShouldRunUnloadListenerBeforeClosing_true
+0:00:19 Microsoft.Shutdown.TabStripModel.RunUnloadListenerBeforeClosing_true
+0:00:19 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl_NotClosedAll
+0:00:22 Tab3 StartNav16 #renderer-script #link
+0:00:22 Tab3 FinishNav16
+0:00:22 Tab2 BeforeUnload proceed:true
+0:00:22 Microsoft.Shutdown.TabStripModel.CloseWebContentsAt
+0:00:22 Microsoft.Shutdown.TabStripModel.CloseTabs
+0:00:22 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl
+0:00:22 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl_TabClosable
+0:00:22 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl_NotClosingAll
+0:00:22 Microsoft.Shutdown.TabStripModel.CloseWebContentses
+0:00:22 Microsoft.Shutdown.TabStripModel.CloseWebContentses_FastShutdown
+0:00:22 Microsoft.Shutdown.TabStripModel.ShouldRunUnloadListenerBeforeClosing_false
+0:00:22 Tab2 RenderProcessGone
+0:00:22 Microsoft.Shutdown.TabStripModel.RunUnloadListenerBeforeClosing_false
+0:00:22 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl_ClosedAll
+0:00:22 Microsoft.Shutdown.TabStripModel.SendDetachWebContentsNotifications
+0:00:22 Browser1 Close Tab2 at 1
+0:00:22 Tab2 WebContentsDestroyed
+0:00:22 Widget Closed: TooltipAura
+0:00:22 Widget Closed: TabHoverCardBubbleView
+0:00:27 Widget Closed: TooltipAura
+0:00:27 Widget Closed: TabHoverCardBubbleView
+0:00:34 CloseTab_NoAlertIndicator
+0:00:34 Microsoft.Shutdown.TabStripModel.CloseWebContentsAt
+0:00:34 Microsoft.Shutdown.TabStripModel.CloseTabs
+0:00:34 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl
+0:00:34 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl_TabClosable
+0:00:34 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl_NotClosingAll
+0:00:34 Microsoft.Shutdown.TabStripModel.CloseWebContentses
+0:00:34 Microsoft.Shutdown.TabStripModel.CloseWebContentses_FastShutdown
+0:00:34 Microsoft.Shutdown.TabStripModel.ShouldRunUnloadListenerBeforeClosing_true
+0:00:34 Microsoft.Shutdown.TabStripModel.RunUnloadListenerBeforeClosing_true
+0:00:34 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl_NotClosedAll
+0:00:34 Tab3 BeforeUnload proceed:true
+0:00:34 Tab3 StartNav17 #renderer-user #link
+0:00:34 Tab3 FinishNav17
+0:00:34 Microsoft.Shutdown.TabStripModel.CloseWebContentsAt
+0:00:34 Microsoft.Shutdown.TabStripModel.CloseTabs
+0:00:34 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl
+0:00:34 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl_TabClosable
+0:00:34 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl_NotClosingAll
+0:00:34 Microsoft.Shutdown.TabStripModel.CloseWebContentses
+0:00:34 Microsoft.Shutdown.TabStripModel.CloseWebContentses_FastShutdown
+0:00:34 Microsoft.Shutdown.TabStripModel.ShouldRunUnloadListenerBeforeClosing_false
+0:00:34 Microsoft.Shutdown.TabStripModel.RunUnloadListenerBeforeClosing_false
+0:00:34 Microsoft.Shutdown.TabStripModel.InternalCloseTabsImpl_ClosedAll
+0:00:34 Microsoft.Shutdown.TabStripModel.SendDetachWebContentsNotifications
+0:00:34 Browser1 Close Tab3 at 1
+0:00:34 Tab3 WebContentsDestroyed
+0:00:36 Tab1 StartNav18 #renderer-script #link
+0:00:36 Tab1 FinishNav18
+0:18:10 Microsoft.UnloadController.IsUnclosableApp_IsNotWebApp

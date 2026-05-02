@@ -256,6 +256,8 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
             order.setPayTime(LocalDateTime.now());
             order.setPayType(request.getPayType());
             order.setPayTradeNo("WALLET_" + IdUtil.simpleUUID());
+            order.setPaymentMode("full");
+            order.setPaidHours(order.getTotalHours());
             updateById(order);
 
             if (order.getDemandId() != null) {
