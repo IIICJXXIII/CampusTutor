@@ -12,7 +12,27 @@ export const useUserStore = defineStore('user', () => {
 
   const storagePrefix = computed(() => userRole.value ? `${userRole.value}_` : '')
 
-  const token = ref(localStorage.getItem(`${storagePrefix.value}token`) || '')
+  const rawToken = ref(localStorage.getItem(`${storagePrefix.value}token`) || '')
+
+  const isTokenExpired = (t) => {
+    if (!t) return true
+    try {
+      const payload = JSON.parse(atob(t.split('.')[1]))
+      return payload.exp * 1000 < Date.now()
+    } catch (e) {
+      return true
+    }
+  }
+
+  const token = computed({
+    get: () => isTokenExpired(rawToken.value) ? '' : rawToken.value,
+    set: (val) => {
+      rawToken.value = val
+      if (val) {
+        localStorage.setItem(`${storagePrefix.value}token`, val)
+      }
+    }
+  })
   
   let initialUserInfo = null;
   try {
@@ -42,7 +62,6 @@ export const useUserStore = defineStore('user', () => {
   // 方法
   function setToken(newToken) {
     token.value = newToken
-    localStorage.setItem(`${storagePrefix.value}token`, newToken)
   }
 
   function setUserInfo(info) {
@@ -75,7 +94,7 @@ export const useUserStore = defineStore('user', () => {
 
   function logout() {
     const prefix = storagePrefix.value
-    token.value = ''
+    rawToken.value = ''
     userInfo.value = null
     userRole.value = ''
     localStorage.removeItem(`${prefix}token`)

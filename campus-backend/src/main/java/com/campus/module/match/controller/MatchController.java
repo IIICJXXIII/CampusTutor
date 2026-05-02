@@ -37,8 +37,6 @@ public class MatchController {
             @RequestParam(required = false) Double radius,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortOrder,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Integer gender,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
 
@@ -51,8 +49,6 @@ public class MatchController {
         request.setRadius(radius);
         request.setSortBy(sortBy);
         request.setSortOrder(sortOrder);
-        request.setKeyword(keyword);
-        request.setGender(gender);
         request.setPage(page);
         request.setSize(size);
 
