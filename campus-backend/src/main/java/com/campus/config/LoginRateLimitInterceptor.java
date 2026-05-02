@@ -22,11 +22,12 @@ public class LoginRateLimitInterceptor implements HandlerInterceptor {
     private final ObjectMapper objectMapper;
 
     private static final int MAX_ATTEMPTS = 5;
-    private static final long WINDOW_SECONDS = 300;
+    private static final long WINDOW_SECONDS = 30;
     private static final String RATE_LIMIT_PREFIX = "login:rate:";
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws Exception {
         if (!"POST".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
@@ -73,7 +74,7 @@ public class LoginRateLimitInterceptor implements HandlerInterceptor {
         response.setStatus(429);
         response.setContentType("application/json;charset=UTF-8");
         response.setHeader("Retry-After", String.valueOf(retryAfterSeconds));
-        Result<Void> result = Result.fail(429, "登录尝试过于频繁，请" + (retryAfterSeconds / 60 + 1) + "分钟后再试");
+        Result<Void> result = Result.fail(429, "登录尝试过于频繁，请" + retryAfterSeconds + "秒后再试");
         response.getWriter().write(objectMapper.writeValueAsString(result));
     }
 }

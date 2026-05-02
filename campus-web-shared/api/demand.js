@@ -74,3 +74,11 @@ export function getDemandList(params) {
 export function getNearbyDemands(params) {
   return request.get('/demand/nearby', { params });
 }
+
+/**
+ * 获取带有匹配度的需求列表 (教师端专用，支持位置筛选和分页)
+ * @param {Object} params - { subject, grade, longitude, latitude, page, size, sortBy, sortOrder }
+ */
+export function getDemandListWithMatch(params) {
+  return request.get('/demand/list-with-match', { params });
+}

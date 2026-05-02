@@ -24,13 +24,23 @@
         <el-descriptions :column="2" border>
           <el-descriptions-item label="科目">{{ demand.subject }}</el-descriptions-item>
           <el-descriptions-item label="年级">{{ demand.grade }}</el-descriptions-item>
-          <el-descriptions-item label="上课频率" :span="2">{{ demand.scheduleRequire || '面议' }}</el-descriptions-item>
+          <el-descriptions-item label="上课频率">{{ scheduleInfo.frequency || '面议' }}</el-descriptions-item>
+          <el-descriptions-item label="每节课时长">{{ scheduleInfo.duration ? scheduleInfo.duration + '小时' : '面议' }}</el-descriptions-item>
+          <el-descriptions-item label="可用时间" :span="2">
+            <template v-if="scheduleInfo.availableTime?.length">
+              <el-tag v-for="t in scheduleInfo.availableTime" :key="t" size="small" class="time-tag">{{ t }}</el-tag>
+            </template>
+            <span v-else>面议</span>
+          </el-descriptions-item>
           <el-descriptions-item label="上课地址" :span="2">
             <el-icon><Location /></el-icon>
-            {{ demand.address }}
+            {{ demand.address || '未设置' }}
           </el-descriptions-item>
           <el-descriptions-item label="技能水平">{{ demand.skillLevel || '不限' }}</el-descriptions-item>
-          <el-descriptions-item label="授课方式">{{ demand.teachMode === 1 ? '线下上门' : demand.teachMode === 2 ? '线上授课' : '线上线下均可' }}</el-descriptions-item>
+          <el-descriptions-item label="授课方式">{{ getTeachModeText(demand.teachMode) }}</el-descriptions-item>
+          <el-descriptions-item v-if="scheduleInfo.genderRequirement" label="性别要求">
+            {{ scheduleInfo.genderRequirement }}
+          </el-descriptions-item>
         </el-descriptions>
         
         <div class="section">
@@ -52,13 +62,14 @@
         </div>
       </div>
       
-      <!-- 家长信息 -->
       <div class="parent-card">
         <h3>家长信息</h3>
         <div class="parent-info">
-          <el-avatar :size="48" :src="demand.parentAvatar" />
+          <el-avatar :size="48" :src="parentInfo.avatar">
+            {{ parentInfo.nickname?.charAt(0) || '家' }}
+          </el-avatar>
           <div class="info">
-            <p class="name">{{ demand.parentName || '家长' }}</p>
+            <p class="name">{{ parentInfo.nickname || '家长' }}</p>
             <p class="desc">发布于 {{ formatDate(demand.createTime) }}</p>
           </div>
           <el-button @click="goToChat">
@@ -67,7 +78,6 @@
         </div>
       </div>
       
-      <!-- 操作按钮 -->
       <div class="action-bar">
         <el-button size="large" @click="goBack">返回</el-button>
         <el-button 
@@ -84,18 +94,37 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Location, ChatDotRound } from '@element-plus/icons-vue'
 import { getDemandDetail } from '@shared/api/demand'
 import { acceptOrder } from '@shared/api/order'
+import { getUserById } from '@shared/api/user'
 
 const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
 const accepting = ref(false)
 const demand = ref({})
+const parentInfo = ref({ nickname: '', avatar: '' })
+
+const scheduleInfo = computed(() => {
+  const raw = demand.value.scheduleRequire
+  if (!raw) return {}
+  try {
+    if (typeof raw === 'string') return JSON.parse(raw)
+    return raw
+  } catch (e) {
+    return { frequency: raw }
+  }
+})
+
+const getTeachModeText = (mode) => {
+  if (mode === 1) return '线下上门'
+  if (mode === 2) return '线上授课'
+  return '线上线下均可'
+}
 
 const getStatusType = (status) => {
   const map = { 0: 'info', 1: 'success', 2: 'warning', 3: '' }
@@ -118,6 +147,9 @@ const loadDetail = async () => {
     const res = await getDemandDetail(route.params.id)
     if (res.code === 200) {
       demand.value = res.data
+      if (res.data.publisherId) {
+        loadParentInfo(res.data.publisherId)
+      }
     }
   } catch (error) {
     ElMessage.error('加载失败')
@@ -126,9 +158,21 @@ const loadDetail = async () => {
   }
 }
 
-const goBack = () => {
-  router.back()
+const loadParentInfo = async (publisherId) => {
+  try {
+    const res = await getUserById(publisherId)
+    if (res.code === 200 && res.data) {
+      parentInfo.value = {
+        nickname: res.data.nickname || '家长',
+        avatar: res.data.avatarUrl || res.data.avatar || ''
+      }
+    }
+  } catch (e) {
+    // silent
+  }
 }
+
+const goBack = () => router.back()
 
 const goToChat = () => {
   if (demand.value.publisherId) {
@@ -145,7 +189,6 @@ const handleAccept = async () => {
     )
     
     accepting.value = true
-    // 后端 AcceptDemandRequest 需要 { demandId, totalHours, remark }
     const res = await acceptOrder({
       demandId: parseInt(route.params.id),
       totalHours: 10,
@@ -243,6 +286,11 @@ onMounted(() => {
         }
       }
     }
+  }
+
+  .time-tag {
+    margin-right: 6px;
+    margin-bottom: 4px;
   }
   
   .parent-card {
