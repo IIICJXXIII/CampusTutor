@@ -93,9 +93,10 @@ public class CourseOrder {
      */
     private Integer usedHours;
 
-    /**
-     * 订单状态：0待支付 1已支付待上课 2进行中 3已完成 4已取消 5退款中 6已退款
-     */
+    private String paymentMode;
+
+    private Integer paidHours;
+
     private Integer status;
 
     /**
@@ -123,9 +124,12 @@ public class CourseOrder {
      */
     private String remark;
 
-    /**
-     * 创建时间
-     */
+    private BigDecimal longitude;
+
+    private BigDecimal latitude;
+
+    private String address;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

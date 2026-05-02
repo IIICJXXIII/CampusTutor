@@ -44,14 +44,13 @@ public class TutorController {
         Long ongoingCount = 0L;
         if (profile != null) {
             orderCount = courseOrderMapper.selectCount(
-                new LambdaQueryWrapper<CourseOrder>().eq(CourseOrder::getTutorId, userId)
-            );
+                    new LambdaQueryWrapper<CourseOrder>().eq(CourseOrder::getTutorId, userId));
             completedCount = courseOrderMapper.selectCount(
-                new LambdaQueryWrapper<CourseOrder>().eq(CourseOrder::getTutorId, userId).eq(CourseOrder::getStatus, 3)
-            );
+                    new LambdaQueryWrapper<CourseOrder>().eq(CourseOrder::getTutorId, userId).eq(CourseOrder::getStatus,
+                            3));
             ongoingCount = courseOrderMapper.selectCount(
-                new LambdaQueryWrapper<CourseOrder>().eq(CourseOrder::getTutorId, userId).eq(CourseOrder::getStatus, 2)
-            );
+                    new LambdaQueryWrapper<CourseOrder>().eq(CourseOrder::getTutorId, userId).eq(CourseOrder::getStatus,
+                            2));
         }
         stats.put("orderCount", orderCount);
         stats.put("completedCount", completedCount);

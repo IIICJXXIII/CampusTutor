@@ -284,7 +284,7 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
 
     @Override
     public IPage<DemandPost> pageListWithMatchScore(Long tutorId, String subject, String grade, Double longitude,
-            Double latitude, Integer page, Integer size, String sortBy, String sortOrder) {
+            Double latitude, Double radiusKm, Integer page, Integer size, String sortBy, String sortOrder) {
         
         // 1. 获取教师档案
         TutorProfile tutorProfile = null;
@@ -318,15 +318,20 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
             wrapper.eq(DemandPost::getGrade, grade);
         }
 
-        // 核心拦截：废弃不可靠的 Redis GEO，使用绝对准确的 Haversine 内存公式进行 50 公里同城圈定
+        // 过滤掉教师自己发布的需求（教师不应看到自己的需求）
+        if (tutorId != null) {
+            wrapper.ne(DemandPost::getPublisherId, tutorId);
+        }
+
+        // 核心拦截：使用 Haversine 内存公式按指定半径圈定同城需求
         if (searchLng != null && searchLat != null) {
-            double maxRadius = 50.0; // 同城最大展示距离 50km
+            double maxRadius = radiusKm != null ? radiusKm : 50.0; // 同城最大展示距离
             
             // 直接调用类内现成的内存运算兜底方法，严格保证查出来的只有同城需求！
             List<DemandPost> strictNearbyDemands = searchNearbyByDatabase(searchLng, searchLat, maxRadius);
             
             if (strictNearbyDemands.isEmpty()) {
-                // 如果附近 50km 确实一个需求都没有，直接返回空分页，绝不查库！
+                // 如果该范围内确实一个需求都没有，直接返回空分页，绝不查库！
                 Page<DemandPost> emptyPage = new Page<>(page, size);
                 emptyPage.setTotal(0);
                 return emptyPage;
@@ -335,6 +340,12 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
             // 提取严格圈定后的安全 ID，塞入查询条件
             List<Long> strictIds = strictNearbyDemands.stream().map(DemandPost::getId).toList();
             wrapper.in(DemandPost::getId, strictIds);
+        } else {
+            // 无任何坐标信息（前端未授权GPS且教师档案无注册地址），返回空页
+            log.warn("无可用的位置坐标，无法进行空间筛选，返回空结果");
+            Page<DemandPost> emptyPage = new Page<>(page, size);
+            emptyPage.setTotal(0);
+            return emptyPage;
         }
         // =====================================================================
 
@@ -373,6 +384,7 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
             demandWithScore.setStatus(demand.getStatus());
             demandWithScore.setCreateTime(demand.getCreateTime());
             demandWithScore.setUpdateTime(demand.getUpdateTime());
+            demandWithScore.setDistance(distance);
 
             // 计算匹配分数（如果教师档案存在）- 使用教师视角算法
             if (tutorProfile != null) {

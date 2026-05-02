@@ -70,7 +70,7 @@ public class DemandController {
     @PostMapping("/{id}/offline")
     public Result<Void> offline(@PathVariable Long id) {
         Long publisherId = UserContext.getUserId();
-        demandPostService.changeStatus(publisherId, id, 2); 
+        demandPostService.changeStatus(publisherId, id, 0); // 0=下架, 不是2(已匹配)
         return Result.success();
     }
 
@@ -136,13 +136,14 @@ public class DemandController {
             @RequestParam(required = false) String grade,
             @RequestParam(required = false) Double longitude,
             @RequestParam(required = false) Double latitude,
+            @RequestParam(defaultValue = "50") Double radius,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortOrder) {
         Long tutorId = UserContext.getUserId();
         IPage<DemandPost> result = demandPostService.pageListWithMatchScore(
-                tutorId, subject, grade, longitude, latitude, page, size, sortBy, sortOrder);
+                tutorId, subject, grade, longitude, latitude, radius, page, size, sortBy, sortOrder);
         return Result.success(result);
     }
 }

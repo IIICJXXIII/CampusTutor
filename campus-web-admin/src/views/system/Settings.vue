@@ -244,11 +244,10 @@ const auditForm = reactive({
 
 // 短信模板
 const smsTemplates = ref([
-  { id: 1, name: '验证码', code: 'SMS_VERIFY', content: '您的验证码是${code}，5分钟内有效。', status: true },
-  { id: 2, name: '订单创建', code: 'SMS_ORDER_CREATE', content: '您的订单${orderNo}已创建，请尽快支付。', status: true },
-  { id: 3, name: '课时提醒', code: 'SMS_LESSON_REMIND', content: '您的课程将于${time}开始，请准时参加。', status: true },
-  { id: 4, name: '认证通过', code: 'SMS_CERT_PASS', content: '恭喜您，您的教师认证已通过审核。', status: true },
-  { id: 5, name: '认证拒绝', code: 'SMS_CERT_REJECT', content: '抱歉，您的教师认证未通过审核，原因：${reason}。', status: true }
+  { id: 1, name: '订单创建', code: 'SMS_ORDER_CREATE', content: '您的订单${orderNo}已创建，请尽快支付。', status: true },
+  { id: 2, name: '课时提醒', code: 'SMS_LESSON_REMIND', content: '您的课程将于${time}开始，请准时参加。', status: true },
+  { id: 3, name: '认证通过', code: 'SMS_CERT_PASS', content: '恭喜您，您的教师认证已通过审核。', status: true },
+  { id: 4, name: '认证拒绝', code: 'SMS_CERT_REJECT', content: '抱歉，您的教师认证未通过审核，原因：${reason}。', status: true }
 ])
 
 const handleMenuSelect = (index) => {

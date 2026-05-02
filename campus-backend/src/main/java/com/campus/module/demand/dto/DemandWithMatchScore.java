@@ -47,4 +47,9 @@ public class DemandWithMatchScore extends DemandPost {
      * 匹配等级
      */
     private String matchLevel;
+
+    /**
+     * 与搜索位置的距离(公里)
+     */
+    private Double distance;
 }
