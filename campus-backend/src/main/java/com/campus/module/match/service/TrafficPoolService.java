@@ -8,6 +8,8 @@ import com.campus.module.tutor.entity.TutorProfile;
 import com.campus.module.tutor.mapper.TutorProfileMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -15,21 +17,12 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 教员流量池赛马服务
- *
- * 基于 MVP 推荐架构方案 §4.2：
- * 新入驻教员如果长时间得不到曝光和成单，供给端将迅速萎缩。
- * 通过三级流量池（BASIC -> WARM -> HOT），在基础曝光、验证点击、
- * 转化私信的进程中，自发筛选出优质教员。
- *
- * 流量池级别通过 Redis 管理（纯内存，无需 DDL 变更），
- * Key: traffic_pool:{tutorId}
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class TrafficPoolService {
+
+    private static final Logger log = LoggerFactory.getLogger(TrafficPoolService.class);
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final TutorProfileMapper tutorProfileMapper;

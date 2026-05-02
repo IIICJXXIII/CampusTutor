@@ -57,6 +57,7 @@ Thumbs.db
 
 # Edge browser debug cache
 edge-debug/
+edge-debug-profile/
 
 # Logs
 logs/

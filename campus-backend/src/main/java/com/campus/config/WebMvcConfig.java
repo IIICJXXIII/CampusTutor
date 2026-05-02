@@ -36,7 +36,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                                                 "/api/demand/nearby",
                                                 "/api/demand/list-with-match",
                                                 "/api/tutor/public/**",
-                                                "/api/llm/**");
+                                                "/api/llm/**",
+                                                "/api/knowledge/**");
 
                 registry.addInterceptor(optionalJwtInterceptor)
                                 .addPathPatterns(

@@ -93,10 +93,6 @@ public class CourseOrder {
      */
     private Integer usedHours;
 
-    private String paymentMode;
-
-    private Integer paidHours;
-
     private Integer status;
 
     /**
@@ -124,12 +120,6 @@ public class CourseOrder {
      */
     private String remark;
 
-    private BigDecimal longitude;
-
-    private BigDecimal latitude;
-
-    private String address;
-
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
@@ -138,4 +128,15 @@ public class CourseOrder {
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getOrderNo() { return orderNo; }
+    public void setOrderNo(String orderNo) { this.orderNo = orderNo; }
+    public Long getParentId() { return parentId; }
+    public void setParentId(Long parentId) { this.parentId = parentId; }
+    public Long getTutorId() { return tutorId; }
+    public void setTutorId(Long tutorId) { this.tutorId = tutorId; }
+    public Integer getStatus() { return status; }
+    public void setStatus(Integer status) { this.status = status; }
 }

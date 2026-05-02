@@ -76,4 +76,9 @@ public class CFConfig {
     public double getActionWeight(Integer actionType) {
         return actionWeights.getOrDefault(actionType, 0.1);
     }
+
+    public boolean isEnableCache() { return enableCache; }
+    public void setEnableCache(boolean enableCache) { this.enableCache = enableCache; }
+    public double getCfWeight() { return cfWeight; }
+    public void setCfWeight(double cfWeight) { this.cfWeight = cfWeight; }
 }

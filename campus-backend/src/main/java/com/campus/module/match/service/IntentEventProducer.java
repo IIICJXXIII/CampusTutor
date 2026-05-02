@@ -2,6 +2,8 @@ package com.campus.module.match.service;
 
 import com.campus.module.match.config.IntentConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.data.redis.connection.stream.StreamRecords;
 import org.springframework.data.redis.connection.stream.StringRecord;
@@ -11,14 +13,11 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * 意图事件生产者
- * 将用户行为事件通过 Redis Streams XADD 发布到消息队列
- * 使用 StringRedisTemplate 确保与 Consumer 端序列化一致
- */
 @Slf4j
 @Service
 public class IntentEventProducer {
+
+    private static final Logger log = LoggerFactory.getLogger(IntentEventProducer.class);
 
     private final StringRedisTemplate stringRedisTemplate;
     private final IntentConfig intentConfig;

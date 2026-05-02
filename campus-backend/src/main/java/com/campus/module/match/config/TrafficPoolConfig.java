@@ -34,4 +34,17 @@ public class TrafficPoolConfig {
 
     /** 流量池级别缓存过期时间（秒），默认7天 */
     private int cacheExpireSeconds = 604800;
+
+    public boolean isEnabled() { return enabled; }
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
+    public double getBasicBoost() { return basicBoost; }
+    public void setBasicBoost(double basicBoost) { this.basicBoost = basicBoost; }
+    public double getWarmBoost() { return warmBoost; }
+    public void setWarmBoost(double warmBoost) { this.warmBoost = warmBoost; }
+    public double getHotBoost() { return hotBoost; }
+    public void setHotBoost(double hotBoost) { this.hotBoost = hotBoost; }
+    public int getBasicPeriodDays() { return basicPeriodDays; }
+    public void setBasicPeriodDays(int basicPeriodDays) { this.basicPeriodDays = basicPeriodDays; }
+    public int getCacheExpireSeconds() { return cacheExpireSeconds; }
+    public void setCacheExpireSeconds(int cacheExpireSeconds) { this.cacheExpireSeconds = cacheExpireSeconds; }
 }
