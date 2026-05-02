@@ -97,7 +97,7 @@ public class LlmClientService {
                 msgObj.set("tool_call_id", msg.getToolCallId());
             }
             if (msg.getToolCalls() != null) {
-                msgObj.set("tool_calls", msg.getToolCalls());
+                msgObj.set("tool_calls", msg.getToolCallsAsHutool());
             }
             messagesArray.add(msgObj);
         }
@@ -166,7 +166,7 @@ public class LlmClientService {
                 msgObj.set("tool_call_id", msg.getToolCallId());
             }
             if (msg.getToolCalls() != null) {
-                msgObj.set("tool_calls", msg.getToolCalls());
+                msgObj.set("tool_calls", msg.getToolCallsAsHutool());
             }
             messagesArray.add(msgObj);
         }
@@ -237,7 +237,7 @@ public class LlmClientService {
                 msgObj.set("tool_call_id", msg.getToolCallId());
             }
             if (msg.getToolCalls() != null) {
-                msgObj.set("tool_calls", msg.getToolCalls());
+                msgObj.set("tool_calls", msg.getToolCallsAsHutool());
             }
             messagesArray.add(msgObj);
         }

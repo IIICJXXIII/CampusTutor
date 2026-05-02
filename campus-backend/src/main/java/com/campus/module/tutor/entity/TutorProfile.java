@@ -231,4 +231,7 @@ public class TutorProfile {
     public Integer getOrderCount() {
         return orderCount;
     }
+
+    public LocalDateTime getCreateTime() { return createTime; }
+    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
 }

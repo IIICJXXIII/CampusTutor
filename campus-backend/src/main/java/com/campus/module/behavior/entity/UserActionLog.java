@@ -44,4 +44,16 @@ public class UserActionLog {
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
+    public Long getTargetId() { return targetId; }
+    public void setTargetId(Long targetId) { this.targetId = targetId; }
+    public Integer getActionType() { return actionType; }
+    public void setActionType(Integer actionType) { this.actionType = actionType; }
+    public Integer getDuration() { return duration; }
+    public void setDuration(Integer duration) { this.duration = duration; }
+    public LocalDateTime getCreateTime() { return createTime; }
+    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
 }

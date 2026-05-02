@@ -65,10 +65,6 @@ public class TeachingRecord {
 
     private Integer status;
 
-    private Integer payStatus;
-
-    private LocalDateTime payTime;
-
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

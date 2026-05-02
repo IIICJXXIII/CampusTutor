@@ -18,20 +18,20 @@ import com.campus.module.user.entity.SysUser;
 import com.campus.module.user.mapper.SysUserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * 匹配搜索服务
- * 升级版：支持用户行为信号和动态权重
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class MatchService {
+
+    private static final Logger log = LoggerFactory.getLogger(MatchService.class);
 
     private final TutorProfileMapper tutorProfileMapper;
     private final SysUserMapper sysUserMapper;

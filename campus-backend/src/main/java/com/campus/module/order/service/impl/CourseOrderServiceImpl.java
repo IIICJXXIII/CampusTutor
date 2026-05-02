@@ -183,10 +183,6 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
                 log.error("记录教员收入流水失败", e);
             }
 
-            int newPaidHours = (order.getPaidHours() != null ? order.getPaidHours() : 0) + lessonCount;
-            order.setPaidHours(newPaidHours);
-            order.setPaymentMode("per_lesson");
-
             if (order.getStatus() == 0) {
                 order.setStatus(1);
                 order.setPayTime(LocalDateTime.now());
@@ -202,27 +198,6 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
                 }
 
                 generateTeachingRecords(order);
-            }
-
-            if (request.getLessonId() != null) {
-                TeachingRecord record = teachingRecordMapper.selectById(request.getLessonId());
-                if (record != null && record.getOrderId().equals(order.getId())) {
-                    record.setPayStatus(1);
-                    record.setPayTime(LocalDateTime.now());
-                    teachingRecordMapper.updateById(record);
-                }
-            } else {
-                LambdaQueryWrapper<TeachingRecord> wrapper = new LambdaQueryWrapper<TeachingRecord>()
-                        .eq(TeachingRecord::getOrderId, order.getId())
-                        .eq(TeachingRecord::getPayStatus, 0)
-                        .orderByAsc(TeachingRecord::getLessonIndex)
-                        .last("LIMIT " + lessonCount);
-                java.util.List<TeachingRecord> unpaidLessons = teachingRecordMapper.selectList(wrapper);
-                for (TeachingRecord record : unpaidLessons) {
-                    record.setPayStatus(1);
-                    record.setPayTime(LocalDateTime.now());
-                    teachingRecordMapper.updateById(record);
-                }
             }
 
             updateById(order);
@@ -281,8 +256,6 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
             order.setPayTime(LocalDateTime.now());
             order.setPayType(request.getPayType());
             order.setPayTradeNo("WALLET_" + IdUtil.simpleUUID());
-            order.setPaymentMode("full");
-            order.setPaidHours(order.getTotalHours());
             updateById(order);
 
             if (order.getDemandId() != null) {
@@ -645,9 +618,6 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
                     : demand.getDetail();
         }
         order.setRemark(remark);
-        order.setLongitude(demand.getLongitude());
-        order.setLatitude(demand.getLatitude());
-        order.setAddress(demand.getAddress());
         save(order);
 
         demand.setMatchedTutorId(tutorId);

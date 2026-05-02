@@ -6,6 +6,7 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.campus.module.llm.dto.ChatMessage;
 import com.campus.module.llm.dto.ChatResponse;
+import com.campus.module.llm.entity.KnowledgeDocument;
 import com.campus.module.map.service.MapService;
 import com.campus.module.match.dto.TutorSearchRequest;
 import com.campus.module.match.dto.TutorSearchResult;
@@ -16,16 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-/**
- * 智能客服服务
- * 提供家教平台相关的问答服务
- * 
- * 设计理念：将所有系统能力（填表引导、精准搜索、模糊推荐、教案生成、评语润色等）
- * 融合进一个全局 System Prompt，并无条件挂载所有 Tools。
- * 路由决策权完全交给大模型的 Function Calling 能力。
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -35,6 +29,7 @@ public class ChatAssistantService {
     private final MatchService matchService;
     private final MapService mapService;
     private final ChatContextManager contextManager;
+    private final KnowledgeRetrievalService knowledgeService;
 
     /**
      * 全局统一系统提示词
@@ -108,15 +103,45 @@ public class ChatAssistantService {
      * @return 回复
      */
     public ChatResponse chat(List<ChatMessage> messages, String scene, String previousSummary) {
-        // 使用上下文管理器处理历史消息（滑动窗口 + 摘要压缩）
         ChatContextManager.ManagedContext managedContext =
                 contextManager.manageContext(messages, previousSummary);
 
-        // 构建完整消息列表：统一使用全局 System Prompt
-        List<ChatMessage> fullMessages = new ArrayList<>();
-        fullMessages.add(ChatMessage.system(UNIFIED_SYSTEM_PROMPT));
+        String userQuery = "";
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            if ("user".equals(messages.get(i).getRole())) {
+                userQuery = messages.get(i).getContent();
+                break;
+            }
+        }
 
-        // 如果有历史摘要，作为系统消息注入，为LLM提供长期记忆
+        String role = "ALL";
+        Long userId = UserContext.getUserId();
+        if (userId != null) {
+            Integer userRole = UserContext.getRole();
+            if (userRole != null) {
+                role = userRole == 1 ? "TEACHER" : "PARENT";
+            }
+        }
+
+        List<KnowledgeDocument> relevantDocs = Collections.emptyList();
+        if (!userQuery.isEmpty()) {
+            try {
+                relevantDocs = knowledgeService.retrieveRelevantDocs(userQuery, role);
+                log.info("RAG检索到 {} 条相关文档", relevantDocs.size());
+            } catch (Exception e) {
+                log.warn("RAG检索失败，继续无知识库对话: {}", e.getMessage());
+            }
+        }
+
+        String enhancedPrompt = UNIFIED_SYSTEM_PROMPT;
+        if (!relevantDocs.isEmpty()) {
+            String knowledgeContext = knowledgeService.buildKnowledgeContext(relevantDocs);
+            enhancedPrompt = UNIFIED_SYSTEM_PROMPT + knowledgeContext;
+        }
+
+        List<ChatMessage> fullMessages = new ArrayList<>();
+        fullMessages.add(ChatMessage.system(enhancedPrompt));
+
         if (managedContext.hasSummary()) {
             fullMessages.add(ChatMessage.system(
                     "【之前的对话摘要】" + managedContext.getSummary()));
@@ -124,7 +149,6 @@ public class ChatAssistantService {
 
         fullMessages.addAll(managedContext.getMessages());
 
-        // 无条件挂载全部工具，由大模型自主决定是否及如何调用
         JSONArray tools = buildAllTools();
 
         int maxDepth = 3;

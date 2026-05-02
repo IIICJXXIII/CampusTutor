@@ -52,4 +52,12 @@ public class MatchScoreResult extends TutorSearchResult {
 
     private List<String> matchTags;
 
+    public Double getMatchScore() { return matchScore; }
+    public void setMatchScore(Double matchScore) { this.matchScore = matchScore; }
+    public Double getCfScore() { return cfScore; }
+    public void setCfScore(Double cfScore) { this.cfScore = cfScore; }
+    public Double getDeepFmScore() { return deepFmScore; }
+    public void setDeepFmScore(Double deepFmScore) { this.deepFmScore = deepFmScore; }
+    public List<String> getMatchTags() { return matchTags; }
+    public void setMatchTags(List<String> matchTags) { this.matchTags = matchTags; }
 }
