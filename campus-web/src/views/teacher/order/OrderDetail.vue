@@ -87,15 +87,11 @@
       </div>
       
       <div class="action-bar">
-        <template v-if="order.status === -1 && order.applicationId">
-          <div class="application-notice">
-            该订单由您主动申请产生，请等待家长审核
-          </div>
-          <el-button type="danger" size="large" plain @click="cancelApply">
-            取消申请
-          </el-button>
+        <template v-if="order.status === -1 && order.demandId">
+          <div class="action-hint">您已申请接单，等待家长确认</div>
+          <el-button type="danger" size="large" plain @click="cancelOrder">取消申请</el-button>
         </template>
-        <template v-else-if="order.status === -1 && !order.applicationId">
+        <template v-else-if="order.status === -1 && !order.demandId">
           <el-button type="primary" size="large" @click="acceptOrder">
             确认接单
           </el-button>
@@ -127,7 +123,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Clock, Check, Close, ChatDotRound } from '@element-plus/icons-vue'
-import { getOrderDetail, cancelOrder as cancelOrderApi, tutorConfirmOrder as tutorConfirmOrderApi, tutorRejectOrder as tutorRejectOrderApi, cancelApplication as cancelApplicationApi } from '@shared/api/order'
+import { getOrderDetail, cancelOrder as cancelOrderApi, tutorConfirmOrder as tutorConfirmOrderApi, tutorRejectOrder as tutorRejectOrderApi } from '@shared/api/order'
 import { getUserById } from '@shared/api/user'
 import { getOrderLessons } from '@shared/api/teaching'
 import dayjs from 'dayjs'
@@ -145,20 +141,22 @@ const getStatusIcon = (status) => {
   return map[status] || Clock
 }
 
-const isApplicationOrder = () => order.value?.applicationId
-
 const getStatusText = (status) => {
-  if (status === -1 && isApplicationOrder()) return '待家长审核'
-  const map = { '-1': '待确认', 0: '待家长支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
+  const map = { '-1': '待确认', 0: '待家长支付', 1: '待家长确认开课', 2: '进行中', 3: '已完成', 4: '已取消' }
   return map[status] || '未知'
 }
 
 const getStatusDesc = (status) => {
-  if (status === -1 && isApplicationOrder()) return '已向家长发送辅导申请，等待家长审核'
+  if (!order.value) return ''
+  if (status === -1 && order.value.demandId) {
+    return '您已申请接单，请等待家长确认'
+  }
+  if (status === -1 && !order.value.demandId) {
+    return '家长发来预约请求，请确认是否接单'
+  }
   const map = {
-    '-1': '家长发来预约请求，请确认是否接单',
     0: '等待家长支付',
-    1: '等待家长确认开课',
+    1: '家长已支付，等待家长确认开课',
     2: '订单进行中，请按时上课',
     3: '订单已完成，感谢您的付出',
     4: '订单已取消'
@@ -282,25 +280,6 @@ const rejectOrder = async () => {
     const res = await tutorRejectOrderApi(order.value.id, reason)
     if (res.code === 200) {
       ElMessage.success('已拒绝该订单')
-      router.back()
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.message || '操作失败')
-    }
-  }
-}
-
-const cancelApply = async () => {
-  try {
-    await ElMessageBox.confirm(
-      '确定要取消该申请吗？取消后家长将无法看到您的申请。',
-      '取消申请',
-      { confirmButtonText: '确定取消', cancelButtonText: '返回', type: 'warning' }
-    )
-    const res = await cancelApplicationApi(order.value.id, '教师主动取消')
-    if (res.code === 200) {
-      ElMessage.success('申请已取消')
       router.back()
     }
   } catch (error) {
@@ -465,14 +444,13 @@ onMounted(() => {
     align-items: center;
     gap: 12px;
     padding: 24px 0;
-
-    .application-notice {
     
     .action-hint {
       font-size: 14px;
       color: #909399;
       margin-bottom: 4px;
     }
+    
     > div {
       display: flex;
       gap: 16px;

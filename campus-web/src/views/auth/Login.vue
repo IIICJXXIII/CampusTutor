@@ -132,8 +132,6 @@ const handlePasswordLogin = async () => {
     await pwdFormRef.value.validate()
     loading.value = true
     const res = await login({
-      account: form.phone,
-      password: form.password
       account: pwdForm.phone,
       password: pwdForm.password
     })

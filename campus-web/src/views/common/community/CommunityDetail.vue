@@ -1,88 +1,15 @@
 <template>
   <div class="community-detail-page">
-    <el-page-header @back="goBack">
-      <template #content>
-        <span>帖子详情</span>
-      </template>
-    </el-page-header>
-
-    <div v-loading="loading" class="detail-content">
-      <div v-if="post" class="post-detail-card">
-        <div class="post-header">
-          <el-avatar :size="48" :src="post.authorAvatar">
-            {{ post.authorName?.charAt(0) }}
-          </el-avatar>
-          <div class="post-meta">
-            <span class="author-name">{{ post.authorName }}</span>
-            <span class="post-time">{{ formatTime(post.createTime) }}</span>
-          </div>
-          <el-tag v-if="post.topicType === 1" type="success">经验分享</el-tag>
-          <el-tag v-else type="warning">难题求助</el-tag>
-        </div>
-
-        <h1 class="post-title">{{ post.title }}</h1>
-        <div class="post-content">{{ post.content }}</div>
-
-        <div class="post-actions">
-          <el-button :type="liked ? 'primary' : ''" @click="handleLike">
-            <el-icon><Star /></el-icon> {{ post.likeCount || 0 }}
-          </el-button>
-          <span class="stat-item"><el-icon><View /></el-icon> {{ post.viewCount || 0 }}</span>
-          <span class="stat-item"><el-icon><ChatDotRound /></el-icon> {{ post.replyCount || 0 }}</span>
-        </div>
-      </div>
-
-      <div class="replies-section">
-        <h3>评论 ({{ post?.replyCount || 0 }})</h3>
-
-        <div class="reply-input">
-          <el-input
-            v-model="replyContent"
-            placeholder="写下你的评论..."
-            maxlength="512"
-            show-word-limit
-          >
-            <template #append>
-              <el-button :loading="replying" @click="handleReply">发送</el-button>
-            </template>
-          </el-input>
-        </div>
-
-        <div class="reply-list">
-          <div v-for="reply in replies" :key="reply.id" class="reply-item">
-            <el-avatar :size="32" :src="reply.authorAvatar">
-              {{ reply.authorName?.charAt(0) }}
-            </el-avatar>
-            <div class="reply-body">
-              <div class="reply-header">
-                <span class="reply-author">{{ reply.authorName }}</span>
-                <span class="reply-time">{{ formatTime(reply.createTime) }}</span>
-              </div>
-              <p class="reply-content">{{ reply.content }}</p>
-            </div>
-          </div>
-
-          <el-empty v-if="replies.length === 0" description="暂无评论" />
-        </div>
-
-        <div v-if="replyTotal > 10" class="pagination">
-          <el-pagination
-            v-model:current-page="replyPage"
-            :page-size="10"
-            :total="replyTotal"
-            layout="prev, pager, next"
-            @current-change="loadReplies"
-          />
     <van-nav-bar title="帖子详情" left-arrow @click-left="$router.back()" />
 
     <div class="post-detail" v-loading="loading">
       <template v-if="post">
         <div class="post-header">
-          <el-avatar :size="40" :src="post.authorAvatar || undefined">
+          <el-avatar :size="40" :src="post.authorAvatar || undefined" class="clickable-avatar" @click.stop="goToUser(post.userId)">
             {{ post.authorNickname?.charAt(0) }}
           </el-avatar>
           <div class="post-meta">
-            <span class="author">{{ post.authorNickname || '用户' }}</span>
+            <span class="author clickable-author" @click.stop="goToUser(post.userId)">{{ post.authorNickname || '用户' }}</span>
             <span class="time">{{ formatTime(post.createTime) }}</span>
           </div>
           <el-tag :type="post.topicType === 1 ? 'primary' : 'warning'" size="small">
@@ -96,7 +23,7 @@
         <div class="post-stats">
           <span><el-icon><View /></el-icon> {{ post.viewCount || 0 }}</span>
           <span class="like-btn" :class="{ active: post.liked }" @click="handleLikePost">
-            <el-icon><StarFilled v-if="post.liked" /><Star v-else /></el-icon>
+            <svg viewBox="0 0 24 24" width="14" height="14" :fill="post.liked ? '#f56c6c' : 'none'" :stroke="post.liked ? '#f56c6c' : 'currentColor'" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
             {{ post.likeCount || 0 }}
           </span>
         </div>
@@ -108,19 +35,19 @@
 
       <div class="reply-list">
         <div v-for="reply in mainReplies" :key="reply.id" class="reply-item">
-          <div class="reply-main">
-            <el-avatar :size="32" :src="reply.authorAvatar || undefined">
+          <div class="reply-main" :id="`reply-${reply.id}`">
+            <el-avatar :size="32" :src="reply.authorAvatar || undefined" class="clickable-avatar" @click.stop="goToUser(reply.userId)">
               {{ reply.authorNickname?.charAt(0) }}
             </el-avatar>
             <div class="reply-body">
               <div class="reply-header">
-                <span class="reply-author">{{ reply.authorNickname || '用户' }}</span>
+                <span class="reply-author clickable-author" @click.stop="goToUser(reply.userId)">{{ reply.authorNickname || '用户' }}</span>
                 <span class="reply-time">{{ formatTime(reply.createTime) }}</span>
               </div>
               <p class="reply-content">{{ reply.content }}</p>
               <div class="reply-actions">
                 <span class="action-btn like-btn" :class="{ active: reply.liked }" @click="handleLikeReply(reply)">
-                  <el-icon><StarFilled v-if="reply.liked" /><Star v-else /></el-icon>
+                  <svg viewBox="0 0 24 24" width="13" height="13" :fill="reply.liked ? '#f56c6c' : 'none'" :stroke="reply.liked ? '#f56c6c' : 'currentColor'" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                   {{ reply.likeCount || 0 }}
                 </span>
                 <span class="action-btn" @click="openReplyInput(reply)">回复</span>
@@ -135,8 +62,8 @@
               <el-icon><ArrowDown /></el-icon>
             </div>
             <template v-else>
-              <div v-for="sub in subRepliesMap[reply.id] || []" :key="sub.id" class="sub-reply-item">
-                <el-avatar :size="24" :src="sub.authorAvatar || undefined">
+              <div v-for="sub in subRepliesMap[reply.id] || []" :key="sub.id" class="sub-reply-item" :id="`reply-${sub.id}`">
+                <el-avatar :size="24" :src="sub.authorAvatar || undefined" class="clickable-avatar" @click.stop="goToUser(sub.userId)">
                   {{ sub.authorNickname?.charAt(0) }}
                 </el-avatar>
                 <div class="sub-reply-body">
@@ -148,7 +75,7 @@
                   <span class="sub-content">：{{ sub.content }}</span>
                   <div class="reply-actions sub-actions">
                     <span class="action-btn like-btn" :class="{ active: sub.liked }" @click="handleLikeReply(sub)">
-                      <el-icon><StarFilled v-if="sub.liked" /><Star v-else /></el-icon>
+                      <svg viewBox="0 0 24 24" width="12" height="12" :fill="sub.liked ? '#f56c6c' : 'none'" :stroke="sub.liked ? '#f56c6c' : 'currentColor'" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                       {{ sub.likeCount || 0 }}
                     </span>
                     <span class="action-btn" @click="openReplyInput(sub)">回复</span>
@@ -185,112 +112,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { Star, View, ChatDotRound } from '@element-plus/icons-vue'
-import { getCommunityPostDetail, likeCommunityPost, getCommunityReplies, createCommunityReply } from '@shared/api/community'
-
-const router = useRouter()
-const route = useRoute()
-const loading = ref(false)
-const replying = ref(false)
-const liked = ref(false)
-const post = ref(null)
-const replies = ref([])
-const replyContent = ref('')
-const replyPage = ref(1)
-const replyTotal = ref(0)
-
-const formatTime = (time) => {
-  if (!time) return ''
-  const date = new Date(time)
-  const now = new Date()
-  const diff = now - date
-  if (diff < 60000) return '刚刚'
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
-  return date.toLocaleDateString()
-}
-
-const goBack = () => router.back()
-
-const loadPost = async () => {
-  loading.value = true
-  try {
-    const res = await getCommunityPostDetail(route.params.id)
-    if (res.code === 200) {
-      post.value = res.data
-    }
-  } catch (e) {
-    ElMessage.error('加载失败')
-  } finally {
-    loading.value = false
-  }
-}
-
-const loadReplies = async () => {
-  try {
-    const res = await getCommunityReplies(route.params.id, {
-      page: replyPage.value,
-      size: 10
-    })
-    if (res.code === 200) {
-      replies.value = res.data?.records || []
-      replyTotal.value = res.data?.total || 0
-    }
-  } catch (e) {
-    console.error('加载评论失败', e)
-  }
-}
-
-const handleLike = async () => {
-  try {
-    const res = await likeCommunityPost(route.params.id)
-    if (res.code === 200) {
-      liked.value = true
-      if (post.value) {
-        post.value.likeCount = (post.value.likeCount || 0) + 1
-      }
-    }
-  } catch (e) {
-    ElMessage.error('操作失败')
-  }
-}
-
-const handleReply = async () => {
-  if (!replyContent.value.trim()) {
-    ElMessage.warning('请输入评论内容')
-    return
-  }
-  replying.value = true
-  try {
-    const res = await createCommunityReply(route.params.id, {
-      content: replyContent.value
-    })
-    if (res.code === 200) {
-      ElMessage.success('评论成功')
-      replyContent.value = ''
-      loadReplies()
-      if (post.value) {
-        post.value.replyCount = (post.value.replyCount || 0) + 1
-      }
-    }
-  } catch (e) {
-    ElMessage.error('评论失败')
-  } finally {
-    replying.value = false
-  }
-}
-
-onMounted(() => {
-  loadPost()
-  loadReplies()
-})
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { View, Star, StarFilled, ArrowDown, Close } from '@element-plus/icons-vue'
+import { View, ArrowDown, Close } from '@element-plus/icons-vue'
 import {
   getCommunityPostDetail, likeCommunityPost,
   getCommunityReplies, createCommunityReply,
@@ -304,6 +129,7 @@ dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(false)
 const post = ref(null)
@@ -315,6 +141,13 @@ const replyContent = ref('')
 const replyingTo = ref(null)
 
 const currentUserId = computed(() => userStore.userId)
+
+// 跳转到用户资料页
+const goToUser = (userId) => {
+  if (userId) {
+    router.push(`/user/${userId}`)
+  }
+}
 
 const formatTime = (time) => {
   if (!time) return ''
@@ -330,8 +163,21 @@ const isMyReply = (reply) => {
   return currentUserId.value && reply.userId === Number(currentUserId.value)
 }
 
+// 滚动到指定评论并高亮
+const scrollToReply = (replyId) => {
+  nextTick(() => {
+    const el = document.getElementById(`reply-${replyId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('reply-highlight')
+      setTimeout(() => el.classList.remove('reply-highlight'), 2000)
+    }
+  })
+}
+
 onMounted(async () => {
   const id = route.params.id
+  const targetReplyId = route.query.replyId
   loading.value = true
   try {
     const [postRes, replyRes] = await Promise.all([
@@ -343,6 +189,30 @@ onMounted(async () => {
     }
     if (replyRes.code === 200) {
       mainReplies.value = replyRes.data?.records || []
+    }
+
+    // 处理深度链接：滚动到指定评论
+    if (targetReplyId) {
+      const replyId = Number(targetReplyId)
+      // 检查是否在主回复列表中
+      const mainMatch = mainReplies.value.find(r => r.id === replyId)
+      if (mainMatch) {
+        scrollToReply(replyId)
+      } else {
+        // 需要查找子回复：遍历主回复查找匹配的rootId
+        // 先尝试从任意主回复的replyCount判断是否可能有子回复
+        for (const mainReply of mainReplies.value) {
+          if (mainReply.replyCount > 0) {
+            expandedRoots[mainReply.id] = true
+            await loadSubReplies(mainReply.id, null, 20)
+            const subMatch = (subRepliesMap[mainReply.id] || []).find(s => s.id === replyId)
+            if (subMatch) {
+              scrollToReply(replyId)
+              break
+            }
+          }
+        }
+      }
     }
   } catch (e) {
     console.error(e)
@@ -484,131 +354,20 @@ const handleDelete = async (reply) => {
 
 <style lang="scss" scoped>
 .community-detail-page {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.detail-content {
-  margin-top: 20px;
-}
-
-.post-detail-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-
-  .post-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-
-    .post-meta {
-      flex: 1;
-      .author-name { font-weight: 600; display: block; }
-      .post-time { font-size: 12px; color: #909399; }
-    }
-  }
-
-  .post-title {
-    font-size: 22px;
-    font-weight: 700;
-    margin: 0 0 16px;
-  }
-
-  .post-content {
-    font-size: 15px;
-    line-height: 1.8;
-    color: #303133;
-    white-space: pre-wrap;
-    margin-bottom: 20px;
-  }
-
-  .post-actions {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding-top: 16px;
-    border-top: 1px solid #f0f0f0;
-
-    .stat-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      color: #909399;
-      font-size: 14px;
-    }
-  }
-}
-
-.replies-section {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-
-  h3 {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0 0 20px;
-  }
-
-  .reply-input {
-    margin-bottom: 24px;
-  }
-
-  .reply-list {
-    .reply-item {
-      display: flex;
-      gap: 12px;
-      padding: 12px 0;
-      border-bottom: 1px solid #f5f5f5;
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      .reply-body {
-        flex: 1;
-
-        .reply-header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 6px;
-
-          .reply-author {
-            font-weight: 500;
-            font-size: 14px;
-          }
-
-          .reply-time {
-            font-size: 12px;
-            color: #909399;
-          }
-        }
-
-        .reply-content {
-          font-size: 14px;
-          color: #303133;
-          line-height: 1.6;
-          margin: 0;
-        }
-      }
-    }
-  }
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
   min-height: 100vh;
   background: #f5f7fa;
   padding-bottom: 80px;
+}
+
+.clickable-avatar {
+  cursor: pointer;
+  transition: transform 0.2s;
+  &:hover { transform: scale(1.08); }
+}
+
+.clickable-author {
+  cursor: pointer;
+  &:hover { color: #409EFF; }
 }
 
 .post-detail {
@@ -796,15 +555,22 @@ const handleDelete = async (reply) => {
   }
 }
 
+.reply-highlight {
+  animation: highlightFade 2s ease-out;
+}
+
+@keyframes highlightFade {
+  0% { background-color: #ecf5ff; }
+  100% { background-color: transparent; }
+}
+
 .reply-input-bar {
-  position: fixed;
+  position: sticky;
   bottom: 0;
-  left: 0;
-  right: 0;
   background: #fff;
   padding: 10px 16px;
+  border-radius: 12px 12px 0 0;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
-  z-index: 100;
 
   .replying-hint {
     display: flex;

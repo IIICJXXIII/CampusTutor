@@ -24,10 +24,6 @@ import org.springframework.util.StringUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * 匹配搜索服务
- * 升级版：支持用户行为信号和动态权重
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -667,10 +663,36 @@ public class MatchService {
             result.setOrderCount(profile.getOrderCount());
             result.setDistance(nearbyWithDistance.get(profile.getId()));
 
-            // 添加通用标签
-            if (nearbyWithDistance.get(profile.getId()) != null
-                    && nearbyWithDistance.get(profile.getId()) <= 2.0) {
-                tags.add("距离近");
+            // 添加通用标签：距离
+            Double dist = nearbyWithDistance.get(profile.getId());
+            if (dist != null) {
+                if (dist <= 1.0) {
+                    tags.add("超近");
+                } else if (dist <= 3.0) {
+                    tags.add("距离近");
+                } else if (dist <= 5.0) {
+                    tags.add("同城");
+                }
+            }
+            // 评分标签
+            if (profile.getRating() != null) {
+                double r = profile.getRating().doubleValue();
+                if (r >= 4.8) {
+                    tags.add("口碑之星");
+                } else if (r >= 4.5) {
+                    tags.add("高评分");
+                } else if (r >= 4.0) {
+                    tags.add("好评");
+                }
+            }
+            // 经验标签
+            int orderCnt = profile.getOrderCount() != null ? profile.getOrderCount() : 0;
+            if (orderCnt >= 50) {
+                tags.add("资深名师");
+            } else if (orderCnt >= 20) {
+                tags.add("经验丰富");
+            } else if (orderCnt >= 10) {
+                tags.add("教学有方");
             }
             result.setMatchTags(tags);
 

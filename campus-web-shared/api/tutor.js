@@ -28,26 +28,11 @@ export function getTutorProfile() {
 }
 
 /**
- * 获取教员端统计数据
- */
-export function getTutorStats() {
-  return request.get('/tutor/stats');
-}
-
-/**
  * 获取公开教员档案 (家长查看)
  * @param {number} userId - 用户ID
  */
 export function getPublicTutorProfile(userId) {
   return request.get(`/tutor/public/${userId}`);
-}
-
-/**
- * 根据档案ID获取教员档案 (公开)
- * @param {number} id - 教员档案ID
- */
-export function getPublicTutorProfileById(id) {
-  return request.get(`/tutor/public/profile/${id}`);
 }
 
 /**
@@ -71,4 +56,12 @@ export function getScheduleConfig() {
  */
 export function saveScheduleConfig(schedules) {
   return request.post('/tutor/schedule', { schedules });
+}
+
+export function getTutorStats() {
+  return request.get('/tutor/stats');
+}
+
+export function getPublicTutorProfileById(userId) {
+  return request.get(`/tutor/public/${userId}`);
 }

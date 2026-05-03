@@ -83,7 +83,7 @@
         <div class="card-title-row">
           <h3 class="card-title">申请老师</h3>
           <el-button type="primary" link @click="viewAllApplicants">
-            查看全部 ({{ applicants.length }})
+            查看全部 ({{ demand.applyCount }})
           </el-button>
         </div>
         
@@ -92,22 +92,18 @@
             v-for="applicant in applicants.slice(0, 3)"
             :key="applicant.id"
             class="applicant-item"
+            @click="viewTutor(applicant.tutorUserId)"
           >
-            <el-avatar :size="48" :src="applicant.tutorAvatar">
-              {{ (applicant.tutorNickname || '教师').charAt(0) }}
+            <el-avatar :size="48" :src="applicant.avatar">
+              {{ applicant.name?.charAt(0) }}
             </el-avatar>
             <div class="applicant-info">
-              <div class="name">{{ applicant.tutorNickname || `教师 #${applicant.tutorId}` }}</div>
-              <div class="desc">计划课时: {{ applicant.totalHours || 10 }} | {{ applicant.remark || '暂无备注' }}</div>
+              <div class="name">{{ applicant.name }}</div>
+              <div class="desc">{{ applicant.university }} · {{ applicant.major }}</div>
             </div>
-            <div class="applicant-actions">
-              <el-button size="small" type="primary" @click.stop="acceptApplicant(applicant)">
-                同意
-              </el-button>
-              <el-button size="small" @click.stop="handleReject(applicant)">
-                拒绝
-              </el-button>
-            </div>
+            <el-button size="small" type="primary" @click.stop="acceptApplicant(applicant)">
+              选择TA
+            </el-button>
           </div>
         </div>
       </div>
@@ -115,7 +111,7 @@
       <!-- 底部操作 -->
       <div class="action-bar" v-if="demand.status === 1 && applicants.length > 0">
         <el-button type="primary" size="large" @click="viewAllApplicants">
-          查看全部 {{ applicants.length }} 位老师
+          查看全部 {{ demand.applyCount }} 位老师
         </el-button>
       </div>
     </template>
@@ -127,7 +123,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, MoreFilled } from '@element-plus/icons-vue'
-import { getDemandDetail, publishDemand, withdrawDemand, deleteDemand, getDemandApplications, acceptApplication, rejectApplication } from '@shared/api/demand'
+import { getDemandDetail, publishDemand, withdrawDemand, deleteDemand } from '@shared/api/demand'
 import dayjs from 'dayjs'
 import { getStudentList } from '@shared/api/parent'
 
@@ -170,7 +166,7 @@ const getStatusType = (status) => {
 }
 
 const getStatusText = (status) => {
-  const texts = { 0: '已下架', 1: '已上架', 2: '已匹配', 3: '已完成' }
+  const texts = { 0: '草稿', 1: '已上架', 2: '已下架', 3: '已完成' }
   return texts[status] || '未知'
 }
 
@@ -195,24 +191,13 @@ const loadDemand = async () => {
     const res = await getDemandDetail(route.params.id)
     if (res.code === 200) {
       demand.value = res.data
-      loadApplications()
+      applicants.value = res.data?.applicants || []
     }
   } catch (error) {
     console.error('加载需求详情失败:', error)
     ElMessage.error('加载失败')
   } finally {
     loading.value = false
-  }
-}
-
-const loadApplications = async () => {
-  try {
-    const res = await getDemandApplications(route.params.id)
-    if (res.code === 200) {
-      applicants.value = res.data || []
-    }
-  } catch (e) {
-    console.error('加载申请列表失败', e)
   }
 }
 
@@ -268,36 +253,9 @@ const viewTutor = (userId) => {
 
 const acceptApplicant = async (applicant) => {
   try {
-    await ElMessageBox.confirm(`确定选择该教师吗？接受后系统将自动创建订单。`, '选择老师')
-    const res = await acceptApplication(applicant.id)
-    if (res.code === 200) {
-      ElMessage.success('已接受申请，订单已创建')
-      loadDemand()
-    }
-  } catch (e) {
-    if (e !== 'cancel') {
-      ElMessage.error('操作失败')
-    }
-  }
-}
-
-const handleReject = async (applicant) => {
-  try {
-    const { value } = await ElMessageBox.prompt('请输入拒绝原因（可选）', '拒绝申请', {
-      confirmButtonText: '确定拒绝',
-      cancelButtonText: '取消',
-      inputPlaceholder: '拒绝原因'
-    })
-    const res = await rejectApplication(applicant.id, value)
-    if (res.code === 200) {
-      ElMessage.success('已拒绝申请')
-      loadApplications()
-    }
-  } catch (e) {
-    if (e !== 'cancel') {
-      ElMessage.error('操作失败')
-    }
-  }
+    await ElMessageBox.confirm(`确定选择 ${applicant.name} 作为老师吗？`, '选择老师')
+    router.push(`/parent/orders/create?demandId=${route.params.id}&tutorId=${applicant.tutorUserId}`)
+  } catch (e) { /* cancelled */ }
 }
 
 onMounted(() => {

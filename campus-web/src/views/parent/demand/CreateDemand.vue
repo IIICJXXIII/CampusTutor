@@ -469,15 +469,6 @@ const handleSubmit = async () => {
 
 onMounted(() => {
   loadStudents()
-  if (userStore.userInfo?.address) {
-    form.address = userStore.userInfo.address
-  }
-  if (userStore.userInfo?.longitude) {
-    form.longitude = userStore.userInfo.longitude
-  }
-  if (userStore.userInfo?.latitude) {
-    form.latitude = userStore.userInfo.latitude
-  }
   autoFillLocation()
 })
 </script>

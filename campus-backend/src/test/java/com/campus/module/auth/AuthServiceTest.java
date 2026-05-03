@@ -133,7 +133,7 @@ class AuthServiceTest {
         LoginRequest request = new LoginRequest();
         request.setAccount(user.getUsername());
         request.setPassword(TEST_PASSWORD);
-        
+
         LoginResponse response = authService.login(request);
 
         String token = response.getToken();
@@ -168,8 +168,8 @@ class AuthServiceTest {
 
             LoginRequest request = new LoginRequest();
             request.setAccount(tutorAccount);
-            request.setPassword(plainPassword); // 使用明文密码
             request.setPassword(plainPassword);
+
             try {
                 LoginResponse response = authService.login(request);
                 assertNotNull(response.getToken(), "登录应成功并返回Token");
@@ -192,7 +192,7 @@ class AuthServiceTest {
             LoginRequest request = new LoginRequest();
             request.setAccount(parentAccount);
             request.setPassword(plainPassword);
-            
+
             try {
                 LoginResponse response = authService.login(request);
                 assertNotNull(response.getToken(), "登录应成功并返回Token");
@@ -259,8 +259,8 @@ class AuthServiceTest {
 
         LoginRequest loginRequest = new LoginRequest();
         loginRequest.setAccount(testPhone);
-        loginRequest.setPassword(testPassword); // 使用明文密码登录
         loginRequest.setPassword(testPassword);
+
         try {
             LoginResponse loginResponse = authService.login(loginRequest);
             assertNotNull(loginResponse.getToken(), "登录应成功并返回Token");

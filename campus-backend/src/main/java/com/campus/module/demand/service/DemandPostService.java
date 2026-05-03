@@ -66,7 +66,7 @@ public interface DemandPostService extends IService<DemandPost> {
      * @param radiusKm 半径(公里)
      * @return 需求列表
      */
-    List<DemandPost> searchNearby(Double longitude, Double latitude, Double radiusKm, String subject, String grade);
+    List<DemandPost> searchNearby(Double longitude, Double latitude, Double radiusKm);
 
     /**
      * 获取带有匹配度的需求列表（教师端专用）
@@ -75,13 +75,14 @@ public interface DemandPostService extends IService<DemandPost> {
      * @param grade 年级筛选
      * @param longitude 经度
      * @param latitude 纬度
+     * @param radiusKm 搜索半径(公里)
      * @param page 页码
      * @param size 每页数量
      * @param sortBy 排序字段
      * @param sortOrder 排序方向
      * @return 分页结果
      */
-    IPage<DemandPost> pageListWithMatchScore(Long tutorId, String subject, String grade, Double longitude, Double latitude, Integer page, Integer size, String sortBy, String sortOrder);
+    IPage<DemandPost> pageListWithMatchScore(Long tutorId, String subject, String grade, Double longitude, Double latitude, Double radiusKm, Integer page, Integer size, String sortBy, String sortOrder);
 
     /**
      * 教师接单匹配

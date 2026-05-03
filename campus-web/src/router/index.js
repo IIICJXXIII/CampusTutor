@@ -328,6 +328,12 @@ const routes = [
         meta: { title: '私聊' }
       },
       {
+        path: 'user/:id',
+        name: 'UserProfile',
+        component: () => import('@/views/common/user/UserProfile.vue'),
+        meta: { title: '用户资料' }
+      },
+      {
         path: 'ai',
         name: 'AiChat',
         component: () => import('@/views/common/ai/AiChat.vue'),
@@ -335,9 +341,6 @@ const routes = [
       },
       {
         path: 'community',
-        name: 'Community',
-        component: () => import('@/views/common/community/CommunityList.vue'),
-        meta: { title: '社区', tabbar: true }
         name: 'CommunityList',
         component: () => import('@/views/common/community/CommunityList.vue'),
         meta: { title: '社区' }
@@ -348,7 +351,6 @@ const routes = [
         component: () => import('@/views/common/community/CommunityDetail.vue'),
         meta: { title: '帖子详情' }
       },
-      {
       {
         path: 'insurance',
         name: 'InsuranceList',

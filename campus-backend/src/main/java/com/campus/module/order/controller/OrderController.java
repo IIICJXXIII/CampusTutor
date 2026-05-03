@@ -173,14 +173,6 @@ public class OrderController {
         return Result.success(result);
     }
 
-    @Operation(summary = "教师取消需求申请", description = "教师取消已提交的需求接单申请")
-    @PostMapping("/{id}/cancel-application")
-    public Result<Void> cancelApplication(@PathVariable String id, @RequestParam(required = false) String reason) {
-        Long tutorId = UserContext.getUserId();
-        orderService.cancelApplication(tutorId, resolveOrderId(id), reason);
-        return Result.success("已取消申请");
-    }
-
     @Operation(summary = "申请退款")
     @PostMapping("/refund")
     public Result<String> applyRefund(

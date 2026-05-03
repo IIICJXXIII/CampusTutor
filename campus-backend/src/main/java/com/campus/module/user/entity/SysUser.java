@@ -31,11 +31,12 @@ public class SysUser implements Serializable {
 
     private Integer gender;
 
-private String wechat;
+    private String wechat;
 
     private String region;
 
     private String address;
+
     private BigDecimal longitude;
 
     private BigDecimal latitude;
@@ -43,47 +44,4 @@ private String wechat;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    public Long getId() {
-        return id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public String getNickname() {
-        return nickname;
-    }
-
-    public String getAvatarUrl() {
-        return avatarUrl;
-    }
-
-    public Integer getRole() {
-        return role;
-    }
-
-    public Integer getStatus() {
-        return status;
-    }
-
-    public Integer getGender() {
-        return gender;
-    }
-
-    public BigDecimal getLongitude() {
-        return longitude;
-    }
-
-    public BigDecimal getLatitude() {
-        return latitude;
-    }
-
-    public String getAddress() {
-        return address;
-    }
 }

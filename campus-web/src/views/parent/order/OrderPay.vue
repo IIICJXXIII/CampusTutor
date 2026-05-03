@@ -18,55 +18,6 @@
           {{ order.subject }} · {{ order.grade }} 辅导
         </div>
         <div class="order-desc">
-          课时单价: ¥{{ (order.unitPrice || 0).toFixed(2) }}/小时 | 共{{ order.totalHours }}课时
-        </div>
-      </div>
-
-      <div class="payment-mode-card">
-        <h3 class="card-title">支付方式选择</h3>
-        <el-radio-group v-model="paymentMode" class="mode-group">
-          <el-radio value="per_lesson" class="mode-radio">
-            <div class="mode-info">
-              <span class="mode-name">按课时支付</span>
-              <span class="mode-desc">每节课单独支付，灵活可控</span>
-            </div>
-          </el-radio>
-          <el-radio value="full" class="mode-radio">
-            <div class="mode-info">
-              <span class="mode-name">全额支付</span>
-              <span class="mode-desc">一次性支付全部课时费用</span>
-            </div>
-          </el-radio>
-        </el-radio-group>
-      </div>
-
-      <div v-if="paymentMode === 'per_lesson'" class="lesson-select-card">
-        <h3 class="card-title">选择支付课时数</h3>
-        <div class="lesson-selector">
-          <el-input-number v-model="lessonCount" :min="1" :max="order.totalHours" />
-          <span class="lesson-tip">课时</span>
-        </div>
-        <div class="lesson-amount">
-          本次支付: <strong>¥{{ (order.unitPrice * lessonCount).toFixed(2) }}</strong>
-        </div>
-      </div>
-
-      <div v-if="paymentMode === 'per_lesson'" class="flow-mode-card">
-        <h3 class="card-title">上课流程</h3>
-        <el-radio-group v-model="courseFlowMode" class="flow-group">
-          <el-radio :value="1" class="flow-radio">
-            <div class="flow-info">
-              <span class="flow-name">先支付后上课</span>
-              <span class="flow-desc">支付后教师确认开课</span>
-            </div>
-          </el-radio>
-          <el-radio :value="2" class="flow-radio">
-            <div class="flow-info">
-              <span class="flow-name">先上课后支付</span>
-              <span class="flow-desc">课程结束后确认支付</span>
-            </div>
-          </el-radio>
-        </el-radio-group>
           课时单价: ¥{{ order.unitPrice }}/小时 | 共{{ order.totalHours }}课时
         </div>
       </div>
@@ -133,15 +84,6 @@
         <div class="fee-list">
           <div class="fee-item">
             <span class="label">课时单价</span>
-            <span class="value">¥{{ (order.unitPrice || 0).toFixed(2) }}/小时</span>
-          </div>
-          <div class="fee-item">
-            <span class="label">{{ paymentMode === 'per_lesson' ? '支付课时' : '总课时' }}</span>
-            <span class="value">{{ paymentMode === 'per_lesson' ? lessonCount : order.totalHours }} 课时</span>
-          </div>
-          <div class="fee-item">
-            <span class="label">平台服务费(10%)</span>
-            <span class="value">¥{{ serviceFee.toFixed(2) }}</span>
             <span class="value">¥{{ order.unitPrice }}/小时</span>
           </div>
           <div v-if="paymentMode === 'per_lesson'" class="fee-item">
@@ -159,7 +101,6 @@
         </div>
         <div class="total-amount">
           <span class="label">应付金额</span>
-          <span class="amount">¥{{ payAmount.toFixed(2) }}</span>
           <span class="amount">¥{{ currentPayAmount.toFixed(2) }}</span>
         </div>
       </div>
@@ -184,7 +125,6 @@
         </div>
       </div>
       
-      <div v-if="paymentMethod === 'balance' && balance < payAmount" class="balance-warning">
       <div v-if="paymentMethod === 'balance' && balance < currentPayAmount" class="balance-warning">
         <el-icon><Warning /></el-icon>
         <span>余额不足，请先充值</span>
@@ -194,14 +134,12 @@
       <div class="action-bar">
         <div class="pay-info">
           <span class="label">应付金额</span>
-          <span class="amount">¥{{ payAmount.toFixed(2) }}</span>
           <span class="amount">¥{{ currentPayAmount.toFixed(2) }}</span>
         </div>
         <el-button 
           type="primary" 
           size="large" 
           :loading="paying"
-          :disabled="paymentMethod === 'balance' && balance < payAmount"
           :disabled="paymentMethod === 'balance' && balance < currentPayAmount"
           @click="handlePay"
         >
@@ -213,13 +151,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, Wallet, Check, Warning } from '@element-plus/icons-vue'
 import { ArrowLeft, Clock, Wallet, Check, Warning, Calendar } from '@element-plus/icons-vue'
 import { getOrderDetail, payOrder } from '@shared/api/order'
 import { getWalletInfo } from '@shared/api/wallet'
+import dayjs from 'dayjs'
 
 const router = useRouter()
 const route = useRoute()
@@ -230,19 +168,6 @@ const order = ref(null)
 const balance = ref(0)
 const paymentMethod = ref('balance')
 const paymentMode = ref('per_lesson')
-const courseFlowMode = ref(1)
-const lessonCount = ref(1)
-
-const payAmount = computed(() => {
-  if (!order.value) return 0
-  if (paymentMode.value === 'per_lesson') {
-    return (order.value.unitPrice || 0) * lessonCount.value
-  }
-  return order.value.totalAmount || 0
-})
-
-const serviceFee = computed(() => {
-  return (payAmount.value * 0.10).toFixed(2) * 1
 const lessonCount = ref(1)
 const remainingSeconds = ref(24 * 60 * 60)
 let countdownTimer = null
@@ -278,11 +203,6 @@ const loadData = async () => {
     
     if (orderRes.code === 200) {
       order.value = orderRes.data
-      if (order.value.paymentMode) {
-        paymentMode.value = order.value.paymentMode
-      }
-      if (order.value.courseFlowMode) {
-        courseFlowMode.value = order.value.courseFlowMode
       if (order.value.paymentMode === 'full') {
         paymentMode.value = 'full'
       } else {
@@ -301,19 +221,13 @@ const loadData = async () => {
       balance.value = walletRes.data?.balance || 0
     }
   } catch (error) {
+    console.error('加载数据失败:', error)
     ElMessage.error('加载失败')
   } finally {
     loading.value = false
   }
 }
 
-const goBack = () => {
-  router.back()
-}
-
-const goToRecharge = () => {
-  router.push('/parent/recharge')
-}
 const startCountdown = () => {
   countdownTimer = setInterval(() => {
     if (remainingSeconds.value > 0) {
@@ -335,18 +249,11 @@ const handlePay = async () => {
       ? `按课时支付${lessonCount.value}节课` 
       : '一次性全额支付'
     await ElMessageBox.confirm(
-      `确认使用余额支付 ¥${payAmount.value.toFixed(2)}？`,
       `确认使用余额${modeText}，支付 ¥${currentPayAmount.value.toFixed(2)}？`,
       '确认支付'
     )
     
     paying.value = true
-    const payTypeMap = { balance: 1, wechat: 2, alipay: 3 }
-    const res = await payOrder({
-      orderId: order.value.id,
-      payType: payTypeMap[paymentMethod.value],
-      paymentMode: paymentMode.value,
-      lessonCount: paymentMode.value === 'per_lesson' ? lessonCount.value : undefined
     const res = await payOrder({
       orderId: order.value.id,
       payType: 1,
@@ -360,6 +267,7 @@ const handlePay = async () => {
     }
   } catch (error) {
     if (error !== 'cancel') {
+      console.error('支付失败:', error)
       ElMessage.error('支付失败，请重试')
     }
   } finally {
@@ -370,6 +278,12 @@ const handlePay = async () => {
 onMounted(() => {
   loadData()
 })
+
+onUnmounted(() => {
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+  }
+})
 </script>
 
 <style lang="scss" scoped>
@@ -377,7 +291,6 @@ onMounted(() => {
   padding: 20px;
   max-width: 600px;
   margin: 0 auto;
-  padding-bottom: 100px;
 }
 
 .page-header {
@@ -417,7 +330,6 @@ onMounted(() => {
   }
 }
 
-.payment-mode-card, .lesson-select-card, .flow-mode-card, .fee-card, .payment-card {
 .countdown-card {
   display: flex;
   align-items: center;
@@ -449,37 +361,6 @@ onMounted(() => {
   }
 }
 
-.mode-group, .flow-group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-
-  .mode-radio, .flow-radio {
-    height: auto;
-    padding: 12px 16px;
-    border: 2px solid #f0f0f0;
-    border-radius: 10px;
-    margin: 0;
-
-    &.is-checked {
-      border-color: var(--el-color-primary);
-      background: #f0f7ff;
-    }
-  }
-
-  .mode-info, .flow-info {
-    .mode-name, .flow-name {
-      font-weight: 600;
-      display: block;
-    }
-    .mode-desc, .flow-desc {
-      font-size: 12px;
-      color: #909399;
-      margin-top: 4px;
-      display: block;
-    }
-  }
 .mode-options {
   display: flex;
   flex-direction: column;
@@ -535,52 +416,6 @@ onMounted(() => {
 
 .lesson-selector {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-
-  .lesson-tip {
-    color: #909399;
-  }
-}
-
-.lesson-amount {
-  font-size: 14px;
-  color: #606266;
-  strong {
-    color: #f56c6c;
-    font-size: 18px;
-  }
-}
-
-.fee-card {
-  .fee-list {
-    margin-bottom: 16px;
-    
-    .fee-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 0;
-      color: #666;
-    }
-  }
-  
-  .total-amount {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 16px;
-    border-top: 1px solid #f0f0f0;
-    
-    .label {
-      font-weight: 600;
-    }
-    
-    .amount {
-      font-size: 24px;
-      font-weight: 700;
-      color: #f56c6c;
-    }
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 12px;
@@ -688,13 +523,11 @@ onMounted(() => {
 }
 
 .action-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
   padding: 16px 20px;
+  margin-top: 24px;
   background: #fff;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   justify-content: space-between;

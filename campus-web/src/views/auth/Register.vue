@@ -150,11 +150,9 @@ const rules = {
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
     { validator: validateConfirmPassword, trigger: 'blur' }
-=======
   ],
   role: [
     { required: true, message: '请选择角色', trigger: 'change' }
->>>>>>> 3745728a8acb42a0a4d836ff5db19c2faa1cff85
   ]
 }
 
@@ -165,8 +163,8 @@ const handleRegister = async () => {
     loading.value = true
     const res = await register({
       phone: form.phone,
-      nickname: form.nickname,
       password: form.password,
+      nickname: form.nickname,
       role: form.role
     })
 

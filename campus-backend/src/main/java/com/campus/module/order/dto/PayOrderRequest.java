@@ -15,20 +15,11 @@ public class PayOrderRequest {
 
     private String payPassword;
 
-    /**
-     * 支付模式：full(全额) / per_lesson(按课时)
-     */
-    private String paymentMode;
-
-    /**
-     * 按课时支付的课时数(paymentMode=per_lesson时使用)
-     */
-    private Integer lessonCount;
-
-    /**
-     * 指定支付的课时记录ID(按课时支付时可选)
-     */
     private BigDecimal lessonFee;
+
+    private Integer lessonCount = 1;
+
+    private String paymentMode = "per_lesson";
 
     private Long lessonId;
 }

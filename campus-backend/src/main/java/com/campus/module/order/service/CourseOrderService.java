@@ -113,12 +113,4 @@ public interface CourseOrderService extends IService<CourseOrder> {
      */
     String applyRefund(Long userId, Long orderId, java.math.BigDecimal refundAmount, String reason);
 
-    /**
-     * 教师取消需求申请
-     *
-     * @param tutorId 教师ID
-     * @param orderId 订单ID
-     * @param reason  取消原因
-     */
-    void cancelApplication(Long tutorId, Long orderId, String reason);
 }

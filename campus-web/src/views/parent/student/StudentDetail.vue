@@ -84,7 +84,7 @@
               <div class="demand-meta">
                 <span>{{ demand.subject }}</span>
                 <el-tag size="small" :type="demand.status === 1 ? 'success' : 'info'">
-                  {{ demand.status === 1 ? '已上架' : (demand.status === 2 ? '已匹配' : (demand.status === 3 ? '已完成' : '已下架')) }}
+                  {{ demand.status === 1 ? '已上架' : (demand.status === 0 ? '草稿' : '已下架') }}
                 </el-tag>
               </div>
             </div>

@@ -28,7 +28,6 @@
               <el-menu-item index="/parent/demands">
                 <el-icon><List /></el-icon>我的需求
               </el-menu-item>
-              <el-menu-item index="/community">
               <el-menu-item index="/community" class="community-menu-item">
                 <el-icon><ChatLineSquare /></el-icon>社区
               </el-menu-item>
@@ -40,7 +39,6 @@
               <el-menu-item index="/teacher/home">
                 <el-icon><Location /></el-icon>找学生
               </el-menu-item>
-              <el-menu-item index="/community">
               <el-menu-item index="/community" class="community-menu-item">
                 <el-icon><ChatLineSquare /></el-icon>社区
               </el-menu-item>
@@ -64,7 +62,7 @@
 
           <!-- 消息通知 -->
           <div class="icon-btn" @click="goToChat">
-            <el-badge :value="chatStore.unreadCount" :max="99" :hidden="chatStore.unreadCount === 0">
+            <el-badge :value="totalUnread" :max="99" :hidden="totalUnread === 0">
               <el-icon :size="20"><ChatDotRound /></el-icon>
             </el-badge>
           </div>
@@ -139,11 +137,6 @@
     </div>
 
     <!-- 地址获取弹窗 -->
-    <LocationDialog
-      v-model="showLocationDialog"
-      @located="handleLocated"
-      @denied="handleLocationDenied"
-    />
     <el-dialog
       v-model="locationDialogVisible"
       title="获取您的位置"
@@ -181,9 +174,6 @@ import {
 } from '@element-plus/icons-vue'
 import { useUserStore, useChatStore } from '@shared/stores'
 import { getUnreadCount } from '@shared/api/chat'
-import { updateUserAddress } from '@shared/api/user'
-import { reverseGeocode } from '@shared/api/map'
-import LocationDialog from '@/components/LocationDialog.vue'
 import { reverseGeocode } from '@shared/api/map'
 import { updateUserInfo } from '@shared/api/user'
 
@@ -192,9 +182,6 @@ const router = useRouter()
 const userStore = useUserStore()
 const chatStore = useChatStore()
 
-const isMobile = ref(false)
-const unreadCount = ref(0)
-const showLocationDialog = ref(false)
 const isMobile = ref(window.innerWidth < 768)
 let pollTimer = null
 
@@ -220,17 +207,15 @@ const mobileTabItems = computed(() => {
   if (isTeacher.value) {
     return [
       { path: '/teacher/home', label: '找学生', icon: Location },
-      { path: '/community', label: '社区', icon: ChatLineSquare },
       { path: '/teacher/orders', label: '订单', icon: Document },
-=======
       { path: '/community', label: '社区', icon: ChatLineSquare, isCommunity: true },
->>>>>>> 3745728a8acb42a0a4d836ff5db19c2faa1cff85
       { path: '/teacher/wallet', label: '钱包', icon: Wallet },
       { path: '/mine', label: '我的', icon: User }
     ]
   } else {
     return [
       { path: '/parent/home', label: '找老师', icon: Search },
+      { path: '/parent/demands', label: '需求', icon: List },
       { path: '/community', label: '社区', icon: ChatLineSquare, isCommunity: true },
       { path: '/parent/orders', label: '订单', icon: Document },
       { path: '/mine', label: '我的', icon: User }
@@ -299,12 +284,25 @@ const handleUserCommand = async (command) => {
   }
 }
 
+const notifyUnread = ref(0)
+
+const totalUnread = computed(() => (chatStore.unreadCount || 0) + (notifyUnread.value || 0))
+
 const fetchUnreadCount = async () => {
   if (!userStore.token) return
   try {
     const res = await getUnreadCount()
     if (res.code === 200) {
       chatStore.setUnreadCount(res.data || 0)
+    }
+  } catch (error) {
+  }
+  // 单独获取社区互动通知未读数，不混入聊天计数
+  try {
+    const { getUnreadNotificationCount } = await import('@shared/api/community')
+    const nRes = await getUnreadNotificationCount()
+    if (nRes.code === 200) {
+      notifyUnread.value = nRes.data || 0
     }
   } catch (error) {
   }
@@ -369,71 +367,11 @@ const grantLocation = async () => {
   }
 }
 
-const checkAndShowLocationDialog = () => {
-  if (!userStore.isLoggedIn) return
-
-  const permission = localStorage.getItem('locationPermission')
-
-  if (permission === 'granted') {
-    fetchLocationSilently()
-    return
-  }
-
-  if (permission === 'denied') {
-    const hasLocation = userStore.userInfo?.longitude && userStore.userInfo?.latitude
-    if (!hasLocation) {
-      showLocationDialog.value = true
-    }
-    return
-  }
-
-  showLocationDialog.value = true
-}
-
-const fetchLocationSilently = () => {
-  if (!navigator.geolocation) return
-
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const { longitude, latitude } = position.coords
-      let address = `${longitude.toFixed(6)}, ${latitude.toFixed(6)}`
-
-      try {
-        const res = await reverseGeocode(latitude, longitude)
-        if (res.code === 200 && res.data) {
-          address = res.data.formattedAddress || res.data.address || address
-        }
-      } catch { /* silent */ }
-
-      try {
-        await updateUserAddress({ longitude, latitude, address })
-        userStore.setUserInfo({
-          ...userStore.userInfo,
-          longitude,
-          latitude,
-          address
-        })
-      } catch { /* silent */ }
-    },
-    () => { /* silent fail */ },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-  )
-}
-
-const handleLocated = (data) => {
-  console.log('用户位置已获取:', data)
-}
-
-const handleLocationDenied = () => {
-  console.log('用户拒绝位置授权')
-}
-
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
   fetchUnreadCount()
   pollTimer = setInterval(fetchUnreadCount, 30000)
-  setTimeout(checkAndShowLocationDialog, 1500)
   requestLocation()
 })
 
@@ -512,21 +450,6 @@ onUnmounted(() => {
 
       .community-menu-item {
         position: relative;
-
-        &::after {
-          content: 'HOT';
-          position: absolute;
-          top: 8px;
-          right: -4px;
-          font-size: 9px;
-          background: linear-gradient(135deg, #f56c6c, #e6404a);
-          color: #fff;
-          padding: 1px 4px;
-          border-radius: 6px;
-          line-height: 1.2;
-          font-weight: 700;
-          letter-spacing: 0.5px;
-        }
 
         .el-icon {
           color: #667eea;

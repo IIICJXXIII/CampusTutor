@@ -10,8 +10,6 @@
     
     <div class="form-card">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-        <el-form-item label="当前密码" prop="oldPassword">
-          <el-input v-model="form.oldPassword" type="password" placeholder="请输入当前密码" show-password />
         <el-form-item label="手机号">
           <el-input :value="maskPhone(userStore.phone)" disabled />
         </el-form-item>
@@ -42,7 +40,6 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useUserStore } from '@shared/stores'
-import { updatePassword } from '@shared/api/user'
 import { resetPassword } from '@shared/api/auth'
 
 const router = useRouter()
@@ -58,7 +55,6 @@ const form = reactive({
 
 const rules = {
   oldPassword: [
-    { required: true, message: '请输入当前密码', trigger: 'blur' }
     { required: true, message: '请输入旧密码', trigger: 'blur' }
   ],
   newPassword: [
@@ -80,6 +76,11 @@ const rules = {
   ]
 }
 
+const maskPhone = (phone) => {
+  if (!phone) return '未绑定'
+  return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
+}
+
 const goBack = () => router.back()
 
 const handleSubmit = async () => {
@@ -88,7 +89,6 @@ const handleSubmit = async () => {
   
   loading.value = true
   try {
-    const res = await updatePassword({
     const res = await resetPassword({
       phone: userStore.phone,
       oldPassword: form.oldPassword,

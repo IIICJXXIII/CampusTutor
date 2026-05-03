@@ -96,3 +96,7 @@ export function rejectApplication(applicationId, reason) {
 export function getMyApplications(params) {
   return request.get('/demand/my-applications', { params });
 }
+
+export function getDemandListWithMatch(params) {
+  return request.get('/demand/list-with-match', { params });
+}

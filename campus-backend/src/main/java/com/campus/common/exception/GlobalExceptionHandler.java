@@ -8,6 +8,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -20,9 +21,6 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
 
-/**
- * 全局异常处理器
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -32,6 +30,13 @@ public class GlobalExceptionHandler {
     public Result<Void> handleBusinessException(BusinessException e, HttpServletRequest request) {
         log.warn("业务异常: URI={}, Code={}, Msg={}", request.getRequestURI(), e.getCode(), e.getMessage());
         return Result.fail(e.getCode(), e.getMessage());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Result<Void> handleHttpMessageNotReadableException(HttpMessageNotReadableException e, HttpServletRequest request) {
+        log.error("JSON解析失败: URI={}, Error={}", request.getRequestURI(), e.getMessage(), e);
+        return Result.fail(400, "请求体JSON格式错误: " + e.getMostSpecificCause().getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -82,7 +87,6 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public Result<Void> handleNoResourceFoundException(NoResourceFoundException e, HttpServletRequest request) {
         String uri = request.getRequestURI();
-        // 忽略 favicon.ico 等静态资源请求的错误日志
         if (!uri.contains("favicon.ico") && !uri.contains(".ico")) {
             log.warn("资源未找到: URI={}", uri);
         }
@@ -92,7 +96,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<Void> handleException(Exception e, HttpServletRequest request) {
-        log.error("系统异常: URI={}, Error={}", request.getRequestURI(), e.getMessage(), e);
+        log.error("系统异常: URI={}, ErrorType={}, Error={}", request.getRequestURI(), e.getClass().getName(), e.getMessage(), e);
         return Result.fail(500, "系统繁忙，请稍后重试");
     }
 }

@@ -106,8 +106,6 @@ public class AuthServiceImpl implements AuthService {
 
         String token = jwtUtils.generateToken(user.getId(), user.getRole());
 
-        log.info("[用户注册] 手机号: {}, 角色: {}, 用户ID: {}", request.getPhone(), request.getRole(), user.getId());
-
         return LoginResponse.builder()
                 .token(token)
                 .userId(user.getId())

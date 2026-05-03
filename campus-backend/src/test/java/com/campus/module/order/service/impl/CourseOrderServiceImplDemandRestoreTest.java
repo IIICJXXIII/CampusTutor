@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.campus.common.exception.BusinessException;
 import com.campus.module.demand.entity.DemandPost;
 import com.campus.module.demand.mapper.DemandPostMapper;
-import com.campus.module.demand.mapper.TutorApplicationMapper;
 import com.campus.module.demand.service.GeoService;
 import com.campus.module.order.entity.CourseOrder;
 import com.campus.module.order.mapper.CourseOrderMapper;
@@ -47,8 +46,6 @@ class CourseOrderServiceImplDemandRestoreTest {
     @Mock
     private GeoService geoService;
     @Mock
-    private TutorApplicationMapper tutorApplicationMapper;
-    @Mock
     private CourseOrderMapper courseOrderMapper;
 
     private CourseOrderServiceImpl orderService;
@@ -63,8 +60,7 @@ class CourseOrderServiceImplDemandRestoreTest {
     void setUp() {
         orderService = spy(new CourseOrderServiceImpl(
                 tutorProfileMapper, walletService, teachingRecordMapper,
-                demandPostMapper, transactionFlowService, geoService,
-                tutorApplicationMapper));
+                demandPostMapper, transactionFlowService, geoService));
         ReflectionTestUtils.setField(orderService, "baseMapper", courseOrderMapper);
         lenient().doReturn(true).when(orderService).updateById(any());
     }

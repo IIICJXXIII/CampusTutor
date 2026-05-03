@@ -57,40 +57,34 @@
           <div class="order-footer">
             <span class="time">{{ formatTime(order.createTime) }}</span>
             <div class="actions">
-              <el-button
-                v-if="order.status === -1 && order.applicationId"
-                type="danger"
-                size="small"
-                plain
-                @click.stop="cancelApply(order)"
-              >
-                取消申请
-              </el-button>
-              <el-button
-                v-if="order.status === -1 && !order.applicationId"
-                type="primary"
-                size="small"
-                @click.stop="acceptOrder(order)"
-              >
-                确认接单
-              </el-button>
-              <el-button
-                v-if="order.status === -1 && !order.applicationId"
-                type="danger"
-                size="small"
-                plain
-                @click.stop="rejectOrder(order)"
-              >
-                拒绝
-              </el-button>
-              <el-button 
-                v-if="order.status === 1" 
-                type="primary" 
-                size="small"
-                @click.stop="startOrder(order)"
-              >
-                确认开课
-              </el-button>
+              <template v-if="order.status === -1 && order.demandId">
+                <el-tag type="warning" size="small">等待家长确认</el-tag>
+                <el-button 
+                  type="danger" 
+                  size="small" 
+                  plain
+                  @click.stop="cancelApplication(order)"
+                >
+                  取消申请
+                </el-button>
+              </template>
+              <template v-else-if="order.status === -1 && !order.demandId">
+                <el-button 
+                  type="primary" 
+                  size="small"
+                  @click.stop="acceptOrder(order)"
+                >
+                  确认接单
+                </el-button>
+                <el-button 
+                  type="danger" 
+                  size="small" 
+                  plain
+                  @click.stop="rejectOrder(order)"
+                >
+                  拒绝
+                </el-button>
+              </template>
               <el-button 
                 v-if="order.status === 2" 
                 type="success" 
@@ -130,7 +124,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getTutorOrders, tutorConfirmOrder as tutorConfirmOrderApi, tutorRejectOrder as tutorRejectOrderApi, cancelApplication as cancelApplicationApi } from '@shared/api/order'
+import { getTutorOrders, cancelOrder as cancelOrderApi, tutorConfirmOrder as tutorConfirmOrderApi, tutorRejectOrder as tutorRejectOrderApi } from '@shared/api/order'
 import { formatDate } from '@shared/utils'
 
 const router = useRouter()
@@ -156,8 +150,9 @@ const getStatusType = (status) => {
 }
 
 const getStatusText = (order) => {
-  if (order.status === -1 && order.applicationId) return '待家长审核'
-  const map = { '-1': '待确认', 0: '待家长支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
+  if (order.status === -1 && order.demandId) return '等待家长确认'
+  if (order.status === -1 && !order.demandId) return '待确认'
+  const map = { 0: '待家长支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
   return map[order.status] || '未知'
 }
 
@@ -237,16 +232,6 @@ const rejectOrder = async (order) => {
   }
 }
 
-const cancelApply = async (order) => {
-  try {
-    await ElMessageBox.confirm(
-      '确定要取消该申请吗？取消后家长将无法看到您的申请。',
-      '取消申请',
-      { confirmButtonText: '确定取消', cancelButtonText: '返回', type: 'warning' }
-    )
-    const res = await cancelApplicationApi(order.id, '教师主动取消')
-    if (res.code === 200) {
-      ElMessage.success('申请已取消')
 const cancelApplication = async (order) => {
   try {
     await ElMessageBox.confirm(

@@ -68,11 +68,16 @@
           </el-menu-item>
         </el-sub-menu>
         
+        <el-menu-item index="/community">
+          <el-icon><ChatDotRound /></el-icon>
+          <span>社区管理</span>
+        </el-menu-item>
+
         <el-menu-item index="/wallets">
           <el-icon><Wallet /></el-icon>
           <span>钱包管理</span>
         </el-menu-item>
-        
+
         <el-menu-item index="/settings">
           <el-icon><Setting /></el-icon>
           <span>系统设置</span>

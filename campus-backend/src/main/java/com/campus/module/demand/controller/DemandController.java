@@ -5,9 +5,7 @@ import com.campus.common.context.UserContext;
 import com.campus.common.result.Result;
 import com.campus.module.demand.dto.DemandPostRequest;
 import com.campus.module.demand.entity.DemandPost;
-import com.campus.module.demand.entity.TutorApplication;
 import com.campus.module.demand.service.DemandPostService;
-import com.campus.module.demand.service.TutorApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -15,8 +13,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
+/**
+ * 需求模块控制器
+ */
 @Tag(name = "需求模块", description = "需求发布、管理、搜索")
 @RestController
 @RequestMapping("/api/demand")
@@ -24,11 +24,10 @@ import java.util.Map;
 public class DemandController {
 
     private final DemandPostService demandPostService;
-    private final TutorApplicationService tutorApplicationService;
 
-    @org.springframework.beans.factory.annotation.Value("${lbs.search.default-radius:20}")
-    private Double defaultSearchRadius;
-
+    /**
+     * 学科类敏感词黑名单（合规：平台已转型素质教育，禁止学科辅导）
+     */
     private static final String[] SUBJECT_BLACKLIST = {
             "数学", "语文", "英语", "物理", "化学", "生物", "历史", "地理", "政治",
             "提分", "冲刺", "补习", "补课", "奥数", "作文辅导"
@@ -37,6 +36,7 @@ public class DemandController {
     @Operation(summary = "发布需求")
     @PostMapping("/publish")
     public Result<Long> publish(@Valid @RequestBody DemandPostRequest request) {
+        // 敏感词拦截：禁止发布学科类辅导需求
         String content = (request.getTitle() + " " + request.getSubject() + " "
                 + (request.getDetail() != null ? request.getDetail() : "")).toLowerCase();
         for (String word : SUBJECT_BLACKLIST) {
@@ -44,6 +44,7 @@ public class DemandController {
                 return Result.fail("平台已全面转型素质教育，请勿发布学科类辅导需求。");
             }
         }
+
         Long publisherId = UserContext.getUserId();
         Long demandId = demandPostService.publishDemand(publisherId, request);
         return Result.success(demandId);
@@ -69,7 +70,7 @@ public class DemandController {
     @PostMapping("/{id}/offline")
     public Result<Void> offline(@PathVariable Long id) {
         Long publisherId = UserContext.getUserId();
-        demandPostService.changeStatus(publisherId, id, 0);
+        demandPostService.changeStatus(publisherId, id, 0); // 0=下架, 不是2(已匹配)
         return Result.success();
     }
 
@@ -115,15 +116,12 @@ public class DemandController {
     public Result<List<DemandPost>> nearby(
             @RequestParam Double longitude,
             @RequestParam Double latitude,
-            @RequestParam(required = false) Double radius,
-            @RequestParam(required = false) String subject,
-            @RequestParam(required = false) String grade) {
-        Double searchRadius = radius != null ? radius : defaultSearchRadius;
-        List<DemandPost> list = demandPostService.searchNearby(longitude, latitude, searchRadius, subject, grade);
+            @RequestParam(defaultValue = "10") Double radius) {
+        List<DemandPost> list = demandPostService.searchNearby(longitude, latitude, radius);
         return Result.success(list);
     }
 
-    @Operation(summary = "教师接单匹配")
+    @Operation(summary = "教师接单匹配", description = "教师对需求进行匹配操作，创建待确认订单")
     @PostMapping("/{id}/match")
     public Result<Long> match(@PathVariable Long id) {
         Long tutorId = UserContext.getUserId();
@@ -138,63 +136,14 @@ public class DemandController {
             @RequestParam(required = false) String grade,
             @RequestParam(required = false) Double longitude,
             @RequestParam(required = false) Double latitude,
+            @RequestParam(defaultValue = "50") Double radius,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String sortOrder) {
         Long tutorId = UserContext.getUserId();
         IPage<DemandPost> result = demandPostService.pageListWithMatchScore(
-                tutorId, subject, grade, longitude, latitude, page, size, sortBy, sortOrder);
-        return Result.success(result);
-    }
-
-    @Operation(summary = "教师申请接单", description = "教师对需求发起接单申请，等待家长审核")
-    @PostMapping("/{id}/apply")
-    public Result<Long> apply(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> params) {
-        Long tutorId = UserContext.getUserId();
-        Integer totalHours = params != null && params.get("totalHours") != null
-                ? Integer.parseInt(params.get("totalHours").toString())
-                : null;
-        String remark = params != null && params.get("remark") != null
-                ? params.get("remark").toString()
-                : null;
-        Long applicationId = tutorApplicationService.applyForDemand(tutorId, id, totalHours, remark);
-        return Result.success(applicationId);
-    }
-
-    @Operation(summary = "获取需求的申请列表（仅返回待审核的有效申请，含教师昵称头像）")
-    @GetMapping("/{id}/applications")
-    public Result<List<com.campus.module.demand.dto.TutorApplicationVO>> applications(@PathVariable Long id) {
-        List<com.campus.module.demand.dto.TutorApplicationVO> list = tutorApplicationService.listByDemandId(id);
-        return Result.success(list);
-    }
-
-    @Operation(summary = "家长接受申请", description = "家长接受教师的接单申请，自动创建订单")
-    @PostMapping("/application/{applicationId}/accept")
-    public Result<Void> acceptApplication(@PathVariable Long applicationId) {
-        Long parentId = UserContext.getUserId();
-        tutorApplicationService.acceptApplication(parentId, applicationId);
-        return Result.success("已接受申请");
-    }
-
-    @Operation(summary = "家长拒绝申请")
-    @PostMapping("/application/{applicationId}/reject")
-    public Result<Void> rejectApplication(
-            @PathVariable Long applicationId,
-            @RequestParam(required = false) String reason) {
-        Long parentId = UserContext.getUserId();
-        tutorApplicationService.rejectApplication(parentId, applicationId, reason);
-        return Result.success("已拒绝申请");
-    }
-
-    @Operation(summary = "教师的申请列表")
-    @GetMapping("/my-applications")
-    public Result<IPage<TutorApplication>> myApplications(
-            @RequestParam(required = false) Integer status,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
-        Long tutorId = UserContext.getUserId();
-        IPage<TutorApplication> result = tutorApplicationService.listByTutorId(tutorId, status, page, size);
+                tutorId, subject, grade, longitude, latitude, radius, page, size, sortBy, sortOrder);
         return Result.success(result);
     }
 }
