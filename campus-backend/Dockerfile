@@ -6,10 +6,8 @@ COPY src ./src
 # 跳过测试以加快构建速度
 RUN mvn clean package -DskipTests
 
-# 阶段 2: 运行
-FROM eclipse-temurin:17-jre-alpine
-# 安装 libstdc++，供 ONNX Runtime native 库使用
-RUN apk add --no-cache libstdc++
+# 阶段 2: 运行（使用 Ubuntu 版而非 Alpine，因为 ONNX Runtime native 库依赖 glibc）
+FROM eclipse-temurin:17-jre
 WORKDIR /app
 # 复制构建好的 jar 包，文件名根据 pom.xml 生成，这里使用通配符适配
 COPY --from=builder /app/target/campus-backend-*.jar app.jar
