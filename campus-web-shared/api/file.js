@@ -16,13 +16,3 @@ export function uploadFile(formData, folder = 'common') {
     params: { folder }
   });
 }
-
-/**
- * 删除文件
- * @param {string} fileUrl - 文件URL
- */
-export function deleteFile(fileUrl) {
-  return request.delete('/file', {
-    params: { fileUrl }
-  });
-}

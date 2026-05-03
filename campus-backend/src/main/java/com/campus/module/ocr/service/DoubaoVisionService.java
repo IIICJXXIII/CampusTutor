@@ -7,6 +7,8 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.campus.module.ocr.dto.OcrResultDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +22,8 @@ import java.util.regex.Pattern;
 @Slf4j
 @Service
 public class DoubaoVisionService {
+
+    private static final Logger log = LoggerFactory.getLogger(DoubaoVisionService.class);
 
     @Value("${doubao.vision.api-key:}")
     private String apiKey;

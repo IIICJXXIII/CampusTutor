@@ -3,16 +3,12 @@ package com.campus.module.community.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.campus.common.context.UserContext;
 import com.campus.common.result.Result;
-import com.campus.module.community.dto.CommunityPostRequest;
-import com.campus.module.community.entity.CommunityNotification;
 import com.campus.module.community.entity.CommunityPost;
 import com.campus.module.community.entity.CommunityReply;
-import com.campus.module.community.service.CommunityNotificationService;
 import com.campus.module.community.service.CommunityPostService;
 import com.campus.module.community.service.CommunityReplyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,7 +22,6 @@ public class CommunityController {
 
     private final CommunityPostService postService;
     private final CommunityReplyService replyService;
-    private final CommunityNotificationService notificationService;
 
     @Operation(summary = "获取帖子列表")
     @GetMapping("/posts")
@@ -45,10 +40,9 @@ public class CommunityController {
 
     @Operation(summary = "发布帖子")
     @PostMapping("/posts")
-    public Result<Long> createPost(@Valid @RequestBody CommunityPostRequest request) {
+    public Result<CommunityPost> createPost(@RequestBody CommunityPost post) {
         Long userId = UserContext.getUserId();
-        Long postId = postService.createPost(userId, request);
-        return Result.success("发布成功", postId);
+        return Result.success(postService.createPost(userId, post));
     }
 
     @Operation(summary = "点赞/取消点赞帖子")
@@ -98,39 +92,5 @@ public class CommunityController {
     public Result<Map<String, Object>> likeReply(@PathVariable Long replyId) {
         boolean liked = replyService.likeReply(replyId);
         return Result.success(Map.of("liked", liked));
-    }
-
-    // ==================== 互动通知 ====================
-
-    @Operation(summary = "获取互动通知列表")
-    @GetMapping("/notifications")
-    public Result<IPage<CommunityNotification>> listNotifications(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "20") Integer size) {
-        Long userId = UserContext.getUserId();
-        return Result.success(notificationService.listNotifications(userId, page, size));
-    }
-
-    @Operation(summary = "获取未读通知数")
-    @GetMapping("/notifications/unread-count")
-    public Result<Integer> getUnreadNotificationCount() {
-        Long userId = UserContext.getUserId();
-        return Result.success(notificationService.getUnreadCount(userId));
-    }
-
-    @Operation(summary = "标记通知已读")
-    @PutMapping("/notifications/{id}/read")
-    public Result<Void> markNotificationRead(@PathVariable Long id) {
-        Long userId = UserContext.getUserId();
-        notificationService.markAsRead(id, userId);
-        return Result.success();
-    }
-
-    @Operation(summary = "全部标记已读")
-    @PutMapping("/notifications/read-all")
-    public Result<Void> markAllNotificationsRead() {
-        Long userId = UserContext.getUserId();
-        notificationService.markAllAsRead(userId);
-        return Result.success();
     }
 }

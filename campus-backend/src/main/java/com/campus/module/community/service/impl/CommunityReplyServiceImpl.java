@@ -8,13 +8,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.campus.common.context.UserContext;
 import com.campus.common.exception.BusinessException;
 import com.campus.module.community.entity.CommunityCommentLike;
-import com.campus.module.community.entity.CommunityNotification;
-import com.campus.module.community.entity.CommunityPost;
 import com.campus.module.community.entity.CommunityReply;
 import com.campus.module.community.mapper.CommunityCommentLikeMapper;
-import com.campus.module.community.mapper.CommunityPostMapper;
 import com.campus.module.community.mapper.CommunityReplyMapper;
-import com.campus.module.community.service.CommunityNotificationService;
 import com.campus.module.community.service.CommunityReplyService;
 import com.campus.module.user.entity.SysUser;
 import com.campus.module.user.service.SysUserService;
@@ -23,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,8 +30,6 @@ public class CommunityReplyServiceImpl extends ServiceImpl<CommunityReplyMapper,
 
     private final SysUserService sysUserService;
     private final CommunityCommentLikeMapper commentLikeMapper;
-    private final CommunityNotificationService notificationService;
-    private final CommunityPostMapper postMapper;
 
     @Override
     public IPage<CommunityReply> listReplies(Long postId, Integer page, Integer size) {
@@ -103,26 +98,10 @@ public class CommunityReplyServiceImpl extends ServiceImpl<CommunityReplyMapper,
 
         save(reply);
 
-        // 获取帖子信息
-        CommunityPost post = postMapper.selectById(reply.getPostId());
-
         if (reply.getRootId() > 0) {
-            // 子回复：通知被回复的评论作者
             update(new LambdaUpdateWrapper<CommunityReply>()
                     .eq(CommunityReply::getId, reply.getRootId())
                     .setSql("reply_count = reply_count + 1"));
-
-            Long repliedUserId = reply.getReplyToUserId();
-            if (repliedUserId != null && post != null) {
-                notificationService.notifyCommentReply(
-                        repliedUserId, userId, reply.getPostId(), reply.getId(), reply.getContent());
-            }
-        } else {
-            // 一级评论：通知帖子作者
-            if (post != null) {
-                notificationService.notifyPostReply(
-                        post.getUserId(), userId, reply.getPostId(), reply.getContent());
-            }
         }
 
         fillReplyInfo(reply);
