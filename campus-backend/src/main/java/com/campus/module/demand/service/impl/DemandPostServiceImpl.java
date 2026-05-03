@@ -341,11 +341,18 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
             List<Long> strictIds = strictNearbyDemands.stream().map(DemandPost::getId).toList();
             wrapper.in(DemandPost::getId, strictIds);
         } else {
-            // 无任何坐标信息（前端未授权GPS且教师档案无注册地址），返回空页
-            log.warn("无可用的位置坐标，无法进行空间筛选，返回空结果");
-            Page<DemandPost> emptyPage = new Page<>(page, size);
-            emptyPage.setTotal(0);
-            return emptyPage;
+            // 无任何坐标信息时，使用默认坐标（北京中心）进行查询，避免返回空结果
+            log.info("无可用的位置坐标，使用默认坐标（北京中心）进行查询");
+            double defaultLng = 116.397428;
+            double defaultLat = 39.90923;
+            double maxRadius = 100.0; // 默认100公里范围
+            
+            List<DemandPost> defaultNearbyDemands = searchNearbyByDatabase(defaultLng, defaultLat, maxRadius);
+            if (!defaultNearbyDemands.isEmpty()) {
+                List<Long> defaultIds = defaultNearbyDemands.stream().map(DemandPost::getId).toList();
+                wrapper.in(DemandPost::getId, defaultIds);
+            }
+            // 如果默认范围内也没有需求，继续查询（不做位置过滤）
         }
         // =====================================================================
 

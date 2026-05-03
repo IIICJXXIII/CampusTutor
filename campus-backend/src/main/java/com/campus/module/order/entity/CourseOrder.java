@@ -42,10 +42,6 @@ public class CourseOrder {
 
     private Integer usedHours;
 
-    private String paymentMode;
-
-    private Integer paidHours;
-
     private Integer status;
 
     private LocalDateTime payTime;
@@ -57,12 +53,6 @@ public class CourseOrder {
     private String cancelReason;
 
     private String remark;
-
-    private BigDecimal longitude;
-
-    private BigDecimal latitude;
-
-    private String address;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
