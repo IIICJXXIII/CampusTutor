@@ -328,12 +328,6 @@ const routes = [
         meta: { title: '私聊' }
       },
       {
-        path: 'user/:id',
-        name: 'UserProfile',
-        component: () => import('@/views/common/user/UserProfile.vue'),
-        meta: { title: '用户资料' }
-      },
-      {
         path: 'ai',
         name: 'AiChat',
         component: () => import('@/views/common/ai/AiChat.vue'),

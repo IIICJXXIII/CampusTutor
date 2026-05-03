@@ -40,9 +40,9 @@ const DEMAND_STATUS_TYPE = {
 }
 
 const DEMAND_STATUS_TEXT = {
-  0: '已下架',
+  0: '草稿',
   1: '已上架',
-  2: '已匹配',
+  2: '已下架',
   3: '已完成'
 }
 

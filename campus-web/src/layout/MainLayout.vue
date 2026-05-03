@@ -62,7 +62,7 @@
 
           <!-- 消息通知 -->
           <div class="icon-btn" @click="goToChat">
-            <el-badge :value="totalUnread" :max="99" :hidden="totalUnread === 0">
+            <el-badge :value="chatStore.unreadCount" :max="99" :hidden="chatStore.unreadCount === 0">
               <el-icon :size="20"><ChatDotRound /></el-icon>
             </el-badge>
           </div>
@@ -284,25 +284,12 @@ const handleUserCommand = async (command) => {
   }
 }
 
-const notifyUnread = ref(0)
-
-const totalUnread = computed(() => (chatStore.unreadCount || 0) + (notifyUnread.value || 0))
-
 const fetchUnreadCount = async () => {
   if (!userStore.token) return
   try {
     const res = await getUnreadCount()
     if (res.code === 200) {
       chatStore.setUnreadCount(res.data || 0)
-    }
-  } catch (error) {
-  }
-  // 单独获取社区互动通知未读数，不混入聊天计数
-  try {
-    const { getUnreadNotificationCount } = await import('@shared/api/community')
-    const nRes = await getUnreadNotificationCount()
-    if (nRes.code === 200) {
-      notifyUnread.value = nRes.data || 0
     }
   } catch (error) {
   }

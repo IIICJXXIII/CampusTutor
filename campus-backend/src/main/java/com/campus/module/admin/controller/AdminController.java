@@ -1,12 +1,9 @@
 package com.campus.module.admin.controller;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campus.common.result.Result;
 import com.campus.module.admin.dto.*;
 import com.campus.module.admin.service.AdminService;
-import com.campus.module.community.entity.CommunityPost;
-import com.campus.module.community.service.CommunityPostService;
 import com.campus.module.demand.entity.DemandPost;
 import com.campus.module.match.service.DeepFMInferenceService;
 import com.campus.module.recommend.service.CollaborativeFilterService;
@@ -26,17 +23,16 @@ import java.util.Map;
 /**
  * 管理后台 API 控制器
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
-@Slf4j
 @Tag(name = "管理后台", description = "管理后台各模块管理接口")
 public class AdminController {
 
     private final AdminService adminService;
     private final DeepFMInferenceService deepFMInferenceService;
     private final CollaborativeFilterService collaborativeFilterService;
-    private final CommunityPostService communityPostService;
 
     // ==================== 仪表盘 ====================
 
@@ -305,35 +301,5 @@ public class AdminController {
     public Result<Void> clearAllRecommendCache() {
         collaborativeFilterService.clearSimilarityCache(null);
         return Result.success();
-    }
-
-    // ==================== 社区管理 ====================
-
-    @GetMapping("/community/posts")
-    @Operation(summary = "社区帖子列表", description = "管理员分页查询所有帖子（含已隐藏）")
-    public Result<IPage<CommunityPost>> getCommunityPostList(
-            @RequestParam(required = false) Integer topicType,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
-        return Result.success(communityPostService.adminListPosts(topicType, page, size));
-    }
-
-    @DeleteMapping("/community/posts/{id}")
-    @Operation(summary = "删除帖子（软删除）", description = "管理员隐藏帖子，设置status=0")
-    public Result<Void> deleteCommunityPost(@PathVariable Long id) {
-        communityPostService.deletePost(id);
-        return Result.success("帖子已删除");
-    }
-
-    @PutMapping("/community/posts/{id}/restore")
-    @Operation(summary = "恢复帖子", description = "管理员恢复已隐藏的帖子")
-    public Result<Void> restoreCommunityPost(@PathVariable Long id) {
-        CommunityPost post = communityPostService.getById(id);
-        if (post == null) {
-            return Result.fail(404, "帖子不存在");
-        }
-        post.setStatus(1);
-        communityPostService.updateById(post);
-        return Result.success("帖子已恢复");
     }
 }

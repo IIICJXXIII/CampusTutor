@@ -83,14 +83,6 @@ export const statsApi = {
   getRevenueStats: (params) => request.get('/admin/stats/revenue', { params })
 }
 
-// ==================== 社区管理 ====================
-export const communityApi = {
-  getList: (params) => request.get('/admin/community/posts', { params }),
-  delete: (id) => request.delete(`/admin/community/posts/${id}`),
-  restore: (id) => request.put(`/admin/community/posts/${id}/restore`),
-  create: (data) => request.post('/community/posts', data)
-}
-
 // ==================== 系统设置 ====================
 export const settingsApi = {
   getSettings: () => request.get('/admin/settings'),

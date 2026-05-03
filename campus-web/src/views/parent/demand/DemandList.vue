@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿<template>
+﻿<template>
   <div class="demand-list-page">
     <div class="page-header">
       <h1 class="page-title">我的需求</h1>
