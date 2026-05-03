@@ -24,10 +24,6 @@ import org.springframework.util.StringUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * 匹配搜索服务
- * 升级版：支持用户行为信号和动态权重
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor

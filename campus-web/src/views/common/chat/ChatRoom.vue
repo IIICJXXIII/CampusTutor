@@ -354,7 +354,12 @@ const connectWebSocket = () => {
   }
 }
 
-const viewProfile = () => ElMessage.info('查看资料功能开发中')
+const viewProfile = () => {
+  const targetId = Number(route.params.id)
+  if (targetId) {
+    router.push(`/user/${targetId}`)
+  }
+}
 const clearMessages = () => { messages.value = [] }
 const goBack = () => router.back()
 

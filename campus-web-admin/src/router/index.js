@@ -73,6 +73,12 @@ const routes = [
         meta: { title: '钱包管理', icon: 'Wallet' }
       },
       {
+        path: 'community',
+        name: 'Community',
+        component: () => import('@/views/community/CommunityPostList.vue'),
+        meta: { title: '社区管理', icon: 'ChatDotRound' }
+      },
+      {
         path: 'settings',
         name: 'Settings',
         component: () => import('@/views/system/Settings.vue'),

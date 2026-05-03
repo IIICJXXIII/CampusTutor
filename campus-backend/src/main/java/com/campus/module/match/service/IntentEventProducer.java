@@ -11,11 +11,6 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * 意图事件生产者
- * 将用户行为事件通过 Redis Streams XADD 发布到消息队列
- * 使用 StringRedisTemplate 确保与 Consumer 端序列化一致
- */
 @Slf4j
 @Service
 public class IntentEventProducer {

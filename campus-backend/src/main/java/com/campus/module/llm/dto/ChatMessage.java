@@ -1,11 +1,10 @@
 package com.campus.module.llm.dto;
 
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
+import java.util.Map;
 
-/**
- * 聊天消息
- */
 public class ChatMessage {
 
     @Schema(description = "角色: system, user, assistant, tool")
@@ -16,7 +15,7 @@ public class ChatMessage {
 
     private String toolCallId;
 
-    private cn.hutool.json.JSONArray toolCalls;
+    private Object toolCalls;
 
     public ChatMessage() {}
 
@@ -73,11 +72,19 @@ public class ChatMessage {
         this.toolCallId = toolCallId;
     }
 
-    public cn.hutool.json.JSONArray getToolCalls() {
+    public Object getToolCalls() {
         return toolCalls;
     }
 
-    public void setToolCalls(cn.hutool.json.JSONArray toolCalls) {
+    public void setToolCalls(Object toolCalls) {
         this.toolCalls = toolCalls;
+    }
+
+    public cn.hutool.json.JSONArray getToolCallsAsHutool() {
+        if (toolCalls == null) return null;
+        if (toolCalls instanceof cn.hutool.json.JSONArray) {
+            return (cn.hutool.json.JSONArray) toolCalls;
+        }
+        return cn.hutool.json.JSONUtil.parseArray(toolCalls);
     }
 }

@@ -27,12 +27,6 @@ export function confirmOrder(id) {
   return request.post(`/order/${id}/confirm`);
 }
 
-export function parentRejectOrder(id, reason) {
-  return request.post(`/order/${id}/parent-reject`, null, {
-    params: { reason }
-  });
-}
-
 /**
  * 支付订单 (家长)
  * @param {Object} data - { orderId, payType }
@@ -112,10 +106,22 @@ export function getTutorOrders(params) {
 }
 
 /**
- * 申请退款
+ * 教师取消需求申请
  * @param {number} id - 订单ID
- * @param {string} reason - 退款原因
+ * @param {string} reason - 取消原因
  */
+export function cancelApplication(id, reason) {
+  return request.post(`/order/${id}/cancel-application`, null, {
+    params: { reason }
+  });
+}
+
+export function parentRejectOrder(id, reason) {
+  return request.post(`/order/${id}/parent-reject`, null, {
+    params: { reason }
+  });
+}
+
 export function refundOrder(id, reason) {
   return request.post(`/order/${id}/refund`, null, {
     params: { reason }

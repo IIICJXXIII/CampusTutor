@@ -114,4 +114,21 @@ public class IntentConfig {
     public double getDecayLambda() {
         return Math.log(2) / halfLifeMinutes;
     }
+
+    public boolean isEnabled() { return enabled; }
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
+    public String getStreamKey() { return streamKey; }
+    public void setStreamKey(String streamKey) { this.streamKey = streamKey; }
+    
+    public int getSessionTtlMinutes() { return sessionTtlMinutes; }
+    public void setSessionTtlMinutes(int sessionTtlMinutes) { this.sessionTtlMinutes = sessionTtlMinutes; }
+    
+    public int getTopKTags() { return topKTags; }
+    public void setTopKTags(int topKTags) { this.topKTags = topKTags; }
+    
+    public double getBetaFactor() { return betaFactor; }
+    public void setBetaFactor(double betaFactor) { this.betaFactor = betaFactor; }
+    
+    public double getMaxIntentBoost() { return maxIntentBoost; }
+    public void setMaxIntentBoost(double maxIntentBoost) { this.maxIntentBoost = maxIntentBoost; }
 }
