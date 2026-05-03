@@ -94,10 +94,6 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         if (request.getDemandId() != null) {
             DemandPost demand = demandPostMapper.selectById(request.getDemandId());
             if (demand != null) {
-                order.setLongitude(demand.getLongitude());
-                order.setLatitude(demand.getLatitude());
-                order.setAddress(demand.getAddress());
-
                 if (demand.getStatus() == 1 && demand.getMatchedTutorId() == null) {
                     demand.setMatchedTutorId(tutorProfile.getUserId());
                     demand.setStatus(2);
@@ -256,8 +252,6 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
             order.setPayTime(LocalDateTime.now());
             order.setPayType(request.getPayType());
             order.setPayTradeNo("WALLET_" + IdUtil.simpleUUID());
-            order.setPaymentMode("full");
-            order.setPaidHours(order.getTotalHours());
             updateById(order);
 
             if (order.getDemandId() != null) {
