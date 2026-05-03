@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   # 后端应用服务
   campus-backend:
@@ -13,7 +12,7 @@ services:
       # 数据库连接：使用服务名 'mysql' 代替 localhost
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/campus_tutor_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=Sync743df
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       # redis连接：使用服务名 'redis' 代替 localhost
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
@@ -32,7 +31,7 @@ services:
     ports:
       - "3306:3306" # 暴露端口以便本地 Navicat 连接，生产环境可考虑关闭
     environment:
-      - MYSQL_ROOT_PASSWORD=Sync743df
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
       - MYSQL_DATABASE=campus_tutor_db
     volumes:
       - mysql-data:/var/lib/mysql # 数据持久化卷
