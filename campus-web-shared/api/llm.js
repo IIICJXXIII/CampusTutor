@@ -30,6 +30,16 @@ export function quickAsk(question) {
 }
 
 /**
+ * 流式AI对话
+ * @param {Object} data - { message, context }
+ */
+export function streamChat(data) {
+  return request.post('/llm/chat/stream', data, {
+    responseType: 'stream'
+  });
+}
+
+/**
  * AI生成课程规划
  * @param {Object} data - { subject, studentLevel, totalHours, studentInfo }
  */

@@ -8,6 +8,8 @@ import request from './request';
  * @param {string} imageUrl - 图片URL
  */
 export function recognizeStudentCard(imageUrl) {
+  console.log('OCR识别请求 - imageUrl:', imageUrl);
+  console.log('OCR识别请求 - 完整请求体:', JSON.stringify({ imageUrl }));
   return request.post('/ocr/student-card', { imageUrl });
 }
 
@@ -28,7 +30,15 @@ export function recognizeIdCardBack(imageUrl) {
 }
 
 /**
- * 通用文字识别 (错题本等)
+ * 通用文字识别
+ * @param {string} imageUrl - 图片URL
+ */
+export function generalOcr(imageUrl) {
+  return request.post('/ocr/general', { imageUrl });
+}
+
+/**
+ * 通用文字识别 (错题本)
  * @param {string} imageUrl - 图片URL
  */
 export function recognizeGeneral(imageUrl) {

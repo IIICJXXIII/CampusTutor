@@ -23,7 +23,7 @@
         <hutool.version>5.8.25</hutool.version>
         <jwt.version>0.12.5</jwt.version>
         <knife4j.version>4.4.0</knife4j.version>
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.38</lombok.version>
     </properties>
 
     <dependencies>

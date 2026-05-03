@@ -35,6 +35,14 @@ export function getUnreadCount() {
 }
 
 /**
+ * 获取聊天用户信息
+ * @param {number} userId - 用户ID
+ */
+export function getChatUserInfo(userId) {
+  return request.get(`/chat/user-info/${userId}`);
+}
+
+/**
  * 获取聊天消息列表
  * @param {number} conversationId - 会话ID
  * @param {Object} params - 分页参数
@@ -50,3 +58,8 @@ export function getMessages(conversationId, params) {
 export function sendMessage(data) {
   return request.post('/chat/send', data);
 }
+
+/**
+ * WebSocket 连接配置
+ */
+export const WS_CHAT_URL = '/ws/chat';

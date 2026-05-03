@@ -11,6 +11,10 @@ export function register(data) {
   return request.post('/auth/register', data);
 }
 
+export function getCurrentUser() {
+  return request.get('/user/current');
+}
+
 export function resetPassword(data) {
   return request.post('/auth/reset/password', data);
 }

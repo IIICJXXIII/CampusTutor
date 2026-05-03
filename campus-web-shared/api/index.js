@@ -52,3 +52,6 @@ export * from './review';
 
 // 错题本
 export * from './wrongbook';
+
+// 社区
+export * from './community';

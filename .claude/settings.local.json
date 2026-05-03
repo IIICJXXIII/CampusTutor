@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx vite *)",
+      "Bash(grep -rl *)",
+      "Bash(git checkout *)",
+      "Bash(mvn clean *)"
+    ]
+  }
+}

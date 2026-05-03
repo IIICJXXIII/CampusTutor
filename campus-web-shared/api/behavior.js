@@ -20,6 +20,6 @@ export function recordSearch() {
   return request.post('/behavior/search')
 }
 
-export function getTutorBehaviorStats(tutorId) {
+export function getTutorStats(tutorId) {
   return request.get(`/behavior/tutor-stats/${tutorId}`)
 }

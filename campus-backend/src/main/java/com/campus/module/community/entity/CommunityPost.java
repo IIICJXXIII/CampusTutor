@@ -22,9 +22,15 @@ public class CommunityPost {
 
     private String images;
 
+    /** 标签，逗号分隔多个标签 */
+    private String tags;
+
     private Integer viewCount;
 
     private Integer likeCount;
+
+    /** 状态: 1-正常, 0-已隐藏 */
+    private Integer status;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
