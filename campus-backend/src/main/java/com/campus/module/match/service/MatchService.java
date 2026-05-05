@@ -16,19 +16,20 @@ import com.campus.module.tutor.entity.TutorProfile;
 import com.campus.module.tutor.mapper.TutorProfileMapper;
 import com.campus.module.user.entity.SysUser;
 import com.campus.module.user.mapper.SysUserMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class MatchService {
 
     private static final Logger log = LoggerFactory.getLogger(MatchService.class);
@@ -44,6 +45,30 @@ public class MatchService {
     private final RealtimeIntentService realtimeIntentService;
     private final TrafficPoolService trafficPoolService;
     private final DeepFMInferenceService deepFMInferenceService;
+    private final ThreadPoolTaskExecutor matchScoringExecutor;
+
+    public MatchService(TutorProfileMapper tutorProfileMapper, SysUserMapper sysUserMapper,
+            GeoService geoService, MatchScoreCalculator scoreCalculator,
+            BehaviorService behaviorService, DynamicWeightCalculator dynamicWeightCalculator,
+            CollaborativeFilteringService cfService,
+            com.campus.module.match.config.CFConfig cfConfig,
+            RealtimeIntentService realtimeIntentService,
+            TrafficPoolService trafficPoolService,
+            DeepFMInferenceService deepFMInferenceService,
+            @Qualifier("matchScoringExecutor") ThreadPoolTaskExecutor matchScoringExecutor) {
+        this.tutorProfileMapper = tutorProfileMapper;
+        this.sysUserMapper = sysUserMapper;
+        this.geoService = geoService;
+        this.scoreCalculator = scoreCalculator;
+        this.behaviorService = behaviorService;
+        this.dynamicWeightCalculator = dynamicWeightCalculator;
+        this.cfService = cfService;
+        this.cfConfig = cfConfig;
+        this.realtimeIntentService = realtimeIntentService;
+        this.trafficPoolService = trafficPoolService;
+        this.deepFMInferenceService = deepFMInferenceService;
+        this.matchScoringExecutor = matchScoringExecutor;
+    }
 
     /**
      * 搜索教员
@@ -171,12 +196,7 @@ public class MatchService {
         Page<TutorProfile> pageParam = new Page<>(request.getPage(), request.getSize());
         IPage<TutorProfile> profilePage = tutorProfileMapper.selectPage(pageParam, wrapper);
 
-        // 调试日志：输出查询结果
         log.info("匹配查询完成: 总数={}, 当前页记录数={}", profilePage.getTotal(), profilePage.getRecords().size());
-        for (TutorProfile p : profilePage.getRecords()) {
-            log.debug("匹配教师: id={}, name={}, subjects={}, grades={}, price={}",
-                    p.getId(), p.getRealName(), p.getTeachSubjects(), p.getTeachGrades(), p.getExpectPrice());
-        }
 
         // 4. 如果Redis无数据但有位置请求，在内存中计算距离
         if (distanceMap.isEmpty() && request.getLongitude() != null && request.getLatitude() != null) {
@@ -268,136 +288,24 @@ public class MatchService {
         }
         boolean finalUseDeepFM = !deepFmScores.isEmpty();
 
-        List<TutorSearchResult> results = filteredProfiles.stream().map(profile -> {
-            // 获取动态权重配置
-            WeightConfig weights = dynamicWeightCalculator.getWeightsForUser(request.getUserId());
+        // 6. 并行评分：每个教员独立计算，使用线程池并行处理
+        WeightConfig weights = dynamicWeightCalculator.getWeightsForUser(request.getUserId());
+        Map<Long, Double> finalCfScoresCopy = finalCfScores;
+        double finalCfWeightCopy = finalCfWeight;
+        Long currentUserId = request.getUserId();
 
-            // 获取教员行为统计（热度分）
-            TutorBehaviorStats stats = behaviorService.getTutorStats(profile.getId());
-            Double hotnessScore = stats != null ? stats.getHotnessScore() : 0.0;
+        List<CompletableFuture<TutorSearchResult>> futures = filteredProfiles.stream()
+                .map(profile -> CompletableFuture.supplyAsync(() ->
+                        computeCandidateScore(profile, currentUserId, weights,
+                                finalUserMap, finalDistanceMap,
+                                finalEnableCF, finalCfWeightCopy, finalCfScoresCopy,
+                                finalUseDeepFM, deepFmScores),
+                        matchScoringExecutor))
+                .collect(Collectors.toList());
 
-            // 使用带行为信号的评分方法 (内容匹配 + 行为热度)
-            MatchScoreResult scoreResult = scoreCalculator.calculateScoreWithBehavior(
-                    profile,
-                    request.getSubject(),
-                    request.getGrade(),
-                    finalDistanceMap.get(profile.getId()),
-                    request.getMaxPrice(),
-                    hotnessScore,
-                    weights.getSubjectWeight(),
-                    weights.getGradeWeight(),
-                    weights.getDistanceWeight(),
-                    weights.getPriceWeight(),
-                    weights.getRatingWeight(),
-                    weights.getExperienceWeight(),
-                    weights.getEducationWeight(),
-                    weights.getSpecialtyWeight(),
-                    weights.getHotnessWeight());
-
-            // ============ 混合评分计算 (Hybrid Scoring) ============
-            if (finalEnableCF && finalCfScores.containsKey(profile.getId())) {
-                Double cfScore = finalCfScores.get(profile.getId());
-                if (cfScore != null) {
-                    double contentScore = scoreResult.getMatchScore();
-                    double cfScoreNormalized = cfScore * 100;
-                    double hybridScore = (1 - finalCfWeight) * contentScore + finalCfWeight * cfScoreNormalized;
-                    scoreResult.setMatchScore(Math.min(100.0, hybridScore));
-                    scoreResult.setCfScore(cfScore);
-                    if (cfScore >= 0.7) {
-                        scoreResult.getMatchTags().add("相似家长推荐");
-                    } else if (cfScore >= 0.5) {
-                        scoreResult.getMatchTags().add("猜你喜欢");
-                    }
-                    log.debug("Hybrid score for tutor {}: content={}, cf={}, hybrid={}",
-                            profile.getId(), contentScore, cfScoreNormalized, hybridScore);
-                }
-            }
-
-            // ============ DeepFM 精排融合 ============
-            if (finalUseDeepFM && deepFmScores.containsKey(profile.getId())) {
-                Double deepFmScore = deepFmScores.get(profile.getId());
-                if (deepFmScore != null) {
-                    double currentScore = scoreResult.getMatchScore();
-                    double deepFmNormalized = Math.min(100.0, deepFmScore * 100);
-                    double deepFmWeight = 0.3;
-                    double fusedScore = (1 - deepFmWeight) * currentScore + deepFmWeight * deepFmNormalized;
-                    scoreResult.setMatchScore(Math.min(100.0, fusedScore));
-                    log.debug("DeepFM fusion for tutor {}: rule={}, deepfm={}, fused={}",
-                            profile.getId(), currentScore, deepFmNormalized, fusedScore);
-                }
-            }
-
-            // ============ 实时意图加分 (Realtime Intent Boost) ============
-            try {
-                double intentBoost = realtimeIntentService.calculateIntentBoost(request.getUserId(), profile);
-                if (intentBoost > 0) {
-                    double boostedScore = scoreResult.getMatchScore() + intentBoost;
-                    scoreResult.setMatchScore(Math.min(100.0, boostedScore));
-                    scoreResult.getMatchTags().add("系统推荐");
-                    log.debug("Intent boost for tutor {}: +{}, new score={}",
-                            profile.getId(), intentBoost, scoreResult.getMatchScore());
-                }
-            } catch (Exception e) {
-                log.debug("意图加分失败(Redis不可用)，跳过: {}", e.getMessage());
-            }
-
-            // ============ 流量池赛马加分 (Traffic Pool Boost) ============
-            try {
-                com.campus.module.match.dto.TrafficPoolLevel poolLevel = trafficPoolService
-                        .getPoolLevel(profile.getId());
-                double poolBoost = trafficPoolService.getPoolBoostScore(poolLevel);
-                if (poolBoost > 0) {
-                    double poolBoostedScore = scoreResult.getMatchScore() + poolBoost;
-                    scoreResult.setMatchScore(Math.min(100.0, poolBoostedScore));
-                    String poolTag = trafficPoolService.getPoolTag(poolLevel);
-                    if (poolTag != null) {
-                        scoreResult.getMatchTags().add(poolTag);
-                    }
-                    log.debug("Pool boost for tutor {}: level={}, +{}, new score={}",
-                            profile.getId(), poolLevel, poolBoost, scoreResult.getMatchScore());
-                }
-            } catch (Exception e) {
-                log.debug("流量池加分失败(Redis不可用)，跳过: {}", e.getMessage());
-            }
-
-            scoreResult.setId(profile.getId());
-            scoreResult.setUserId(profile.getUserId());
-
-            String name = profile.getRealName();
-            scoreResult.setRealName(name);
-
-            // 获取头像
-            SysUser user = finalUserMap.get(profile.getUserId());
-            if (user != null) {
-                scoreResult.setAvatarUrl(user.getAvatarUrl());
-                scoreResult.setGender(user.getGender());
-            }
-
-            scoreResult.setUniversityName(profile.getUniversityName());
-            scoreResult.setMajor(profile.getMajor());
-            scoreResult.setEducation(profile.getEducation());
-
-            // 解析JSON
-            if (StringUtils.hasText(profile.getTeachSubjects())) {
-                scoreResult.setTeachSubjects(JSONUtil.toList(profile.getTeachSubjects(), String.class));
-            }
-            if (StringUtils.hasText(profile.getTeachGrades())) {
-                scoreResult.setTeachGrades(JSONUtil.toList(profile.getTeachGrades(), String.class));
-            }
-
-            scoreResult.setTeachStyle(profile.getTeachStyle());
-            scoreResult.setIntroduction(profile.getIntroduction());
-            scoreResult.setExpectPrice(profile.getExpectPrice());
-            scoreResult.setCanVisit(profile.getCanVisit());
-            scoreResult.setCanOnline(profile.getCanOnline());
-            scoreResult.setRating(profile.getRating());
-            scoreResult.setOrderCount(profile.getOrderCount());
-            scoreResult.setDistance(finalDistanceMap.get(profile.getId()));
-            if (profile.getLongitude() != null) scoreResult.setLongitude(profile.getLongitude().doubleValue());
-            if (profile.getLatitude() != null) scoreResult.setLatitude(profile.getLatitude().doubleValue());
-
-            return (TutorSearchResult) scoreResult;
-        }).collect(Collectors.toList());
+        List<TutorSearchResult> results = futures.stream()
+                .map(CompletableFuture::join)
+                .collect(Collectors.toList());
 
         // 如果按距离排序
         if ("distance".equals(sortBy) && !results.isEmpty()) {
@@ -437,6 +345,114 @@ public class MatchService {
     // ========================================================================================
     // LBS 召回 + DeepFM 深度学习精排 —— 级联推荐算法
     // ========================================================================================
+
+    /**
+     * 对单个教员执行完整评分流水线（供 searchTutors 并行调用）。
+     */
+    private TutorSearchResult computeCandidateScore(TutorProfile profile,
+            Long userId, WeightConfig weights,
+            Map<Long, SysUser> userMap, Map<Long, Double> distanceMap,
+            boolean enableCF, double cfWeight, Map<Long, Double> cfScores,
+            boolean useDeepFM, Map<Long, Double> deepFmScores) {
+
+        TutorBehaviorStats stats = behaviorService.getTutorStats(profile.getId());
+        Double hotnessScore = stats != null ? stats.getHotnessScore() : 0.0;
+
+        MatchScoreResult scoreResult = scoreCalculator.calculateScoreWithBehavior(
+                profile, null, null,
+                distanceMap.get(profile.getId()),
+                null, hotnessScore,
+                weights.getSubjectWeight(), weights.getGradeWeight(),
+                weights.getDistanceWeight(), weights.getPriceWeight(),
+                weights.getRatingWeight(), weights.getExperienceWeight(),
+                weights.getEducationWeight(), weights.getSpecialtyWeight(),
+                weights.getHotnessWeight());
+
+        // CF hybrid
+        if (enableCF && cfScores.containsKey(profile.getId())) {
+            Double cfScore = cfScores.get(profile.getId());
+            if (cfScore != null) {
+                double contentScore = scoreResult.getMatchScore();
+                double cfNormalized = cfScore * 100;
+                scoreResult.setMatchScore(Math.min(100.0, (1 - cfWeight) * contentScore + cfWeight * cfNormalized));
+                scoreResult.setCfScore(cfScore);
+                if (cfScore >= 0.7) {
+                    scoreResult.getMatchTags().add("相似家长推荐");
+                } else if (cfScore >= 0.5) {
+                    scoreResult.getMatchTags().add("猜你喜欢");
+                }
+            }
+        }
+
+        // DeepFM fusion
+        if (useDeepFM && deepFmScores.containsKey(profile.getId())) {
+            Double deepFmScore = deepFmScores.get(profile.getId());
+            if (deepFmScore != null) {
+                double current = scoreResult.getMatchScore();
+                double fused = (1 - 0.3) * current + 0.3 * Math.min(100.0, deepFmScore * 100);
+                scoreResult.setMatchScore(Math.min(100.0, fused));
+            }
+        }
+
+        // intent boost
+        try {
+            double boost = realtimeIntentService.calculateIntentBoost(userId, profile);
+            if (boost > 0) {
+                scoreResult.setMatchScore(Math.min(100.0, scoreResult.getMatchScore() + boost));
+                scoreResult.getMatchTags().add("系统推荐");
+            }
+        } catch (Exception e) {
+            log.debug("意图加分失败(Redis不可用)，跳过: {}", e.getMessage());
+        }
+
+        // traffic pool boost
+        try {
+            com.campus.module.match.dto.TrafficPoolLevel poolLevel =
+                    trafficPoolService.getPoolLevel(profile.getId());
+            double poolBoost = trafficPoolService.getPoolBoostScore(poolLevel);
+            if (poolBoost > 0) {
+                scoreResult.setMatchScore(Math.min(100.0, scoreResult.getMatchScore() + poolBoost));
+                String poolTag = trafficPoolService.getPoolTag(poolLevel);
+                if (poolTag != null) {
+                    scoreResult.getMatchTags().add(poolTag);
+                }
+            }
+        } catch (Exception e) {
+            log.debug("流量池加分失败(Redis不可用)，跳过: {}", e.getMessage());
+        }
+
+        scoreResult.setId(profile.getId());
+        scoreResult.setUserId(profile.getUserId());
+        scoreResult.setRealName(profile.getRealName());
+
+        SysUser user = userMap.get(profile.getUserId());
+        if (user != null) {
+            scoreResult.setAvatarUrl(user.getAvatarUrl());
+            scoreResult.setGender(user.getGender());
+        }
+        scoreResult.setUniversityName(profile.getUniversityName());
+        scoreResult.setMajor(profile.getMajor());
+        scoreResult.setEducation(profile.getEducation());
+
+        if (StringUtils.hasText(profile.getTeachSubjects())) {
+            scoreResult.setTeachSubjects(JSONUtil.toList(profile.getTeachSubjects(), String.class));
+        }
+        if (StringUtils.hasText(profile.getTeachGrades())) {
+            scoreResult.setTeachGrades(JSONUtil.toList(profile.getTeachGrades(), String.class));
+        }
+        scoreResult.setTeachStyle(profile.getTeachStyle());
+        scoreResult.setIntroduction(profile.getIntroduction());
+        scoreResult.setExpectPrice(profile.getExpectPrice());
+        scoreResult.setCanVisit(profile.getCanVisit());
+        scoreResult.setCanOnline(profile.getCanOnline());
+        scoreResult.setRating(profile.getRating());
+        scoreResult.setOrderCount(profile.getOrderCount());
+        scoreResult.setDistance(distanceMap.get(profile.getId()));
+        if (profile.getLongitude() != null) scoreResult.setLongitude(profile.getLongitude().doubleValue());
+        if (profile.getLatitude() != null) scoreResult.setLatitude(profile.getLatitude().doubleValue());
+
+        return scoreResult;
+    }
 
     private static final float PRICE_NORM = 500f;
     private static final float RATING_NORM = 5.0f;
@@ -552,155 +568,34 @@ public class MatchService {
             sysUserMapper.selectBatchIds(userIds).forEach(u -> userMap.put(u.getId(), u));
         }
 
-        List<MatchScoreResult> results = new ArrayList<>(n);
+        List<MatchScoreResult> results;
 
-        for (int i = 0; i < n; i++) {
-            TutorProfile profile = tutorProfiles.get(i);
-            MatchScoreResult result = new MatchScoreResult();
-            List<String> tags = new ArrayList<>();
-
-            // ---------- 计算 matchScore ----------
-            double matchScore;
-            if (!inferenceFailed && scores != null) {
-                // ===== 主路径：使用 DeepFM 预估得分（转换到 0-100 区间）=====
-                matchScore = Math.min(100.0, Math.max(0.0, scores[i] * 100.0));
-                result.setDeepFmScore((double) scores[i]);
-                if (scores[i] >= 0.8f) {
-                    tags.add("AI精选");
-                }
-            } else {
-                // ===== 降级路径：协同过滤 + 意图流 + 流量池 三层级联 =====
-
-                // ----- 第一层：基础 Content Score（评分+订单量加权） -----
-                double ratingVal = profile.getRating() != null
-                        ? profile.getRating().doubleValue()
-                        : 0.0;
-                int orderVal = profile.getOrderCount() != null
-                        ? profile.getOrderCount()
-                        : 0;
-                matchScore = ratingVal / 5.0 * 60.0 + Math.min(orderVal / 1000.0, 1.0) * 40.0;
-
-                // ----- 第二层：混合 CF 协同过滤得分 -----
-                if (cfEnabled && cfScoresMap.containsKey(profile.getId())) {
-                    Double cfScore = cfScoresMap.get(profile.getId());
-                    if (cfScore != null) {
-                        double cfScoreNormalized = cfScore * 100.0; // 归一化到 0-100
-                        matchScore = (1 - cfWeightVal) * matchScore + cfWeightVal * cfScoreNormalized;
-                        result.setCfScore(cfScore);
-
-                        if (cfScore >= 0.7) {
-                            tags.add("相似家长推荐");
-                        } else if (cfScore >= 0.5) {
-                            tags.add("猜你喜欢");
-                        }
-                        log.debug("[DeepFM降级] 教员{} CF混合: contentBase={}, cf={}, hybrid={}",
-                                profile.getId(), ratingVal, cfScoreNormalized, matchScore);
-                    }
-                }
-
-                // ----- 第三层：实时意图加分 (Realtime Intent Boost) -----
-                try {
-                    double intentBoost = realtimeIntentService.calculateIntentBoost(userId, profile);
-                    if (intentBoost > 0) {
-                        matchScore = Math.min(100.0, matchScore + intentBoost);
-                        tags.add("系统推荐");
-                        log.debug("[DeepFM降级] 教员{} 意图加分: +{}, newScore={}",
-                                profile.getId(), intentBoost, matchScore);
-                    }
-                } catch (Exception e) {
-                    log.debug("[DeepFM降级] 意图加分失败(Redis不可用)，跳过: {}", e.getMessage());
-                }
-
-                // ----- 第四层：流量池赛马加分 (Traffic Pool Boost) -----
-                try {
-                    com.campus.module.match.dto.TrafficPoolLevel poolLevel = trafficPoolService
-                            .getPoolLevel(profile.getId());
-                    double poolBoost = trafficPoolService.getPoolBoostScore(poolLevel);
-                    if (poolBoost > 0) {
-                        matchScore = Math.min(100.0, matchScore + poolBoost);
-                        String poolTag = trafficPoolService.getPoolTag(poolLevel);
-                        if (poolTag != null) {
-                            tags.add(poolTag);
-                        }
-                        log.debug("[DeepFM降级] 教员{} 流量池加分: level={}, +{}, newScore={}",
-                                profile.getId(), poolLevel, poolBoost, matchScore);
-                    }
-                } catch (Exception e) {
-                    log.debug("[DeepFM降级] 流量池加分失败(Redis不可用)，跳过: {}", e.getMessage());
-                }
+        if (!inferenceFailed && scores != null) {
+            // DeepFM 主路径 — 并行组装结果
+            float[] finalScores = scores;
+            List<CompletableFuture<MatchScoreResult>> futures = new ArrayList<>(n);
+            for (int i = 0; i < n; i++) {
+                final int idx = i;
+                TutorProfile profile = tutorProfiles.get(i);
+                futures.add(CompletableFuture.supplyAsync(() ->
+                        buildRecommendedResultDeepFM(profile, userId, userMap,
+                                nearbyWithDistance, finalScores[idx]),
+                        matchScoringExecutor));
             }
-
-            result.setMatchScore(matchScore);
-
-            // ---------- 填充基本信息 ----------
-            result.setId(profile.getId());
-            result.setUserId(profile.getUserId());
-
-            String name = profile.getRealName();
-            result.setRealName(name);
-
-            // 头像
-            SysUser user = userMap.get(profile.getUserId());
-            if (user != null) {
-                result.setAvatarUrl(user.getAvatarUrl());
-                result.setGender(user.getGender());
+            results = futures.stream().map(CompletableFuture::join).collect(Collectors.toList());
+        } else {
+            // 降级路径 — 并行计算
+            boolean finalCfEnabled = cfEnabled;
+            double finalCfWeight = cfWeightVal;
+            Map<Long, Double> finalCfScores = cfScoresMap;
+            List<CompletableFuture<MatchScoreResult>> futures = new ArrayList<>(n);
+            for (TutorProfile profile : tutorProfiles) {
+                futures.add(CompletableFuture.supplyAsync(() ->
+                        buildRecommendedResultFallback(profile, userId, userMap,
+                                nearbyWithDistance, finalCfEnabled, finalCfWeight, finalCfScores),
+                        matchScoringExecutor));
             }
-
-            result.setUniversityName(profile.getUniversityName());
-            result.setMajor(profile.getMajor());
-            result.setEducation(profile.getEducation());
-
-            // 解析 JSON 数组字段
-            if (org.springframework.util.StringUtils.hasText(profile.getTeachSubjects())) {
-                result.setTeachSubjects(JSONUtil.toList(profile.getTeachSubjects(), String.class));
-            }
-            if (org.springframework.util.StringUtils.hasText(profile.getTeachGrades())) {
-                result.setTeachGrades(JSONUtil.toList(profile.getTeachGrades(), String.class));
-            }
-
-            result.setTeachStyle(profile.getTeachStyle());
-            result.setIntroduction(profile.getIntroduction());
-            result.setExpectPrice(profile.getExpectPrice());
-            result.setCanVisit(profile.getCanVisit());
-            result.setCanOnline(profile.getCanOnline());
-            result.setRating(profile.getRating());
-            result.setOrderCount(profile.getOrderCount());
-            result.setDistance(nearbyWithDistance.get(profile.getId()));
-
-            // 添加通用标签：距离
-            Double dist = nearbyWithDistance.get(profile.getId());
-            if (dist != null) {
-                if (dist <= 1.0) {
-                    tags.add("超近");
-                } else if (dist <= 3.0) {
-                    tags.add("距离近");
-                } else if (dist <= 5.0) {
-                    tags.add("同城");
-                }
-            }
-            // 评分标签
-            if (profile.getRating() != null) {
-                double r = profile.getRating().doubleValue();
-                if (r >= 4.8) {
-                    tags.add("口碑之星");
-                } else if (r >= 4.5) {
-                    tags.add("高评分");
-                } else if (r >= 4.0) {
-                    tags.add("好评");
-                }
-            }
-            // 经验标签
-            int orderCnt = profile.getOrderCount() != null ? profile.getOrderCount() : 0;
-            if (orderCnt >= 50) {
-                tags.add("资深名师");
-            } else if (orderCnt >= 20) {
-                tags.add("经验丰富");
-            } else if (orderCnt >= 10) {
-                tags.add("教学有方");
-            }
-            result.setMatchTags(tags);
-
-            results.add(result);
+            results = futures.stream().map(CompletableFuture::join).collect(Collectors.toList());
         }
 
         // 按 matchScore 从高到低排序
@@ -714,6 +609,134 @@ public class MatchService {
                 results.size(), inferenceFailed ? "降级(协同过滤+意图流+流量池)" : "DeepFM模型");
 
         return new ArrayList<>(results);
+    }
+
+    /**
+     * DeepFM 路径：并行组装单个教员结果
+     */
+    private MatchScoreResult buildRecommendedResultDeepFM(TutorProfile profile,
+            Long userId, Map<Long, SysUser> userMap,
+            Map<Long, Double> nearbyWithDistance, float deepFmScore) {
+        MatchScoreResult result = new MatchScoreResult();
+        List<String> tags = new ArrayList<>();
+
+        double matchScore = Math.min(100.0, Math.max(0.0, deepFmScore * 100.0));
+        result.setDeepFmScore((double) deepFmScore);
+        if (deepFmScore >= 0.8f) {
+            tags.add("AI精选");
+        }
+
+        fillRecommendedResultFields(result, profile, userId, userMap, nearbyWithDistance, tags, matchScore);
+        return result;
+    }
+
+    /**
+     * 降级路径：并行计算单个教员结果
+     */
+    private MatchScoreResult buildRecommendedResultFallback(TutorProfile profile,
+            Long userId, Map<Long, SysUser> userMap,
+            Map<Long, Double> nearbyWithDistance,
+            boolean cfEnabled, double cfWeight, Map<Long, Double> cfScores) {
+        MatchScoreResult result = new MatchScoreResult();
+        List<String> tags = new ArrayList<>();
+
+        double ratingVal = profile.getRating() != null ? profile.getRating().doubleValue() : 0.0;
+        int orderVal = profile.getOrderCount() != null ? profile.getOrderCount() : 0;
+        double matchScore = ratingVal / 5.0 * 60.0 + Math.min(orderVal / 1000.0, 1.0) * 40.0;
+
+        if (cfEnabled && cfScores.containsKey(profile.getId())) {
+            Double cfScore = cfScores.get(profile.getId());
+            if (cfScore != null) {
+                double cfNormalized = cfScore * 100.0;
+                matchScore = (1 - cfWeight) * matchScore + cfWeight * cfNormalized;
+                result.setCfScore(cfScore);
+                if (cfScore >= 0.7) tags.add("相似家长推荐");
+                else if (cfScore >= 0.5) tags.add("猜你喜欢");
+            }
+        }
+
+        try {
+            double boost = realtimeIntentService.calculateIntentBoost(userId, profile);
+            if (boost > 0) {
+                matchScore = Math.min(100.0, matchScore + boost);
+                tags.add("系统推荐");
+            }
+        } catch (Exception e) {
+            log.debug("[DeepFM降级] 意图加分失败(Redis不可用)，跳过: {}", e.getMessage());
+        }
+
+        try {
+            com.campus.module.match.dto.TrafficPoolLevel poolLevel =
+                    trafficPoolService.getPoolLevel(profile.getId());
+            double poolBoost = trafficPoolService.getPoolBoostScore(poolLevel);
+            if (poolBoost > 0) {
+                matchScore = Math.min(100.0, matchScore + poolBoost);
+                String poolTag = trafficPoolService.getPoolTag(poolLevel);
+                if (poolTag != null) tags.add(poolTag);
+            }
+        } catch (Exception e) {
+            log.debug("[DeepFM降级] 流量池加分失败(Redis不可用)，跳过: {}", e.getMessage());
+        }
+
+        fillRecommendedResultFields(result, profile, userId, userMap, nearbyWithDistance, tags, matchScore);
+        return result;
+    }
+
+    /**
+     * 填充推荐结果的公共字段
+     */
+    private void fillRecommendedResultFields(MatchScoreResult result, TutorProfile profile,
+            Long userId, Map<Long, SysUser> userMap,
+            Map<Long, Double> nearbyWithDistance, List<String> tags, double matchScore) {
+        result.setMatchScore(matchScore);
+        result.setId(profile.getId());
+        result.setUserId(profile.getUserId());
+        result.setRealName(profile.getRealName());
+
+        SysUser user = userMap.get(profile.getUserId());
+        if (user != null) {
+            result.setAvatarUrl(user.getAvatarUrl());
+            result.setGender(user.getGender());
+        }
+
+        result.setUniversityName(profile.getUniversityName());
+        result.setMajor(profile.getMajor());
+        result.setEducation(profile.getEducation());
+
+        if (org.springframework.util.StringUtils.hasText(profile.getTeachSubjects())) {
+            result.setTeachSubjects(JSONUtil.toList(profile.getTeachSubjects(), String.class));
+        }
+        if (org.springframework.util.StringUtils.hasText(profile.getTeachGrades())) {
+            result.setTeachGrades(JSONUtil.toList(profile.getTeachGrades(), String.class));
+        }
+
+        result.setTeachStyle(profile.getTeachStyle());
+        result.setIntroduction(profile.getIntroduction());
+        result.setExpectPrice(profile.getExpectPrice());
+        result.setCanVisit(profile.getCanVisit());
+        result.setCanOnline(profile.getCanOnline());
+        result.setRating(profile.getRating());
+        result.setOrderCount(profile.getOrderCount());
+        result.setDistance(nearbyWithDistance.get(profile.getId()));
+
+        Double dist = nearbyWithDistance.get(profile.getId());
+        if (dist != null) {
+            if (dist <= 1.0) tags.add("超近");
+            else if (dist <= 3.0) tags.add("距离近");
+            else if (dist <= 5.0) tags.add("同城");
+        }
+        if (profile.getRating() != null) {
+            double r = profile.getRating().doubleValue();
+            if (r >= 4.8) tags.add("口碑之星");
+            else if (r >= 4.5) tags.add("高评分");
+            else if (r >= 4.0) tags.add("好评");
+        }
+        int orderCnt = profile.getOrderCount() != null ? profile.getOrderCount() : 0;
+        if (orderCnt >= 50) tags.add("资深名师");
+        else if (orderCnt >= 20) tags.add("经验丰富");
+        else if (orderCnt >= 10) tags.add("教学有方");
+
+        result.setMatchTags(tags);
     }
 
     /**

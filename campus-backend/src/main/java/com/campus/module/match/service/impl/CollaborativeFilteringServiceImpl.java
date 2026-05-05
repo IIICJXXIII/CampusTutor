@@ -11,10 +11,14 @@ import com.campus.module.order.mapper.CourseOrderMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -41,6 +45,10 @@ public class CollaborativeFilteringServiceImpl implements CollaborativeFiltering
 
     @Autowired(required = false)
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired
+    @Qualifier("cfComputeExecutor")
+    private ThreadPoolTaskExecutor cfComputeExecutor;
 
     /**
      * 构建用户的隐式评分向量
@@ -200,14 +208,16 @@ public class CollaborativeFilteringServiceImpl implements CollaborativeFiltering
             }
         }
 
-        // 3. 计算相似度并排序
-        List<UserSimilarity> similarities = new ArrayList<>();
-        for (Long candidateId : candidateUsers) {
-            UserSimilarity sim = calculateSimilarity(userId, candidateId);
-            if (sim.getSimilarity() >= cfConfig.getMinSimilarity()) {
-                similarities.add(sim);
-            }
-        }
+        // 3. 并行计算相似度并过滤
+        List<CompletableFuture<UserSimilarity>> simFutures = candidateUsers.stream()
+                .map(cid -> CompletableFuture.supplyAsync(
+                        () -> calculateSimilarity(userId, cid), cfComputeExecutor))
+                .collect(Collectors.toList());
+
+        List<UserSimilarity> similarities = simFutures.stream()
+                .map(CompletableFuture::join)
+                .filter(sim -> sim.getSimilarity() >= cfConfig.getMinSimilarity())
+                .collect(Collectors.toList());
 
         // 按相似度降序排序
         similarities.sort((a, b) -> Double.compare(b.getSimilarity(), a.getSimilarity()));
@@ -359,31 +369,35 @@ public class CollaborativeFilteringServiceImpl implements CollaborativeFiltering
             return Collections.emptyMap();
         }
 
-        // 缓存相似用户的评分向量
-        Map<Long, Map<Long, Double>> similarUserRatings = new HashMap<>();
-        for (UserSimilarity sim : similarUsers) {
-            similarUserRatings.put(sim.getUserId(), buildUserRatingVector(sim.getUserId()));
-        }
+        // 并行构建相似用户的评分向量
+        Map<Long, Map<Long, Double>> similarUserRatings = new ConcurrentHashMap<>();
+        List<CompletableFuture<Void>> ratingFutures = similarUsers.stream()
+                .map(sim -> CompletableFuture.runAsync(() ->
+                        similarUserRatings.put(sim.getUserId(), buildUserRatingVector(sim.getUserId())),
+                        cfComputeExecutor))
+                .collect(Collectors.toList());
+        ratingFutures.forEach(CompletableFuture::join);
 
-        // 批量计算预测分数
-        Map<Long, Double> predictions = new HashMap<>();
-        for (Long tutorId : tutorIds) {
-            double weightedSum = 0.0;
-            double totalWeight = 0.0;
-
-            for (UserSimilarity sim : similarUsers) {
-                Map<Long, Double> ratings = similarUserRatings.get(sim.getUserId());
-                if (ratings.containsKey(tutorId)) {
-                    double rating = ratings.get(tutorId);
-                    weightedSum += sim.getSimilarity() * rating;
-                    totalWeight += Math.abs(sim.getSimilarity());
-                }
-            }
-
-            if (totalWeight > 0) {
-                predictions.put(tutorId, weightedSum / totalWeight);
-            }
-        }
+        // 并行批量计算预测分数
+        Map<Long, Double> predictions = new ConcurrentHashMap<>();
+        List<CompletableFuture<Void>> predFutures = tutorIds.stream()
+                .map(tutorId -> CompletableFuture.runAsync(() -> {
+                    double weightedSum = 0.0;
+                    double totalWeight = 0.0;
+                    for (UserSimilarity sim : similarUsers) {
+                        Map<Long, Double> ratings = similarUserRatings.get(sim.getUserId());
+                        if (ratings.containsKey(tutorId)) {
+                            double rating = ratings.get(tutorId);
+                            weightedSum += sim.getSimilarity() * rating;
+                            totalWeight += Math.abs(sim.getSimilarity());
+                        }
+                    }
+                    if (totalWeight > 0) {
+                        predictions.put(tutorId, weightedSum / totalWeight);
+                    }
+                }, cfComputeExecutor))
+                .collect(Collectors.toList());
+        predFutures.forEach(CompletableFuture::join);
 
         return predictions;
     }

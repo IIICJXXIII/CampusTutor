@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -43,6 +44,7 @@ public class BehaviorServiceImpl implements BehaviorService {
     public static final int ACTION_CHAT = 4;
     public static final int ACTION_ORDER = 5;
 
+    @Async("behaviorAsyncExecutor")
     @Override
     public void recordAction(Long userId, Long targetId, Integer actionType, Integer duration) {
         if (userId == null || actionType == null || targetId == null) {
