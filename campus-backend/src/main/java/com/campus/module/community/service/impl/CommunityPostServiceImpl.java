@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.campus.common.context.UserContext;
 import com.campus.common.exception.BusinessException;
+import com.campus.common.result.ResultCode;
+import com.campus.module.community.dto.CommunityPostRequest;
 import com.campus.module.community.entity.CommunityPost;
 import com.campus.module.community.entity.CommunityPostLike;
 import com.campus.module.community.mapper.CommunityPostLikeMapper;
@@ -39,6 +41,7 @@ public class CommunityPostServiceImpl extends ServiceImpl<CommunityPostMapper, C
         if (topicType != null) {
             wrapper.eq(CommunityPost::getTopicType, topicType);
         }
+        wrapper.eq(CommunityPost::getStatus, 1);
         wrapper.orderByDesc(CommunityPost::getCreateTime);
         IPage<CommunityPost> result = page(pageParam, wrapper);
         result.getRecords().forEach(this::fillPostInfo);
@@ -47,9 +50,22 @@ public class CommunityPostServiceImpl extends ServiceImpl<CommunityPostMapper, C
     }
 
     @Override
+    public IPage<CommunityPost> adminListPosts(Integer topicType, Integer page, Integer size) {
+        Page<CommunityPost> pageParam = new Page<>(page, size);
+        LambdaQueryWrapper<CommunityPost> wrapper = new LambdaQueryWrapper<CommunityPost>();
+        if (topicType != null) {
+            wrapper.eq(CommunityPost::getTopicType, topicType);
+        }
+        wrapper.orderByDesc(CommunityPost::getCreateTime);
+        IPage<CommunityPost> result = page(pageParam, wrapper);
+        result.getRecords().forEach(this::fillPostInfo);
+        return result;
+    }
+
+    @Override
     public CommunityPost getPostDetail(Long id) {
         CommunityPost post = getById(id);
-        if (post == null) {
+        if (post == null || !Integer.valueOf(1).equals(post.getStatus())) {
             throw new BusinessException("帖子不存在");
         }
         update(new LambdaUpdateWrapper<CommunityPost>()
@@ -62,12 +78,32 @@ public class CommunityPostServiceImpl extends ServiceImpl<CommunityPostMapper, C
     }
 
     @Override
-    public CommunityPost createPost(Long userId, CommunityPost post) {
+    @Transactional(rollbackFor = Exception.class)
+    public Long createPost(Long userId, CommunityPostRequest request) {
+        CommunityPost post = new CommunityPost();
         post.setUserId(userId);
+        post.setTitle(request.getTitle().trim());
+        post.setContent(request.getContent().trim());
+        post.setTopicType(request.getTopicType());
+        post.setTags(request.getTags() != null ? request.getTags().trim() : null);
+        post.setImages(request.getImages());
         post.setViewCount(0);
         post.setLikeCount(0);
+        post.setStatus(1);
         save(post);
-        return post;
+        return post.getId();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deletePost(Long id) {
+        CommunityPost post = getById(id);
+        if (post == null) {
+            throw new BusinessException(ResultCode.POST_NOT_FOUND.getCode(), ResultCode.POST_NOT_FOUND.getMsg());
+        }
+        update(new LambdaUpdateWrapper<CommunityPost>()
+                .eq(CommunityPost::getId, id)
+                .set(CommunityPost::getStatus, 0));
     }
 
     @Override

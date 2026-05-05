@@ -2,59 +2,83 @@
   <div class="community-page">
     <van-nav-bar title="社区">
       <template #right>
-        <el-button type="primary" size="small" @click="showPostDialog = true">发帖</el-button>
+        <el-button type="primary" size="small" @click="openPostDialog">发帖</el-button>
       </template>
     </van-nav-bar>
 
     <div class="filter-bar">
-      <el-radio-group v-model="topicType" size="small" @change="loadPosts">
+      <el-radio-group v-model="topicType" size="small" @change="switchFilter">
         <el-radio-button :value="null">全部</el-radio-button>
         <el-radio-button :value="1">经验分享</el-radio-button>
         <el-radio-button :value="2">难题求助</el-radio-button>
       </el-radio-group>
+      <el-button v-if="userStore.isLoggedIn" type="primary" size="small" round class="publish-btn" @click="openPostDialog"><el-icon><Plus /></el-icon>发布</el-button>
+      <el-button v-else type="primary" size="small" round plain class="publish-btn" @click="goLogin"><el-icon><Plus /></el-icon>发布</el-button>
     </div>
 
     <div class="post-list" v-loading="loading">
-      <el-empty v-if="!loading && posts.length === 0" description="暂无帖子" />
+      <el-empty v-if="!loading && posts.length === 0" description="还没有帖子，快来发布第一条吧" />
 
       <div v-for="post in posts" :key="post.id" class="post-card" @click="viewPost(post)">
         <div class="post-header">
-          <el-avatar :size="32" :src="post.authorAvatar || undefined">
+          <el-avatar :size="36" :src="post.authorAvatar || undefined">
             {{ post.authorNickname?.charAt(0) }}
           </el-avatar>
           <div class="post-meta">
             <span class="author">{{ post.authorNickname || '用户' }}</span>
-            <span class="time">{{ post.createTime }}</span>
+            <span class="time">{{ formatTime(post.createTime) }}</span>
           </div>
-          <el-tag :type="post.topicType === 1 ? 'primary' : 'warning'" size="small">
+          <el-tag :type="post.topicType === 1 ? 'success' : 'warning'" size="small">
             {{ post.topicType === 1 ? '经验分享' : '难题求助' }}
           </el-tag>
         </div>
         <h3 class="post-title">{{ post.title }}</h3>
         <p class="post-content" v-if="post.content">{{ post.content }}</p>
+        <div class="post-tags" v-if="post.tags">
+          <span v-for="tag in parseTags(post.tags)" :key="tag" class="tag-chip" :style="{ background: tagColor(tag).bg, color: tagColor(tag).fg }">
+            {{ tag }}
+          </span>
+        </div>
         <div class="post-stats">
           <span><el-icon><View /></el-icon> {{ post.viewCount || 0 }}</span>
           <span><el-icon><ChatDotRound /></el-icon> {{ post.replyCount || 0 }}</span>
           <span @click.stop="handleLike(post)" class="like-btn" :class="{ active: post.liked }">
-            <el-icon><StarFilled v-if="post.liked" /><Star v-else /></el-icon> {{ post.likeCount || 0 }}
+            <svg viewBox="0 0 24 24" width="14" height="14" :fill="post.liked ? '#f56c6c' : 'none'" :stroke="post.liked ? '#f56c6c' : 'currentColor'" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            {{ post.likeCount || 0 }}
           </span>
         </div>
       </div>
     </div>
 
-    <el-dialog v-model="showPostDialog" title="发布帖子" width="90%" :close-on-click-modal="false">
+    <!-- 发布弹窗 -->
+    <el-dialog v-model="showPostDialog" title="发布帖子" width="90%" :close-on-click-modal="false" destroy-on-close>
       <el-form :model="postForm" label-position="top">
-        <el-form-item label="类型">
-          <el-radio-group v-model="postForm.topicType">
-            <el-radio :value="1">经验分享</el-radio>
-            <el-radio :value="2">难题求助</el-radio>
-          </el-radio-group>
+        <el-form-item label="话题类型">
+          <div class="topic-selector">
+            <div class="topic-card" :class="{ active: postForm.topicType === 1 }" @click="postForm.topicType = 1">
+              <el-icon :size="22" color="#67C23A"><Promotion /></el-icon>
+              <span>经验分享</span>
+            </div>
+            <div class="topic-card" :class="{ active: postForm.topicType === 2 }" @click="postForm.topicType = 2">
+              <el-icon :size="22" color="#E6A23C"><QuestionFilled /></el-icon>
+              <span>难题求助</span>
+            </div>
+          </div>
         </el-form-item>
-        <el-form-item label="标题">
+
+        <el-form-item label="选择标签">
+          <div class="tag-selector">
+            <span v-for="tag in COMMUNITY_TAGS" :key="tag" class="tag-option" :class="{ selected: selectedTags.includes(tag) }" @click="toggleTag(tag)">
+              {{ tag }}
+            </span>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="帖子标题">
           <el-input v-model="postForm.title" placeholder="请输入标题" maxlength="128" show-word-limit />
         </el-form-item>
-        <el-form-item label="内容">
-          <el-input v-model="postForm.content" type="textarea" :rows="4" placeholder="请输入内容" />
+        <el-form-item label="帖子内容">
+          <el-input v-model="postForm.content" type="textarea" :rows="5" placeholder="请输入内容" maxlength="5000" show-word-limit resize="none" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -69,159 +93,121 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { View, ChatDotRound, Star, StarFilled } from '@element-plus/icons-vue'
-import { getCommunityPosts, createCommunityPost, likeCommunityPost } from '@shared/api/community'
+import { View, ChatDotRound, Plus, Promotion, QuestionFilled } from '@element-plus/icons-vue'
+import { getCommunityPosts, createCommunityPost, likeCommunityPost, COMMUNITY_TAGS } from '@shared/api/community'
+import { useUserStore } from '@shared/stores'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import 'dayjs/locale/zh-cn'
+dayjs.extend(relativeTime)
+dayjs.locale('zh-cn')
 
 const router = useRouter()
+const userStore = useUserStore()
 const loading = ref(false)
 const posts = ref([])
 const topicType = ref(null)
 const showPostDialog = ref(false)
 const submitting = ref(false)
+const selectedTags = ref([])
 const postForm = ref({ topicType: 1, title: '', content: '' })
 
-onMounted(() => {
-  loadPosts()
-})
+const tagColors = {
+  '学习经验': { bg: '#e8f5e9', fg: '#2e7d32' },
+  '考试技巧': { bg: '#fff3e0', fg: '#e65100' },
+  '选课建议': { bg: '#e3f2fd', fg: '#1565c0' },
+  '校园生活': { bg: '#fce4ec', fg: '#c62828' },
+  '活动推荐': { bg: '#f3e5f5', fg: '#6a1b9a' },
+  '求助问答': { bg: '#fff8e1', fg: '#f57f17' }
+}
+const tagColor = (tag) => tagColors[tag] || { bg: '#f5f5f5', fg: '#616161' }
+const parseTags = (s) => s ? s.split(',').map(t => t.trim()).filter(Boolean) : []
+
+const toggleTag = (tag) => {
+  const idx = selectedTags.value.indexOf(tag)
+  if (idx >= 0) selectedTags.value.splice(idx, 1)
+  else if (selectedTags.value.length < 5) selectedTags.value.push(tag)
+}
+
+const formatTime = (time) => {
+  if (!time) return ''
+  const d = dayjs(time); const now = dayjs()
+  if (now.diff(d, 'minute') < 1) return '刚刚'
+  if (now.diff(d, 'hour') < 24) return d.fromNow()
+  return d.format('MM-DD HH:mm')
+}
+
+const openPostDialog = () => { postForm.value = { topicType: 1, title: '', content: '' }; selectedTags.value = []; showPostDialog.value = true }
+const goLogin = () => router.push('/login')
+const switchFilter = () => loadPosts()
+
+onMounted(() => { loadPosts() })
 
 const loadPosts = async () => {
   loading.value = true
   try {
     const res = await getCommunityPosts({ topicType: topicType.value, page: 1, size: 20 })
-    if (res.code === 200) {
-      posts.value = res.data?.records || []
-    }
-  } catch (e) {
-    console.error(e)
-  } finally {
-    loading.value = false
-  }
+    if (res.code === 200) posts.value = res.data?.records || []
+  } catch (e) { console.error(e) } finally { loading.value = false }
 }
 
-const viewPost = (post) => {
-  router.push(`/community/${post.id}`)
-}
+const viewPost = (post) => router.push(`/community/${post.id}`)
 
 const handleLike = async (post) => {
   try {
     const res = await likeCommunityPost(post.id)
-    if (res.code === 200) {
-      const liked = res.data.liked
-      post.liked = liked
-      post.likeCount = (post.likeCount || 0) + (liked ? 1 : -1)
-    }
-  } catch (e) {
-    console.error(e)
-  }
+    if (res.code === 200) { const liked = res.data.liked; post.liked = liked; post.likeCount = (post.likeCount || 0) + (liked ? 1 : -1) }
+  } catch (e) { console.error(e) }
 }
 
 const handleCreatePost = async () => {
-  if (!postForm.value.title) {
-    ElMessage.warning('请输入标题')
-    return
-  }
+  if (!postForm.value.title) { ElMessage.warning('请输入标题'); return }
+  if (!postForm.value.content) { ElMessage.warning('请输入内容'); return }
   submitting.value = true
   try {
-    const res = await createCommunityPost(postForm.value)
-    if (res.code === 200) {
-      ElMessage.success('发布成功')
-      showPostDialog.value = false
-      postForm.value = { topicType: 1, title: '', content: '' }
-      loadPosts()
-    }
-  } catch (e) {
-    ElMessage.error('发布失败')
-  } finally {
-    submitting.value = false
-  }
+    const data = { ...postForm.value, tags: selectedTags.value.join(',') }
+    const res = await createCommunityPost(data)
+    if (res.code === 200) { ElMessage.success('发布成功'); showPostDialog.value = false; loadPosts() }
+  } catch (e) { ElMessage.error('发布失败') } finally { submitting.value = false }
 }
 </script>
 
 <style lang="scss" scoped>
-.community-page {
-  min-height: 100vh;
-  background: #f5f7fa;
-}
+.community-page { min-height: 100vh; background: #f5f7fa; }
 
 .filter-bar {
-  padding: 12px 16px;
-  background: #fff;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: #fff; gap: 10px;
 }
+.publish-btn { flex-shrink: 0; }
 
-.post-list {
-  padding: 12px 16px;
-}
+.post-list { padding: 12px 16px; }
 
 .post-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  cursor: pointer;
-  transition: transform 0.2s;
-
-  &:hover {
-    transform: translateY(-1px);
-  }
+  background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer; transition: transform 0.2s;
+  &:hover { transform: translateY(-1px); }
 }
 
 .post-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-
-  .post-meta {
-    flex: 1;
-
-    .author {
-      display: block;
-      font-size: 14px;
-      font-weight: 500;
-      color: #303133;
-    }
-
-    .time {
-      font-size: 12px;
-      color: #909399;
-    }
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+  .post-meta { flex: 1;
+    .author { display: block; font-size: 14px; font-weight: 500; color: #303133; }
+    .time { font-size: 12px; color: #c0c4cc; }
   }
 }
 
-.post-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0 0 8px;
-}
+.post-title { font-size: 17px; font-weight: 600; color: #303133; margin: 0 0 8px; }
+.post-content { font-size: 14px; color: #909399; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin: 0 0 10px; }
 
-.post-content {
-  font-size: 14px;
-  color: #606266;
-  line-height: 1.6;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin: 0 0 10px;
-}
+.post-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tag-chip { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 500; }
 
-.post-stats {
-  display: flex;
-  gap: 20px;
-  font-size: 13px;
-  color: #909399;
+.post-stats { display: flex; gap: 20px; font-size: 13px; color: #909399; span { display: flex; align-items: center; gap: 4px; } .like-btn { transition: color 0.2s; &.active { color: #f56c6c; } } }
 
-  span {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .like-btn {
-    transition: color 0.2s;
-    &.active { color: #f56c6c; }
-  }
-}
+// 发布弹窗
+.topic-selector { display: flex; gap: 12px; width: 100%; }
+.topic-card { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px; border: 2px solid #ebeef5; border-radius: 12px; cursor: pointer; transition: all 0.2s; span { font-size: 13px; color: #606266; } &.active { border-color: #409EFF; background: #ecf5ff; span { color: #409EFF; } } }
+.tag-selector { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag-option { padding: 5px 12px; border-radius: 16px; font-size: 12px; background: #f5f7fa; color: #909399; cursor: pointer; transition: all 0.2s; &.selected { background: #ecf5ff; color: #409EFF; font-weight: 500; } }
 </style>

@@ -34,7 +34,11 @@ public enum ResultCode {
     BALANCE_NOT_ENOUGH(5203, "余额不足"),
     REFUND_FAILED(5204, "退款失败"),
     REFUND_AMOUNT_INVALID(5205, "退款金额无效"),
-    PAYMENT_FAILED(5206, "支付失败");
+    PAYMENT_FAILED(5206, "支付失败"),
+
+    POST_TITLE_EMPTY(5301, "帖子标题不能为空"),
+    POST_CONTENT_EMPTY(5302, "帖子内容不能为空"),
+    POST_NOT_FOUND(5303, "帖子不存在");
 
     private final Integer code;
     private final String msg;
