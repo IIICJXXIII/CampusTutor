@@ -12,6 +12,8 @@
         <el-radio-button :value="1">经验分享</el-radio-button>
         <el-radio-button :value="2">难题求助</el-radio-button>
       </el-radio-group>
+      <el-button v-if="userStore.isLoggedIn" type="primary" size="small" round class="filter-bar-publish-btn" @click="openPostDialog"><el-icon><Plus /></el-icon>发布帖子</el-button>
+      <el-button v-else type="primary" size="small" round plain class="filter-bar-publish-btn" @click="goLogin"><el-icon><Plus /></el-icon>登录发帖</el-button>
     </div>
 
     <div class="post-list" v-loading="loading">
@@ -36,7 +38,7 @@
           <span><el-icon><View /></el-icon> {{ post.viewCount || 0 }}</span>
           <span><el-icon><ChatDotRound /></el-icon> {{ post.replyCount || 0 }}</span>
           <span @click.stop="handleLike(post)" class="like-btn" :class="{ active: post.liked }">
-            <el-icon><StarFilled v-if="post.liked" /><Star v-else /></el-icon> {{ post.likeCount || 0 }}
+            <svg viewBox="0 0 24 24" width="14" height="14" :fill="post.liked ? '#f56c6c' : 'none'" :stroke="post.liked ? '#f56c6c' : 'currentColor'" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> {{ post.likeCount || 0 }}
           </span>
         </div>
       </div>
@@ -69,10 +71,12 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { View, ChatDotRound, Star, StarFilled } from '@element-plus/icons-vue'
+import { View, ChatDotRound, Plus } from '@element-plus/icons-vue'
 import { getCommunityPosts, createCommunityPost, likeCommunityPost } from '@shared/api/community'
+import { useUserStore } from '@shared/stores'
 
 const router = useRouter()
+const userStore = useUserStore()
 const loading = ref(false)
 const posts = ref([])
 const topicType = ref(null)
@@ -144,9 +148,14 @@ const handleCreatePost = async () => {
 }
 
 .filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 12px 16px;
   background: #fff;
+  gap: 12px;
 }
+.filter-bar-publish-btn { flex-shrink: 0; font-weight: 500; }
 
 .post-list {
   padding: 12px 16px;

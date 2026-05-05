@@ -5,11 +5,11 @@
     <div class="post-detail" v-loading="loading">
       <template v-if="post">
         <div class="post-header">
-          <el-avatar :size="40" :src="post.authorAvatar || undefined">
+          <el-avatar :size="40" :src="post.authorAvatar || undefined" class="clickable-avatar" @click.stop="goToUser(post.userId)">
             {{ post.authorNickname?.charAt(0) }}
           </el-avatar>
           <div class="post-meta">
-            <span class="author">{{ post.authorNickname || '用户' }}</span>
+            <span class="author clickable-author" @click.stop="goToUser(post.userId)">{{ post.authorNickname || '用户' }}</span>
             <span class="time">{{ formatTime(post.createTime) }}</span>
           </div>
           <el-tag :type="post.topicType === 1 ? 'primary' : 'warning'" size="small">
@@ -23,7 +23,7 @@
         <div class="post-stats">
           <span><el-icon><View /></el-icon> {{ post.viewCount || 0 }}</span>
           <span class="like-btn" :class="{ active: post.liked }" @click="handleLikePost">
-            <el-icon><StarFilled v-if="post.liked" /><Star v-else /></el-icon>
+            <svg viewBox="0 0 24 24" width="14" height="14" :fill="post.liked ? '#f56c6c' : 'none'" :stroke="post.liked ? '#f56c6c' : 'currentColor'" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
             {{ post.likeCount || 0 }}
           </span>
         </div>
@@ -35,19 +35,19 @@
 
       <div class="reply-list">
         <div v-for="reply in mainReplies" :key="reply.id" class="reply-item">
-          <div class="reply-main">
-            <el-avatar :size="32" :src="reply.authorAvatar || undefined">
+          <div class="reply-main" :id="`reply-${reply.id}`">
+            <el-avatar :size="32" :src="reply.authorAvatar || undefined" class="clickable-avatar" @click.stop="goToUser(reply.userId)">
               {{ reply.authorNickname?.charAt(0) }}
             </el-avatar>
             <div class="reply-body">
               <div class="reply-header">
-                <span class="reply-author">{{ reply.authorNickname || '用户' }}</span>
+                <span class="reply-author clickable-author" @click.stop="goToUser(reply.userId)">{{ reply.authorNickname || '用户' }}</span>
                 <span class="reply-time">{{ formatTime(reply.createTime) }}</span>
               </div>
               <p class="reply-content">{{ reply.content }}</p>
               <div class="reply-actions">
                 <span class="action-btn like-btn" :class="{ active: reply.liked }" @click="handleLikeReply(reply)">
-                  <el-icon><StarFilled v-if="reply.liked" /><Star v-else /></el-icon>
+                  <svg viewBox="0 0 24 24" width="13" height="13" :fill="reply.liked ? '#f56c6c' : 'none'" :stroke="reply.liked ? '#f56c6c' : 'currentColor'" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                   {{ reply.likeCount || 0 }}
                 </span>
                 <span class="action-btn" @click="openReplyInput(reply)">回复</span>
@@ -62,8 +62,8 @@
               <el-icon><ArrowDown /></el-icon>
             </div>
             <template v-else>
-              <div v-for="sub in subRepliesMap[reply.id] || []" :key="sub.id" class="sub-reply-item">
-                <el-avatar :size="24" :src="sub.authorAvatar || undefined">
+              <div v-for="sub in subRepliesMap[reply.id] || []" :key="sub.id" class="sub-reply-item" :id="`reply-${sub.id}`">
+                <el-avatar :size="24" :src="sub.authorAvatar || undefined" class="clickable-avatar" @click.stop="goToUser(sub.userId)">
                   {{ sub.authorNickname?.charAt(0) }}
                 </el-avatar>
                 <div class="sub-reply-body">
@@ -75,7 +75,7 @@
                   <span class="sub-content">：{{ sub.content }}</span>
                   <div class="reply-actions sub-actions">
                     <span class="action-btn like-btn" :class="{ active: sub.liked }" @click="handleLikeReply(sub)">
-                      <el-icon><StarFilled v-if="sub.liked" /><Star v-else /></el-icon>
+                      <svg viewBox="0 0 24 24" width="12" height="12" :fill="sub.liked ? '#f56c6c' : 'none'" :stroke="sub.liked ? '#f56c6c' : 'currentColor'" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                       {{ sub.likeCount || 0 }}
                     </span>
                     <span class="action-btn" @click="openReplyInput(sub)">回复</span>
@@ -112,10 +112,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { View, Star, StarFilled, ArrowDown, Close } from '@element-plus/icons-vue'
+import { View, ArrowDown, Close } from '@element-plus/icons-vue'
 import {
   getCommunityPostDetail, likeCommunityPost,
   getCommunityReplies, createCommunityReply,
@@ -129,6 +129,7 @@ dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(false)
 const post = ref(null)
@@ -140,6 +141,15 @@ const replyContent = ref('')
 const replyingTo = ref(null)
 
 const currentUserId = computed(() => userStore.userId)
+
+const goToUser = (userId) => { if (userId) router.push(`/user/${userId}`) }
+
+const scrollToReply = (replyId) => {
+  nextTick(() => {
+    const el = document.getElementById(`reply-${replyId}`)
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('reply-highlight'); setTimeout(() => el.classList.remove('reply-highlight'), 2000) }
+  })
+}
 
 const formatTime = (time) => {
   if (!time) return ''
@@ -157,23 +167,32 @@ const isMyReply = (reply) => {
 
 onMounted(async () => {
   const id = route.params.id
+  const targetReplyId = route.query.replyId
   loading.value = true
   try {
     const [postRes, replyRes] = await Promise.all([
       getCommunityPostDetail(id),
       getCommunityReplies(id, { page: 1, size: 50 })
     ])
-    if (postRes.code === 200) {
-      post.value = postRes.data
+    if (postRes.code === 200) post.value = postRes.data
+    if (replyRes.code === 200) mainReplies.value = replyRes.data?.records || []
+
+    if (targetReplyId) {
+      const replyId = Number(targetReplyId)
+      const mainMatch = mainReplies.value.find(r => r.id === replyId)
+      if (mainMatch) {
+        scrollToReply(replyId)
+      } else {
+        for (const mainReply of mainReplies.value) {
+          if (mainReply.replyCount > 0) {
+            expandedRoots[mainReply.id] = true
+            await loadSubReplies(mainReply.id, null, 20)
+            if ((subRepliesMap[mainReply.id] || []).find(s => s.id === replyId)) { scrollToReply(replyId); break }
+          }
+        }
+      }
     }
-    if (replyRes.code === 200) {
-      mainReplies.value = replyRes.data?.records || []
-    }
-  } catch (e) {
-    console.error(e)
-  } finally {
-    loading.value = false
-  }
+  } catch (e) { console.error(e) } finally { loading.value = false }
 })
 
 const handleLikePost = async () => {
@@ -312,6 +331,15 @@ const handleDelete = async (reply) => {
   min-height: 100vh;
   background: #f5f7fa;
   padding-bottom: 80px;
+}
+.clickable-avatar { cursor: pointer; transition: transform 0.2s; }
+.clickable-avatar:hover { transform: scale(1.08); }
+.clickable-author { cursor: pointer; }
+.clickable-author:hover { color: #409EFF; }
+.reply-highlight { animation: highlightFade 2s ease-out; }
+@keyframes highlightFade {
+  0% { background-color: #ecf5ff; }
+  100% { background-color: transparent; }
 }
 
 .post-detail {
@@ -500,14 +528,12 @@ const handleDelete = async (reply) => {
 }
 
 .reply-input-bar {
-  position: fixed;
+  position: sticky;
   bottom: 0;
-  left: 0;
-  right: 0;
   background: #fff;
   padding: 10px 16px;
+  border-radius: 12px 12px 0 0;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
-  z-index: 100;
 
   .replying-hint {
     display: flex;
