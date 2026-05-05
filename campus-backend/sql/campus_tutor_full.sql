@@ -374,11 +374,14 @@ CREATE TABLE `community_post` (
   `title` varchar(128) NOT NULL COMMENT '标题',
   `content` text DEFAULT NULL COMMENT '内容',
   `images` json DEFAULT NULL COMMENT '图片列表',
+  `tags` varchar(256) DEFAULT NULL COMMENT '标签，逗号分隔',
   `view_count` int DEFAULT '0' COMMENT '浏览量',
   `like_count` int DEFAULT '0' COMMENT '点赞量',
+  `status` tinyint DEFAULT '1' COMMENT '状态: 1-正常, 0-已隐藏',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`),
-  KEY `idx_user` (`user_id`)
+  KEY `idx_user` (`user_id`),
+  KEY `idx_status` (`status`)
 ) ENGINE=InnoDB COMMENT='社区帖子表';
 
 -- 6.5 社区帖子点赞记录表（防重复点赞）
@@ -420,6 +423,22 @@ CREATE TABLE IF NOT EXISTS `community_comment_like` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_comment_user` (`comment_id`, `user_id`)
 ) ENGINE=InnoDB COMMENT='评论点赞记录表';
+
+-- 6.8 社区互动通知表
+CREATE TABLE IF NOT EXISTS `community_notification` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` bigint NOT NULL COMMENT '接收通知的用户ID',
+  `type` tinyint NOT NULL COMMENT '通知类型: 1-帖子收到新评论, 2-评论收到新回复',
+  `post_id` bigint NOT NULL COMMENT '相关帖子ID',
+  `reply_id` bigint DEFAULT NULL COMMENT '相关评论ID',
+  `from_user_id` bigint NOT NULL COMMENT '触发通知的用户ID',
+  `content_summary` varchar(200) DEFAULT NULL COMMENT '内容摘要',
+  `is_read` tinyint DEFAULT '0' COMMENT '0-未读, 1-已读',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '通知时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_read` (`user_id`, `is_read`),
+  KEY `idx_user_time` (`user_id`, `create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='社区互动通知表';
 
 
 -- ========================================
