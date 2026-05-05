@@ -84,6 +84,9 @@ const showPostDialog = ref(false)
 const submitting = ref(false)
 const postForm = ref({ topicType: 1, title: '', content: '' })
 
+const openPostDialog = () => { showPostDialog.value = true }
+const goLogin = () => router.push('/login')
+
 onMounted(() => {
   loadPosts()
 })
