@@ -176,7 +176,7 @@ public class DemandPostServiceImpl extends ServiceImpl<DemandPostMapper, DemandP
 
         if (!demandIds.isEmpty()) {
             // Redis 有结果
-            log.info("Redis GEO 返回 {} 条结果: {}", demandIds.size(), demandIds);
+            log.info("Redis GEO 返回 {} 条结果", demandIds.size());
             demands = listByIds(demandIds);
         } else {
             // 2. Redis 不可用或无数据，降级使用 SQL + Haversine 公式
