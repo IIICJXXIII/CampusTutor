@@ -216,9 +216,6 @@ const initMap = async () => {
       getLocationFallback()
       return
     }
-    window._AMapSecurityConfig = {
-      securityJsCode: import.meta.env.VITE_AMAP_SECURITY_CODE,
-    }
     const AMap = await AMapLoader.load({
       key: amapKey,
       version: '2.0',
