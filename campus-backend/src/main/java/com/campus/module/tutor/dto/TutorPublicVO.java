@@ -16,6 +16,8 @@ public class TutorPublicVO {
     private String teachGrades;
     private String teachStyle;
     private String introduction;
+    private String experience;
+    private String achievements;
     private BigDecimal expectPrice;
     private Integer canVisit;
     private Integer canOnline;

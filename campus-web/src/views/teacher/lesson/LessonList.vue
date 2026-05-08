@@ -7,9 +7,11 @@
     <!-- 筛选器 -->
     <div class="filter-bar">
       <el-select v-model="filter.status" placeholder="课程状态" clearable @change="loadLessons">
-        <el-option label="待确认/上课中" :value="0" />
-        <el-option label="已完成" :value="1" />
-        <el-option label="有争议" :value="2" />
+        <el-option label="待上课" :value="0" />
+        <el-option label="上课中" :value="1" />
+        <el-option label="待确认" :value="2" />
+        <el-option label="已完成" :value="3" />
+        <el-option label="申诉中" :value="4" />
       </el-select>
       
       <el-date-picker
@@ -42,8 +44,8 @@
           <div class="lesson-main">
             <div class="lesson-header">
               <h4>{{ lesson.studentName }} - {{ lesson.subject }}</h4>
-              <el-tag :type="getStatusType(lesson.status, lesson.contentSummary)" size="small">
-                {{ getStatusText(lesson.status, lesson.contentSummary) }}
+              <el-tag :type="getStatusType(lesson.status)" size="small">
+                {{ getStatusText(lesson.status) }}
               </el-tag>
             </div>
             
@@ -87,7 +89,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Clock, Location } from '@element-plus/icons-vue'
-import { getMyLessons, checkIn, checkOut } from '@shared/api/teaching'
+import { getMyLessons } from '@shared/api/teaching'
 import dayjs from 'dayjs'
 
 const route = useRoute()
@@ -105,20 +107,14 @@ const filter = reactive({
   orderId: null
 })
 
-const getStatusType = (status, contentSummary) => {
-  if (status === 0 && !contentSummary) return 'info' // 上课中
-  if (status === 0 && contentSummary) return 'warning' // 待确认
-  if (status === 1) return 'success'
-  if (status === 2) return 'danger'
-  return 'info'
+const getStatusType = (status) => {
+  const types = { 0: 'info', 1: '', 2: 'warning', 3: 'success', 4: 'danger', 5: 'success', 6: 'info' }
+  return types[status] || 'info'
 }
 
-const getStatusText = (status, contentSummary) => {
-  if (status === 0 && !contentSummary) return '上课中'
-  if (status === 0 && contentSummary) return '待确认'
-  if (status === 1) return '已完成'
-  if (status === 2) return '有争议'
-  return '未知'
+const getStatusText = (status) => {
+  const texts = { 0: '待上课', 1: '上课中', 2: '待确认', 3: '已完成', 4: '申诉中', 5: '已解决', 6: '已过期' }
+  return texts[status] || '未知'
 }
 
 const formatDay = (date) => dayjs(date).format('DD')
@@ -145,8 +141,8 @@ const loadLessons = async () => {
     
     const res = await getMyLessons(params)
     if (res.code === 200) {
-      lessons.value = res.data?.list || []
-      total.value = res.data?.total || 0
+      lessons.value = res.data || []
+      total.value = lessons.value.length
     }
   } catch (error) {
     ElMessage.error(error.message || '加载失败')

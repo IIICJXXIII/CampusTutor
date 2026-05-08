@@ -108,6 +108,11 @@ public class TutorSearchResult {
      */
     private Integer gender;
 
+    /**
+     * 认证状态：0待提交 1待审核 2已通过 3已拒绝
+     */
+    private Integer certStatus;
+
     // 显式的getter和setter方法
     public Long getId() {
         return id;
@@ -267,5 +272,13 @@ public class TutorSearchResult {
 
     public void setGender(Integer gender) {
         this.gender = gender;
+    }
+
+    public Integer getCertStatus() {
+        return certStatus;
+    }
+
+    public void setCertStatus(Integer certStatus) {
+        this.certStatus = certStatus;
     }
 }

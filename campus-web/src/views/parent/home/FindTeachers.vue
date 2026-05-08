@@ -22,7 +22,7 @@
     
     <!-- 筛选条件 -->
     <div class="filter-bar">
-      <el-select v-model="filters.subject" placeholder="科目" clearable @change="loadTutors">
+      <el-select v-model="filters.subject" placeholder="科目" clearable @change="handleFilterChange">
         <el-option-group label="艺术素养">
           <el-option label="钢琴/乐器陪练" value="钢琴/乐器陪练" />
           <el-option label="美术/书法" value="美术/书法" />
@@ -39,19 +39,19 @@
           <el-option label="科学实验/航模" value="科学实验/航模" />
         </el-option-group>
       </el-select>
-      
-      <el-select v-model="filters.grade" placeholder="年级" clearable @change="loadTutors">
+
+      <el-select v-model="filters.grade" placeholder="年级" clearable @change="handleFilterChange">
         <el-option label="小学" value="小学" />
         <el-option label="初中" value="初中" />
         <el-option label="高中" value="高中" />
       </el-select>
-      
-      <el-select v-model="filters.gender" placeholder="性别" clearable @change="loadTutors">
+
+      <el-select v-model="filters.gender" placeholder="性别" clearable @change="handleFilterChange">
         <el-option label="男" :value="1" />
         <el-option label="女" :value="2" />
       </el-select>
-      
-      <el-select v-model="filters.sort" placeholder="排序" @change="loadTutors">
+
+      <el-select v-model="filters.sort" placeholder="排序" @change="handleFilterChange">
         <el-option label="综合排序" value="default" />
         <el-option label="评分最高" value="rating" />
         <el-option label="课时最多" value="hours" />
@@ -319,6 +319,11 @@ const loadTutors = async () => {
   }
 }
 
+const handleFilterChange = () => {
+  page.value = 1
+  loadTutors()
+}
+
 const handleSearch = () => {
   page.value = 1
   loadTutors()
@@ -388,6 +393,18 @@ const initMap = async () => {
       if (status === 'complete') {
         map.setCenter([result.position.lng, result.position.lat])
         userLocation.value = { longitude: result.position.lng, latitude: result.position.lat }
+      } else {
+        // 高德定位失败时尝试浏览器原生定位
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              map.setCenter([pos.coords.longitude, pos.coords.latitude])
+              userLocation.value = { longitude: pos.coords.longitude, latitude: pos.coords.latitude }
+            },
+            () => {},
+            { enableHighAccuracy: true, timeout: 10000 }
+          )
+        }
       }
     })
     addMarkersToMap()

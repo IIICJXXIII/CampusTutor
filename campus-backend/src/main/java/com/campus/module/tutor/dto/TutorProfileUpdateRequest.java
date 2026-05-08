@@ -46,6 +46,16 @@ public class TutorProfileUpdateRequest {
     private String introduction;
 
     /**
+     * 教学经验
+     */
+    private String experience;
+
+    /**
+     * 教学成果
+     */
+    private String achievements;
+
+    /**
      * 期望时薪
      */
     private BigDecimal expectPrice;

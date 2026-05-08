@@ -5,9 +5,14 @@ import request from './request';
 
 /**
  * 上课打卡 (教师)
- * @param {Object} data - { orderId, longitude, latitude, address, photoUrl }
+ * @param {Object|FormData} data - JSON { orderId, longitude, latitude, address, photoUrl } 或 FormData（含photo文件）
  */
 export function checkIn(data) {
+  if (data instanceof FormData) {
+    return request.post('/teaching/check-in', data, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  }
   return request.post('/teaching/check-in', data);
 }
 
@@ -66,4 +71,29 @@ export function getOrderLessons(orderId) {
  */
 export function getLessonDetail(recordId) {
   return request.get(`/teaching/record/${recordId}`);
+}
+
+/**
+ * 提交课时反馈评价
+ * @param {number} recordId - 课时记录ID
+ * @param {Object} data - { rating, tags, content }
+ */
+export function submitFeedback(recordId, data) {
+  return request.post(`/teaching/feedback/${recordId}`, null, { params: data });
+}
+
+/**
+ * 获取课时反馈评价
+ * @param {number} recordId - 课时记录ID
+ */
+export function getFeedback(recordId) {
+  return request.get(`/teaching/feedback/${recordId}`);
+}
+
+/**
+ * 获取课程统计信息
+ * @param {number|string} orderId - 订单ID
+ */
+export function getCourseStatistics(orderId) {
+  return request.get(`/teaching/statistics/${orderId}`);
 }

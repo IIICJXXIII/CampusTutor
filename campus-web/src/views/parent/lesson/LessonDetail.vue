@@ -27,7 +27,7 @@
             <el-tag>{{ lesson.subject }}</el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="课时费用">
-            <span class="price">¥{{ (lesson.amount || 0).toFixed(2) }}</span>
+            <span class="price">¥{{ (lesson.fee || 0).toFixed(2) }}</span>
           </el-descriptions-item>
           <el-descriptions-item label="上课日期">
             {{ formatDate(lesson.startTime) }}
@@ -90,7 +90,7 @@
       </div>
       
       <!-- 申诉记录 -->
-      <div v-if="lesson.status === 3 && lesson.dispute" class="info-card">
+      <div v-if="lesson.status === 4 && lesson.dispute" class="info-card">
         <h3 class="card-title">申诉记录</h3>
         <div class="dispute-info">
           <div class="dispute-reason">
@@ -108,7 +108,7 @@
       </div>
       
       <!-- 底部操作 -->
-      <div v-if="lesson.status === 1" class="action-bar">
+      <div v-if="lesson.status === 2" class="action-bar">
         <el-button size="large" type="danger" plain @click="disputeLesson">
           申诉
         </el-button>
@@ -135,16 +135,19 @@ const loading = ref(false)
 const lesson = ref(null)
 
 const getStatusText = (status) => {
-  const texts = { 0: '上课中', 1: '待确认', 2: '已确认', 3: '申诉中' }
+  const texts = { 0: '待上课', 1: '上课中', 2: '待确认', 3: '已确认', 4: '申诉中', 5: '已解决', 6: '已过期' }
   return texts[status] || '未知'
 }
 
 const getStatusDesc = (status) => {
   const descs = {
-    0: '老师正在上课中',
-    1: '请确认课时信息无误后点击确认',
-    2: '课时已确认，费用已结算',
-    3: '申诉处理中，请耐心等待'
+    0: '课程预约成功，等待老师上课',
+    1: '老师正在上课中',
+    2: '请确认课时信息无误后点击确认',
+    3: '课时已确认，费用已结算',
+    4: '申诉处理中，请耐心等待',
+    5: '申诉已解决',
+    6: '课时超时已自动确认'
   }
   return descs[status] || ''
 }
@@ -264,18 +267,30 @@ onMounted(() => {
   border-radius: 12px;
   margin-bottom: 16px;
   color: #fff;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); // 0-待上课
+
   &.status-1 {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); // 上课中
   }
-  
+
   &.status-2 {
-    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); // 待确认
   }
-  
+
   &.status-3 {
-    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); // 已确认
+  }
+
+  &.status-4 {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); // 申诉中
+  }
+
+  &.status-5 {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); // 已解决
+  }
+
+  &.status-6 {
+    background: linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%); // 已过期
   }
   
   .status-text {

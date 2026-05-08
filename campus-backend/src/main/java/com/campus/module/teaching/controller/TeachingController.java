@@ -47,11 +47,21 @@ public class TeachingController {
         }
     }
 
-    @Operation(summary = "教师打卡上课")
-    @PostMapping("/check-in")
-    public Result<Long> checkIn(@Valid @RequestBody CheckInRequest request) { // <--- 关键：必须有 @RequestBody
+    @Operation(summary = "教师打卡上课（需上传现场照片）")
+    @PostMapping(value = "/check-in", consumes = "multipart/form-data")
+    public Result<Long> checkIn(
+            @RequestParam Long orderId,
+            @RequestParam(required = false) java.math.BigDecimal latitude,
+            @RequestParam(required = false) java.math.BigDecimal longitude,
+            @RequestParam(required = false) String address,
+            @RequestPart(value = "photo", required = false) org.springframework.web.multipart.MultipartFile photo) {
         Long userId = UserContext.getUserId();
-        Long recordId = teachingRecordService.checkIn(userId, request);
+        CheckInRequest request = new CheckInRequest();
+        request.setOrderId(orderId);
+        request.setLatitude(latitude);
+        request.setLongitude(longitude);
+        request.setAddress(address);
+        Long recordId = teachingRecordService.checkIn(userId, request, photo);
         return Result.success("打卡成功", recordId);
     }
 
@@ -122,8 +132,25 @@ public class TeachingController {
     @GetMapping("/statistics/{orderId}")
     public Result<java.util.Map<String, Object>> getCourseStatistics(@PathVariable String orderId) {
         Long userId = UserContext.getUserId();
-        // TODO: 权限校验
         java.util.Map<String, Object> statistics = teachingRecordService.getCourseStatistics(resolveOrderId(orderId));
         return Result.success(statistics);
+    }
+
+    @Operation(summary = "提交课时反馈评价")
+    @PostMapping("/feedback/{recordId}")
+    public Result<Void> submitFeedback(
+            @PathVariable Long recordId,
+            @RequestParam(required = false) Integer rating,
+            @RequestParam(required = false) String tags,
+            @RequestParam(required = false) String content) {
+        Long userId = UserContext.getUserId();
+        teachingRecordService.submitFeedback(userId, recordId, rating, tags, content);
+        return Result.success("反馈已提交");
+    }
+
+    @Operation(summary = "获取课时反馈评价")
+    @GetMapping("/feedback/{recordId}")
+    public Result<?> getFeedback(@PathVariable Long recordId) {
+        return Result.success(teachingRecordService.getFeedbackByRecordId(recordId));
     }
 }

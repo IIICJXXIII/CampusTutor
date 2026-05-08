@@ -137,7 +137,7 @@ const pageSize = ref(10)
 const total = ref(0)
 
 const statusMap = {
-  all: null,
+  all: undefined,
   pending: -1,
   ongoing: 2,
   completed: 3,
@@ -145,13 +145,13 @@ const statusMap = {
 }
 
 const getStatusType = (status) => {
-  const map = { '-1': 'info', 0: 'info', 1: 'warning', 2: 'primary', 3: 'success', 4: 'info' }
+  const map = { '-1': 'warning', 0: 'info', 1: 'warning', 2: 'primary', 3: 'success', 4: 'info' }
   return map[status] || 'info'
 }
 
 const getStatusText = (order) => {
   if (order.status === -1 && order.demandId) return '等待家长确认'
-  if (order.status === -1 && !order.demandId) return '待确认'
+  if (order.status === -1 && !order.demandId) return '家长发来预约'
   const map = { 0: '待家长支付', 1: '待开课', 2: '进行中', 3: '已完成', 4: '已取消' }
   return map[order.status] || '未知'
 }
@@ -161,12 +161,16 @@ const formatTime = (time) => formatDate(time, 'YYYY-MM-DD HH:mm')
 const loadOrders = async () => {
   loading.value = true
   try {
-    const res = await getTutorOrders({
-      status: statusMap[activeTab.value],
+    const params = {
       page: page.value,
-      pageSize: pageSize.value
-    })
-    
+      size: pageSize.value
+    }
+    const statusVal = statusMap[activeTab.value]
+    if (statusVal !== undefined) {
+      params.status = statusVal
+    }
+    const res = await getTutorOrders(params)
+
     if (res.code === 200) {
       orders.value = res.data?.records || []
       total.value = res.data?.total || 0

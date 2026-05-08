@@ -307,7 +307,11 @@ const goBack = () => {
 }
 
 const chatWithTutor = () => {
-  router.push(`/chat/${route.params.id}`)
+  if (tutor.value?.userId) {
+    router.push(`/chat/${tutor.value.userId}`)
+  } else {
+    router.push(`/chat/${route.params.id}`)
+  }
 }
 
 const showBookingDialog = () => {

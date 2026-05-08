@@ -165,12 +165,12 @@ const getStatusDesc = (status) => {
 }
 
 const getLessonStatusType = (status) => {
-  const map = { 1: 'info', 2: 'warning', 3: 'success', 4: 'danger' }
+  const map = { 0: 'info', 1: '', 2: 'warning', 3: 'success', 4: 'danger', 5: 'success', 6: 'info' }
   return map[status] || 'info'
 }
 
 const getLessonStatusText = (status) => {
-  const map = { 1: '待上课', 2: '上课中', 3: '已完成', 4: '有争议' }
+  const map = { 0: '待上课', 1: '上课中', 2: '待确认', 3: '已完成', 4: '申诉中', 5: '已解决', 6: '已过期' }
   return map[status] || '未知'
 }
 

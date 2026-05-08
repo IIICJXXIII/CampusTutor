@@ -63,7 +63,30 @@ public class TeachingRecord {
      */
     private String homeworkAssigned;
 
+    /**
+     * 预定上课时间
+     */
+    private LocalDateTime scheduledStartTime;
+
+    /**
+     * 预定下课时间
+     */
+    private LocalDateTime scheduledEndTime;
+
+    /**
+     * 状态：0-待上课, 1-上课中, 2-待确认, 3-已确认, 4-申诉中, 5-已解决, 6-已过期
+     */
     private Integer status;
+
+    /**
+     * 支付结算状态：0-未结算, 1-已结算
+     */
+    private Integer payStatus;
+
+    /**
+     * 结算时间
+     */
+    private LocalDateTime payTime;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

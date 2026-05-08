@@ -32,6 +32,8 @@ public class MatchController {
     public Result<IPage<TutorSearchResult>> searchTutorsGet(
             @RequestParam(required = false) String subject,
             @RequestParam(required = false) String grade,
+            @RequestParam(required = false) Integer gender,
+            @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Double longitude,
             @RequestParam(required = false) Double latitude,
             @RequestParam(required = false) Double radius,
@@ -44,6 +46,8 @@ public class MatchController {
         request.setUserId(UserContext.getUserId());
         request.setSubject(subject);
         request.setGrade(grade);
+        request.setGender(gender);
+        request.setKeyword(keyword);
         request.setLongitude(longitude);
         request.setLatitude(latitude);
         request.setRadius(radius);

@@ -244,16 +244,17 @@ const goBack = () => router.back()
 const goToRecharge = () => router.push('/parent/recharge')
 
 const handlePay = async () => {
+  if (paying.value) return
+  paying.value = true
   try {
-    const modeText = paymentMode.value === 'per_lesson' 
-      ? `按课时支付${lessonCount.value}节课` 
+    const modeText = paymentMode.value === 'per_lesson'
+      ? `按课时支付${lessonCount.value}节课`
       : '一次性全额支付'
     await ElMessageBox.confirm(
       `确认使用余额${modeText}，支付 ¥${currentPayAmount.value.toFixed(2)}？`,
       '确认支付'
     )
-    
-    paying.value = true
+
     const res = await payOrder({
       orderId: order.value.id,
       payType: 1,

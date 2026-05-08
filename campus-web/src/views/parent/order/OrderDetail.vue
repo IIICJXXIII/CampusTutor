@@ -202,12 +202,12 @@ const getStatusDesc = (status) => {
 }
 
 const getLessonStatusType = (status) => {
-  const types = { 0: 'info', 1: 'warning', 2: 'success', 3: 'danger' }
+  const types = { 0: 'info', 1: '', 2: 'warning', 3: 'success', 4: 'danger', 5: 'success', 6: 'info' }
   return types[status] || 'info'
 }
 
 const getLessonStatusText = (status) => {
-  const texts = { 0: '待上课', 1: '上课中', 2: '已确认', 3: '申诉中' }
+  const texts = { 0: '待上课', 1: '上课中', 2: '待确认', 3: '已确认', 4: '申诉中', 5: '已解决', 6: '已过期' }
   return texts[status] || '未知'
 }
 

@@ -102,13 +102,10 @@ public class MatchService {
         LambdaQueryWrapper<TutorProfile> wrapper = new LambdaQueryWrapper<TutorProfile>()
                 .eq(TutorProfile::getCertStatus, 2); // 只查已认证的
 
-        // 科目筛选(模糊匹配JSON数组) - 修复：空字符串和空数组也应该匹配所有
+        // 科目筛选(模糊匹配JSON数组)
         if (StringUtils.hasText(request.getSubject())) {
             log.info("科目筛选条件: {}", request.getSubject());
-            wrapper.and(w -> w.like(TutorProfile::getTeachSubjects, request.getSubject())
-                    .or().isNull(TutorProfile::getTeachSubjects)
-                    .or().eq(TutorProfile::getTeachSubjects, "")
-                    .or().eq(TutorProfile::getTeachSubjects, "[]"));
+            wrapper.like(TutorProfile::getTeachSubjects, request.getSubject());
         }
 
         // 年级筛选 - 使用GradeUtils进行智能匹配，同时匹配具体年级和对应的"全科"选项
@@ -117,7 +114,7 @@ public class MatchService {
             List<String> keywords = GradeUtils.getSearchKeywords(normalizedGrade);
             log.info("年级筛选条件: {} -> 标准化: {} -> 关键词: {}", request.getGrade(), normalizedGrade, keywords);
 
-            // 构建OR条件：匹配具体年级或对应的全科或年级为NULL/空
+            // 构建OR条件：匹配具体年级或对应的全科
             wrapper.and(w -> {
                 boolean first = true;
                 for (String keyword : keywords) {
@@ -128,10 +125,6 @@ public class MatchService {
                         w.or().like(TutorProfile::getTeachGrades, keyword);
                     }
                 }
-                // 添加年级为NULL或空的情况（兜底：如果教师没设置年级，应该能配所有需求）
-                w.or().isNull(TutorProfile::getTeachGrades);
-                w.or().eq(TutorProfile::getTeachGrades, "");
-                w.or().eq(TutorProfile::getTeachGrades, "[]");
             });
         }
 
@@ -165,6 +158,15 @@ public class MatchService {
                 // 没有符合性别条件的用户，返回空结果
                 return new Page<>(request.getPage(), request.getSize());
             }
+        }
+
+        // 关键词筛选（匹配姓名、学校、自我介绍、教学科目）
+        if (StringUtils.hasText(request.getKeyword())) {
+            String kw = request.getKeyword();
+            wrapper.and(w -> w.like(TutorProfile::getRealName, kw)
+                    .or().like(TutorProfile::getUniversityName, kw)
+                    .or().like(TutorProfile::getIntroduction, kw)
+                    .or().like(TutorProfile::getTeachSubjects, kw));
         }
 
         // 学历筛选
@@ -424,6 +426,7 @@ public class MatchService {
         scoreResult.setId(profile.getId());
         scoreResult.setUserId(profile.getUserId());
         scoreResult.setRealName(profile.getRealName());
+        scoreResult.setCertStatus(profile.getCertStatus());
 
         SysUser user = userMap.get(profile.getUserId());
         if (user != null) {

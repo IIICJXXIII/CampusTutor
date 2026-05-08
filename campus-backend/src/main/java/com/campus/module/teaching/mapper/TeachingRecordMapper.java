@@ -29,6 +29,6 @@ public interface TeachingRecordMapper extends BaseMapper<TeachingRecord> {
     /**
      * 统计订单已完成课时数（家长已确认）
      */
-    @Select("SELECT COUNT(*) FROM teaching_record WHERE order_id = #{orderId} AND status = 1")
+    @Select("SELECT COUNT(*) FROM teaching_record WHERE order_id = #{orderId} AND status = 3")
     int countConfirmedByOrderId(@Param("orderId") Long orderId);
 }

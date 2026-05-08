@@ -87,10 +87,10 @@
       
       <!-- 操作按钮 -->
       <div class="action-bar">
-        <el-button v-if="lesson.status === 1" type="primary" size="large" @click="goToCheckin">
+        <el-button v-if="lesson.status === 0" type="primary" size="large" @click="goToCheckin">
           开始签到
         </el-button>
-        <el-button v-if="lesson.status === 2" type="success" size="large" @click="handleCheckOut">
+        <el-button v-if="lesson.status === 1" type="success" size="large" @click="handleCheckOut">
           结束上课
         </el-button>
         <el-button v-if="lesson.status === 4" type="warning" size="large" @click="handleDispute">
@@ -140,7 +140,7 @@ const checkoutForm = reactive({
 })
 
 const getStatusText = (status) => {
-  const map = { 1: '待上课', 2: '上课中', 3: '已完成', 4: '有争议' }
+  const map = { 0: '待上课', 1: '上课中', 2: '待确认', 3: '已完成', 4: '申诉中', 5: '已解决', 6: '已过期' }
   return map[status] || '未知'
 }
 
@@ -164,7 +164,7 @@ const loadLesson = async () => {
 }
 
 const goToCheckin = () => {
-  router.push(`/teacher/checkin?lessonId=${lesson.value.id}`)
+  router.push(`/teacher/checkin?orderId=${lesson.value.orderId}`)
 }
 
 const handleCheckOut = () => {
@@ -175,7 +175,8 @@ const submitCheckout = async () => {
   submitting.value = true
   try {
     const res = await checkOut(lesson.value.id, {
-      content: checkoutForm.content
+      contentSummary: checkoutForm.content,
+      homeworkAssigned: ''
     })
     if (res.code === 200) {
       ElMessage.success('签退成功')
@@ -217,10 +218,13 @@ onMounted(() => {
     margin-bottom: 16px;
     color: #fff;
     
-    &.status-1 { background: linear-gradient(135deg, #909399, #c0c4cc); }
-    &.status-2 { background: linear-gradient(135deg, #e6a23c, #f5bf6e); }
-    &.status-3 { background: linear-gradient(135deg, #67c23a, #95d475); }
-    &.status-4 { background: linear-gradient(135deg, #f56c6c, #fab6b6); }
+    &.status-0 { background: linear-gradient(135deg, #667eea, #764ba2); }
+    &.status-1 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+    &.status-2 { background: linear-gradient(135deg, #f093fb, #f5576c); }
+    &.status-3 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+    &.status-4 { background: linear-gradient(135deg, #fa709a, #fee140); }
+    &.status-5 { background: linear-gradient(135deg, #a8edea, #fed6e3); }
+    &.status-6 { background: linear-gradient(135deg, #bdc3c7, #2c3e50); }
     
     .status-content {
       text-align: center;

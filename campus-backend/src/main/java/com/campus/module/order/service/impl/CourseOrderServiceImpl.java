@@ -109,7 +109,8 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         }
         save(order);
 
-        log.info("[订单创建] 家长 {} 创建订单 {}, 教师 {}, 金额 {}", parentId, order.getId(), tutorProfile.getUserId(), totalAmount);
+        log.info("[订单创建] 家长 {} 创建订单 {}, 教师userId={}, tutorProfileId={}, 金额 {}, 状态={}",
+                parentId, order.getId(), tutorProfile.getUserId(), tutorProfile.getId(), totalAmount, order.getStatus());
 
         return order.getId();
     }
@@ -117,7 +118,10 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Map<String, String> payOrder(Long userId, PayOrderRequest request) {
-        CourseOrder order = getById(request.getOrderId());
+        CourseOrder order = lambdaQuery()
+                .eq(CourseOrder::getId, request.getOrderId())
+                .last("FOR UPDATE")
+                .one();
         if (order == null) {
             throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "订单不存在");
         }
@@ -271,10 +275,62 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
         throw new BusinessException(ResultCode.PARAM_ERROR.getCode(), "当前仅支持钱包支付");
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void releasePerLessonPayment(CourseOrder order, TeachingRecord record) {
+        if (record.getPayStatus() != null && record.getPayStatus() == 1) {
+            return; // 已结算，幂等
+        }
+
+        BigDecimal perLessonTutor = order.getTutorAmount()
+                .divide(BigDecimal.valueOf(order.getTotalHours()), 2, RoundingMode.HALF_UP);
+
+        walletService.unfreeze(order.getTutorId(), perLessonTutor);
+
+        record.setPayStatus(1);
+        record.setPayTime(LocalDateTime.now());
+        teachingRecordMapper.updateById(record);
+
+        int newPaidHours = (order.getPaidHours() != null ? order.getPaidHours() : 0) + 1;
+        order.setPaidHours(newPaidHours);
+
+        // 更新已确认课时数
+        int newConfirmedHours = teachingRecordMapper.countConfirmedByOrderId(order.getId());
+        order.setConfirmedHours(newConfirmedHours);
+        order.setUsedHours(newConfirmedHours);
+
+        try {
+            BigDecimal balanceAfter = BigDecimal.ZERO;
+            var wallet = walletService.getByUserId(order.getTutorId());
+            if (wallet != null) {
+                balanceAfter = wallet.getBalance();
+            }
+            transactionFlowService.recordFlow(
+                    order.getTutorId(), perLessonTutor, balanceAfter, 3,
+                    order.getId(), "课时" + record.getLessonIndex() + "结算: " + order.getOrderNo());
+        } catch (Exception e) {
+            log.error("记录课时结算流水失败: orderId={}, recordId={}, error={}",
+                    order.getId(), record.getId(), e.getMessage());
+        }
+
+        updateById(order);
+
+        log.info("课时结算完成: orderId={}, lessonIndex={}, amount={}, tutorId={}",
+                order.getId(), record.getLessonIndex(), perLessonTutor, order.getTutorId());
+    }
+
     /**
-     * 根据订单生成课程记录(课表)
+     * 根据订单生成课程记录(课表)，幂等：已存在记录时跳过
      */
     private void generateTeachingRecords(CourseOrder order) {
+        Long existingCount = teachingRecordMapper.selectCount(
+                new LambdaQueryWrapper<TeachingRecord>()
+                        .eq(TeachingRecord::getOrderId, order.getId()));
+        if (existingCount > 0) {
+            log.warn("课时记录已存在，跳过生成: orderId={}, existingCount={}", order.getId(), existingCount);
+            return;
+        }
+
         // 解析首课时间 (格式: "首课时间: 01-09 14:00 - 15:00")
         LocalDateTime firstLessonStart = parseFirstLessonTime(order.getRemark());
         if (firstLessonStart == null) {
@@ -292,7 +348,6 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
             record.setStartTime(lessonStart);
             record.setEndTime(lessonStart.plusHours(1)); // 每节课1小时
             record.setStatus(0); // 待确认
-            // createTime/updateTime 由 MyBatis-Plus 自动填充
             teachingRecordMapper.insert(record);
         }
     }
@@ -541,6 +596,7 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
 
     @Override
     public IPage<CourseOrder> listTutorOrders(Long tutorId, Integer status, Integer page, Integer size) {
+        log.info("[教师订单列表] tutorId={}, status={}, page={}, size={}", tutorId, status, page, size);
         Page<CourseOrder> pageParam = new Page<>(page, size);
         LambdaQueryWrapper<CourseOrder> wrapper = new LambdaQueryWrapper<CourseOrder>()
                 .eq(CourseOrder::getTutorId, tutorId);
@@ -548,7 +604,9 @@ public class CourseOrderServiceImpl extends ServiceImpl<CourseOrderMapper, Cours
             wrapper.eq(CourseOrder::getStatus, status);
         }
         wrapper.orderByDesc(CourseOrder::getCreateTime);
-        return page(pageParam, wrapper);
+        IPage<CourseOrder> result = page(pageParam, wrapper);
+        log.info("[教师订单列表] 查询结果: total={}, records={}", result.getTotal(), result.getRecords().size());
+        return result;
     }
 
     /**
