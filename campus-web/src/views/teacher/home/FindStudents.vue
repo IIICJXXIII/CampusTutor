@@ -223,7 +223,7 @@ const initMap = async () => {
     }
     const AMap = await AMapLoader.load({
       key: amapKey,
-      version: '2.0',
+      version: '1.4.15',
       plugins: ['AMap.Geolocation', 'AMap.Marker']
     })
     

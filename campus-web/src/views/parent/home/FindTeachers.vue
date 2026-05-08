@@ -374,7 +374,7 @@ const initMap = async () => {
     const AMapLoader = (await import('@amap/amap-jsapi-loader')).default
     AMap = await AMapLoader.load({
       key: amapKey,
-      version: '2.0',
+      version: '1.4.15',
       plugins: ['AMap.Geolocation', 'AMap.Marker']
     })
     map = new AMap.Map('tutor-map', {
