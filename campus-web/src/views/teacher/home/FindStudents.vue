@@ -221,10 +221,6 @@ const initMap = async () => {
       ElMessage.warning('地图功能需要配置高德地图 Key')
       return
     }
-    window._AMapSecurityConfig = {
-      securityJsCode: import.meta.env.VITE_AMAP_SECURITY_CODE,
-    }
-
     const AMap = await AMapLoader.load({
       key: amapKey,
       version: '2.0',
