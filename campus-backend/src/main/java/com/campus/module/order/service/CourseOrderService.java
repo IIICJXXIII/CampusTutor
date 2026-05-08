@@ -104,7 +104,7 @@ public interface CourseOrderService extends IService<CourseOrder> {
 
     /**
      * 申请退款
-     * 
+     *
      * @param userId       用户ID
      * @param orderId      订单ID
      * @param refundAmount 退款金额
@@ -112,5 +112,13 @@ public interface CourseOrderService extends IService<CourseOrder> {
      * @return 退款单号
      */
     String applyRefund(Long userId, Long orderId, java.math.BigDecimal refundAmount, String reason);
+
+    /**
+     * 按课时逐节结算：家长确认课时后，释放对应比例资金给教师
+     *
+     * @param order  订单
+     * @param record 课时记录
+     */
+    void releasePerLessonPayment(CourseOrder order, com.campus.module.teaching.entity.TeachingRecord record);
 
 }

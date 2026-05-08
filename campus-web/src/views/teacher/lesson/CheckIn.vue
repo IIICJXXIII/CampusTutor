@@ -40,10 +40,26 @@
         </div>
         
         <div class="photo-card">
-          <h4>签到拍照 <el-tag type="info" size="small">选填/占位图</el-tag></h4>
-          <div class="photo-placeholder">
-            <img src="https://via.placeholder.com/150?text=CheckinImage" alt="占位图" />
-            <span style="font-size:12px;color:#999;margin-left:10px;">测试阶段：默认使用占位图</span>
+          <h4>签到拍照 <el-tag type="danger" size="small">必填</el-tag></h4>
+          <div class="photo-upload">
+            <input
+              ref="photoInput"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style="display:none"
+              @change="onPhotoSelected"
+            />
+            <div v-if="!photoPreview" class="photo-placeholder" @click="$refs.photoInput.click()">
+              <el-icon :size="40"><Camera /></el-icon>
+              <span>点击拍照或选择照片</span>
+            </div>
+            <div v-else class="photo-preview" @click="$refs.photoInput.click()">
+              <img :src="photoPreview" alt="签到照片" />
+              <el-button size="small" type="danger" circle class="retake-btn" @click.stop="clearPhoto">
+                <el-icon><Close /></el-icon>
+              </el-button>
+            </div>
           </div>
         </div>
 
@@ -98,7 +114,7 @@
 import { ref, reactive, onMounted, computed, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Clock, Location, Check, Loading, WarningFilled } from '@element-plus/icons-vue'
+import { Clock, Location, Check, Loading, WarningFilled, Camera, Close } from '@element-plus/icons-vue'
 import { getOrderLessons, checkIn, checkOut } from '@shared/api/teaching'
 import { getOrderDetail } from '@shared/api/order'
 import AMapLoader from '@amap/amap-jsapi-loader'
@@ -115,6 +131,9 @@ const locationLoading = ref(true)
 const locationError = ref('')
 const currentLocation = ref(null)
 const submitting = ref(false)
+const photoInput = ref(null)
+const photoFile = ref(null)
+const photoPreview = ref(null)
 
 const checkoutForm = reactive({
   contentSummary: '',
@@ -152,24 +171,26 @@ const loadData = async () => {
     // 2. 加载课时记录
     const lessonsRes = await getOrderLessons(selectedOrderId)
     const lessons = lessonsRes.data || []
-    
-    // 3. 状态推导
+
+    // 3. 状态推导（使用明确的状态码）
     if (order.value && order.value.usedHours >= order.value.totalHours) {
       viewState.value = 'FINISHED'
     } else {
-      // 找到最近一节状态为 0 (待确认) 的记录
-      const pendingLesson = lessons.find(l => l.status === 0)
-      if (!pendingLesson) {
+      const pendingStart = lessons.find(l => l.status === 0) // 待上课
+      const inProgress = lessons.find(l => l.status === 1)    // 上课中
+      const pendingConfirm = lessons.find(l => l.status === 2) // 待确认
+
+      if (inProgress) {
+        activeRecord.value = inProgress
+        viewState.value = 'PENDING_CHECKOUT'
+      } else if (pendingStart) {
+        activeRecord.value = pendingStart
         viewState.value = 'PENDING_CHECKIN'
+      } else if (pendingConfirm) {
+        activeRecord.value = pendingConfirm
+        viewState.value = 'WAITING_CONFIRM'
       } else {
-        activeRecord.value = pendingLesson
-        if (!pendingLesson.clockInLat) {
-           viewState.value = 'PENDING_CHECKIN'
-        } else if (!pendingLesson.contentSummary) {
-           viewState.value = 'PENDING_CHECKOUT'
-        } else {
-           viewState.value = 'WAITING_CONFIRM'
-        }
+        viewState.value = 'PENDING_CHECKIN'
       }
     }
     
@@ -302,17 +323,41 @@ const updateLocationData = (lng, lat) => {
   locationLoading.value = false
 }
 
+const onPhotoSelected = (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+  if (!file.type.startsWith('image/')) {
+    ElMessage.warning('请选择图片文件')
+    return
+  }
+  photoFile.value = file
+  const reader = new FileReader()
+  reader.onload = (e) => { photoPreview.value = e.target.result }
+  reader.readAsDataURL(file)
+}
+
+const clearPhoto = () => {
+  photoFile.value = null
+  photoPreview.value = null
+  if (photoInput.value) photoInput.value.value = ''
+}
+
 const handleCheckIn = async () => {
+  if (!photoFile.value) {
+    ElMessage.warning('请拍摄现场照片')
+    return
+  }
   submitting.value = true
   try {
-    const res = await checkIn({
-      orderId: order.value.id,
-      longitude: currentLocation.value?.lng,
-      latitude: currentLocation.value?.lat,
-      address: currentLocation.value?.address,
-      photoUrl: 'https://via.placeholder.com/150?text=CheckinImage'
-    })
-    
+    const formData = new FormData()
+    formData.append('orderId', order.value.id)
+    formData.append('latitude', currentLocation.value?.lat || 0)
+    formData.append('longitude', currentLocation.value?.lng || 0)
+    formData.append('address', currentLocation.value?.address || '')
+    formData.append('photo', photoFile.value)
+
+    const res = await checkIn(formData)
+
     if (res.code === 200) {
       ElMessage.success('上课打卡成功')
       loadData()

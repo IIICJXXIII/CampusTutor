@@ -19,6 +19,15 @@ public interface TeachingRecordService {
     Long checkIn(Long tutorId, CheckInRequest request);
 
     /**
+     * 教师打卡上课（含现场照片上传）
+     * @param tutorId 教师用户ID
+     * @param request 打卡请求
+     * @param photo 现场照片文件
+     * @return 课时记录ID
+     */
+    Long checkIn(Long tutorId, CheckInRequest request, org.springframework.web.multipart.MultipartFile photo);
+
+    /**
      * 教师打卡下课
      * @param tutorId 教师用户ID
      * @param recordId 课时记录ID
@@ -79,4 +88,14 @@ public interface TeachingRecordService {
      * @return 统计信息
      */
     java.util.Map<String, Object> getCourseStatistics(Long orderId);
+
+    /**
+     * 提交课时反馈评价
+     */
+    void submitFeedback(Long userId, Long recordId, Integer rating, String tags, String content);
+
+    /**
+     * 获取课时的反馈评价
+     */
+    Object getFeedbackByRecordId(Long recordId);
 }

@@ -25,8 +25,11 @@ public class CheckInRequest {
     @NotNull(message = "经度不能为空")
     private BigDecimal longitude;
 
-    @Schema(description = "现场拍照URL", required = true)
+    @Schema(description = "现场拍照URL（后端存储后返回，前端无需传）")
     private String photoUrl;
+
+    @Schema(description = "打卡地址描述")
+    private String address;
 
     @Schema(description = "教学内容摘要")
     private String contentSummary;

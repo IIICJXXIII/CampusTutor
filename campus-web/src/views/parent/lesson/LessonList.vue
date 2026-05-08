@@ -12,9 +12,11 @@
     <div class="filter-tabs">
       <el-radio-group v-model="statusFilter" @change="handleFilterChange">
         <el-radio-button value="all">全部</el-radio-button>
-        <el-radio-button value="0">待确认/上课中</el-radio-button>
-        <el-radio-button value="1">已确认</el-radio-button>
-        <el-radio-button value="2">申诉中</el-radio-button>
+        <el-radio-button value="0">待上课</el-radio-button>
+        <el-radio-button value="1">上课中</el-radio-button>
+        <el-radio-button value="2">待确认</el-radio-button>
+        <el-radio-button value="3">已确认</el-radio-button>
+        <el-radio-button value="4">申诉中</el-radio-button>
       </el-radio-group>
     </div>
     
@@ -39,8 +41,8 @@
             <el-icon><Calendar /></el-icon>
             {{ formatDate(lesson.startTime) }}
           </div>
-          <el-tag :type="getStatusType(lesson.status, lesson.contentSummary)" size="small">
-            {{ getStatusText(lesson.status, lesson.contentSummary) }}
+          <el-tag :type="getStatusType(lesson.status)" size="small">
+            {{ getStatusText(lesson.status) }}
           </el-tag>
         </div>
         
@@ -73,11 +75,11 @@
         
         <div class="lesson-footer">
           <div class="lesson-fee">
-            课时费: <strong>¥{{ (lesson.amount || 0).toFixed(2) }}</strong>
+            课时费: <strong>¥{{ (lesson.fee || 0).toFixed(2) }}</strong>
           </div>
           
           <div class="lesson-actions" @click.stop>
-            <template v-if="lesson.status === 0 && lesson.contentSummary">
+            <template v-if="lesson.status === 2">
               <el-button size="small" type="danger" plain @click="disputeLesson(lesson)">
                 申诉
               </el-button>
@@ -123,20 +125,14 @@ const total = ref(0)
 
 const orderId = route.query.orderId
 
-const getStatusType = (status, contentSummary) => {
-  if (status === 0 && !contentSummary) return 'info'
-  if (status === 0 && contentSummary) return 'warning'
-  if (status === 1) return 'success'
-  if (status === 2) return 'danger'
-  return 'info'
+const getStatusType = (status) => {
+  const types = { 0: 'info', 1: '', 2: 'warning', 3: 'success', 4: 'danger', 5: 'success', 6: 'info' }
+  return types[status] || 'info'
 }
 
-const getStatusText = (status, contentSummary) => {
-  if (status === 0 && !contentSummary) return '上课中'
-  if (status === 0 && contentSummary) return '待确认'
-  if (status === 1) return '已确认'
-  if (status === 2) return '申诉中'
-  return '未知'
+const getStatusText = (status) => {
+  const texts = { 0: '待上课', 1: '上课中', 2: '待确认', 3: '已确认', 4: '申诉中', 5: '已解决', 6: '已过期' }
+  return texts[status] || '未知'
 }
 
 const formatDate = (time) => {
@@ -165,13 +161,9 @@ const loadLessons = async () => {
     }
     
     if (res.code === 200) {
-      if (orderId) {
-        lessons.value = res.data || []
-        total.value = lessons.value.length
-      } else {
-        lessons.value = res.data?.records || []
-        total.value = res.data?.total || 0
-      }
+      // 后端返回 List<TeachingRecordDTO>，直接是数组
+      lessons.value = res.data || []
+      total.value = lessons.value.length
     }
   } catch (error) {
     console.error('加载课时列表失败:', error)

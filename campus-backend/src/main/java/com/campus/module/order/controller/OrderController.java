@@ -15,12 +15,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 /**
  * 订单模块控制器
  */
+@Slf4j
 @Tag(name = "订单模块", description = "订单创建、支付、管理")
 @RestController
 @RequestMapping("/api/order")
@@ -169,6 +171,7 @@ public class OrderController {
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
         Long tutorId = UserContext.getUserId();
+        log.info("[教师订单] tutorId={}, status={}, page={}, size={}", tutorId, status, page, size);
         IPage<CourseOrder> result = orderService.listTutorOrders(tutorId, status, page, size);
         return Result.success(result);
     }

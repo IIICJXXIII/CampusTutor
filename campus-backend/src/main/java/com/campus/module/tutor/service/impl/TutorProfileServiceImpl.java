@@ -153,6 +153,12 @@ public class TutorProfileServiceImpl extends ServiceImpl<TutorProfileMapper, Tut
         if (request.getIntroduction() != null) {
             profile.setIntroduction(request.getIntroduction());
         }
+        if (request.getExperience() != null) {
+            profile.setExperience(request.getExperience());
+        }
+        if (request.getAchievements() != null) {
+            profile.setAchievements(request.getAchievements());
+        }
         if (request.getExpectPrice() != null) {
             profile.setExpectPrice(request.getExpectPrice());
         }

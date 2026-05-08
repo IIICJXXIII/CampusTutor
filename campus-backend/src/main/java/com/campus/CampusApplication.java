@@ -2,11 +2,13 @@ package com.campus;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * CampusTutor 校园智教平台 - 启动类
  */
 @SpringBootApplication
+@EnableScheduling
 public class CampusApplication {
 
     public static void main(String[] args) {

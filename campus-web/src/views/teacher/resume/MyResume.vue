@@ -29,7 +29,7 @@
               <div class="avatar-tip">点击更换头像</div>
             </el-upload>
             <div class="basic-info">
-              <h2>{{ profile.realName || userStore.nickname }}</h2>
+              <h2>{{ userStore.nickname || profile.realName }}</h2>
               <p>{{ profile.school }} · {{ profile.major }}</p>
               <div class="tags">
                 <el-tag v-if="profile.certStatus === 2" type="success">已认证</el-tag>
@@ -274,11 +274,11 @@ const loadProfile = async () => {
         avatar: data.avatarUrl || data.avatar,
         subjects: parseJson(data.teachSubjects, []),
         grades: parseJson(data.teachGrades, []),
-        experience: data.teachStyle || data.experience,
+        experience: data.experience || data.teachStyle || '',
         expectedSalary: data.expectPrice,
         teachingArea: data.address,
         introduction: data.introduction,
-        achievements: data.achievements,
+        achievements: data.achievements || '',
         certStatus: data.certStatus,
         teachStyle: data.teachStyle
       }
@@ -292,8 +292,19 @@ const loadProfile = async () => {
 const loadSchedule = async () => {
   try {
     const res = await getScheduleConfig()
-    if (res.code === 200) {
-      schedules.value = res.data || []
+    if (res.code === 200 && res.data) {
+      const rawList = res.data || []
+      const grouped = {}
+      rawList.forEach(item => {
+        const day = item.dayOfWeek
+        if (!grouped[day]) {
+          grouped[day] = { dayOfWeek: day, timeSlots: [] }
+        }
+        if (item.startTime && item.endTime) {
+          grouped[day].timeSlots.push(`${item.startTime}-${item.endTime}`)
+        }
+      })
+      schedules.value = Object.values(grouped).sort((a, b) => a.dayOfWeek - b.dayOfWeek)
     }
   } catch (error) {
     console.error('加载排课失败', error)
@@ -334,11 +345,13 @@ const saveProfile = async () => {
       realName: editForm.nickname || profile.value.realName,
       universityName: profile.value.school || profile.value.universityName,
       major: profile.value.major,
-      teachSubjects: editForm.subjects,          // 后端: teachSubjects
-      teachGrades: editForm.grades,              // 后端: teachGrades
-      teachStyle: profile.value.teachStyle,
+      teachSubjects: editForm.subjects,
+      teachGrades: editForm.grades,
+      teachStyle: editForm.experience,
+      experience: editForm.experience,
       introduction: editForm.introduction,
-      expectPrice: editForm.expectedSalary,       // 后端: expectPrice
+      achievements: editForm.achievements,
+      expectPrice: editForm.expectedSalary,
       canVisit: 1,
       canOnline: 1,
       address: editForm.teachingArea

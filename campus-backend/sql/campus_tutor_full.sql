@@ -110,6 +110,8 @@ CREATE TABLE `tutor_profile` (
   `teach_grades` text DEFAULT NULL COMMENT '可授年级(JSON数组)',
   `teach_style` varchar(255) DEFAULT NULL COMMENT '教学风格',
   `introduction` text DEFAULT NULL COMMENT '自我介绍',
+  `experience` varchar(255) DEFAULT NULL COMMENT '教学经验',
+  `achievements` text DEFAULT NULL COMMENT '主要成就',
   `expect_price` decimal(10,2) DEFAULT NULL COMMENT '期望时薪(元)',
   `can_visit` tinyint DEFAULT '1' COMMENT '可上门：0否 1是',
   `can_online` tinyint DEFAULT '1' COMMENT '可网课：0否 1是',
@@ -239,6 +241,7 @@ CREATE TABLE `course_order` (
   `used_hours` int DEFAULT '0' COMMENT '已上课时',
   `payment_mode` varchar(20) DEFAULT 'per_lesson' COMMENT '支付模式: full-一次性支付, per_lesson-按课时支付',
   `paid_hours` int DEFAULT '0' COMMENT '已支付课时数',
+  `confirmed_hours` int DEFAULT '0' COMMENT '已确认课时数',
   `status` tinyint DEFAULT '0' COMMENT '状态: -1-待确认, 0-待支付, 1-已支付待上课, 2-进行中, 3-已完成, 4-已取消, 5-退款中, 6-已退款',
   `pay_time` datetime DEFAULT NULL COMMENT '支付时间',
   `pay_type` tinyint DEFAULT NULL COMMENT '支付方式：1钱包 2微信 3支付宝',
@@ -281,18 +284,21 @@ CREATE TABLE `teaching_record` (
   `lesson_index` int NOT NULL COMMENT '第几节课',
   `start_time` datetime DEFAULT NULL COMMENT '实际上课时间',
   `end_time` datetime DEFAULT NULL COMMENT '实际下课时间',
+  `scheduled_start_time` datetime DEFAULT NULL COMMENT '预定上课时间',
+  `scheduled_end_time` datetime DEFAULT NULL COMMENT '预定下课时间',
   `clock_in_lat` decimal(10,6) DEFAULT NULL COMMENT '打卡纬度',
   `clock_in_lng` decimal(10,6) DEFAULT NULL COMMENT '打卡经度',
   `clock_in_img` varchar(255) DEFAULT NULL COMMENT '现场拍照(水印)',
   `content_summary` text DEFAULT NULL COMMENT '教学内容摘要',
   `homework_assigned` text DEFAULT NULL COMMENT '布置作业',
-  `status` tinyint DEFAULT '0' COMMENT '状态：0-待确认, 1-家长已确认, 2-异常/申诉',
-  `pay_status` tinyint DEFAULT '0' COMMENT '支付状态: 0-未支付, 1-已支付',
-  `pay_time` datetime DEFAULT NULL COMMENT '支付时间',
+  `status` tinyint DEFAULT '0' COMMENT '状态：0-待上课, 1-上课中, 2-待确认, 3-已确认, 4-申诉中, 5-已解决, 6-已过期',
+  `pay_status` tinyint DEFAULT '0' COMMENT '支付结算状态: 0-未结算, 1-已结算',
+  `pay_time` datetime DEFAULT NULL COMMENT '结算时间',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
-  KEY `idx_order` (`order_id`)
+  KEY `idx_order` (`order_id`),
+  UNIQUE KEY `uk_order_lesson` (`order_id`, `lesson_index`)
 ) ENGINE=InnoDB COMMENT='课时打卡记录表';
 
 -- 5.2 阶段学习报告表
@@ -494,6 +500,55 @@ CREATE TABLE IF NOT EXISTS `user_profile_ai` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 7.4 电子协议签署记录表
+CREATE TABLE IF NOT EXISTS `electronic_agreement` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `order_id` bigint NOT NULL COMMENT '订单ID',
+  `agreement_no` varchar(64) NOT NULL COMMENT '协议编号',
+  `content` text NOT NULL COMMENT '协议正文',
+  `version` int DEFAULT 1 COMMENT '协议版本',
+  `parent_signed` tinyint DEFAULT 0 COMMENT '家长签署:0否1是',
+  `parent_signed_time` datetime DEFAULT NULL COMMENT '家长签署时间',
+  `tutor_signed` tinyint DEFAULT 0 COMMENT '教员签署:0否1是',
+  `tutor_signed_time` datetime DEFAULT NULL COMMENT '教员签署时间',
+  `status` tinyint DEFAULT 0 COMMENT '0-待签署, 1-已签署, 2-已失效',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_order` (`order_id`),
+  UNIQUE KEY `uk_agreement_no` (`agreement_no`)
+) ENGINE=InnoDB COMMENT='电子协议签署记录';
+
+-- 7.5 系统通知表
+CREATE TABLE IF NOT EXISTS `system_notification` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` bigint NOT NULL COMMENT '接收用户ID',
+  `type` tinyint NOT NULL COMMENT '类型:1-上课提醒,2-确认提醒,3-结算通知,4-申诉通知,5-退款通知,6-系统消息',
+  `title` varchar(128) NOT NULL,
+  `content` varchar(512) DEFAULT NULL,
+  `related_id` bigint DEFAULT NULL COMMENT '关联业务ID',
+  `related_type` varchar(32) DEFAULT NULL COMMENT '关联业务类型:order/record/dispute',
+  `is_read` tinyint DEFAULT 0,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_read_time` (`user_id`, `is_read`, `create_time`)
+) ENGINE=InnoDB COMMENT='系统通知表';
+
+-- 7.6 课时反馈评价表
+CREATE TABLE IF NOT EXISTS `teaching_feedback` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `record_id` bigint NOT NULL COMMENT '关联TeachingRecord ID',
+  `order_id` bigint NOT NULL COMMENT '关联订单ID',
+  `from_user_id` bigint NOT NULL COMMENT '评价人ID',
+  `rating` tinyint DEFAULT 5 COMMENT '评分1-5',
+  `tags` varchar(255) DEFAULT NULL COMMENT '评价标签逗号分隔',
+  `content` varchar(512) DEFAULT NULL COMMENT '评价内容',
+  `is_anonymous` tinyint DEFAULT 0 COMMENT '是否匿名:0否1是',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_record_user` (`record_id`, `from_user_id`),
+  KEY `idx_order` (`order_id`)
+) ENGINE=InnoDB COMMENT='课时反馈评价表';
 
 
 -- ========================================

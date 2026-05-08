@@ -30,6 +30,7 @@ public class ChatController {
 
     private final ChatService chatService;
     private final SysUserMapper sysUserMapper;
+    private final com.campus.module.tutor.mapper.TutorProfileMapper tutorProfileMapper;
 
     @GetMapping("/sessions")
     @Operation(summary = "获取会话列表", description = "获取当前用户的所有聊天会话")
@@ -84,6 +85,22 @@ public class ChatController {
         userInfo.put("nickname", user.getNickname());
         userInfo.put("avatar", user.getAvatarUrl());
         userInfo.put("role", user.getRole());
+
+        // 如果是教师角色，补充 tutor_profile 中的 realName 作为显示名
+        if (user.getRole() != null && user.getRole() == 1) {
+            try {
+                com.campus.module.tutor.entity.TutorProfile tutorProfile =
+                        tutorProfileMapper.selectOne(
+                                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.campus.module.tutor.entity.TutorProfile>()
+                                        .eq(com.campus.module.tutor.entity.TutorProfile::getUserId, userId)
+                                        .eq(com.campus.module.tutor.entity.TutorProfile::getCertStatus, 2));
+                if (tutorProfile != null && tutorProfile.getRealName() != null) {
+                    userInfo.put("realName", tutorProfile.getRealName());
+                }
+            } catch (Exception e) {
+                log.warn("获取教员档案失败: {}", e.getMessage());
+            }
+        }
 
         return Result.success(userInfo);
     }

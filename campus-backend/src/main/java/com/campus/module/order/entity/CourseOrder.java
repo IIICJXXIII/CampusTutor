@@ -93,6 +93,16 @@ public class CourseOrder {
      */
     private Integer usedHours;
 
+    /**
+     * 已支付课时数
+     */
+    private Integer paidHours;
+
+    /**
+     * 已确认课时数
+     */
+    private Integer confirmedHours;
+
     private Integer status;
 
     /**
@@ -114,6 +124,21 @@ public class CourseOrder {
      * 取消原因
      */
     private String cancelReason;
+
+    /**
+     * 上课地址
+     */
+    private String address;
+
+    /**
+     * 经度
+     */
+    private java.math.BigDecimal longitude;
+
+    /**
+     * 纬度
+     */
+    private java.math.BigDecimal latitude;
 
     /**
      * 备注
